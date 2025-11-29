@@ -583,5 +583,636 @@
         ]
       }
     ]
+  },
+  "wild_area_forest_meadow_path": {
+    "name": "Wild Area α - Forest: Meadow Path",
+    "description": "A peaceful meadow at the edge of the forest, filled with wildflowers and gentle Pokémon. The perfect starting point for new trainers to begin their wild area adventures.",
+    "channel_ids": [],
+    "amenities": [],
+    "encounters": [
+      {
+        "species_dex_number": 396,
+        "species_name": "Starly",
+        "min_level": 2,
+        "max_level": 6,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 399,
+        "species_name": "Bidoof",
+        "min_level": 2,
+        "max_level": 6,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 819,
+        "species_name": "Skwovet",
+        "min_level": 2,
+        "max_level": 6,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 187,
+        "species_name": "Hoppip",
+        "min_level": 2,
+        "max_level": 6,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 415,
+        "species_name": "Combee",
+        "min_level": 2,
+        "max_level": 5,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 824,
+        "species_name": "Blipbug",
+        "min_level": 2,
+        "max_level": 4,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 427,
+        "species_name": "Buneary",
+        "min_level": 3,
+        "max_level": 7,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 179,
+        "species_name": "Mareep",
+        "min_level": 3,
+        "max_level": 7,
+        "weight": 6
+      },
+      {
+        "species_dex_number": 161,
+        "species_name": "Sentret",
+        "min_level": 3,
+        "max_level": 7,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 261,
+        "species_name": "Poochyena",
+        "min_level": 3,
+        "max_level": 7,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 585,
+        "species_name": "Deerling",
+        "min_level": 4,
+        "max_level": 8,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 32,
+        "species_name": "Nidoran♂",
+        "min_level": 4,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 29,
+        "species_name": "Nidoran♀",
+        "min_level": 4,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 595,
+        "species_name": "Joltik",
+        "min_level": 5,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 403,
+        "species_name": "Shinx",
+        "min_level": 5,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 133,
+        "species_name": "Eevee",
+        "min_level": 5,
+        "max_level": 9,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 856,
+        "species_name": "Hatenna",
+        "min_level": 6,
+        "max_level": 9,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 921,
+        "species_name": "Pawmi",
+        "min_level": 5,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 667,
+        "species_name": "Litleo",
+        "min_level": 5,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 548,
+        "species_name": "Petilil",
+        "min_level": 4,
+        "max_level": 7,
+        "weight": 1
+      },
+      {
+        "species_dex_number": 447,
+        "species_name": "Riolu",
+        "min_level": 8,
+        "max_level": 10,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 214,
+        "species_name": "Heracross",
+        "min_level": 7,
+        "max_level": 10,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 216,
+        "species_name": "Teddiursa",
+        "min_level": 6,
+        "max_level": 9,
+        "weight": 1
+      }
+    ],
+    "npc_trainers": []
+  },
+  "wild_area_canyon_redstone_canyon": {
+    "name": "Wild Area β - Canyon: Redstone Canyon",
+    "description": "A rugged canyon carved by ancient rivers, with red stone cliffs and rocky outcrops. Rock and Ground-type Pokémon make their homes in the caves and ledges throughout the area.",
+    "channel_ids": [],
+    "amenities": [],
+    "encounters": [
+      {
+        "species_dex_number": 74,
+        "species_name": "Geodude",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 27,
+        "species_name": "Sandshrew",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 66,
+        "species_name": "Machop",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 228,
+        "species_name": "Houndour",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 331,
+        "species_name": "Cacnea",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 524,
+        "species_name": "Roggenrola",
+        "min_level": 9,
+        "max_level": 13,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 557,
+        "species_name": "Dwebble",
+        "min_level": 9,
+        "max_level": 13,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 451,
+        "species_name": "Skorupi",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 213,
+        "species_name": "Shuckle",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 322,
+        "species_name": "Numel",
+        "min_level": 9,
+        "max_level": 13,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 111,
+        "species_name": "Rhyhorn",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 231,
+        "species_name": "Phanpy",
+        "min_level": 9,
+        "max_level": 13,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 744,
+        "species_name": "Rockruff",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 527,
+        "species_name": "Woobat",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 562,
+        "species_name": "Yamask",
+        "min_level": 11,
+        "max_level": 15,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 610,
+        "species_name": "Axew",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 551,
+        "species_name": "Sandile",
+        "min_level": 11,
+        "max_level": 15,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 113,
+        "species_name": "Chansey",
+        "min_level": 13,
+        "max_level": 16,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 303,
+        "species_name": "Mawile",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 95,
+        "species_name": "Onix",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 1
+      }
+    ],
+    "npc_trainers": []
+  },
+  "wild_area_desert_sunbaked_path": {
+    "name": "Wild Area γ - Desert: Sunbaked Path",
+    "description": "The outskirts of a vast desert, where the ground begins to turn sandy under the scorching sun. Hardy Pokémon adapted to heat and arid conditions can be found here.",
+    "channel_ids": [],
+    "amenities": [],
+    "encounters": [
+      {
+        "species_dex_number": 27,
+        "species_name": "Sandshrew",
+        "min_level": 8,
+        "max_level": 14,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 551,
+        "species_name": "Sandile",
+        "min_level": 9,
+        "max_level": 15,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 328,
+        "species_name": "Trapinch",
+        "min_level": 9,
+        "max_level": 15,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 694,
+        "species_name": "Helioptile",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 331,
+        "species_name": "Cacnea",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 451,
+        "species_name": "Skorupi",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 449,
+        "species_name": "Hippopotas",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 343,
+        "species_name": "Baltoy",
+        "min_level": 10,
+        "max_level": 15,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 322,
+        "species_name": "Numel",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 231,
+        "species_name": "Phanpy",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 744,
+        "species_name": "Rockruff",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 557,
+        "species_name": "Dwebble",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 636,
+        "species_name": "Larvesta",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 757,
+        "species_name": "Salandit",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 443,
+        "species_name": "Gible",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 556,
+        "species_name": "Maractus",
+        "min_level": 10,
+        "max_level": 15,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 562,
+        "species_name": "Yamask",
+        "min_level": 11,
+        "max_level": 15,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 58,
+        "species_name": "Growlithe",
+        "min_level": 10,
+        "max_level": 15,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 228,
+        "species_name": "Houndour",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 1
+      },
+      {
+        "species_dex_number": 610,
+        "species_name": "Axew",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 27,
+        "species_name": "Sandshrew",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 1
+      },
+      {
+        "species_dex_number": 561,
+        "species_name": "Sigilyph",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 1
+      }
+    ],
+    "npc_trainers": []
+  },
+  "wild_area_tundra_snowdust_crossing": {
+    "name": "Wild Area δ - Tundra: Snowdust Crossing",
+    "description": "A frozen path through the tundra where snow falls year-round. Ice and hardy Pokémon brave the cold winds and bitter temperatures of this unforgiving landscape.",
+    "channel_ids": [],
+    "amenities": [],
+    "encounters": [
+      {
+        "species_dex_number": 220,
+        "species_name": "Swinub",
+        "min_level": 8,
+        "max_level": 14,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 459,
+        "species_name": "Snover",
+        "min_level": 8,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 613,
+        "species_name": "Cubchoo",
+        "min_level": 8,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 225,
+        "species_name": "Delibird",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 216,
+        "species_name": "Teddiursa",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 585,
+        "species_name": "Deerling",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 6
+      },
+      {
+        "species_dex_number": 582,
+        "species_name": "Vanillite",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 6
+      },
+      {
+        "species_dex_number": 215,
+        "species_name": "Sneasel",
+        "min_level": 10,
+        "max_level": 15,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 627,
+        "species_name": "Rufflet",
+        "min_level": 9,
+        "max_level": 15,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 231,
+        "species_name": "Phanpy",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 712,
+        "species_name": "Bergmite",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 872,
+        "species_name": "Snom",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 37,
+        "species_name": "Vulpix",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 261,
+        "species_name": "Poochyena",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 698,
+        "species_name": "Amaura",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 200,
+        "species_name": "Misdreavus",
+        "min_level": 10,
+        "max_level": 15,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 309,
+        "species_name": "Electrike",
+        "min_level": 9,
+        "max_level": 13,
+        "weight": 1
+      },
+      {
+        "species_dex_number": 447,
+        "species_name": "Riolu",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 234,
+        "species_name": "Stantler",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 1
+      },
+      {
+        "species_dex_number": 133,
+        "species_name": "Eevee",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 1
+      }
+    ],
+    "npc_trainers": []
   }
 }
