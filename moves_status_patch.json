@@ -1,0 +1,46 @@
+{
+  "comment": "This file adds missing status effects to moves. Merge this into moves.json",
+  "thunder_wave": {
+    "status": "par"
+  },
+  "glare": {
+    "status": "par"
+  },
+  "stun_spore": {
+    "status": "par"
+  },
+  "will_o_wisp": {
+    "status": "brn"
+  },
+  "poison_powder": {
+    "status": "psn"
+  },
+  "poison_gas": {
+    "status": "psn"
+  },
+  "toxic": {
+    "status": "tox"
+  },
+  "sleep_powder": {
+    "status": "slp"
+  },
+  "spore": {
+    "status": "slp"
+  },
+  "hypnosis": {
+    "status": "slp"
+  },
+  "lovely_kiss": {
+    "status": "slp"
+  },
+  "sing": {
+    "status": "slp"
+  },
+  "grass_whistle": {
+    "status": "slp"
+  },
+  "yawn": {
+    "volatileStatus": "yawn",
+    "comment": "Yawn causes sleep on the next turn"
+  }
+}

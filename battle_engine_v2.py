@@ -1,0 +1,1975 @@
+"""
+Battle Engine V2 - Unified Core Battle System
+Supports: Wild battles, Trainer battles (PvE), and PvP battles
+
+This is a complete rewrite that handles ALL battle types with a single engine.
+Includes abilities, switching, items, and AI opponent support.
+"""
+
+import re
+import random
+import json
+import uuid
+import math
+from typing import Dict, List, Optional, Tuple, Any
+from ruleset_handler import RulesetHandler
+from dataclasses import dataclass, field
+from enum import Enum
+
+# Import enhanced systems
+try:
+    from enhanced_calculator import EnhancedDamageCalculator
+    from status_conditions import StatusConditionManager
+    from ability_handler import AbilityHandler
+    ENHANCED_SYSTEMS_AVAILABLE = True
+except ImportError:
+    ENHANCED_SYSTEMS_AVAILABLE = False
+    print("⚠️ Enhanced systems not available. Using basic calculator.")
+
+
+class BattleType(Enum):
+    """Types of battles supported"""
+    WILD = "wild"
+    TRAINER = "trainer"  # PvE against NPC
+    PVP = "pvp"  # Player vs Player
+
+
+class BattleFormat(Enum):
+    """Battle format types"""
+    SINGLES = "singles"  # 1v1
+    DOUBLES = "doubles"  # 2v2
+    MULTI = "multi"  # 2v2 with partners
+
+
+@dataclass
+class Battler:
+    """Represents one side of a battle (trainer or opponent)"""
+    battler_id: int  # Discord ID for trainers, negative for NPCs/wild
+    battler_name: str
+    party: List[Any]  # List of Pokemon objects
+    active_positions: List[int]  # Which Pokemon are currently active (indices into party)
+    is_ai: bool = False  # Whether this battler is controlled by AI
+    can_switch: bool = True
+    can_use_items: bool = True
+    can_flee: bool = False
+    
+    # For trainer battles
+    trainer_class: Optional[str] = None  # "Youngster", "Ace Trainer", etc.
+    prize_money: int = 0
+    
+    def get_active_pokemon(self) -> List[Any]:
+        """Get currently active Pokemon"""
+        return [self.party[i] for i in self.active_positions if i < len(self.party)]
+    
+    def has_usable_pokemon(self) -> bool:
+        """Check if battler has any Pokemon that can still fight"""
+        return any(p.current_hp > 0 for p in self.party)
+
+
+@dataclass
+class BattleState:
+    """Complete state of an ongoing battle"""
+    battle_id: str
+    battle_type: BattleType
+    battle_format: BattleFormat
+
+    # Battlers (either 2 for normal, or 4 for multi battles)
+    trainer: Battler  # The player who initiated
+    opponent: Battler  # Wild Pokemon, NPC trainer, or other player
+
+    # Multi battle partners (only used when battle_format == MULTI)
+    trainer_partner: Optional[Battler] = None  # Partner of the initiating player
+    opponent_partner: Optional[Battler] = None  # Partner of the opponent
+
+    # Battle state
+    turn_number: int = 1
+    phase: str = 'START'  # START, WAITING_ACTIONS, RESOLVING, FORCED_SWITCH, END
+    forced_switch_battler_id: Optional[int] = None  # Which battler must switch
+    forced_switch_position: Optional[int] = None  # Which position (0 or 1 for doubles) to replace
+    is_over: bool = False
+    winner: Optional[str] = None  # 'trainer', 'opponent', 'draw'
+    fled: bool = False
+    
+    # Field conditions
+    weather: Optional[str] = None  # 'sandstorm', 'rain', 'sun', 'snow', 'hail'
+    weather_turns: int = 0
+    terrain: Optional[str] = None  # 'electric', 'grassy', 'psychic', 'misty'
+    terrain_turns: int = 0
+    
+    # Field hazards
+    trainer_hazards: Dict[str, int] = field(default_factory=dict)  # 'stealth_rock': 1, 'spikes': 3, etc.
+    opponent_hazards: Dict[str, int] = field(default_factory=dict)
+    
+    # Screens and field effects
+    trainer_screens: Dict[str, int] = field(default_factory=dict)  # 'reflect': 5, 'light_screen': 3
+    opponent_screens: Dict[str, int] = field(default_factory=dict)
+    
+    # Turn actions (stored for simultaneous resolution)
+    pending_actions: Dict[str, 'BattleAction'] = field(default_factory=dict)  # battler_id -> action
+    
+    # Battle log
+    battle_log: List[str] = field(default_factory=list)
+    turn_log: List[str] = field(default_factory=list)  # Current turn's events
+    
+    # NEW: queue AI replacement to happen AFTER end-of-turn
+    pending_ai_switch_index: Optional[int] = None
+    
+    # For wild battles only
+    catch_attempted: bool = False
+    wild_dazed: bool = False  # True when wild Pokémon has been reduced to a 'dazed' state instead of fainting
+
+    # Ranked metadata
+    is_ranked: bool = False
+    ranked_context: Dict[str, Any] = field(default_factory=dict)
+
+    def get_all_battlers(self) -> List[Battler]:
+        """Get all battlers in this battle (2 for singles/doubles, 4 for multi)"""
+        battlers = [self.trainer, self.opponent]
+        if self.battle_format == BattleFormat.MULTI:
+            if self.trainer_partner:
+                battlers.append(self.trainer_partner)
+            if self.opponent_partner:
+                battlers.append(self.opponent_partner)
+        return battlers
+
+    def get_team_battlers(self, battler_id: int) -> List[Battler]:
+        """Get all battlers on the same team as the given battler_id"""
+        if battler_id == self.trainer.battler_id or (self.trainer_partner and battler_id == self.trainer_partner.battler_id):
+            # Trainer's team
+            team = [self.trainer]
+            if self.trainer_partner:
+                team.append(self.trainer_partner)
+            return team
+        else:
+            # Opponent's team
+            team = [self.opponent]
+            if self.opponent_partner:
+                team.append(self.opponent_partner)
+            return team
+
+    def get_opposing_team_battlers(self, battler_id: int) -> List[Battler]:
+        """Get all battlers on the opposing team"""
+        if battler_id == self.trainer.battler_id or (self.trainer_partner and battler_id == self.trainer_partner.battler_id):
+            # Return opponent's team
+            team = [self.opponent]
+            if self.opponent_partner:
+                team.append(self.opponent_partner)
+            return team
+        else:
+            # Return trainer's team
+            team = [self.trainer]
+            if self.trainer_partner:
+                team.append(self.trainer_partner)
+            return team
+
+    def is_team_defeated(self, battler_id: int) -> bool:
+        """Check if a team has been completely defeated"""
+        team = self.get_team_battlers(battler_id)
+        return all(not b.has_usable_pokemon() for b in team)
+
+
+class HeldItemManager:
+    """Utility helper for held item effects."""
+
+    def __init__(self, items_db):
+        self.items_db = items_db
+
+    def _is_consumed(self, pokemon, item_id: str) -> bool:
+        consumed = getattr(pokemon, '_consumed_items', set())
+        return item_id in consumed
+
+    def _consume(self, pokemon, item_id: str):
+        consumed = getattr(pokemon, '_consumed_items', set())
+        consumed.add(item_id)
+        pokemon._consumed_items = consumed
+
+    def _get_item(self, pokemon):
+        if not self.items_db:
+            return None
+        item_id = getattr(pokemon, 'held_item', None)
+        if not item_id:
+            return None
+        if self._is_consumed(pokemon, item_id):
+            return None
+        return self.items_db.get_item(item_id)
+
+    # -------- Restrictions / tracking --------
+    def check_move_restrictions(self, pokemon, move_data) -> Optional[str]:
+        item = self._get_item(pokemon)
+        if not item:
+            return None
+        effect = item.get('effect_data') or {}
+
+        if effect.get('blocks_status_moves') and move_data.get('category') == 'status':
+            return f"{pokemon.species_name} can't use status moves while holding {item.get('name', item['id'])}!"
+
+        if effect.get('locks_move'):
+            locked = getattr(pokemon, '_choice_locked_move', None)
+            move_id = move_data.get('id') or move_data.get('move_id')
+            if locked and move_id and move_id != locked:
+                move_name = move_data.get('name', move_id).title()
+                item_name = item.get('name', item['id'])
+                return f"{pokemon.species_name} is locked into {move_name} because of its {item_name}!"
+        return None
+
+    def register_move_use(self, pokemon, move_data):
+        item = self._get_item(pokemon)
+        if not item:
+            return
+        effect = item.get('effect_data') or {}
+        if effect.get('locks_move'):
+            move_id = move_data.get('id') or move_data.get('move_id')
+            pokemon._choice_locked_move = move_id
+
+    def clear_choice_lock(self, pokemon):
+        if hasattr(pokemon, '_choice_locked_move'):
+            delattr(pokemon, '_choice_locked_move')
+
+    # -------- Offensive modifiers --------
+    def _power_multiplier(self, pokemon, move_data) -> float:
+        item = self._get_item(pokemon)
+        if not item:
+            return 1.0
+        effect = item.get('effect_data') or {}
+        multiplier = 1.0
+        move_type = (move_data.get('type') or '').lower()
+        category = move_data.get('category')
+
+        if effect.get('type'):
+            if move_type == effect['type'].lower():
+                multiplier *= effect.get('power_multiplier', 1.0)
+        elif 'power_multiplier' in effect:
+            multiplier *= effect.get('power_multiplier', 1.0)
+
+        stat = effect.get('stat')
+        stat_mult = effect.get('multiplier', 1.0)
+        if stat == 'attack' and category == 'physical':
+            multiplier *= stat_mult
+        elif stat == 'sp_attack' and category == 'special':
+            multiplier *= stat_mult
+
+        return multiplier
+
+    def _defense_multiplier(self, pokemon, move_data) -> float:
+        item = self._get_item(pokemon)
+        if not item:
+            return 1.0
+        effect = item.get('effect_data') or {}
+        stat = effect.get('stat')
+        if stat == 'sp_defense' and move_data.get('category') == 'special':
+            return effect.get('multiplier', 1.0)
+        return 1.0
+
+    def modify_damage(self, attacker, defender, move_data, damage: int) -> Tuple[int, List[str]]:
+        if damage <= 0:
+            return damage, []
+
+        messages: List[str] = []
+        damage = int(round(damage * self._power_multiplier(attacker, move_data)))
+        defense_mult = self._defense_multiplier(defender, move_data)
+        if defense_mult > 1:
+            damage = max(1, int(math.ceil(damage / defense_mult)))
+
+        damage, survival_msg = self._try_focus_items(defender, damage)
+        if survival_msg:
+            messages.append(survival_msg)
+
+        return damage, messages
+
+    def _try_focus_items(self, defender, damage: int) -> Tuple[int, Optional[str]]:
+        if damage < defender.current_hp or defender.current_hp <= 0:
+            return damage, None
+        item = self._get_item(defender)
+        if not item:
+            return damage, None
+        effect = item.get('effect_data') or {}
+
+        trigger = item.get('trigger')
+        if trigger and trigger != 'before_damage':
+            return damage, None
+
+        prevents_ko = effect.get('prevents_ko') or effect.get('requires_full_hp') or ('activation_chance' in effect)
+        if not prevents_ko:
+            return damage, None
+
+        if effect.get('requires_full_hp') and defender.current_hp < defender.max_hp:
+            return damage, None
+
+        activation = effect.get('activation_chance')
+        if activation is not None and random.random() > activation:
+            return damage, None
+
+        if defender.current_hp <= 1:
+            return damage, None
+
+        damage = defender.current_hp - 1
+        item_name = item.get('name', item['id'])
+        message = f"{defender.species_name} hung on using its {item_name}!"
+        if effect.get('one_time_use'):
+            self._consume(defender, item['id'])
+        return damage, message
+
+    def apply_after_damage(self, attacker, move_data, dealt_damage: int) -> List[str]:
+        item = self._get_item(attacker)
+        if not item:
+            return []
+
+        # Choice items lock even on misses
+        self.register_move_use(attacker, move_data)
+
+        if dealt_damage <= 0:
+            return []
+
+        effect = item.get('effect_data') or {}
+        messages: List[str] = []
+
+        if effect.get('recoil_percent'):
+            recoil = max(1, int(round(attacker.max_hp * (effect['recoil_percent'] / 100.0))))
+            attacker.current_hp = max(0, attacker.current_hp - recoil)
+            messages.append(f"{attacker.species_name} was hurt by its {item.get('name', item['id'])}! (-{recoil} HP)")
+
+        return messages
+
+    def process_end_of_turn(self, pokemon) -> List[str]:
+        item = self._get_item(pokemon)
+        if not item:
+            return []
+        effect = item.get('effect_data') or {}
+        heal_percent = effect.get('heal_percent')
+        if not heal_percent or getattr(pokemon, 'current_hp', 0) <= 0 or pokemon.current_hp >= pokemon.max_hp:
+            return []
+        heal = max(1, int(round(pokemon.max_hp * (heal_percent / 100.0))))
+        pokemon.current_hp = min(pokemon.max_hp, pokemon.current_hp + heal)
+        return [f"{pokemon.species_name} restored health with its {item.get('name', item['id'])}! (+{heal} HP)"]
+
+    def get_speed_multiplier(self, pokemon) -> float:
+        item = self._get_item(pokemon)
+        if not item:
+            return 1.0
+        effect = item.get('effect_data') or {}
+        if effect.get('stat') == 'speed':
+            return effect.get('multiplier', 1.0)
+        return 1.0
+
+@dataclass
+class BattleAction:
+    """A single action taken by a battler"""
+    action_type: str  # 'move', 'switch', 'item', 'flee'
+    battler_id: int
+
+    # For moves
+    move_id: Optional[str] = None
+    target_position: Optional[int] = None  # Which opponent slot to target
+    mega_evolve: bool = False
+    pokemon_position: int = 0  # Which of the battler's active Pokemon is acting (for doubles)
+
+    # For switching
+    switch_to_position: Optional[int] = None
+
+    # For items
+    item_id: Optional[str] = None
+    item_target_position: Optional[int] = None  # Which party member gets the item
+
+    # Priority for turn order
+    priority: int = 0
+    speed: int = 0
+
+
+class BattleEngine:
+    """
+    Core battle engine that handles all battle types
+    """
+    
+    def __init__(self, moves_db, type_chart, species_db=None, items_db=None):
+        """
+        Initialize the battle engine
+        
+        Args:
+            moves_db: MovesDatabase instance
+            type_chart: Type effectiveness data
+            species_db: Optional species database for wild Pokemon generation
+        """
+        self.moves_db = moves_db
+        self.type_chart = type_chart
+        self.species_db = species_db
+        self.items_db = items_db
+        self.held_item_manager = HeldItemManager(items_db) if items_db else None
+        
+        # Initialize enhanced systems
+        # Ruleset handler
+        self.ruleset_handler = RulesetHandler()
+        if ENHANCED_SYSTEMS_AVAILABLE:
+            self.calculator = EnhancedDamageCalculator(moves_db, type_chart)
+            self.ability_handler = AbilityHandler('data/abilities.json')
+            print("✨ Enhanced battle systems loaded!")
+        else:
+            print("⚠️ Using basic battle calculator")
+        
+        # Active battles
+        self.active_battles: Dict[str, BattleState] = {}
+    
+    # ========================
+    # Battle Initialization
+    # ========================
+    
+    def start_battle(
+        self,
+        trainer_id: int,
+        trainer_name: str,
+        trainer_party: List[Any],
+        opponent_party: List[Any],
+        battle_type: BattleType,
+        battle_format: BattleFormat = BattleFormat.SINGLES,
+        opponent_id: Optional[int] = None,
+        opponent_name: Optional[str] = None,
+        opponent_is_ai: bool = True,
+        is_ranked: bool = False,
+        ranked_context: Optional[Dict[str, Any]] = None,
+        **kwargs
+    ) -> str:
+        """Universal battle starter"""
+        battle_id = str(uuid.uuid4())
+
+        if not trainer_party:
+            raise ValueError("Trainer must have at least one Pokémon to start a battle.")
+        if not opponent_party:
+            raise ValueError("Opponent must have at least one Pokémon to battle.")
+
+        # In multi battles, each trainer sends out 1 Pokemon (2 total per team)
+        # In doubles battles, each trainer sends out 2 Pokemon
+        if battle_format == BattleFormat.MULTI:
+            active_slot_count = 1
+        elif battle_format == BattleFormat.DOUBLES:
+            active_slot_count = 2
+        else:
+            active_slot_count = 1
+
+        # Select first non-fainted Pokemon for trainer
+        trainer_active_positions = []
+        for i, mon in enumerate(trainer_party):
+            if getattr(mon, 'current_hp', 0) > 0:
+                trainer_active_positions.append(i)
+                if len(trainer_active_positions) >= active_slot_count:
+                    break
+        if not trainer_active_positions:
+            trainer_active_positions = [0]  # Fallback if all fainted
+
+        # Select first non-fainted Pokemon for opponent
+        opponent_active_positions = []
+        for i, mon in enumerate(opponent_party):
+            if getattr(mon, 'current_hp', 0) > 0:
+                opponent_active_positions.append(i)
+                if len(opponent_active_positions) >= active_slot_count:
+                    break
+        if not opponent_active_positions:
+            opponent_active_positions = [0]  # Fallback if all fainted
+
+        # Create trainer battler
+        trainer = Battler(
+            battler_id=trainer_id,
+            battler_name=trainer_name,
+            party=trainer_party,
+            active_positions=trainer_active_positions,
+            is_ai=False,
+            can_switch=True,
+            can_use_items=True,
+            can_flee=(battle_type == BattleType.WILD)
+        )
+        
+        # Create opponent battler
+        if opponent_id is None:
+            opponent_id = -1 if battle_type == BattleType.WILD else -random.randint(1000, 9999)
+        
+        opponent = Battler(
+            battler_id=opponent_id,
+            battler_name=opponent_name or ("Wild Pokémon" if battle_type == BattleType.WILD else "Opponent"),
+            party=opponent_party,
+            active_positions=opponent_active_positions,
+            is_ai=opponent_is_ai,
+            can_switch=(battle_type != BattleType.WILD),  # Wild Pokemon can't switch
+            can_use_items=(battle_type == BattleType.TRAINER),
+            can_flee=False,
+            trainer_class=kwargs.get('trainer_class'),
+            prize_money=kwargs.get('prize_money', 0)
+        )
+        
+        # Create battle state
+        battle = BattleState(
+            battle_id=battle_id,
+            battle_type=battle_type,
+            battle_format=battle_format,
+            trainer=trainer,
+            opponent=opponent,
+            is_ranked=is_ranked,
+            ranked_context=ranked_context or {}
+        )
+        
+        # Trigger entry abilities
+        # Trigger entry abilities and capture messages
+        try:
+            battle.entry_messages = self._trigger_entry_abilities(battle)
+        except Exception:
+            battle.entry_messages = []
+
+        # Default to Standard NatDex (nat)
+        try:
+            battle.ruleset = self.ruleset_handler.resolve_default_ruleset('nat')
+        except Exception:
+            battle.ruleset = 'standardnatdex'
+
+        # Store battle
+        self.active_battles[battle_id] = battle
+        
+        return battle_id
+    
+    def start_wild_battle(self, trainer_id: int, trainer_name: str, 
+                         trainer_party: List[Any], wild_pokemon: Any) -> str:
+        """Convenience method for wild battles"""
+        return self.start_battle(
+            trainer_id=trainer_id,
+            trainer_name=trainer_name,
+            trainer_party=trainer_party,
+            opponent_party=[wild_pokemon],
+            battle_type=BattleType.WILD,
+            opponent_name=f"Wild {wild_pokemon.species_name}"
+        )
+    
+    def start_trainer_battle(
+        self,
+        trainer_id: int,
+        trainer_name: str,
+        trainer_party: List[Any],
+        npc_party: List[Any],
+        npc_name: str,
+        npc_class: str,
+        prize_money: int,
+        battle_format: BattleFormat = BattleFormat.SINGLES,
+        is_ranked: bool = False,
+        ranked_context: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """Convenience method for NPC trainer battles"""
+        return self.start_battle(
+            trainer_id=trainer_id,
+            trainer_name=trainer_name,
+            trainer_party=trainer_party,
+            opponent_party=npc_party,
+            battle_type=BattleType.TRAINER,
+            battle_format=battle_format,
+            opponent_name=npc_name,
+            trainer_class=npc_class,
+            prize_money=prize_money,
+            is_ranked=is_ranked,
+            ranked_context=ranked_context
+        )
+    
+    def start_pvp_battle(
+        self,
+        trainer1_id: int,
+        trainer1_name: str,
+        trainer1_party: List[Any],
+        trainer2_id: int,
+        trainer2_name: str,
+        trainer2_party: List[Any],
+        battle_format: BattleFormat = BattleFormat.SINGLES,
+        is_ranked: bool = False,
+        ranked_context: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """Convenience method for PvP battles"""
+        return self.start_battle(
+            trainer_id=trainer1_id,
+            trainer_name=trainer1_name,
+            trainer_party=trainer1_party,
+            opponent_party=trainer2_party,
+            battle_type=BattleType.PVP,
+            opponent_id=trainer2_id,
+            opponent_name=trainer2_name,
+            opponent_is_ai=False,
+            battle_format=battle_format,
+            is_ranked=is_ranked,
+            ranked_context=ranked_context
+        )
+
+    def start_multi_battle(
+        self,
+        trainer1_id: int,
+        trainer1_name: str,
+        trainer1_party: List[Any],
+        partner1_id: int,
+        partner1_name: str,
+        partner1_party: List[Any],
+        partner1_is_ai: bool,
+        trainer2_id: int,
+        trainer2_name: str,
+        trainer2_party: List[Any],
+        partner2_id: int,
+        partner2_name: str,
+        partner2_party: List[Any],
+        partner2_is_ai: bool,
+        is_ranked: bool = False,
+        ranked_context: Optional[Dict[str, Any]] = None,
+        **kwargs
+    ) -> str:
+        """
+        Start a multi battle (2v2 with partners)
+
+        Args:
+            trainer1_id: ID of first trainer (team 1 leader)
+            trainer1_name: Name of first trainer
+            trainer1_party: Pokemon party for trainer 1
+            partner1_id: ID of trainer 1's partner
+            partner1_name: Name of trainer 1's partner
+            partner1_party: Pokemon party for partner 1
+            partner1_is_ai: Whether partner 1 is AI controlled
+            trainer2_id: ID of second trainer (team 2 leader)
+            trainer2_name: Name of second trainer
+            trainer2_party: Pokemon party for trainer 2
+            partner2_id: ID of trainer 2's partner
+            partner2_name: Name of trainer 2's partner
+            partner2_party: Pokemon party for partner 2
+            partner2_is_ai: Whether partner 2 is AI controlled
+            is_ranked: Whether this is a ranked battle
+            ranked_context: Additional ranked battle metadata
+        """
+        battle_id = str(uuid.uuid4())
+
+        if not all([trainer1_party, partner1_party, trainer2_party, partner2_party]):
+            raise ValueError("All trainers must have at least one Pokémon.")
+
+        # Each trainer in multi battle sends out 1 Pokemon
+        active_slot_count = 1
+
+        # Helper function to get starting positions
+        def get_starting_positions(party):
+            positions = []
+            for i, mon in enumerate(party):
+                if getattr(mon, 'current_hp', 0) > 0:
+                    positions.append(i)
+                    if len(positions) >= active_slot_count:
+                        break
+            return positions if positions else [0]
+
+        # Create all four battlers
+        trainer1 = Battler(
+            battler_id=trainer1_id,
+            battler_name=trainer1_name,
+            party=trainer1_party,
+            active_positions=get_starting_positions(trainer1_party),
+            is_ai=False,
+            can_switch=True,
+            can_use_items=True,
+            can_flee=False
+        )
+
+        partner1 = Battler(
+            battler_id=partner1_id,
+            battler_name=partner1_name,
+            party=partner1_party,
+            active_positions=get_starting_positions(partner1_party),
+            is_ai=partner1_is_ai,
+            can_switch=True,
+            can_use_items=True,
+            can_flee=False,
+            trainer_class=kwargs.get('partner1_class'),
+            prize_money=kwargs.get('partner1_prize', 0)
+        )
+
+        trainer2 = Battler(
+            battler_id=trainer2_id,
+            battler_name=trainer2_name,
+            party=trainer2_party,
+            active_positions=get_starting_positions(trainer2_party),
+            is_ai=partner2_is_ai and kwargs.get('is_pve', False),  # In PvP both team leaders are human
+            can_switch=True,
+            can_use_items=True,
+            can_flee=False
+        )
+
+        partner2 = Battler(
+            battler_id=partner2_id,
+            battler_name=partner2_name,
+            party=partner2_party,
+            active_positions=get_starting_positions(partner2_party),
+            is_ai=partner2_is_ai,
+            can_switch=True,
+            can_use_items=True,
+            can_flee=False,
+            trainer_class=kwargs.get('partner2_class'),
+            prize_money=kwargs.get('partner2_prize', 0)
+        )
+
+        # Determine battle type (PvP if all humans, otherwise TRAINER for PvE)
+        battle_type = BattleType.PVP if not (partner1_is_ai or partner2_is_ai) else BattleType.TRAINER
+
+        # Create battle state
+        battle = BattleState(
+            battle_id=battle_id,
+            battle_type=battle_type,
+            battle_format=BattleFormat.MULTI,
+            trainer=trainer1,
+            opponent=trainer2,
+            trainer_partner=partner1,
+            opponent_partner=partner2,
+            is_ranked=is_ranked,
+            ranked_context=ranked_context or {}
+        )
+
+        # Trigger entry abilities
+        try:
+            battle.entry_messages = self._trigger_entry_abilities(battle)
+        except Exception:
+            battle.entry_messages = []
+
+        # Set ruleset
+        try:
+            battle.ruleset = self.ruleset_handler.resolve_default_ruleset('nat')
+        except Exception:
+            battle.ruleset = 'standardnatdex'
+
+        # Store battle
+        self.active_battles[battle_id] = battle
+
+        return battle_id
+
+    # ========================
+    # Ability System
+    # ========================
+    
+    def _trigger_entry_abilities(self, battle: BattleState) -> list[str]:
+        """Trigger abilities when Pokemon enter the field"""
+        if not ENHANCED_SYSTEMS_AVAILABLE:
+            return []
+        
+        messages = []
+        
+        # Trigger for all active Pokemon
+        for pokemon in battle.trainer.get_active_pokemon():
+            ability_msgs = self.ability_handler.trigger_on_entry(pokemon, battle)
+            messages.extend(ability_msgs)
+            messages.extend(self._apply_entry_hazards(battle, battle.trainer, pokemon))
+
+        for pokemon in battle.opponent.get_active_pokemon():
+            ability_msgs = self.ability_handler.trigger_on_entry(pokemon, battle)
+            messages.extend(ability_msgs)
+            messages.extend(self._apply_entry_hazards(battle, battle.opponent, pokemon))
+
+        return messages
+
+
+    # ========================
+    # Action Registration
+    # ========================
+    
+    def register_action(self, battle_id: str, battler_id: int, action: BattleAction) -> Dict:
+        """
+        Register an action for a battler
+        
+        Returns:
+            Status dict with success/error
+        """
+        battle = self.active_battles.get(battle_id)
+        if not battle:
+            return {"error": "Battle not found"}
+        
+        # NEW CODE: Check if forced switch is required
+        if battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH']:
+            if battle.forced_switch_battler_id == battler_id:
+                if action.action_type != 'switch':
+                    return {"error": "You must switch to another Pokémon!"}
+                # Clear forced switch state after valid switch action
+                battle.phase = 'WAITING_ACTIONS'
+                battle.forced_switch_battler_id = None
+            # If it's not the forced switch battler, don't allow actions yet
+            elif battler_id != battle.forced_switch_battler_id:
+                return {"error": "Waiting for opponent to switch..."}
+        
+        if battle.is_over:
+            return {"error": "Battle is already over"}
+        
+        # Validate battler
+        valid_battler_ids = [battle.trainer.battler_id, battle.opponent.battler_id]
+        if battle.battle_format == BattleFormat.MULTI:
+            if battle.trainer_partner:
+                valid_battler_ids.append(battle.trainer_partner.battler_id)
+            if battle.opponent_partner:
+                valid_battler_ids.append(battle.opponent_partner.battler_id)
+
+        if battler_id not in valid_battler_ids:
+            return {"error": "Invalid battler ID"}
+
+        # Store action with composite key for doubles/multi (battler_id_position)
+        if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.MULTI]:
+            action_key = f"{battler_id}_{action.pokemon_position}"
+        else:
+            action_key = str(battler_id)
+        battle.pending_actions[action_key] = action
+
+        # Check if we have all actions needed
+        # For doubles/multi, we need actions from all active Pokemon
+        if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.MULTI]:
+            required_action_keys = []
+
+            # Collect actions needed from all non-AI battlers
+            for battler in battle.get_all_battlers():
+                if not battler.is_ai:
+                    num_active = len(battler.get_active_pokemon())
+                    for pos in range(num_active):
+                        required_action_keys.append(f"{battler.battler_id}_{pos}")
+
+            all_actions_ready = all(key in battle.pending_actions for key in required_action_keys)
+            waiting_for = [key for key in required_action_keys if key not in battle.pending_actions]
+        else:
+            # Singles - simple battler_id check
+            required_actions = []
+            if not battle.trainer.is_ai:
+                required_actions.append(str(battle.trainer.battler_id))
+            if not battle.opponent.is_ai:
+                required_actions.append(str(battle.opponent.battler_id))
+
+            all_actions_ready = all(str(rid) in battle.pending_actions for rid in required_actions)
+            waiting_for = [rid for rid in required_actions if str(rid) not in battle.pending_actions]
+
+        return {
+            "success": True,
+            "waiting_for": waiting_for,
+            "ready_to_resolve": all_actions_ready
+        }
+    
+    def generate_ai_action(self, battle_id: str, battler_id: int, pokemon_position: int = 0) -> BattleAction:
+        """
+        Generate an AI action for a specific Pokemon
+
+        Args:
+            battle_id: The battle ID
+            battler_id: The battler's ID
+            pokemon_position: Which active Pokemon (0 or 1 for doubles)
+
+        Returns:
+            BattleAction for the specified Pokemon
+        """
+        battle = self.active_battles.get(battle_id)
+        if not battle:
+            return None
+
+        # Find the battler
+        battler = battle.trainer if battle.trainer.battler_id == battler_id else battle.opponent
+        active_pokemon_list = battler.get_active_pokemon()
+
+        if pokemon_position >= len(active_pokemon_list):
+            return None
+
+        active_pokemon = active_pokemon_list[pokemon_position]
+
+        # Smarter AI: Categorize moves and choose strategically
+        usable_moves = [m for m in active_pokemon.moves if m['pp'] > 0]
+        if not usable_moves:
+            # Struggle
+            return BattleAction(
+                action_type='move',
+                battler_id=battler_id,
+                move_id='struggle',
+                target_position=0,
+                pokemon_position=pokemon_position
+            )
+
+        # Categorize moves
+        offensive_moves = []
+        support_moves = []
+        setup_moves = []
+
+        for move in usable_moves:
+            move_data = self.moves_db.get_move(move['move_id'])
+            if not move_data:
+                continue
+
+            category = move_data.get('category', 'status')
+            target_type = move_data.get('target', 'single')
+
+            if category in ['physical', 'special']:
+                offensive_moves.append(move)
+            elif target_type in ['ally', 'all_allies'] or move['move_id'] in ['helping_hand', 'protect', 'detect']:
+                support_moves.append(move)
+            elif target_type in ['self', 'user_field']:
+                setup_moves.append(move)
+            else:
+                # Other status moves (e.g., field effects)
+                setup_moves.append(move)
+
+        # Decision logic: 75% prefer offense, 20% support, 5% setup
+        # But only if there are allies for support moves
+        ally_active = battler.get_active_pokemon()
+        has_allies = len(ally_active) > 1
+
+        choice_pool = []
+        if offensive_moves:
+            choice_pool.extend(offensive_moves * 3)  # 75% weight
+        if support_moves and has_allies and battle.turn_number <= 3:  # Use support early and only with allies
+            choice_pool.extend(support_moves)  # 25% weight
+        if setup_moves and battle.turn_number == 1:  # Setup on turn 1
+            choice_pool.extend(setup_moves)
+
+        # Fallback to any usable move
+        if not choice_pool:
+            choice_pool = usable_moves
+
+        chosen_move = random.choice(choice_pool)
+
+        # Determine target based on move's target type
+        move_data = self.moves_db.get_move(chosen_move['move_id'])
+        target_type = move_data.get('target', 'single') if move_data else 'single'
+
+        # Select target based on move type
+        if target_type in ['ally', 'all_allies']:
+            # Target an ally (other Pokemon on same team)
+            ally_active = battler.get_active_pokemon()
+            if len(ally_active) > 1:
+                # Pick the other Pokemon (not self)
+                other_positions = [i for i in range(len(ally_active)) if i != pokemon_position]
+                target_pos = random.choice(other_positions) if other_positions else pokemon_position
+            else:
+                target_pos = 0  # Only one Pokemon, target self
+        elif target_type in ['self', 'user_field', 'entire_field', 'enemy_field']:
+            # Moves that don't need specific targeting
+            target_pos = 0
+        else:
+            # Target opponent (default for damaging moves)
+            opponent = battle.opponent if battler_id == battle.trainer.battler_id else battle.trainer
+            opponent_active = opponent.get_active_pokemon()
+            target_pos = random.randint(0, len(opponent_active) - 1) if opponent_active else 0
+
+        return BattleAction(
+            action_type='move',
+            battler_id=battler_id,
+            move_id=chosen_move['move_id'],
+            target_position=target_pos,
+            pokemon_position=pokemon_position
+        )
+    
+    # ========================
+    # Turn Processing
+    # ========================
+    
+    async def process_turn(self, battle_id: str) -> Dict:
+        """
+        Process a complete turn with all registered actions
+        
+        Returns:
+            Dict with turn results and narration
+        """
+        battle = self.active_battles.get(battle_id)
+        if not battle:
+            return {"error": "Battle not found"}
+        
+        # Generate AI actions if needed (one per active Pokemon for doubles)
+        if battle.trainer.is_ai:
+            for pos in range(len(battle.trainer.get_active_pokemon())):
+                action_key = f"{battle.trainer.battler_id}_{pos}"
+                if action_key not in battle.pending_actions:
+                    action = self.generate_ai_action(battle_id, battle.trainer.battler_id, pos)
+                    if action:
+                        battle.pending_actions[action_key] = action
+
+        if battle.opponent.is_ai:
+            for pos in range(len(battle.opponent.get_active_pokemon())):
+                action_key = f"{battle.opponent.battler_id}_{pos}"
+                if action_key not in battle.pending_actions:
+                    action = self.generate_ai_action(battle_id, battle.opponent.battler_id, pos)
+                    if action:
+                        battle.pending_actions[action_key] = action
+        
+        # Clear turn log
+        battle.turn_log = []
+
+        # Sort actions by priority and speed
+        actions = list(battle.pending_actions.values())
+        actions = self._sort_actions(battle, actions)
+
+        # Track which actions were registered vs executed to ensure all commands show up
+        registered_actions = {}
+        for action in actions:
+            battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
+            active_pokemon = battler.get_active_pokemon()
+            if active_pokemon:
+                pokemon_pos = getattr(action, 'pokemon_position', 0)
+                if pokemon_pos < len(active_pokemon):
+                    acting_pokemon = active_pokemon[pokemon_pos]
+                    action_key = f"{action.battler_id}_{pokemon_pos}"
+                    registered_actions[action_key] = {
+                        'action': action,
+                        'pokemon': acting_pokemon,
+                        'executed': False
+                    }
+
+        manual_switch_messages: List[str] = []
+
+        # Execute actions in order
+        for action in actions:
+            # If the battle is over or the wild Pokémon has been dazed, stop resolving further actions
+            if battle.is_over or getattr(battle, "wild_dazed", False):
+                break
+
+            # Skip actions for fainted Pokemon
+            battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
+            active_pokemon = battler.get_active_pokemon()
+
+            # In doubles, check the specific Pokemon's HP
+            if battle.battle_format == BattleFormat.DOUBLES and hasattr(action, 'pokemon_position'):
+                pokemon_pos = action.pokemon_position
+                if pokemon_pos < len(active_pokemon):
+                    acting_pokemon = active_pokemon[pokemon_pos]
+                    if acting_pokemon.current_hp <= 0:
+                        # This specific Pokemon has fainted, skip its action
+                        continue
+                else:
+                    # Invalid position, skip
+                    continue
+            else:
+                # Singles: check if any Pokemon are conscious
+                if not active_pokemon or all(p.current_hp <= 0 for p in active_pokemon):
+                    # This side has no conscious active Pokémon right now
+                    continue
+
+            # If a forced switch is pending for this battler, ignore non-switch actions
+            # In doubles, only skip actions from the specific position that needs to switch
+            if (
+                battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH']
+                and battle.forced_switch_battler_id == battler.battler_id
+                and action.action_type != 'switch'
+            ):
+                # In doubles, check if this specific Pokemon needs to switch
+                if battle.battle_format == BattleFormat.DOUBLES and battle.forced_switch_position is not None:
+                    if hasattr(action, 'pokemon_position') and action.pokemon_position == battle.forced_switch_position:
+                        # This Pokemon needs to switch, skip its action
+                        continue
+                    # else: This is the other Pokemon on the team, let it act
+                else:
+                    # Singles: skip all non-switch actions when forced switch is pending
+                    continue
+
+            # Mark this action as executed for tracking
+            action_key = f"{action.battler_id}_{getattr(action, 'pokemon_position', 0)}"
+            if action_key in registered_actions:
+                registered_actions[action_key]['executed'] = True
+
+            result = await self._execute_action(battle, action)
+            messages = result.get('messages', [])
+
+            # CRITICAL: Ensure every executed action generates at least one message
+            # If no messages were generated for a move action, add a fallback message
+            if not messages and action.action_type == 'move':
+                battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
+                active_pokemon = battler.get_active_pokemon()
+                pokemon_pos = getattr(action, 'pokemon_position', 0)
+                if pokemon_pos < len(active_pokemon):
+                    acting_pokemon = active_pokemon[pokemon_pos]
+                    move_data = self.moves_db.get_move(action.move_id)
+                    move_name = move_data.get('name', action.move_id) if move_data else action.move_id
+                    messages = [f"{acting_pokemon.species_name} used {move_name}!"]
+
+            if action.action_type == 'switch':
+                manual_switch_messages.extend(messages)
+            else:
+                battle.turn_log.extend(messages)
+
+        # Check for registered actions that were not executed and add explanatory messages
+        # This helps debug issues where moves don't show up in turn embeds
+        for action_key, action_info in registered_actions.items():
+            if not action_info['executed'] and action_info['action'].action_type == 'move':
+                pokemon = action_info['pokemon']
+                # Only add message if the Pokemon is still conscious (if fainted, that's obvious)
+                if getattr(pokemon, 'current_hp', 0) > 0:
+                    # This action was skipped for some reason - could be due to forced switch, etc.
+                    # We don't add a message here to avoid clutter, but this tracking helps identify issues
+                    pass
+
+        # End of turn effects (skip if wild Pokémon is in the special 'dazed' state)
+        if getattr(battle, "wild_dazed", False):
+            eot_messages = []
+            auto_switch_messages = []
+        else:
+            eot_messages = self._process_end_of_turn(battle)
+            auto_switch_messages = self.auto_switch_if_forced_ai(battle)
+
+        battle.turn_log.extend(eot_messages)
+
+        switch_messages = manual_switch_messages + auto_switch_messages
+        
+        # Check for battle end
+        self._check_battle_end(battle)
+        
+        # Clear pending actions
+        battle.pending_actions = {}
+        
+        # Increment turn
+        battle.turn_number += 1
+        
+        return {
+            "success": True,
+            "turn_number": battle.turn_number - 1,
+            "messages": battle.turn_log,
+            "switch_messages": switch_messages,
+            "is_over": battle.is_over,
+            "winner": battle.winner,
+            "battle_over": battle.is_over
+        }
+    
+    def _sort_actions(self, battle: BattleState, actions: List[BattleAction]) -> List[BattleAction]:
+        """Sort actions by priority, then speed"""
+        # Get move priority and speed for each action
+        def get_action_priority(action: BattleAction) -> Tuple[int, int]:
+            # Switching always goes first
+            if action.action_type == 'switch':
+                return (100, 999)
+            
+            # Items are high priority
+            if action.action_type == 'item':
+                return (90, 999)
+            
+            # Moves
+            if action.action_type == 'move':
+                move_data = self.moves_db.get_move(action.move_id)
+                priority = move_data.get('priority', 0)
+                
+                # Get Pokemon speed
+                battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
+                pokemon = battler.get_active_pokemon()[0]  # Simplified for now
+                speed = self._get_effective_speed(pokemon)
+                
+                return (priority, speed)
+            
+            # Flee
+            return (0, 0)
+        
+        actions.sort(key=get_action_priority, reverse=True)
+        return actions
+
+    def _get_effective_speed(self, pokemon) -> int:
+        speed = getattr(pokemon, 'speed', 0)
+        if ENHANCED_SYSTEMS_AVAILABLE and hasattr(self, 'calculator'):
+            try:
+                speed = self.calculator.get_speed(pokemon)
+            except Exception:
+                pass
+        if self.held_item_manager:
+            speed = int(round(speed * self.held_item_manager.get_speed_multiplier(pokemon)))
+        return speed
+    
+    async def _execute_action(self, battle: BattleState, action: BattleAction) -> Dict:
+        """Execute a single action"""
+        if action.action_type == 'move':
+            return await self._execute_move(battle, action)
+        elif action.action_type == 'switch':
+            return self._execute_switch(battle, action)
+        elif action.action_type == 'item':
+            return self._execute_item(battle, action)
+        elif action.action_type == 'flee':
+            return self._execute_flee(battle, action)
+        
+        return {"messages": []}
+    
+    def _determine_move_targets(self, battle: BattleState, action: BattleAction, move_data: Dict) -> List[Tuple[Any, Any]]:
+        """
+        Determine all targets for a move based on its target type.
+
+        Returns:
+            List of (defender_battler, defender_pokemon) tuples
+        """
+        if action.battler_id == battle.trainer.battler_id:
+            attacker_battler = battle.trainer
+            defender_battler = battle.opponent
+            ally_battler = battle.trainer
+        else:
+            attacker_battler = battle.opponent
+            defender_battler = battle.trainer
+            ally_battler = battle.opponent
+
+        target_type = move_data.get('target', 'single')
+        targets = []
+
+        if target_type == 'single':
+            # Single opponent target
+            target_pos = action.target_position if action.target_position is not None else 0
+            defender_active = defender_battler.get_active_pokemon()
+            if target_pos < len(defender_active):
+                targets.append((defender_battler, defender_active[target_pos]))
+
+        elif target_type in ['all_opponents', 'all_adjacent']:
+            # Hit all opponent Pokemon
+            for mon in defender_battler.get_active_pokemon():
+                targets.append((defender_battler, mon))
+
+        elif target_type == 'all':
+            # Hit all Pokemon on the field (opponents and allies)
+            for mon in defender_battler.get_active_pokemon():
+                targets.append((defender_battler, mon))
+            for mon in ally_battler.get_active_pokemon():
+                targets.append((ally_battler, mon))
+
+        elif target_type == 'all_allies':
+            # Hit all ally Pokemon (including self)
+            for mon in ally_battler.get_active_pokemon():
+                targets.append((ally_battler, mon))
+
+        elif target_type == 'ally':
+            # Single ally target (for support moves like Helping Hand)
+            target_pos = action.target_position if action.target_position is not None else 0
+            ally_active = ally_battler.get_active_pokemon()
+            if target_pos < len(ally_active):
+                targets.append((ally_battler, ally_active[target_pos]))
+
+        elif target_type in ['self', 'user_field']:
+            # Target is the attacker itself (handled separately, return empty)
+            pass
+
+        elif target_type in ['entire_field', 'enemy_field']:
+            # Field effects (handled separately, return empty)
+            pass
+
+        else:
+            # Default to single target
+            target_pos = action.target_position if action.target_position is not None else 0
+            defender_active = defender_battler.get_active_pokemon()
+            if target_pos < len(defender_active):
+                targets.append((defender_battler, defender_active[target_pos]))
+
+        return targets
+
+    async def _execute_spread_move(self, battle: BattleState, action: BattleAction,
+                                    attacker, targets: List[Tuple[Any, Any]], move_data: Dict) -> Dict:
+        """Handle moves that hit multiple targets (spread moves)."""
+        messages = []
+
+        # Deduct PP once
+        for move in attacker.moves:
+            if move['move_id'] == action.move_id:
+                move['pp'] = max(0, move['pp'] - 1)
+                break
+
+        # Build list of target names for the move message
+        target_names = [defender.species_name for _, defender in targets]
+        if len(target_names) == 1:
+            target_text = target_names[0]
+        elif len(target_names) == 2:
+            target_text = f"{target_names[0]} and {target_names[1]}"
+        else:
+            target_text = ", ".join(target_names[:-1]) + f", and {target_names[-1]}"
+
+        messages.append(f"{attacker.species_name} used {move_data['name']} on {target_text}!")
+
+        # In doubles, spread moves have 0.75x power
+        spread_modifier = 0.75 if battle.battle_format == BattleFormat.DOUBLES and len(targets) > 1 else 1.0
+
+        # Hit each target
+        for defender_battler, defender in targets:
+            # Check if defender is protected
+            if ENHANCED_SYSTEMS_AVAILABLE and hasattr(defender, 'status_manager'):
+                if 'protect' in getattr(defender.status_manager, 'volatile_statuses', {}):
+                    if move_data.get('category') in ['physical', 'special']:
+                        messages.append(f"{defender.species_name} protected itself!")
+                        continue
+
+            # Calculate damage
+            if ENHANCED_SYSTEMS_AVAILABLE:
+                damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
+                    attacker, defender, action.move_id,
+                    weather=battle.weather,
+                    terrain=battle.terrain,
+                    battle_state=battle
+                )
+                damage = int(damage * spread_modifier)
+            else:
+                damage = int(10 * spread_modifier)
+                is_crit = False
+                effectiveness = 1.0
+                effect_msgs = []
+
+            # Apply damage
+            if damage > 0:
+                defender.current_hp = max(0, defender.current_hp - damage)
+
+            # Build damage message
+            crit_text = " It's a critical hit!" if is_crit else ""
+            effectiveness_text = ""
+            if effectiveness > 1:
+                effectiveness_text = " It's super effective!"
+            elif effectiveness < 1 and effectiveness > 0:
+                effectiveness_text = " It's not very effective..."
+            elif effectiveness == 0:
+                messages.append(f"It doesn't affect {defender.species_name}...")
+                continue
+
+            damage_text = f"{defender.species_name} took {damage} damage!{crit_text}{effectiveness_text}"
+            messages.append(damage_text)
+            messages.extend(effect_msgs)
+
+            # Check for faint
+            if defender.current_hp <= 0:
+                if battle.battle_type == BattleType.WILD and defender_battler == battle.opponent:
+                    defender.current_hp = 1
+                    battle.wild_dazed = True
+                    battle.phase = 'DAZED'
+                    messages.append(f"The wild {defender.species_name} is dazed!")
+                else:
+                    messages.append(f"{defender.species_name} fainted!")
+
+        return {"messages": messages}
+
+    async def _execute_move(self, battle: BattleState, action: BattleAction) -> Dict:
+        """Execute a move action - now supports spread moves hitting multiple targets"""
+        # Get attacker and defender
+        if action.battler_id == battle.trainer.battler_id:
+            attacker_battler = battle.trainer
+            defender_battler = battle.opponent
+        else:
+            attacker_battler = battle.opponent
+            defender_battler = battle.trainer
+
+        # Get attacker Pokemon (the one using the move) - use pokemon_position from action
+        active_pokemon_list = attacker_battler.get_active_pokemon()
+        pokemon_pos = action.pokemon_position if action.pokemon_position < len(active_pokemon_list) else 0
+        attacker = active_pokemon_list[pokemon_pos]
+
+        # Check if attacker can move (status conditions, flinch, etc.)
+        if ENHANCED_SYSTEMS_AVAILABLE and hasattr(attacker, 'status_manager'):
+            can_move, prevention_msg = attacker.status_manager.can_move(attacker)
+            if not can_move:
+                return {"messages": [prevention_msg]}
+
+        # Get move data
+        move_data = self.moves_db.get_move(action.move_id)
+        if not move_data:
+            return {"messages": [f"{attacker.species_name} tried to use an unknown move!"]}
+
+        # Determine all targets based on move target type
+        target_type = move_data.get('target', 'single')
+        targets = self._determine_move_targets(battle, action, move_data)
+
+        # Get the actual defender from targets (handles ally-targeting moves correctly)
+        if targets:
+            defender_battler_actual, defender = targets[0]
+        else:
+            # Fallback for self-targeting or field moves
+            defender = attacker
+            defender_battler_actual = attacker_battler
+
+        # If move hits multiple targets (spread move), handle differently
+        if len(targets) > 1:
+            return await self._execute_spread_move(battle, action, attacker, targets, move_data)
+
+        # Handle Protect/Detect successive use failure
+        if action.move_id in ['protect', 'detect']:
+            protect_count = getattr(attacker, '_protect_count', 0)
+            if protect_count > 0:
+                # Calculate success rate: (1/3)^protect_count
+                success_rate = (1.0 / 3.0) ** protect_count
+                if random.random() > success_rate:
+                    # Protect failed
+                    attacker._protect_count = 0  # Reset on failure
+                    return {"messages": [f"{attacker.species_name} used {move_data['name']}, but it failed!"]}
+            # Increment protect count on successful use
+            attacker._protect_count = protect_count + 1
+        else:
+            # Reset protect count when using any other move
+            attacker._protect_count = 0
+
+        if self.held_item_manager:
+            restriction = self.held_item_manager.check_move_restrictions(attacker, move_data)
+            if restriction:
+                return {"messages": [restriction]}
+        
+        # Validate move by ruleset
+        if hasattr(battle, 'ruleset') and self.ruleset_handler:
+            ok, reason = self.ruleset_handler.is_move_allowed(action.move_id, battle.ruleset)
+            if not ok:
+                return {"messages": [f"{attacker.species_name} tried to use {move_data.get('name', action.move_id)} but it's banned by rules ({reason})."]}
+
+        # Deduct PP
+        for move in attacker.moves:
+            if move['move_id'] == action.move_id:
+                move['pp'] = max(0, move['pp'] - 1)
+                break
+
+        # Check if defender is protected (Protect/Detect blocks damaging moves)
+        if ENHANCED_SYSTEMS_AVAILABLE and hasattr(defender, 'status_manager'):
+            if 'protect' in getattr(defender.status_manager, 'volatile_statuses', {}):
+                # Protect blocks all damaging moves and most status moves
+                if move_data.get('category') in ['physical', 'special']:
+                    move_msg = f"{attacker.species_name} used {move_data['name']}, but {defender.species_name} protected itself!"
+                    return {"messages": [move_msg]}
+
+        # Calculate damage and apply effects
+        if ENHANCED_SYSTEMS_AVAILABLE:
+            damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
+                attacker, defender, action.move_id,
+                weather=battle.weather,
+                terrain=battle.terrain,
+                battle_state=battle
+            )
+        else:
+            # Basic damage calculation fallback
+            damage = 10  # Simplified
+            is_crit = False
+            effectiveness = 1.0
+            effect_msgs = []
+
+        if self.held_item_manager:
+            damage, held_msgs = self.held_item_manager.modify_damage(attacker, defender, move_data, damage)
+            effect_msgs.extend(held_msgs)
+
+        # Endure check: if this hit would KO and defender is under ENDURE, leave at 1 HP
+        if damage >= defender.current_hp and hasattr(defender, 'status_manager') and 'endure' in getattr(defender.status_manager, 'volatile_statuses', {}):
+            if defender.current_hp > 1:
+                damage = defender.current_hp - 1
+                effect_msgs.append(f"{defender.species_name} endured the hit!")
+# Apply damage
+        if damage > 0:
+            defender.current_hp = max(0, defender.current_hp - damage)
+        
+        # Build message
+        messages = []
+        crit_text = " It's a critical hit!" if is_crit else ""
+        effectiveness_text = ""
+        if effectiveness > 1:
+            effectiveness_text = " It's super effective!"
+        elif effectiveness < 1 and effectiveness > 0:
+            effectiveness_text = " It's not very effective..."
+        elif effectiveness == 0:
+            effectiveness_text = " It doesn't affect the target..."
+        
+        # Show who used the move and on whom (if single target)
+        target_type = move_data.get('target', 'single')
+        if target_type in ['self', 'entire_field', 'user_field', 'enemy_field', 'all_allies']:
+            # Field effects or self-targeting moves don't need "on [target]"
+            move_msg = f"{attacker.species_name} used {move_data['name']}!"
+        else:
+            # Single target moves show who they targeted
+            move_msg = f"{attacker.species_name} used {move_data['name']} on {defender.species_name}!"
+        messages.append(move_msg)
+
+        # Show damage as a separate message
+        if damage > 0:
+            damage_msg = f"{defender.species_name} took {damage} damage!{crit_text}{effectiveness_text}"
+            messages.append(damage_msg)
+        elif effectiveness == 0:
+            messages.append(f"It doesn't affect {defender.species_name}...")
+
+        messages.extend(effect_msgs)
+
+        if self.held_item_manager:
+            post_msgs = self.held_item_manager.apply_after_damage(attacker, move_data, damage)
+            messages.extend(post_msgs)
+        
+        # Check for faint / dazed state
+        if defender.current_hp <= 0:
+            # Determine which battler owns the defender
+            defender_battler = battle.trainer if defender in battle.trainer.party else battle.opponent
+
+            # Special handling for wild battles: wild Pokémon do not fully faint, they become "dazed"
+            if battle.battle_type == BattleType.WILD and defender_battler == battle.opponent:
+                # Set HP to 1 and mark dazed instead of true faint
+                defender.current_hp = 1
+                battle.wild_dazed = True
+                battle.phase = 'DAZED'
+                messages.append(f"The wild {defender.species_name} is dazed!")
+            else:
+                messages.append(f"{defender.species_name} fainted!")
+
+                # Determine which position the fainted Pokemon was in
+                fainted_position = None
+                for pos_idx, party_idx in enumerate(defender_battler.active_positions):
+                    if defender_battler.party[party_idx] == defender:
+                        fainted_position = pos_idx
+                        break
+
+                # For player's Pokemon fainting (non‑AI), they need to switch (if they have Pokemon left)
+                # In PVP, both trainer and opponent can be human players
+                if not defender_battler.is_ai:
+                    if defender_battler.has_usable_pokemon():
+                        # Count usable Pokemon (excluding the fainted one)
+                        usable_count = sum(1 for p in defender_battler.party if p.current_hp > 0 and p != defender)
+                        if usable_count > 0:
+
+                            battle.phase = 'FORCED_SWITCH'
+                            battle.forced_switch_battler_id = defender_battler.battler_id
+                            battle.forced_switch_position = fainted_position
+                        else:
+                            self._check_battle_end(battle)
+
+                # For AI-controlled trainers (NPCs), auto-send the next Pokémon before continuing
+                elif defender_battler.is_ai and battle.battle_type in (BattleType.TRAINER, BattleType.PVP):
+                    if defender_battler.has_usable_pokemon():
+                        # Choose replacement index but DO NOT switch yet; queue it for after EOT
+                        replacement_index = None
+                        for idx, p in enumerate(defender_battler.party):
+                            if p is defender:
+                                continue
+                            # Don't pick a Pokemon already on the field
+                            if idx in defender_battler.active_positions:
+                                continue
+                            if getattr(p, 'current_hp', 0) > 0:
+                                replacement_index = idx
+                                break
+                        if replacement_index is not None:
+                            battle.phase = 'FORCED_SWITCH'
+                            battle.forced_switch_battler_id = defender_battler.battler_id
+                            battle.forced_switch_position = fainted_position
+                            battle.pending_ai_switch_index = replacement_index
+                    else:
+                        self._check_battle_end(battle)
+
+        # Handle self-switch moves (Volt Switch, U-turn, etc.)
+        if getattr(attacker, '_should_switch', False) and attacker.current_hp > 0:
+            attacker._should_switch = False  # Clear the flag
+
+            # Check if the attacker's battler can switch and has other Pokemon
+            if attacker_battler.can_switch and attacker_battler.has_usable_pokemon():
+                usable_count = sum(1 for p in attacker_battler.party if p.current_hp > 0 and p != attacker)
+                if usable_count > 0:
+                    if attacker_battler.is_ai:
+                        # AI auto-switches to first available Pokemon
+                        replacement_index = None
+                        for idx, p in enumerate(attacker_battler.party):
+                            if p is attacker:
+                                continue
+                            if getattr(p, 'current_hp', 0) > 0:
+                                replacement_index = idx
+                                break
+                        if replacement_index is not None:
+                            switch_action = BattleAction(
+                                action_type='switch',
+                                battler_id=attacker_battler.battler_id,
+                                switch_to_position=replacement_index
+                            )
+                            switch_result = self._execute_switch(battle, switch_action)
+                            messages.extend(switch_result.get('messages', []))
+                    else:
+                        # Player needs to choose which Pokemon to switch to
+                        # Set a flag that will be checked by the UI
+                        battle.phase = 'VOLT_SWITCH'
+                        battle.forced_switch_battler_id = attacker_battler.battler_id
+                        messages.append(f"Choose a Pokémon to switch in!")
+
+        return {"messages": messages}
+
+    
+    
+    def auto_switch_if_forced_ai(self, battle: BattleState) -> List[str]:
+        """Perform any queued AI forced switch and return narration.
+
+        This is used at end-of-turn (and can be re-used after manual switches).
+        It no longer relies on `forced_switch_battler_id`, so it still works
+        in doubles when both sides have a Pokémon faint in the same turn.
+        """
+        # If there is no pending AI choice, there's nothing to do
+        idx = getattr(battle, "pending_ai_switch_index", None)
+        if idx is None:
+            return []
+
+        # Determine which side is AI-controlled
+        battler = battle.opponent if getattr(battle.opponent, "is_ai", False) else (
+            battle.trainer if getattr(battle.trainer, "is_ai", False) else None
+        )
+        if battler is None:
+            return []
+
+        # Remember original forced-switch state so we can preserve player prompts
+        original_phase = getattr(battle, "phase", None)
+        original_forced_id = getattr(battle, "forced_switch_battler_id", None)
+        original_forced_pos = getattr(battle, "forced_switch_position", None)
+
+        # If the queued index is invalid or fainted, fall back to first healthy benched Pokémon
+        if idx < 0 or idx >= len(battler.party) or getattr(battler.party[idx], "current_hp", 0) <= 0:
+            idx = None
+            for i, p in enumerate(battler.party):
+                # Skip Pokémon that are already on the field
+                if i in getattr(battler, "active_positions", []):
+                    continue
+                if getattr(p, "current_hp", 0) > 0:
+                    idx = i
+                    break
+        if idx is None:
+            # Clear stale pointer and bail
+            battle.pending_ai_switch_index = None
+            return []
+
+        # Decide which active slot to replace (for doubles)
+        switch_position = 0  # default for singles
+        active = list(battler.get_active_pokemon() or [])
+        if active:
+            for pos, mon in enumerate(active):
+                if getattr(mon, "current_hp", 0) <= 0:
+                    switch_position = pos
+                    break
+
+        # Build a switch action targeted at that slot
+        action = BattleAction(
+            action_type="switch",
+            battler_id=battler.battler_id,
+            switch_to_position=idx,
+        )
+        # Hint to the switch executor which active position to replace
+        setattr(action, "pokemon_position", switch_position)
+
+        # Execute the switch directly; we don't want to disturb any player FORCED_SWITCH state
+        result = self._execute_switch(battle, action, forced=False)
+
+        # Clear the pending pointer now that the AI has moved
+        battle.pending_ai_switch_index = None
+
+        # If the FORCED_SWITCH was for this AI battler, we consider it resolved
+        # BUT: before resetting the phase, check if the OTHER battler (player) also needs to switch
+        if original_phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and original_forced_id == getattr(battler, "battler_id", None):
+            # Determine the other battler (player)
+            other_battler = battle.trainer if battler == battle.opponent else battle.opponent
+
+            # Check if the other battler has any fainted active Pokemon
+            player_needs_switch = False
+            if not getattr(other_battler, "is_ai", False):  # Only check for human player
+                active_pokemon = other_battler.get_active_pokemon()
+                for pos_idx, active_mon in enumerate(active_pokemon):
+                    if getattr(active_mon, "current_hp", 0) <= 0:
+                        # Player has a fainted Pokemon that needs switching
+                        player_needs_switch = True
+                        # Set up forced switch for player
+                        battle.phase = 'FORCED_SWITCH'
+                        battle.forced_switch_battler_id = other_battler.battler_id
+                        battle.forced_switch_position = pos_idx
+                        break
+
+            # Only reset to WAITING_ACTIONS if player doesn't need to switch
+            if not player_needs_switch:
+                battle.phase = 'WAITING_ACTIONS'
+                battle.forced_switch_battler_id = None
+                battle.forced_switch_position = None
+
+        return result.get("messages", [])
+
+    def _apply_entry_hazards(self, battle: BattleState, battler: Battler, pokemon: Any) -> List[str]:
+        """Apply field hazards to a newly-entered pokemon and return narration.
+        Grounded check is simplified: Flying-type or Levitate ability -> not grounded.
+        Implements: Stealth Rock, Spikes (1-3 layers), Toxic Spikes (1-2 layers), Sticky Web.
+        """
+        messages: List[str] = []
+
+        # Which hazard map applies to this side? If this battler just entered, hazards were set by the opponent.
+        hazards = battle.opponent_hazards if battler == battle.opponent else battle.trainer_hazards
+        if not hazards:
+            return messages
+
+        # Helper: get types and simple grounded/ability
+        types = [t.lower() for t in getattr(getattr(pokemon, 'species_data', {}), 'get', lambda *_: [])('types', [])] if False else [t.lower() for t in (getattr(pokemon, 'species_data', {}) or {}).get('types', [])]
+        ability_name = getattr(pokemon, 'ability', None) or getattr(pokemon, 'ability_name', None)
+        has_type = lambda t: t in types
+        is_grounded = (not has_type('flying')) and (str(ability_name).lower() != 'levitate')
+
+        # --- Stealth Rock ---
+        if 'stealth_rock' in hazards and hasattr(pokemon, 'species_data'):
+            chart = self.type_chart.chart if hasattr(self.type_chart, 'chart') else self.type_chart
+            eff = 1.0
+            if chart and 'rock' in chart:
+                for t in types:
+                    if t in chart['rock']:
+                        eff *= chart['rock'][t]
+            base = max(1, pokemon.max_hp // 8)
+            dmg = max(1, int(base * eff)) if eff > 0 else 0
+            if dmg > 0:
+                pokemon.current_hp = max(0, pokemon.current_hp - dmg)
+                messages.append(f"{pokemon.species_name} is hurt by Stealth Rock! (-{dmg} HP)")
+
+        # --- Spikes (grounded only) ---
+        if is_grounded and 'spikes' in hazards:
+            layers = min(3, int(hazards.get('spikes', 1)))
+            # 1 layer: 1/8, 2: 1/6, 3: 1/4
+            if layers == 1:
+                frac_num, frac_den = 1, 8
+            elif layers == 2:
+                frac_num, frac_den = 1, 6
+            else:
+                frac_num, frac_den = 1, 4
+            dmg = max(1, (pokemon.max_hp * frac_num) // frac_den)
+            pokemon.current_hp = max(0, pokemon.current_hp - dmg)
+            messages.append(f"{pokemon.species_name} is hurt by Spikes! (-{dmg} HP)")
+
+        # --- Toxic Spikes (grounded only) ---
+        if 'toxic_spikes' in hazards and is_grounded:
+            layers = min(2, int(hazards.get('toxic_spikes', 1)))
+            # Poison-type absorbs the spikes (if grounded)
+            if has_type('poison'):
+                # Clear all layers from this side
+                if battler == battle.opponent:
+                    battle.opponent_hazards.pop('toxic_spikes', None)
+                else:
+                    battle.trainer_hazards.pop('toxic_spikes', None)
+                messages.append(f"{pokemon.species_name} absorbed the Toxic Spikes!")
+            else:
+                # Steel-type and Poison-type can't be poisoned; Flying/Levitate handled by grounded
+                if not has_type('steel'):
+                    # Apply major status via status_manager if available
+                    if hasattr(pokemon, 'status_manager'):
+                        status = 'tox' if layers >= 2 else 'psn'
+                        can_apply, _ = pokemon.status_manager.can_apply_status(status)
+                        if can_apply:
+                            success, msg = pokemon.status_manager.apply_status(status)
+                            if success and msg:
+                                messages.append(f"{pokemon.species_name} {msg}")
+
+        # --- Sticky Web (grounded only): lower Speed by 1 stage ---
+        if 'sticky_web' in hazards and is_grounded:
+            if not hasattr(pokemon, 'stat_stages'):
+                pokemon.stat_stages = {
+                    'attack': 0, 'defense': 0, 'sp_attack': 0,
+                    'sp_defense': 0, 'speed': 0, 'evasion': 0, 'accuracy': 0
+                }
+            pokemon.stat_stages['speed'] = max(-6, pokemon.stat_stages['speed'] - 1)
+            messages.append(f"{pokemon.species_name}'s Speed fell! (-1)")
+
+        return messages
+
+        # Stealth Rock
+        if 'stealth_rock' in hazards and hasattr(pokemon, 'species_data'):
+            defender_types = [t.lower() for t in pokemon.species_data.get('types', [])]
+            # Build chart
+            chart = self.type_chart.chart if hasattr(self.type_chart, 'chart') else self.type_chart
+            # Effectiveness of Rock vs defender types
+            eff = 1.0
+            if chart and 'rock' in chart:
+                for t in defender_types:
+                    if t in chart['rock']:
+                        eff *= chart['rock'][t]
+            base = max(1, pokemon.max_hp // 8)
+            dmg = int(base * eff)
+            if eff > 0 and dmg < 1:
+                dmg = 1
+            if dmg > 0:
+                pokemon.current_hp = max(0, pokemon.current_hp - dmg)
+                messages.append(f"{pokemon.species_name} is hurt by Stealth Rock! (-{dmg} HP)")
+        return messages
+    def _execute_switch(self, battle: BattleState, action: BattleAction, forced: bool = False) -> Dict:
+        """Execute a Pokemon switch"""
+        battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
+
+        # Determine which position to switch (for forced switches from fainting in doubles)
+        switch_position = 0  # Default for singles
+        if forced and battle.forced_switch_position is not None:
+            switch_position = battle.forced_switch_position
+        elif hasattr(action, 'pokemon_position') and action.pokemon_position is not None:
+            switch_position = action.pokemon_position
+
+        # Get old and new Pokemon
+        old_pokemon = battler.get_active_pokemon()[switch_position] if switch_position < len(battler.get_active_pokemon()) else battler.get_active_pokemon()[0]
+        new_pokemon = battler.party[action.switch_to_position]
+
+        # Switch
+        battler.active_positions[switch_position] = action.switch_to_position
+
+        if self.held_item_manager:
+            self.held_item_manager.clear_choice_lock(old_pokemon)
+
+        # Trigger entry abilities
+        messages = []
+        if ENHANCED_SYSTEMS_AVAILABLE:
+            ability_msgs = self.ability_handler.trigger_on_entry(new_pokemon, battle)
+            messages.extend(ability_msgs)
+
+        messages.extend(self._apply_entry_hazards(battle, battler, new_pokemon))
+
+        if forced:
+            lead_messages = [f"{battler.battler_name} sent out {new_pokemon.species_name}!"]
+        else:
+            lead_messages = [
+                f"{battler.battler_name} withdrew {old_pokemon.species_name}!",
+                f"Go, {new_pokemon.species_name}!"
+            ]
+
+        return {
+            "messages": lead_messages + messages
+        }
+
+    def force_switch(self, battle_id: str, battler_id: int, switch_to_position: int) -> Dict:
+        """Resolve a mandatory switch outside of normal turn order."""
+        battle = self.active_battles.get(battle_id)
+        if not battle:
+            return {"error": "Battle not found"}
+
+        if battle.phase not in ['FORCED_SWITCH', 'VOLT_SWITCH'] or battle.forced_switch_battler_id != battler_id:
+            return {"error": "No forced switch is pending"}
+
+        battler = battle.trainer if battler_id == battle.trainer.battler_id else battle.opponent
+        if switch_to_position < 0 or switch_to_position >= len(battler.party):
+            return {"error": "Invalid party slot"}
+        target = battler.party[switch_to_position]
+        if getattr(target, 'current_hp', 0) <= 0:
+            return {"error": "That Pokémon can't battle"}
+
+        action = BattleAction(action_type='switch', battler_id=battler_id, switch_to_position=switch_to_position)
+        result = self._execute_switch(battle, action, forced=True)
+
+        # After this player switches, check if the other player also has fainted Pokemon
+        other_battler = battle.opponent if battler == battle.trainer else battle.trainer
+        other_needs_switch = False
+
+        # Only check for human players (not AI)
+        if not getattr(other_battler, 'is_ai', False):
+            active_pokemon = other_battler.get_active_pokemon()
+            for pos_idx, active_mon in enumerate(active_pokemon):
+                if getattr(active_mon, 'current_hp', 0) <= 0:
+                    # Other player has a fainted Pokemon that needs switching
+                    other_needs_switch = True
+                    battle.phase = 'FORCED_SWITCH'
+                    battle.forced_switch_battler_id = other_battler.battler_id
+                    battle.forced_switch_position = pos_idx
+                    break
+
+        # Only reset to WAITING_ACTIONS if the other player doesn't need to switch
+        if not other_needs_switch:
+            battle.phase = 'WAITING_ACTIONS'
+            battle.forced_switch_battler_id = None
+            battle.forced_switch_position = None
+
+        battle.pending_ai_switch_index = None
+        battle.pending_actions.pop(str(battler_id), None)
+
+        return result
+    
+    def _execute_item(self, battle: BattleState, action: BattleAction) -> Dict:
+        """Execute an item use"""
+        # TODO: Implement item system
+        return {"messages": [f"Used {action.item_id}!"]}
+    
+    def _execute_flee(self, battle: BattleState, action: BattleAction) -> Dict:
+        """Execute flee attempt"""
+        if battle.battle_type != BattleType.WILD:
+            return {"messages": ["Can't flee from a trainer battle!"]}
+        
+        # Simple flee chance for now
+        if random.random() < 0.5:
+            battle.is_over = True
+            battle.fled = True
+            battle.winner = None
+            return {"messages": ["Got away safely!"]}
+        else:
+            return {"messages": ["Can't escape!"]}
+    
+    def _process_end_of_turn(self, battle: BattleState) -> List[str]:
+        """Process end-of-turn effects"""
+        messages = []
+        
+        if not ENHANCED_SYSTEMS_AVAILABLE:
+            return []
+        
+        # Status damage
+        for pokemon in battle.trainer.get_active_pokemon() + battle.opponent.get_active_pokemon():
+            if hasattr(pokemon, 'status_manager'):
+                status_msgs = pokemon.status_manager.apply_end_of_turn_effects(pokemon)
+                messages.extend(status_msgs)
+            if self.held_item_manager:
+                messages.extend(self.held_item_manager.process_end_of_turn(pokemon))
+        
+        # Weather effects
+        if battle.weather:
+            for pokemon in battle.trainer.get_active_pokemon():
+                weather_msg = self.ability_handler.apply_weather_damage(pokemon, battle.weather)
+                if weather_msg:
+                    messages.append(weather_msg)
+                
+                heal_msg = self.ability_handler.apply_weather_healing(pokemon, battle.weather)
+                if heal_msg:
+                    messages.append(heal_msg)
+            
+            for pokemon in battle.opponent.get_active_pokemon():
+                weather_msg = self.ability_handler.apply_weather_damage(pokemon, battle.weather)
+                if weather_msg:
+                    messages.append(weather_msg)
+                
+                heal_msg = self.ability_handler.apply_weather_healing(pokemon, battle.weather)
+                if heal_msg:
+                    messages.append(heal_msg)
+            
+            # Decrement weather
+            battle.weather_turns -= 1
+            if battle.weather_turns <= 0:
+                messages.append(f"The {battle.weather} subsided!")
+                battle.weather = None
+        
+        # Terrain effects
+        if battle.terrain:
+            battle.terrain_turns -= 1
+            if battle.terrain_turns <= 0:
+                messages.append(f"The {battle.terrain} terrain faded!")
+                battle.terrain = None
+
+        return messages
+    
+    def _check_battle_end(self, battle: BattleState):
+        """Check if battle should end"""
+        trainer_has_pokemon = battle.trainer.has_usable_pokemon()
+        opponent_has_pokemon = battle.opponent.has_usable_pokemon()
+        
+        if not trainer_has_pokemon and not opponent_has_pokemon:
+            battle.is_over = True
+            battle.winner = 'draw'
+        elif not trainer_has_pokemon:
+            battle.is_over = True
+            battle.winner = 'opponent'
+        elif not opponent_has_pokemon:
+            battle.is_over = True
+            battle.winner = 'trainer'
+    
+    # ========================
+    # Battle Info Getters
+    # ========================
+    
+    def get_battle(self, battle_id: str) -> Optional[BattleState]:
+        """Get battle state"""
+        return self.active_battles.get(battle_id)
+    
+    def end_battle(self, battle_id: str):
+        """Clean up a finished battle"""
+        if battle_id in self.active_battles:
+            del self.active_battles[battle_id]
+
+
+# ========================
+# Command Parser
+# ========================
+
+
+# ========================
+# Command Parser
+# ========================
+
+class CommandParser:
+    """Parse natural language battle commands into BattleActions"""
+    def __init__(self, moves_db):
+        self.moves_db = moves_db
+
+    def parse(self, command: str, active_pokemon: Any, battler_id: int) -> Optional[BattleAction]:
+        """Parse a simple command into a BattleAction.
+
+        Supports:
+          - 'switch'/'swap'/'go' -> None (UI must pick target)
+          - otherwise: tries to match a known move in user's move list
+        """
+        if not command:
+            return None
+        command = command.lower().strip()
+
+        # Switch intent: handled by UI elsewhere
+        if any(w in command for w in ('switch', 'swap', 'go ')):
+            return None
+
+        # Try to match one of the user's moves
+        for mv in getattr(active_pokemon, 'moves', []):
+            md = self.moves_db.get_move(mv.get('move_id'))
+            if not md:
+                continue
+            move_name = (md.get('name') or md.get('id') or '').lower()
+            move_id = md.get('id') or mv.get('move_id')
+            if (move_name and move_name in command) or (move_id and move_id in command):
+                return BattleAction(
+                    action_type='move',
+                    battler_id=battler_id,
+                    move_id=move_id,
+                    target_position=0
+                )
+
+        return None
