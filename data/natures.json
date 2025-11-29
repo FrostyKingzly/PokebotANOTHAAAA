@@ -1,0 +1,209 @@
+{
+  "hardy": {
+    "name": "Hardy",
+    "increased_stat": null,
+    "decreased_stat": null,
+    "multiplier_increased": 1.0,
+    "multiplier_decreased": 1.0,
+    "description": "No stat changes."
+  },
+  "lonely": {
+    "name": "Lonely",
+    "increased_stat": "attack",
+    "decreased_stat": "defense",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Attack, -Defense"
+  },
+  "brave": {
+    "name": "Brave",
+    "increased_stat": "attack",
+    "decreased_stat": "speed",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Attack, -Speed"
+  },
+  "adamant": {
+    "name": "Adamant",
+    "increased_stat": "attack",
+    "decreased_stat": "sp_attack",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Attack, -Sp. Attack"
+  },
+  "naughty": {
+    "name": "Naughty",
+    "increased_stat": "attack",
+    "decreased_stat": "sp_defense",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Attack, -Sp. Defense"
+  },
+  "bold": {
+    "name": "Bold",
+    "increased_stat": "defense",
+    "decreased_stat": "attack",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Defense, -Attack"
+  },
+  "docile": {
+    "name": "Docile",
+    "increased_stat": null,
+    "decreased_stat": null,
+    "multiplier_increased": 1.0,
+    "multiplier_decreased": 1.0,
+    "description": "No stat changes."
+  },
+  "relaxed": {
+    "name": "Relaxed",
+    "increased_stat": "defense",
+    "decreased_stat": "speed",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Defense, -Speed"
+  },
+  "impish": {
+    "name": "Impish",
+    "increased_stat": "defense",
+    "decreased_stat": "sp_attack",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Defense, -Sp. Attack"
+  },
+  "lax": {
+    "name": "Lax",
+    "increased_stat": "defense",
+    "decreased_stat": "sp_defense",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Defense, -Sp. Defense"
+  },
+  "timid": {
+    "name": "Timid",
+    "increased_stat": "speed",
+    "decreased_stat": "attack",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Speed, -Attack"
+  },
+  "hasty": {
+    "name": "Hasty",
+    "increased_stat": "speed",
+    "decreased_stat": "defense",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Speed, -Defense"
+  },
+  "serious": {
+    "name": "Serious",
+    "increased_stat": null,
+    "decreased_stat": null,
+    "multiplier_increased": 1.0,
+    "multiplier_decreased": 1.0,
+    "description": "No stat changes."
+  },
+  "jolly": {
+    "name": "Jolly",
+    "increased_stat": "speed",
+    "decreased_stat": "sp_attack",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Speed, -Sp. Attack"
+  },
+  "naive": {
+    "name": "Naive",
+    "increased_stat": "speed",
+    "decreased_stat": "sp_defense",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Speed, -Sp. Defense"
+  },
+  "modest": {
+    "name": "Modest",
+    "increased_stat": "sp_attack",
+    "decreased_stat": "attack",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Sp. Attack, -Attack"
+  },
+  "mild": {
+    "name": "Mild",
+    "increased_stat": "sp_attack",
+    "decreased_stat": "defense",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Sp. Attack, -Defense"
+  },
+  "quiet": {
+    "name": "Quiet",
+    "increased_stat": "sp_attack",
+    "decreased_stat": "speed",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Sp. Attack, -Speed"
+  },
+  "bashful": {
+    "name": "Bashful",
+    "increased_stat": null,
+    "decreased_stat": null,
+    "multiplier_increased": 1.0,
+    "multiplier_decreased": 1.0,
+    "description": "No stat changes."
+  },
+  "rash": {
+    "name": "Rash",
+    "increased_stat": "sp_attack",
+    "decreased_stat": "sp_defense",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Sp. Attack, -Sp. Defense"
+  },
+  "calm": {
+    "name": "Calm",
+    "increased_stat": "sp_defense",
+    "decreased_stat": "attack",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Sp. Defense, -Attack"
+  },
+  "gentle": {
+    "name": "Gentle",
+    "increased_stat": "sp_defense",
+    "decreased_stat": "defense",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Sp. Defense, -Defense"
+  },
+  "sassy": {
+    "name": "Sassy",
+    "increased_stat": "sp_defense",
+    "decreased_stat": "speed",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Sp. Defense, -Speed"
+  },
+  "careful": {
+    "name": "Careful",
+    "increased_stat": "sp_defense",
+    "decreased_stat": "sp_attack",
+    "multiplier_increased": 1.1,
+    "multiplier_decreased": 0.9,
+    "description": "+Sp. Defense, -Sp. Attack"
+  },
+  "quirky": {
+    "name": "Quirky",
+    "increased_stat": null,
+    "decreased_stat": null,
+    "multiplier_increased": 1.0,
+    "multiplier_decreased": 1.0,
+    "description": "No stat changes."
+  },
+  "NOTES": {
+    "total_natures": 25,
+    "neutral_natures": "Hardy, Docile, Serious, Bashful, Quirky (5 neutral natures)",
+    "stat_modification": "Increased stat gets 1.1x multiplier (10% boost), decreased stat gets 0.9x multiplier (10% reduction)",
+    "calculation_note": "Nature is applied to final calculated stat, not base stat",
+    "competitive_note": "Most Pokemon run specific natures: Physical attackers want Adamant/Jolly, Special attackers want Modest/Timid"
+  }
+}

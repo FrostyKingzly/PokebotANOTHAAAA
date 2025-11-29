@@ -1,0 +1,3162 @@
+{
+  "noability": {
+    "id": "noability",
+    "name": "Noability",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": "Past",
+    "gen": null
+  },
+  "adaptability": {
+    "id": "adaptability",
+    "name": "Adaptability",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "aerilate": {
+    "id": "aerilate",
+    "name": "Aerilate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "aftermath": {
+    "id": "aftermath",
+    "name": "Aftermath",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "airlock": {
+    "id": "airlock",
+    "name": "Airlock",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "analytic": {
+    "id": "analytic",
+    "name": "Analytic",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "angerpoint": {
+    "id": "angerpoint",
+    "name": "Angerpoint",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "angershell": {
+    "id": "angershell",
+    "name": "Angershell",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "anticipation": {
+    "id": "anticipation",
+    "name": "Anticipation",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "arenatrap": {
+    "id": "arenatrap",
+    "name": "Arenatrap",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "armortail": {
+    "id": "armortail",
+    "name": "Armortail",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "flags": {
+    "id": "flags",
+    "name": "Flags",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "aromaveil": {
+    "id": "aromaveil",
+    "name": "Aromaveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "asoneglastrier": {
+    "id": "asoneglastrier",
+    "name": "Asoneglastrier",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "asonespectrier": {
+    "id": "asonespectrier",
+    "name": "Asonespectrier",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "aurabreak": {
+    "id": "aurabreak",
+    "name": "Aurabreak",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "baddreams": {
+    "id": "baddreams",
+    "name": "Baddreams",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "ballfetch": {
+    "id": "ballfetch",
+    "name": "Ballfetch",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "battery": {
+    "id": "battery",
+    "name": "Battery",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "battlearmor": {
+    "id": "battlearmor",
+    "name": "Battlearmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "battlebond": {
+    "id": "battlebond",
+    "name": "Battlebond",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "beadsofruin": {
+    "id": "beadsofruin",
+    "name": "Beadsofruin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "beastboost": {
+    "id": "beastboost",
+    "name": "Beastboost",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "berserk": {
+    "id": "berserk",
+    "name": "Berserk",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "bigpecks": {
+    "id": "bigpecks",
+    "name": "Bigpecks",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "blaze": {
+    "id": "blaze",
+    "name": "Blaze",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "bulletproof": {
+    "id": "bulletproof",
+    "name": "Bulletproof",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cheekpouch": {
+    "id": "cheekpouch",
+    "name": "Cheekpouch",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "chillingneigh": {
+    "id": "chillingneigh",
+    "name": "Chillingneigh",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "chlorophyll": {
+    "id": "chlorophyll",
+    "name": "Chlorophyll",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "clearbody": {
+    "id": "clearbody",
+    "name": "Clearbody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cloudnine": {
+    "id": "cloudnine",
+    "name": "Cloudnine",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "colorchange": {
+    "id": "colorchange",
+    "name": "Colorchange",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "comatose": {
+    "id": "comatose",
+    "name": "Comatose",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "commander": {
+    "id": "commander",
+    "name": "Commander",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "competitive": {
+    "id": "competitive",
+    "name": "Competitive",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "compoundeyes": {
+    "id": "compoundeyes",
+    "name": "Compoundeyes",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "contrary": {
+    "id": "contrary",
+    "name": "Contrary",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "corrosion": {
+    "id": "corrosion",
+    "name": "Corrosion",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "costar": {
+    "id": "costar",
+    "name": "Costar",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cottondown": {
+    "id": "cottondown",
+    "name": "Cottondown",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cudchew": {
+    "id": "cudchew",
+    "name": "Cudchew",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "curiousmedicine": {
+    "id": "curiousmedicine",
+    "name": "Curiousmedicine",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cursedbody": {
+    "id": "cursedbody",
+    "name": "Cursedbody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cutecharm": {
+    "id": "cutecharm",
+    "name": "Cutecharm",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "damp": {
+    "id": "damp",
+    "name": "Damp",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "dancer": {
+    "id": "dancer",
+    "name": "Dancer",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "darkaura": {
+    "id": "darkaura",
+    "name": "Darkaura",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "dauntlessshield": {
+    "id": "dauntlessshield",
+    "name": "Dauntlessshield",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "dazzling": {
+    "id": "dazzling",
+    "name": "Dazzling",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "defeatist": {
+    "id": "defeatist",
+    "name": "Defeatist",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "defiant": {
+    "id": "defiant",
+    "name": "Defiant",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "deltastream": {
+    "id": "deltastream",
+    "name": "Deltastream",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "desolateland": {
+    "id": "desolateland",
+    "name": "Desolateland",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "disguise": {
+    "id": "disguise",
+    "name": "Disguise",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "download": {
+    "id": "download",
+    "name": "Download",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "dragonsmaw": {
+    "id": "dragonsmaw",
+    "name": "Dragonsmaw",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "drizzle": {
+    "id": "drizzle",
+    "name": "Drizzle",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "drought": {
+    "id": "drought",
+    "name": "Drought",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "dryskin": {
+    "id": "dryskin",
+    "name": "Dryskin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "earlybird": {
+    "id": "earlybird",
+    "name": "Earlybird",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "eartheater": {
+    "id": "eartheater",
+    "name": "Eartheater",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "effectspore": {
+    "id": "effectspore",
+    "name": "Effectspore",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "electricsurge": {
+    "id": "electricsurge",
+    "name": "Electricsurge",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "electromorphosis": {
+    "id": "electromorphosis",
+    "name": "Electromorphosis",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "embodyaspectcornerstone": {
+    "id": "embodyaspectcornerstone",
+    "name": "Embodyaspectcornerstone",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "embodyaspecthearthflame": {
+    "id": "embodyaspecthearthflame",
+    "name": "Embodyaspecthearthflame",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "embodyaspectteal": {
+    "id": "embodyaspectteal",
+    "name": "Embodyaspectteal",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "embodyaspectwellspring": {
+    "id": "embodyaspectwellspring",
+    "name": "Embodyaspectwellspring",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "emergencyexit": {
+    "id": "emergencyexit",
+    "name": "Emergencyexit",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "fairyaura": {
+    "id": "fairyaura",
+    "name": "Fairyaura",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "filter": {
+    "id": "filter",
+    "name": "Filter",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "flamebody": {
+    "id": "flamebody",
+    "name": "Flamebody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "flareboost": {
+    "id": "flareboost",
+    "name": "Flareboost",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "flashfire": {
+    "id": "flashfire",
+    "name": "Flashfire",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "condition": {
+    "id": "condition",
+    "name": "Condition",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "flowergift": {
+    "id": "flowergift",
+    "name": "Flowergift",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "flowerveil": {
+    "id": "flowerveil",
+    "name": "Flowerveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "fluffy": {
+    "id": "fluffy",
+    "name": "Fluffy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "forecast": {
+    "id": "forecast",
+    "name": "Forecast",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "forewarn": {
+    "id": "forewarn",
+    "name": "Forewarn",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "friendguard": {
+    "id": "friendguard",
+    "name": "Friendguard",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "frisk": {
+    "id": "frisk",
+    "name": "Frisk",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "fullmetalbody": {
+    "id": "fullmetalbody",
+    "name": "Fullmetalbody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "furcoat": {
+    "id": "furcoat",
+    "name": "Furcoat",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "galewings": {
+    "id": "galewings",
+    "name": "Galewings",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "galvanize": {
+    "id": "galvanize",
+    "name": "Galvanize",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "gluttony": {
+    "id": "gluttony",
+    "name": "Gluttony",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "goodasgold": {
+    "id": "goodasgold",
+    "name": "Goodasgold",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "gooey": {
+    "id": "gooey",
+    "name": "Gooey",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "gorillatactics": {
+    "id": "gorillatactics",
+    "name": "Gorillatactics",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "grasspelt": {
+    "id": "grasspelt",
+    "name": "Grasspelt",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "grassysurge": {
+    "id": "grassysurge",
+    "name": "Grassysurge",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "grimneigh": {
+    "id": "grimneigh",
+    "name": "Grimneigh",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "guarddog": {
+    "id": "guarddog",
+    "name": "Guarddog",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "gulpmissile": {
+    "id": "gulpmissile",
+    "name": "Gulpmissile",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "guts": {
+    "id": "guts",
+    "name": "Guts",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hadronengine": {
+    "id": "hadronengine",
+    "name": "Hadronengine",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "harvest": {
+    "id": "harvest",
+    "name": "Harvest",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "healer": {
+    "id": "healer",
+    "name": "Healer",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "heatproof": {
+    "id": "heatproof",
+    "name": "Heatproof",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "heavymetal": {
+    "id": "heavymetal",
+    "name": "Heavymetal",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "honeygather": {
+    "id": "honeygather",
+    "name": "Honeygather",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hospitality": {
+    "id": "hospitality",
+    "name": "Hospitality",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hugepower": {
+    "id": "hugepower",
+    "name": "Hugepower",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hungerswitch": {
+    "id": "hungerswitch",
+    "name": "Hungerswitch",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hustle": {
+    "id": "hustle",
+    "name": "Hustle",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hydration": {
+    "id": "hydration",
+    "name": "Hydration",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hypercutter": {
+    "id": "hypercutter",
+    "name": "Hypercutter",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "icebody": {
+    "id": "icebody",
+    "name": "Icebody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "iceface": {
+    "id": "iceface",
+    "name": "Iceface",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "icescales": {
+    "id": "icescales",
+    "name": "Icescales",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "illuminate": {
+    "id": "illuminate",
+    "name": "Illuminate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "illusion": {
+    "id": "illusion",
+    "name": "Illusion",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "immunity": {
+    "id": "immunity",
+    "name": "Immunity",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "imposter": {
+    "id": "imposter",
+    "name": "Imposter",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "infiltrator": {
+    "id": "infiltrator",
+    "name": "Infiltrator",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "innardsout": {
+    "id": "innardsout",
+    "name": "Innardsout",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "innerfocus": {
+    "id": "innerfocus",
+    "name": "Innerfocus",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "insomnia": {
+    "id": "insomnia",
+    "name": "Insomnia",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "intimidate": {
+    "id": "intimidate",
+    "name": "Intimidate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "intrepidsword": {
+    "id": "intrepidsword",
+    "name": "Intrepidsword",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "ironbarbs": {
+    "id": "ironbarbs",
+    "name": "Ironbarbs",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "ironfist": {
+    "id": "ironfist",
+    "name": "Ironfist",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "justified": {
+    "id": "justified",
+    "name": "Justified",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "keeneye": {
+    "id": "keeneye",
+    "name": "Keeneye",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "klutz": {
+    "id": "klutz",
+    "name": "Klutz",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "leafguard": {
+    "id": "leafguard",
+    "name": "Leafguard",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "levitate": {
+    "id": "levitate",
+    "name": "Levitate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "libero": {
+    "id": "libero",
+    "name": "Libero",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "lightmetal": {
+    "id": "lightmetal",
+    "name": "Lightmetal",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "lightningrod": {
+    "id": "lightningrod",
+    "name": "Lightningrod",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "limber": {
+    "id": "limber",
+    "name": "Limber",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "lingeringaroma": {
+    "id": "lingeringaroma",
+    "name": "Lingeringaroma",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "liquidooze": {
+    "id": "liquidooze",
+    "name": "Liquidooze",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "liquidvoice": {
+    "id": "liquidvoice",
+    "name": "Liquidvoice",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "longreach": {
+    "id": "longreach",
+    "name": "Longreach",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "magicbounce": {
+    "id": "magicbounce",
+    "name": "Magicbounce",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "magicguard": {
+    "id": "magicguard",
+    "name": "Magicguard",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "magician": {
+    "id": "magician",
+    "name": "Magician",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "magmaarmor": {
+    "id": "magmaarmor",
+    "name": "Magmaarmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "magnetpull": {
+    "id": "magnetpull",
+    "name": "Magnetpull",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "marvelscale": {
+    "id": "marvelscale",
+    "name": "Marvelscale",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "megalauncher": {
+    "id": "megalauncher",
+    "name": "Megalauncher",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "merciless": {
+    "id": "merciless",
+    "name": "Merciless",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mimicry": {
+    "id": "mimicry",
+    "name": "Mimicry",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mindseye": {
+    "id": "mindseye",
+    "name": "Mindseye",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "minus": {
+    "id": "minus",
+    "name": "Minus",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mirrorarmor": {
+    "id": "mirrorarmor",
+    "name": "Mirrorarmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mistysurge": {
+    "id": "mistysurge",
+    "name": "Mistysurge",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "moldbreaker": {
+    "id": "moldbreaker",
+    "name": "Moldbreaker",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "moody": {
+    "id": "moody",
+    "name": "Moody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "motordrive": {
+    "id": "motordrive",
+    "name": "Motordrive",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "moxie": {
+    "id": "moxie",
+    "name": "Moxie",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "multiscale": {
+    "id": "multiscale",
+    "name": "Multiscale",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "multitype": {
+    "id": "multitype",
+    "name": "Multitype",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mummy": {
+    "id": "mummy",
+    "name": "Mummy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "myceliummight": {
+    "id": "myceliummight",
+    "name": "Myceliummight",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "naturalcure": {
+    "id": "naturalcure",
+    "name": "Naturalcure",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "neuroforce": {
+    "id": "neuroforce",
+    "name": "Neuroforce",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "neutralizinggas": {
+    "id": "neutralizinggas",
+    "name": "Neutralizinggas",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "noguard": {
+    "id": "noguard",
+    "name": "Noguard",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "normalize": {
+    "id": "normalize",
+    "name": "Normalize",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "oblivious": {
+    "id": "oblivious",
+    "name": "Oblivious",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "opportunist": {
+    "id": "opportunist",
+    "name": "Opportunist",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "orichalcumpulse": {
+    "id": "orichalcumpulse",
+    "name": "Orichalcumpulse",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "overcoat": {
+    "id": "overcoat",
+    "name": "Overcoat",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "overgrow": {
+    "id": "overgrow",
+    "name": "Overgrow",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "owntempo": {
+    "id": "owntempo",
+    "name": "Owntempo",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "parentalbond": {
+    "id": "parentalbond",
+    "name": "Parentalbond",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "pastelveil": {
+    "id": "pastelveil",
+    "name": "Pastelveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "perishbody": {
+    "id": "perishbody",
+    "name": "Perishbody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "pickpocket": {
+    "id": "pickpocket",
+    "name": "Pickpocket",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "pickup": {
+    "id": "pickup",
+    "name": "Pickup",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "pixilate": {
+    "id": "pixilate",
+    "name": "Pixilate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "plus": {
+    "id": "plus",
+    "name": "Plus",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "poisonheal": {
+    "id": "poisonheal",
+    "name": "Poisonheal",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "poisonpoint": {
+    "id": "poisonpoint",
+    "name": "Poisonpoint",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "poisonpuppeteer": {
+    "id": "poisonpuppeteer",
+    "name": "Poisonpuppeteer",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "poisontouch": {
+    "id": "poisontouch",
+    "name": "Poisontouch",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "powerconstruct": {
+    "id": "powerconstruct",
+    "name": "Powerconstruct",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "powerofalchemy": {
+    "id": "powerofalchemy",
+    "name": "Powerofalchemy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "powerspot": {
+    "id": "powerspot",
+    "name": "Powerspot",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "prankster": {
+    "id": "prankster",
+    "name": "Prankster",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "pressure": {
+    "id": "pressure",
+    "name": "Pressure",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "primordialsea": {
+    "id": "primordialsea",
+    "name": "Primordialsea",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "prismarmor": {
+    "id": "prismarmor",
+    "name": "Prismarmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "propellertail": {
+    "id": "propellertail",
+    "name": "Propellertail",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "protean": {
+    "id": "protean",
+    "name": "Protean",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "protosynthesis": {
+    "id": "protosynthesis",
+    "name": "Protosynthesis",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "psychicsurge": {
+    "id": "psychicsurge",
+    "name": "Psychicsurge",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "punkrock": {
+    "id": "punkrock",
+    "name": "Punkrock",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "purepower": {
+    "id": "purepower",
+    "name": "Purepower",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "purifyingsalt": {
+    "id": "purifyingsalt",
+    "name": "Purifyingsalt",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "quarkdrive": {
+    "id": "quarkdrive",
+    "name": "Quarkdrive",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "queenlymajesty": {
+    "id": "queenlymajesty",
+    "name": "Queenlymajesty",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "quickdraw": {
+    "id": "quickdraw",
+    "name": "Quickdraw",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "quickfeet": {
+    "id": "quickfeet",
+    "name": "Quickfeet",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "raindish": {
+    "id": "raindish",
+    "name": "Raindish",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rattled": {
+    "id": "rattled",
+    "name": "Rattled",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "receiver": {
+    "id": "receiver",
+    "name": "Receiver",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "reckless": {
+    "id": "reckless",
+    "name": "Reckless",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "refrigerate": {
+    "id": "refrigerate",
+    "name": "Refrigerate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "regenerator": {
+    "id": "regenerator",
+    "name": "Regenerator",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "ripen": {
+    "id": "ripen",
+    "name": "Ripen",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rivalry": {
+    "id": "rivalry",
+    "name": "Rivalry",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rkssystem": {
+    "id": "rkssystem",
+    "name": "Rkssystem",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rockhead": {
+    "id": "rockhead",
+    "name": "Rockhead",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rockypayload": {
+    "id": "rockypayload",
+    "name": "Rockypayload",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "roughskin": {
+    "id": "roughskin",
+    "name": "Roughskin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "runaway": {
+    "id": "runaway",
+    "name": "Runaway",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sandforce": {
+    "id": "sandforce",
+    "name": "Sandforce",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sandrush": {
+    "id": "sandrush",
+    "name": "Sandrush",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sandspit": {
+    "id": "sandspit",
+    "name": "Sandspit",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sandstream": {
+    "id": "sandstream",
+    "name": "Sandstream",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sandveil": {
+    "id": "sandveil",
+    "name": "Sandveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sapsipper": {
+    "id": "sapsipper",
+    "name": "Sapsipper",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "schooling": {
+    "id": "schooling",
+    "name": "Schooling",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "scrappy": {
+    "id": "scrappy",
+    "name": "Scrappy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "screencleaner": {
+    "id": "screencleaner",
+    "name": "Screencleaner",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "seedsower": {
+    "id": "seedsower",
+    "name": "Seedsower",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "serenegrace": {
+    "id": "serenegrace",
+    "name": "Serenegrace",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "shadowshield": {
+    "id": "shadowshield",
+    "name": "Shadowshield",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "shadowtag": {
+    "id": "shadowtag",
+    "name": "Shadowtag",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sharpness": {
+    "id": "sharpness",
+    "name": "Sharpness",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "shedskin": {
+    "id": "shedskin",
+    "name": "Shedskin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sheerforce": {
+    "id": "sheerforce",
+    "name": "Sheerforce",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "shellarmor": {
+    "id": "shellarmor",
+    "name": "Shellarmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "shielddust": {
+    "id": "shielddust",
+    "name": "Shielddust",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "shieldsdown": {
+    "id": "shieldsdown",
+    "name": "Shieldsdown",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "simple": {
+    "id": "simple",
+    "name": "Simple",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "skilllink": {
+    "id": "skilllink",
+    "name": "Skilllink",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "slowstart": {
+    "id": "slowstart",
+    "name": "Slowstart",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "slushrush": {
+    "id": "slushrush",
+    "name": "Slushrush",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sniper": {
+    "id": "sniper",
+    "name": "Sniper",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "snowcloak": {
+    "id": "snowcloak",
+    "name": "Snowcloak",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "snowwarning": {
+    "id": "snowwarning",
+    "name": "Snowwarning",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "solarpower": {
+    "id": "solarpower",
+    "name": "Solarpower",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "solidrock": {
+    "id": "solidrock",
+    "name": "Solidrock",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "soulheart": {
+    "id": "soulheart",
+    "name": "Soulheart",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "soundproof": {
+    "id": "soundproof",
+    "name": "Soundproof",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "speedboost": {
+    "id": "speedboost",
+    "name": "Speedboost",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stakeout": {
+    "id": "stakeout",
+    "name": "Stakeout",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stall": {
+    "id": "stall",
+    "name": "Stall",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stalwart": {
+    "id": "stalwart",
+    "name": "Stalwart",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stamina": {
+    "id": "stamina",
+    "name": "Stamina",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stancechange": {
+    "id": "stancechange",
+    "name": "Stancechange",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "static": {
+    "id": "static",
+    "name": "Static",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "steadfast": {
+    "id": "steadfast",
+    "name": "Steadfast",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "steamengine": {
+    "id": "steamengine",
+    "name": "Steamengine",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "steelworker": {
+    "id": "steelworker",
+    "name": "Steelworker",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "steelyspirit": {
+    "id": "steelyspirit",
+    "name": "Steelyspirit",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stench": {
+    "id": "stench",
+    "name": "Stench",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stickyhold": {
+    "id": "stickyhold",
+    "name": "Stickyhold",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stormdrain": {
+    "id": "stormdrain",
+    "name": "Stormdrain",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "strongjaw": {
+    "id": "strongjaw",
+    "name": "Strongjaw",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sturdy": {
+    "id": "sturdy",
+    "name": "Sturdy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "suctioncups": {
+    "id": "suctioncups",
+    "name": "Suctioncups",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "superluck": {
+    "id": "superluck",
+    "name": "Superluck",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "supersweetsyrup": {
+    "id": "supersweetsyrup",
+    "name": "Supersweetsyrup",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "supremeoverlord": {
+    "id": "supremeoverlord",
+    "name": "Supremeoverlord",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "surgesurfer": {
+    "id": "surgesurfer",
+    "name": "Surgesurfer",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "swarm": {
+    "id": "swarm",
+    "name": "Swarm",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sweetveil": {
+    "id": "sweetveil",
+    "name": "Sweetveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "swiftswim": {
+    "id": "swiftswim",
+    "name": "Swiftswim",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "symbiosis": {
+    "id": "symbiosis",
+    "name": "Symbiosis",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "synchronize": {
+    "id": "synchronize",
+    "name": "Synchronize",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "swordofruin": {
+    "id": "swordofruin",
+    "name": "Swordofruin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "tabletsofruin": {
+    "id": "tabletsofruin",
+    "name": "Tabletsofruin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "tangledfeet": {
+    "id": "tangledfeet",
+    "name": "Tangledfeet",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "tanglinghair": {
+    "id": "tanglinghair",
+    "name": "Tanglinghair",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "technician": {
+    "id": "technician",
+    "name": "Technician",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "telepathy": {
+    "id": "telepathy",
+    "name": "Telepathy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "teraformzero": {
+    "id": "teraformzero",
+    "name": "Teraformzero",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "terashell": {
+    "id": "terashell",
+    "name": "Terashell",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "terashift": {
+    "id": "terashift",
+    "name": "Terashift",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "teravolt": {
+    "id": "teravolt",
+    "name": "Teravolt",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "thermalexchange": {
+    "id": "thermalexchange",
+    "name": "Thermalexchange",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "thickfat": {
+    "id": "thickfat",
+    "name": "Thickfat",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "tintedlens": {
+    "id": "tintedlens",
+    "name": "Tintedlens",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "torrent": {
+    "id": "torrent",
+    "name": "Torrent",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "toughclaws": {
+    "id": "toughclaws",
+    "name": "Toughclaws",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "toxicboost": {
+    "id": "toxicboost",
+    "name": "Toxicboost",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "toxicchain": {
+    "id": "toxicchain",
+    "name": "Toxicchain",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "toxicdebris": {
+    "id": "toxicdebris",
+    "name": "Toxicdebris",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "trace": {
+    "id": "trace",
+    "name": "Trace",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "transistor": {
+    "id": "transistor",
+    "name": "Transistor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "triage": {
+    "id": "triage",
+    "name": "Triage",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "truant": {
+    "id": "truant",
+    "name": "Truant",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "turboblaze": {
+    "id": "turboblaze",
+    "name": "Turboblaze",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "unaware": {
+    "id": "unaware",
+    "name": "Unaware",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "unburden": {
+    "id": "unburden",
+    "name": "Unburden",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "unnerve": {
+    "id": "unnerve",
+    "name": "Unnerve",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "unseenfist": {
+    "id": "unseenfist",
+    "name": "Unseenfist",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "vesselofruin": {
+    "id": "vesselofruin",
+    "name": "Vesselofruin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "victorystar": {
+    "id": "victorystar",
+    "name": "Victorystar",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "vitalspirit": {
+    "id": "vitalspirit",
+    "name": "Vitalspirit",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "voltabsorb": {
+    "id": "voltabsorb",
+    "name": "Voltabsorb",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "wanderingspirit": {
+    "id": "wanderingspirit",
+    "name": "Wanderingspirit",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "waterabsorb": {
+    "id": "waterabsorb",
+    "name": "Waterabsorb",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "waterbubble": {
+    "id": "waterbubble",
+    "name": "Waterbubble",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "watercompaction": {
+    "id": "watercompaction",
+    "name": "Watercompaction",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "waterveil": {
+    "id": "waterveil",
+    "name": "Waterveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "weakarmor": {
+    "id": "weakarmor",
+    "name": "Weakarmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "wellbakedbody": {
+    "id": "wellbakedbody",
+    "name": "Wellbakedbody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "whitesmoke": {
+    "id": "whitesmoke",
+    "name": "Whitesmoke",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "wimpout": {
+    "id": "wimpout",
+    "name": "Wimpout",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "windpower": {
+    "id": "windpower",
+    "name": "Windpower",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "windrider": {
+    "id": "windrider",
+    "name": "Windrider",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "wonderguard": {
+    "id": "wonderguard",
+    "name": "Wonderguard",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "wonderskin": {
+    "id": "wonderskin",
+    "name": "Wonderskin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "zenmode": {
+    "id": "zenmode",
+    "name": "Zenmode",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "zerotohero": {
+    "id": "zerotohero",
+    "name": "Zerotohero",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mountaineer": {
+    "id": "mountaineer",
+    "name": "Mountaineer",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rebound": {
+    "id": "rebound",
+    "name": "Rebound",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": "CAP",
+    "gen": null
+  },
+  "persistent": {
+    "id": "persistent",
+    "name": "Persistent",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": "CAP",
+    "gen": null
+  }
+}

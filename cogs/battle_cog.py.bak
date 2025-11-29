@@ -1,0 +1,486 @@
+"""
+Unified Battle Cog - Universal UI for all battle types
+Handles: Wild battles, Trainer battles (PvE), and PvP battles
+
+This cog provides the Discord UI (buttons, embeds) for battles.
+The actual battle logic is in battle_engine_v2.py
+"""
+
+import discord
+from discord.ext import commands
+from discord import app_commands
+from typing import Optional, Dict, List
+import asyncio
+
+from battle_engine_v2 import BattleEngine, BattleType, BattleAction, BattleFormat
+from ui.emoji import SWORD, FIELD, EVENTS, YOU, FOE
+from version import BUILD_TAG
+
+
+class BattleView(discord.ui.View):
+    """Main battle UI with action buttons"""
+    
+    def __init__(self, battle_id: str, battler_id: int, battle_engine: BattleEngine):
+        super().__init__(timeout=300)  # 5 minute timeout
+        self.battle_id = battle_id
+        self.battler_id = battler_id
+        self.battle_engine = battle_engine
+        self.action_registered = False
+    
+    async def _register_and_process(self, interaction: discord.Interaction, action: BattleAction):
+        """Register an action and process turn if ready"""
+        # Register the action
+        result = self.battle_engine.register_action(self.battle_id, self.battler_id, action)
+        
+        if not result.get('success'):
+            await interaction.response.send_message(
+                result.get('error', 'Failed to register action'),
+                ephemeral=True
+            )
+            return
+        
+        self.action_registered = True
+        
+        # Check if ready to process
+        if result.get('ready_to_resolve'):
+            await interaction.response.defer()
+            
+            # Process the turn
+            turn_result = await self.battle_engine.process_turn(self.battle_id)
+            
+            # Update battle display
+            await self._display_turn_result(interaction, turn_result)
+            
+            # Check if battle ended
+            battle = self.battle_engine.get_battle(self.battle_id)
+            if battle.is_over:
+                await self._display_battle_end(interaction, battle)
+                self.stop()
+            else:
+                # Reset for next turn
+                self.action_registered = False
+        else:
+            # Waiting for other player
+            waiting_for = result.get('waiting_for', [])
+            await interaction.response.send_message(
+                f"Action registered! Waiting for opponent...",
+                ephemeral=True
+            )
+    
+    @discord.ui.button(label="âš”ï¸ Fight", style=discord.ButtonStyle.danger, row=0)
+    async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Show move selection"""
+        battle = self.battle_engine.get_battle(self.battle_id)
+        if not battle:
+            await interaction.response.send_message("Battle not found!", ephemeral=True)
+            return
+        
+        # Get active Pokemon
+        battler = battle.trainer if battle.trainer.battler_id == self.battler_id else battle.opponent
+        pokemon = battler.get_active_pokemon()[0]
+        
+        # Show move selection
+        view = MoveSelectView(self.battle_id, self.battler_id, self.battle_engine, pokemon)
+        await interaction.response.send_message(
+            f"**{pokemon.species_name}'s moves:**",
+            view=view,
+            ephemeral=True
+        )
+    
+    @discord.ui.button(label="ðŸ”„ Switch", style=discord.ButtonStyle.primary, row=0)
+    async def switch_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Show Pokemon switching options"""
+        battle = self.battle_engine.get_battle(self.battle_id)
+        if not battle:
+            await interaction.response.send_message("Battle not found!", ephemeral=True)
+            return
+        
+        battler = battle.trainer if battle.trainer.battler_id == self.battler_id else battle.opponent
+        
+        if not battler.can_switch:
+            await interaction.response.send_message(
+                "You can't switch right now!",
+                ephemeral=True
+            )
+            return
+        
+        # Show switch selection
+        view = SwitchSelectView(self.battle_id, self.battler_id, self.battle_engine, battler)
+        await interaction.response.send_message(
+            "**Choose a PokÃ©mon to switch to:**",
+            view=view,
+            ephemeral=True
+        )
+    
+    @discord.ui.button(label="ðŸŽ’ Bag", style=discord.ButtonStyle.success, row=0)
+    async def bag_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Show bag/item options"""
+        battle = self.battle_engine.get_battle(self.battle_id)
+        if not battle:
+            await interaction.response.send_message("Battle not found!", ephemeral=True)
+            return
+        
+        battler = battle.trainer if battle.trainer.battler_id == self.battler_id else battle.opponent
+        
+        if not battler.can_use_items:
+            await interaction.response.send_message(
+                "You can't use items in this battle!",
+                ephemeral=True
+            )
+            return
+        
+        # For now, just show a message
+        await interaction.response.send_message(
+            "Item system coming soon!",
+            ephemeral=True
+        )
+    
+    @discord.ui.button(label="ðŸƒ Run", style=discord.ButtonStyle.secondary, row=0)
+    async def run_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Attempt to flee"""
+        battle = self.battle_engine.get_battle(self.battle_id)
+        if not battle:
+            await interaction.response.send_message("Battle not found!", ephemeral=True)
+            return
+        
+        battler = battle.trainer if battle.trainer.battler_id == self.battler_id else battle.opponent
+        
+        if not battler.can_flee:
+            await interaction.response.send_message(
+                "You can't run from this battle!",
+                ephemeral=True
+            )
+            return
+        
+        # Register flee action
+        action = BattleAction(
+            action_type='flee',
+            battler_id=self.battler_id
+        )
+        
+        await self._register_and_process(interaction, action)
+    
+    async def _display_turn_result(self, interaction: discord.Interaction, turn_result: Dict):
+        """Display the results of a turn"""
+        messages = turn_result.get('messages', [])
+        
+        # Create embed for turn
+        embed = discord.Embed(
+            title=f"âš”ï¸ Turn {turn_result['turn_number']}",
+            description='\n'.join(f"â€¢ {msg}" for msg in messages),
+            color=discord.Color.blue()
+        )
+        
+        # Get battle state for HP display
+        battle = self.battle_engine.get_battle(self.battle_id)
+        
+        # Add HP status
+        trainer_pokemon = battle.trainer.get_active_pokemon()[0]
+        opponent_pokemon = battle.opponent.get_active_pokemon()[0]
+        
+        embed.add_field(
+            name=f"{YOU} Your {trainer_pokemon.species_name}",
+            value=f"â¤ï¸ {trainer_pokemon.current_hp}/{trainer_pokemon.max_hp} HP",
+            inline=True
+        )
+        
+        embed.add_field(
+            name=f"ðŸ”´ {battle.opponent.battler_name}'s {opponent_pokemon.species_name}",
+            value=f"â¤ï¸ {opponent_pokemon.current_hp}/{opponent_pokemon.max_hp} HP",
+            inline=True
+        )
+        
+        await interaction.followup.send(embed=embed)
+    
+    async def _display_battle_end(self, interaction: discord.Interaction, battle):
+        """Display battle end screen"""
+        if battle.winner == 'trainer':
+            title = "ðŸŽ‰ Victory!"
+            color = discord.Color.gold()
+            description = f"You defeated {battle.opponent.battler_name}!"
+            
+            # Add prize money for trainer battles
+            if battle.battle_type == BattleType.TRAINER:
+                description += f"\nðŸ’° You received ${battle.opponent.prize_money}!"
+        
+        elif battle.winner == 'opponent':
+            title = "ðŸ’€ Defeat"
+            color = discord.Color.red()
+            description = f"You were defeated by {battle.opponent.battler_name}..."
+        
+        elif battle.fled:
+            title = "ðŸƒ Fled"
+            color = discord.Color.light_gray()
+            description = "Got away safely!"
+        
+        else:
+            title = "ðŸ¤ Draw"
+            color = discord.Color.light_gray()
+            description = "The battle ended in a draw!"
+        
+        embed = discord.Embed(
+            title=title,
+            description=description,
+            color=color
+        )
+        
+        await interaction.followup.send(embed=embed)
+        
+        # Clean up battle
+        self.battle_engine.end_battle(self.battle_id)
+
+
+class MoveSelectView(discord.ui.View):
+    """Move selection UI"""
+    
+    def __init__(self, battle_id: str, battler_id: int, battle_engine: BattleEngine, pokemon):
+        super().__init__(timeout=60)
+        self.battle_id = battle_id
+        self.battler_id = battler_id
+        self.battle_engine = battle_engine
+        
+        # Add button for each move
+        for i, move in enumerate(pokemon.moves[:4]):
+            move_data = battle_engine.moves_db.get_move(move['move_id'])
+            if move_data:
+                button = discord.ui.Button(
+                    label=f"{move_data['name']} ({move['pp']}/{move['max_pp']})",
+                    style=discord.ButtonStyle.primary,
+                    custom_id=f"move_{i}"
+                )
+                button.callback = self._create_move_callback(move['move_id'])
+                self.add_item(button)
+    
+    def _create_move_callback(self, move_id: str):
+        """Create a callback for a move button"""
+        async def callback(interaction: discord.Interaction):
+            action = BattleAction(
+                action_type='move',
+                battler_id=self.battler_id,
+                move_id=move_id,
+                target_position=0
+            )
+            
+            # Register action
+            result = self.battle_engine.register_action(self.battle_id, self.battler_id, action)
+            
+            if not result.get('success'):
+                await interaction.response.send_message(
+                    result.get('error', 'Failed to use move'),
+                    ephemeral=True
+                )
+                return
+            
+            # Check if ready to process
+            if result.get('ready_to_resolve'):
+                await interaction.response.defer()
+                
+                # Process turn
+                turn_result = await self.battle_engine.process_turn(self.battle_id)
+                
+                # Display results
+                messages = turn_result.get('messages', [])
+                embed = discord.Embed(
+                    title=f"âš”ï¸ Turn {turn_result['turn_number']}",
+                    description='\n'.join(f"â€¢ {msg}" for msg in messages),
+                    color=discord.Color.blue()
+                )
+                
+                await interaction.followup.send(embed=embed, ephemeral=False)
+                
+                # Check if battle ended
+                battle = self.battle_engine.get_battle(self.battle_id)
+                if battle.is_over:
+                    # Battle ended - display end screen
+                    pass
+            else:
+                await interaction.response.send_message(
+                    "Move selected! Waiting for opponent...",
+                    ephemeral=True
+                )
+        
+        return callback
+
+
+class SwitchSelectView(discord.ui.View):
+    """Pokemon switching UI"""
+    
+    def __init__(self, battle_id: str, battler_id: int, battle_engine: BattleEngine, battler):
+        super().__init__(timeout=60)
+        self.battle_id = battle_id
+        self.battler_id = battler_id
+        self.battle_engine = battle_engine
+        
+        # Add button for each Pokemon (except active ones)
+        active_positions = set(battler.active_positions)
+        for i, pokemon in enumerate(battler.party):
+            if i not in active_positions and pokemon.current_hp > 0:
+                button = discord.ui.Button(
+                    label=f"{pokemon.species_name} (Lv.{pokemon.level}) - {pokemon.current_hp}/{pokemon.max_hp} HP",
+                    style=discord.ButtonStyle.success,
+                    custom_id=f"switch_{i}"
+                )
+                button.callback = self._create_switch_callback(i)
+                self.add_item(button)
+    
+    def _create_switch_callback(self, position: int):
+        """Create a callback for a switch button"""
+        async def callback(interaction: discord.Interaction):
+            action = BattleAction(
+                action_type='switch',
+                battler_id=self.battler_id,
+                switch_to_position=position
+            )
+            
+            # Register action
+            result = self.battle_engine.register_action(self.battle_id, self.battler_id, action)
+            
+            if result.get('success'):
+                await interaction.response.send_message(
+                    "Switching PokÃ©mon...",
+                    ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    result.get('error', 'Failed to switch'),
+                    ephemeral=True
+                )
+        
+        return callback
+
+
+class BattleCog(commands.Cog):
+    """Universal battle cog for all battle types"""
+    
+    def __init__(self, bot, player_manager, moves_db, type_chart, species_db):
+        self.bot = bot
+        self.player_manager = player_manager
+        self.moves_db = moves_db
+        self.type_chart = type_chart
+        self.species_db = species_db
+        
+        # Initialize battle engine
+        self.battle_engine = BattleEngine(moves_db, type_chart, species_db)
+        
+        # Track active battles per user
+        self.user_battles: Dict[int, str] = {}  # user_id -> battle_id
+    
+    async def start_battle_ui(
+        self,
+        interaction: discord.Interaction,
+        battle_id: str,
+        battle_type: BattleType
+    ):
+        battle = self.battle_engine.get_battle(battle_id)
+        # Ensure we can send multiple messages from a select interaction
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.defer()
+        except Exception:
+            pass
+        if not battle:
+            await interaction.followup.send("Battle not found!", ephemeral=True)
+            return
+
+        trainer_mon = battle.trainer.get_active_pokemon()[0]
+        opponent_mon = battle.opponent.get_active_pokemon()[0]
+
+        # 1) Encounter embed (very obvious)
+        enc = discord.Embed(title=f"{SWORD} Encounter!", description=f"You encountered a wild **{opponent_mon.species_name}**!", color=discord.Color.blue())
+        enc.set_footer(text=f"Build: {BUILD_TAG}")
+        await interaction.followup.send(embed=enc)
+
+        # 2) Send-out + entry
+        entry_lines = [f"**{battle.trainer.battler_name}** sent out **{trainer_mon.species_name}**!"]
+        for msg in (getattr(battle, "entry_messages", []) or []):
+            entry_lines.append(f"• {msg}")
+        send_embed = discord.Embed(title="Send-out", description="\n".join(entry_lines), color=discord.Color.blurple())
+        if battle.weather or battle.terrain:
+            summary = []
+            if battle.weather: summary.append(f"Weather: **{battle.weather.title()}** ({battle.weather_turns} turns)")
+            if battle.terrain: summary.append(f"Terrain: **{battle.terrain.title()}** ({battle.terrain_turns} turns)")
+            send_embed.add_field(name=f"{FIELD} Field Effects", value="\n".join(summary), inline=False)
+        await interaction.followup.send(embed=send_embed)
+
+        # 3) Main panel
+        main_embed = self._create_battle_embed(battle)
+        view = self._create_battle_view(battle)
+        await interaction.followup.send(embed=main_embed, view=view)
+
+    def _create_battle_embed(self, battle) -> discord.Embed:
+        """Create the main battle display embed"""
+        trainer_pokemon = battle.trainer.get_active_pokemon()[0]
+        opponent_pokemon = battle.opponent.get_active_pokemon()[0]
+        
+        # Title based on battle type
+        if battle.battle_type == BattleType.WILD:
+            title = f"{SWORD} Battle"
+        elif battle.battle_type == BattleType.TRAINER:
+            title = f"âš”ï¸ Trainer Battle: VS {battle.opponent.battler_name}"
+        else:
+            title = f"âš”ï¸ Battle: {battle.trainer.battler_name} VS {battle.opponent.battler_name}"
+        
+        embed = discord.Embed(
+            title=title,
+            description=f"**Turn {battle.turn_number}**",
+            color=discord.Color.blue()
+        )
+        
+        # Your Pokemon
+        embed.add_field(
+            name=f"{YOU} Your {trainer_pokemon.species_name}",
+            value=(
+                f"**Level:** {trainer_pokemon.level}\n"
+                f"**HP:** {trainer_pokemon.current_hp}/{trainer_pokemon.max_hp}\n"
+                f"{'â¤ï¸' * int(10 * trainer_pokemon.current_hp / trainer_pokemon.max_hp)}"
+            ),
+            inline=True
+        )
+        
+        # Opponent Pokemon
+        embed.add_field(
+            name=f"ðŸ”´ {opponent_pokemon.species_name}",
+            value=(
+                f"**Level:** {opponent_pokemon.level}\n"
+                f"**HP:** {opponent_pokemon.current_hp}/{opponent_pokemon.max_hp}\n"
+                f"{'â¤ï¸' * int(10 * opponent_pokemon.current_hp / opponent_pokemon.max_hp)}"
+            ),
+            inline=True
+        )
+        
+        # Field effects
+        effects = []
+        if battle.weather:
+            effects.append(f"â˜ï¸ Weather: {battle.weather.title()} ({battle.weather_turns} turns)")
+        if battle.terrain:
+            effects.append(f"ðŸŒ Terrain: {battle.terrain.title()} ({battle.terrain_turns} turns)")
+        
+        if effects:
+            embed.add_field(
+                name="ðŸŒŸ Field Effects",
+                value='\n'.join(effects),
+                inline=False
+            )
+        
+        # Recent messages
+        if battle.battle_log:
+            recent = battle.battle_log[-3:]
+            embed.add_field(
+                name=f"{EVENTS} Recent Events",
+                value='\n'.join(f"â€¢ {msg}" for msg in recent),
+                inline=False
+            )
+        
+        return embed
+
+
+async def setup(bot):
+    """Setup function for the cog"""
+    # Get required dependencies from the bot
+    player_manager = bot.player_manager
+    moves_db = bot.moves_db
+    type_chart = bot.type_chart
+    species_db = bot.species_db
+    
+    # Create and add the cog
+    await bot.add_cog(BattleCog(bot, player_manager, moves_db, type_chart, species_db))
