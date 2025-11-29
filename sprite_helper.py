@@ -56,9 +56,14 @@ class PokemonSpriteHelper:
             name = f"{name}-{form.lower()}"
 
         if style == 'animated':
-            # Use Showdown Gen 5 static sprites (all Pokemon have these)
-            # Gen5 animated sprites don't exist for all Pokemon
-            return PokemonSpriteHelper.GEN5_STATIC.format(name=name)
+            # Gen5 animated sprites don't exist for Pokemon from gen 8+ (dex 810+)
+            # Use static sprites as fallback for these Pokemon
+            if dex_number and dex_number >= 810:
+                # Gen 8+ Pokemon - use Showdown static sprites
+                return PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=name)
+            else:
+                # Gen 1-7 Pokemon - use Gen5 animated sprites
+                return PokemonSpriteHelper.GEN5_ANIMATED.format(name=name)
 
         elif style == 'gen5static':
             # Gen 5 static sprites

@@ -2528,7 +2528,7 @@ class PaginatedTravelView(View):
         location_data = self.all_locations.get(new_location_id, {})
 
         # Regular location travel
-        self.bot.player_manager.set_location(interaction.user.id, new_location_id)
+        self.bot.player_manager.update_location(interaction.user.id, new_location_id)
 
         location_name = location_data.get('name', new_location_id.replace('_', ' ').title())
         await interaction.response.send_message(
