@@ -139,20 +139,24 @@ class LocationManager:
                 species_data = species_db.get_species(encounter['species_dex_number'])
                 if not species_data:
                     continue
-                
+
                 # Random level within range
                 level = random.randint(
                     encounter['min_level'],
                     encounter['max_level']
                 )
-                
+
+                # Get form from encounter data (if specified)
+                form = encounter.get('form', None)
+
                 # Create Pokemon
                 pokemon = Pokemon(
                     species_data=species_data,
                     level=level,
-                    owner_discord_id=None  # Wild Pokemon
+                    owner_discord_id=None,  # Wild Pokemon
+                    form=form
                 )
-                
+
                 return pokemon
         
         return None

@@ -904,7 +904,7 @@
     "npc_trainers": []
   },
   "wild_area_desert_sunbaked_path": {
-    "name": "Wild Area γ - Desert: Sunbaked Path",
+    "name": "Wild Area γ - Desert: Sandy Crossing",
     "description": "The outskirts of a vast desert, where the ground begins to turn sandy under the scorching sun. Hardy Pokémon adapted to heat and arid conditions can be found here.",
     "channel_ids": [],
     "amenities": [],
@@ -1031,6 +1031,7 @@
       {
         "species_dex_number": 58,
         "species_name": "Growlithe",
+        "form": "hisui",
         "min_level": 10,
         "max_level": 15,
         "weight": 2
@@ -1052,6 +1053,7 @@
       {
         "species_dex_number": 27,
         "species_name": "Sandshrew",
+        "form": "alola",
         "min_level": 8,
         "max_level": 12,
         "weight": 1
@@ -1159,6 +1161,7 @@
       {
         "species_dex_number": 37,
         "species_name": "Vulpix",
+        "form": "alola",
         "min_level": 8,
         "max_level": 13,
         "weight": 3
