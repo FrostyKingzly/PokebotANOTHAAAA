@@ -2366,11 +2366,7 @@ class PaginatedTravelView(View):
         # Define pages with area groupings
         self.pages = [
             {
-                "title": "Reverie City - Lights",
-                "locations": []  # Add location IDs for this area
-            },
-            {
-                "title": "Lights District",
+                "title": "Reverie City - Lights District",
                 "locations": ['lights_district_central_plaza', 'lights_district_art_studio']
             },
             {
