@@ -19,7 +19,8 @@ class PokemonSpriteHelper:
     
     @staticmethod
     def get_sprite(pokemon_name: str, dex_number: Optional[int] = None,
-                   style: str = 'animated', shiny: bool = False, use_fallback: bool = True) -> str:
+                   style: str = 'animated', shiny: bool = False, use_fallback: bool = True,
+                   form: str = None) -> str:
         """
         Get Pokemon sprite URL
 
@@ -29,6 +30,7 @@ class PokemonSpriteHelper:
             style: 'animated', 'gen5static', 'static', 'official', 'showdown'
             shiny: Whether to get shiny sprite (only works for 'static')
             use_fallback: If True and style='animated', returns a list [animated_url, gen5static_url]
+            form: Regional form (e.g., 'alola', 'hisui', 'galar') or None for base form
 
         Returns:
             URL string for the sprite, or list of URLs if use_fallback=True for animated
@@ -43,8 +45,15 @@ class PokemonSpriteHelper:
 
             >>> PokemonSpriteHelper.get_sprite("charizard", 6, style='official')
             'https://assets.pokemon.com/assets/cms2/img/pokedex/full/006.png'
+
+            >>> PokemonSpriteHelper.get_sprite("sandshrew", 27, form='alola')
+            'https://play.pokemonshowdown.com/sprites/gen5ani/sandshrew-alola.gif'
         """
         name = pokemon_name.lower().replace(' ', '').replace('-', '')
+
+        # Add form suffix if specified (e.g., "sandshrew-alola")
+        if form:
+            name = f"{name}-{form.lower()}"
 
         if style == 'animated':
             # Use Showdown Gen 5 animated sprites with Gen 5 static as fallback

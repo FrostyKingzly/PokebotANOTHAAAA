@@ -27,13 +27,14 @@ class PokemonMove:
 class Pokemon:
     """Represents an owned Pokemon instance"""
     
-    def __init__(self, species_data: Dict, level: int = 5, 
+    def __init__(self, species_data: Dict, level: int = 5,
                  owner_discord_id: int = None, nature: str = None,
                  ability: str = None, moves: List[str] = None,
-                 ivs: Dict[str, int] = None, is_shiny: bool = False):
+                 ivs: Dict[str, int] = None, is_shiny: bool = False,
+                 form: str = None):
         """
         Create a new Pokemon instance
-        
+
         Args:
             species_data: Species info from SpeciesDatabase
             level: Starting level
@@ -43,6 +44,7 @@ class Pokemon:
             moves: List of move IDs (auto-generated if None)
             ivs: IV dict (random if None)
             is_shiny: Whether this Pokemon is shiny
+            form: Regional form (e.g. 'alola', 'hisui', 'galar') or None for base form
         """
         self.species_dex_number = species_data['dex_number']
         self.species_name = species_data['name']
@@ -50,6 +52,7 @@ class Pokemon:
         self.level = level
         self.owner_discord_id = owner_discord_id
         self.nickname = None
+        self.form = form
         
         # Generate gender based on species ratio
         self.gender = self._generate_gender(species_data.get('gender_ratio', {}))

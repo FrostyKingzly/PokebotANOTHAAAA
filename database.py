@@ -295,28 +295,29 @@ class PlayerDatabase:
         """)
 
         self._ensure_trainer_columns(cursor)
-        
+
         # Pokemon instances table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS pokemon_instances (
                 pokemon_id TEXT PRIMARY KEY,
                 owner_discord_id INTEGER NOT NULL,
                 species_dex_number INTEGER NOT NULL,
+                form TEXT,
                 nickname TEXT,
                 level INTEGER DEFAULT 5,
                 exp INTEGER DEFAULT 0,
-                
+
                 -- Core Stats
                 gender TEXT,
                 nature TEXT NOT NULL,
                 ability TEXT NOT NULL,
                 held_item TEXT,
-                
+
                 -- Battle Stats
                 current_hp INTEGER NOT NULL,
                 max_hp INTEGER NOT NULL,
                 status_condition TEXT,
-                
+
                 -- IVs
                 iv_hp INTEGER DEFAULT 31,
                 iv_attack INTEGER DEFAULT 31,
@@ -324,7 +325,7 @@ class PlayerDatabase:
                 iv_sp_attack INTEGER DEFAULT 31,
                 iv_sp_defense INTEGER DEFAULT 31,
                 iv_speed INTEGER DEFAULT 31,
-                
+
                 -- EVs
                 ev_hp INTEGER DEFAULT 0,
                 ev_attack INTEGER DEFAULT 0,
@@ -332,29 +333,31 @@ class PlayerDatabase:
                 ev_sp_attack INTEGER DEFAULT 0,
                 ev_sp_defense INTEGER DEFAULT 0,
                 ev_speed INTEGER DEFAULT 0,
-                
+
                 -- Moves (stored as JSON array)
                 moves TEXT NOT NULL,
-                
+
                 -- Social
                 friendship INTEGER DEFAULT 70,
                 bond_level INTEGER DEFAULT 0,
-                
+
                 -- Storage
                 in_party INTEGER DEFAULT 0,
                 party_position INTEGER,
                 box_position INTEGER,
-                
+
                 -- Flags
                 is_shiny INTEGER DEFAULT 0,
                 can_mega_evolve INTEGER DEFAULT 0,
                 tera_type TEXT,
-                
+
                 caught_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                
+
                 FOREIGN KEY (owner_discord_id) REFERENCES trainers(discord_user_id)
             )
         """)
+
+        self._ensure_pokemon_columns(cursor)
         
         # Inventory table
         cursor.execute("""
@@ -539,6 +542,21 @@ class PlayerDatabase:
         add_column('has_omni_ring', 'INTEGER DEFAULT 0')
         add_column('omni_ring_gimmicks', 'TEXT')
 
+    def _ensure_pokemon_columns(self, cursor):
+        """Add missing pokemon_instances columns when migrating older databases."""
+
+        existing_columns = self._get_table_columns(cursor, 'pokemon_instances')
+
+        def add_column(column: str, definition: str) -> bool:
+            if column not in existing_columns:
+                cursor.execute(f"ALTER TABLE pokemon_instances ADD COLUMN {column} {definition}")
+                existing_columns.add(column)
+                return True
+            return False
+
+        # Add form column for regional variants
+        add_column('form', 'TEXT')
+
     def get_connection(self):
         """Get database connection"""
         conn = sqlite3.connect(self.db_path)
@@ -717,19 +735,20 @@ class PlayerDatabase:
         
         cursor.execute("""
             INSERT INTO pokemon_instances (
-                pokemon_id, owner_discord_id, species_dex_number, nickname,
+                pokemon_id, owner_discord_id, species_dex_number, form, nickname,
                 level, exp, gender, nature, ability, held_item,
                 current_hp, max_hp, status_condition,
                 iv_hp, iv_attack, iv_defense, iv_sp_attack, iv_sp_defense, iv_speed,
                 ev_hp, ev_attack, ev_defense, ev_sp_attack, ev_sp_defense, ev_speed,
                 moves, friendship, bond_level, in_party, party_position, box_position,
                 is_shiny, can_mega_evolve, tera_type
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             pokemon_id,
             pokemon_data['owner_discord_id'],
             pokemon_data['species_dex_number'],
+            pokemon_data.get('form'),
             pokemon_data.get('nickname'),
             pokemon_data.get('level', 5),
             pokemon_data.get('exp', 0),
