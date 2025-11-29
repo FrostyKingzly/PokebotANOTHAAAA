@@ -56,12 +56,9 @@ class PokemonSpriteHelper:
             name = f"{name}-{form.lower()}"
 
         if style == 'animated':
-            # Use Showdown Gen 5 animated sprites with Gen 5 static as fallback
-            animated_url = PokemonSpriteHelper.GEN5_ANIMATED.format(name=name)
-            if use_fallback:
-                gen5static_url = PokemonSpriteHelper.GEN5_STATIC.format(name=name)
-                return animated_url  # Return primary, fallback handled by Discord
-            return animated_url
+            # Use Showdown Gen 5 static sprites (all Pokemon have these)
+            # Gen5 animated sprites don't exist for all Pokemon
+            return PokemonSpriteHelper.GEN5_STATIC.format(name=name)
 
         elif style == 'gen5static':
             # Gen 5 static sprites
