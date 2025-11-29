@@ -8,11 +8,14 @@ from typing import Optional
 
 class PokemonSpriteHelper:
     """Helper class to get Pokemon sprite URLs"""
-    
+
     # Sprite sources
     GEN5_ANIMATED = "https://play.pokemonshowdown.com/sprites/gen5ani/{name}.gif"
+    GEN5_ANIMATED_SHINY = "https://play.pokemonshowdown.com/sprites/gen5ani-shiny/{name}.gif"
     GEN5_STATIC = "https://play.pokemonshowdown.com/sprites/gen5/{name}.png"
+    GEN5_STATIC_SHINY = "https://play.pokemonshowdown.com/sprites/gen5-shiny/{name}.png"
     SHOWDOWN_STATIC = "https://play.pokemonshowdown.com/sprites/pokemon/{name}.png"
+    SHOWDOWN_STATIC_SHINY = "https://play.pokemonshowdown.com/sprites/gen5-shiny/{name}.png"
     POKEAPI_FRONT = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{id}.png"
     POKEAPI_SHINY = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/{id}.png"
     OFFICIAL_ART = "https://assets.pokemon.com/assets/cms2/img/pokedex/full/{id}.png"
@@ -28,7 +31,7 @@ class PokemonSpriteHelper:
             pokemon_name: Pokemon species name (e.g., "pikachu", "charizard")
             dex_number: National Dex number (required for 'static' and 'official' styles)
             style: 'animated', 'gen5static', 'static', 'official', 'showdown'
-            shiny: Whether to get shiny sprite (only works for 'static')
+            shiny: Whether to get shiny sprite (animated/gen5static/showdown use Showdown shinies)
             use_fallback: If True and style='animated', returns a list [animated_url, gen5static_url]
             form: Regional form (e.g., 'alola', 'hisui', 'galar') or None for base form
 
@@ -59,17 +62,25 @@ class PokemonSpriteHelper:
             # Gen5 animated sprites don't exist for Pokemon from gen 8+ (dex 810+)
             # Use static sprites as fallback for these Pokemon
             if dex_number and dex_number >= 810:
-                # Gen 8+ Pokemon - use Showdown static sprites
+                # Gen 8+ Pokemon - use Showdown static sprites (shiny-aware)
+                if shiny:
+                    return PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=name)
                 return PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=name)
             else:
                 # Gen 1-7 Pokemon - use Gen5 animated sprites
+                if shiny:
+                    return PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=name)
                 return PokemonSpriteHelper.GEN5_ANIMATED.format(name=name)
 
         elif style == 'gen5static':
             # Gen 5 static sprites
+            if shiny:
+                return PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=name)
             return PokemonSpriteHelper.GEN5_STATIC.format(name=name)
 
         elif style == 'showdown':
+            if shiny:
+                return PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=name)
             return PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=name)
 
         elif style == 'static':

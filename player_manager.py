@@ -137,13 +137,12 @@ class PlayerManager:
         Returns:
             True if successful, False if player not found
         """
-        with self.get_session() as session:
-            trainer = session.query(Trainer).filter_by(discord_user_id=discord_id).first()
-            if trainer:
-                trainer.current_location_id = location_id
-                session.commit()
-                return True
+        trainer = self.db.get_trainer(discord_id)
+        if not trainer:
             return False
+
+        self.db.update_trainer(discord_id, current_location_id=location_id)
+        return True
 
     def delete_player(self, discord_user_id: int) -> bool:
         """Delete a trainer profile and all associated data."""
