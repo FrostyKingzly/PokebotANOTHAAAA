@@ -240,39 +240,35 @@ class EmbedBuilder:
         return embed
     
     @staticmethod
-    def party_view(party: List[Dict], species_db) -> discord.Embed:
+    def party_view(party: List[Dict], species_db, trainer_name: str = None) -> discord.Embed:
         """Create party view embed"""
+        title = f"{trainer_name}'s Party" if trainer_name else "Your Party"
         embed = discord.Embed(
-            title="Your Party",
+            title=title,
             description="Your current party Pokémon",
             color=EmbedBuilder.PRIMARY_COLOR
         )
-        
+
         if not party:
             embed.description = "Your party is empty! Catch some Pokémon!"
             return embed
-        
+
         for i, pokemon in enumerate(party, 1):
             species = species_db.get_species(pokemon['species_dex_number'])
             name = pokemon.get('nickname') or species['name']
-            
-            # Build Pokemon info
-            info = f"**Level {pokemon['level']}** {species['name']}\n"
-            info += f"HP: {pokemon['current_hp']}/{pokemon['max_hp']}\n"
-            
+
+            # Build Pokemon info - simplified format
+            info = f"HP: {pokemon['current_hp']}/{pokemon['max_hp']}"
+
             if pokemon.get('status_condition'):
-                info += f"Status: {pokemon['status_condition'].upper()}\n"
-            
-            # Type icons (you can add emoji later)
-            types = " / ".join([t.title() for t in species['types']])
-            info += f"Type: {types}"
-            
+                info += f"\nStatus: {pokemon['status_condition'].upper()}"
+
             embed.add_field(
-                name=f"{i}. {name}",
+                name=f"{i}. {name} Lv. {pokemon['level']}",
                 value=info,
                 inline=False
             )
-        
+
         return embed
     
     @staticmethod

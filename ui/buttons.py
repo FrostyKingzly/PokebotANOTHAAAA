@@ -126,6 +126,7 @@ class MainMenuView(View):
             return
 
         trainer = self.bot.player_manager.get_player(interaction.user.id)
+        trainer_name = getattr(trainer, 'trainer_name', None) if trainer else None
         current_location_id = getattr(trainer, 'current_location_id', None) if trainer else None
         location_manager = getattr(self.bot, 'location_manager', None)
         can_heal_party = bool(
@@ -135,7 +136,7 @@ class MainMenuView(View):
         )
 
         # Show party management view
-        embed = EmbedBuilder.party_view(party, self.bot.species_db)
+        embed = EmbedBuilder.party_view(party, self.bot.species_db, trainer_name=trainer_name)
         view = PartyManagementView(self.bot, party, can_heal_party=can_heal_party)
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -311,9 +312,9 @@ class MainMenuView(View):
             )
             return
 
-        # Show travel selection
-        embed = EmbedBuilder.travel_select(combined_locations, current_location_id)
-        view = TravelSelectView(self.bot, combined_locations, current_location_id)
+        # Show travel selection with paginated view
+        view = PaginatedTravelView(self.bot, combined_locations, current_location_id)
+        embed = view.create_embed()
 
         await interaction.response.send_message(
             embed=embed,
@@ -901,17 +902,16 @@ class PartyManagementView(View):
         )
         select.callback = self.pokemon_callback
         self.add_item(select)
-        
 
-        # Add Move to Box button
-        move_box_button = Button(
-            label="📦 Move to Box",
-            style=discord.ButtonStyle.secondary,
-            custom_id="move_to_box",
-            row=1
-        )
-        move_box_button.callback = self.move_to_box_callback
-        self.add_item(move_box_button)
+        # Move to Box button removed (non-functional)
+        # move_box_button = Button(
+        #     label="📦 Move to Box",
+        #     style=discord.ButtonStyle.secondary,
+        #     custom_id="move_to_box",
+        #     row=1
+        # )
+        # move_box_button.callback = self.move_to_box_callback
+        # self.add_item(move_box_button)
 
         # Add Swap Positions button
         swap_button = Button(
@@ -2353,9 +2353,192 @@ class ItemGivePokemonSelectView(View):
         back_button.callback = back_callback
         self.add_item(back_button)
 
+class PaginatedTravelView(View):
+    """Paginated travel view organized by areas"""
+
+    def __init__(self, bot, all_locations: dict, current_location_id: str):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.all_locations = all_locations
+        self.current_location_id = current_location_id
+        self.current_page = 0
+
+        # Define pages with area groupings
+        self.pages = [
+            {
+                "title": "Reverie City - Lights District",
+                "locations": ['lights_district_central_plaza', 'lights_district_art_studio']
+            },
+            {
+                "title": "Reverie City - Residential District",
+                "locations": []  # Add location IDs for this area
+            },
+            {
+                "title": "Wild Area α - Forest",
+                "locations": ['wild_area_forest_meadow_path']
+            },
+            {
+                "title": "Wild Area β - Canyon",
+                "locations": ['wild_area_canyon_redstone_canyon']
+            },
+            {
+                "title": "Wild Area γ - Desert",
+                "locations": ['wild_area_desert_sunbaked_path']
+            },
+            {
+                "title": "Wild Area δ - Tundra",
+                "locations": ['wild_area_tundra_snowdust_crossing']
+            }
+        ]
+
+        self.update_view()
+
+    def update_view(self):
+        """Update the view with current page"""
+        self.clear_items()
+
+        # Get current page data
+        page = self.pages[self.current_page]
+        page_locations = {
+            loc_id: self.all_locations[loc_id]
+            for loc_id in page['locations']
+            if loc_id in self.all_locations
+        }
+
+        # Create location dropdown if there are locations
+        if page_locations:
+            options = []
+            for location_id, location_data in page_locations.items():
+                label = location_data.get('name', location_id.replace('_', ' ').title())
+
+                # Mark current location
+                is_current = (location_id == self.current_location_id)
+                if is_current:
+                    label = f"📍 {label} (Current)"
+
+                description = location_data.get('description', '')[:100]
+
+                options.append(
+                    discord.SelectOption(
+                        label=label[:100],
+                        value=location_id,
+                        description=description,
+                        default=is_current
+                    )
+                )
+
+            select = Select(
+                placeholder=f"Select a location in {page['title']}...",
+                options=options,
+                custom_id="location_select",
+                row=0
+            )
+            select.callback = self.location_callback
+            self.add_item(select)
+
+        # Add navigation buttons
+        prev_button = Button(
+            label="◀ Previous",
+            style=discord.ButtonStyle.secondary,
+            disabled=(self.current_page == 0),
+            row=1
+        )
+        prev_button.callback = self.prev_page
+        self.add_item(prev_button)
+
+        next_button = Button(
+            label="Next ▶",
+            style=discord.ButtonStyle.secondary,
+            disabled=(self.current_page == len(self.pages) - 1),
+            row=1
+        )
+        next_button.callback = self.next_page
+        self.add_item(next_button)
+
+    async def prev_page(self, interaction: discord.Interaction):
+        """Go to previous page"""
+        self.current_page = max(0, self.current_page - 1)
+        self.update_view()
+
+        page = self.pages[self.current_page]
+        embed = self.create_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def next_page(self, interaction: discord.Interaction):
+        """Go to next page"""
+        self.current_page = min(len(self.pages) - 1, self.current_page + 1)
+        self.update_view()
+
+        page = self.pages[self.current_page]
+        embed = self.create_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    def create_embed(self):
+        """Create embed for current page"""
+        from ui.embeds import EmbedBuilder
+
+        page = self.pages[self.current_page]
+        embed = discord.Embed(
+            title=f"🧭 Travel - {page['title']}",
+            description=f"Page {self.current_page + 1} of {len(self.pages)}",
+            color=discord.Color.blue()
+        )
+
+        # List locations on this page
+        location_list = []
+        for location_id in page['locations']:
+            if location_id not in self.all_locations:
+                continue
+
+            location_data = self.all_locations[location_id]
+            location_name = location_data.get('name', location_id.replace('_', ' ').title())
+
+            # Mark current location
+            if location_id == self.current_location_id:
+                location_list.append(f"📍 **{location_name}** (Current)")
+            else:
+                location_list.append(f"• {location_name}")
+
+        if location_list:
+            embed.add_field(
+                name="Available Locations",
+                value="\n".join(location_list),
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="Available Locations",
+                value="No locations available in this area yet.",
+                inline=False
+            )
+
+        return embed
+
+    async def location_callback(self, interaction: discord.Interaction):
+        """Handle location selection"""
+        new_location_id = interaction.data['values'][0]
+
+        if new_location_id == self.current_location_id:
+            await interaction.response.send_message(
+                "❌ You're already at this location!",
+                ephemeral=True
+            )
+            return
+
+        location_data = self.all_locations.get(new_location_id, {})
+
+        # Regular location travel
+        self.bot.player_manager.set_location(interaction.user.id, new_location_id)
+
+        location_name = location_data.get('name', new_location_id.replace('_', ' ').title())
+        await interaction.response.send_message(
+            f"🧭 You traveled to **{location_name}**!",
+            ephemeral=True
+        )
+
 class TravelSelectView(View):
     """Location travel selection view"""
-    
+
     def __init__(self, bot, all_locations: dict, current_location_id: str):
         super().__init__(timeout=300)
         self.bot = bot
