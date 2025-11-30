@@ -452,7 +452,7 @@ class PokemonActionsView(View):
 
         # Get new species data
         new_species_id = evolve_into
-        new_species = self.bot.species_db.get_species_by_name(new_species_id)
+        new_species = self.bot.species_db.get_species(new_species_id)
         if not new_species:
             await interaction.response.send_message("[X] Evolution species not found!", ephemeral=True)
             return

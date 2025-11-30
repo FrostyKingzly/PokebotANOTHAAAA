@@ -234,6 +234,7 @@ class Pokemon:
         return {
             'owner_discord_id': self.owner_discord_id,
             'species_dex_number': self.species_dex_number,
+            'form': self.form,
             'nickname': self.nickname,
             'level': self.level,
             'exp': self.exp,
