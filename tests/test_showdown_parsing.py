@@ -43,6 +43,19 @@ IVs: 31 HP / 31 SpA / 31 Spe
         self.assertEqual(species_db.get_species('Nidoran-F')['dex_number'], 29)
         self.assertEqual(species_db.get_species('porygon-z')['dex_number'], 474)
 
+    def test_gender_suffix_parses_correctly(self):
+        showdown_text = """
+Pikachu (F)
+Ability: Static
+Level: 5
+- Thunderbolt
+"""
+
+        parsed = self.cog.parse_showdown_format(showdown_text)
+
+        self.assertEqual(parsed['species'], 'Pikachu')
+        self.assertEqual(parsed['gender'], 'female')
+
 
 if __name__ == '__main__':
     unittest.main()

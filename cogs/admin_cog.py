@@ -95,7 +95,8 @@ class AdminCog(commands.Cog):
                 ability=pokemon_data['ability'],
                 moves=pokemon_data['moves'],
                 ivs=pokemon_data['ivs'],
-                is_shiny=pokemon_data['shiny']
+                is_shiny=pokemon_data['shiny'],
+                gender=pokemon_data['gender']
             )
             
             # Set EVs
@@ -170,6 +171,7 @@ class AdminCog(commands.Cog):
         result = {
             'species': None,
             'nickname': None,
+            'gender': None,
             'held_item': None,
             'ability': None,
             'level': 5,
@@ -181,24 +183,38 @@ class AdminCog(commands.Cog):
             'tera_type': None
         }
         
-        # Parse first line (species and item)
+        # Parse first line (species, gender, and item)
         first_line = lines[0].strip()
-        
-        # Check for nickname: "Nickname (Species) @ Item"
-        nickname_match = re.match(r'^(.+?)\s*\((.+?)\)\s*(?:@\s*(.+))?$', first_line)
+
+        # Split out held item first to simplify gender parsing
+        species_gender_part, _, item_part = first_line.partition('@')
+        species_gender_part = species_gender_part.strip()
+
+        if item_part:
+            result['held_item'] = self._normalize_identifier(item_part.strip())
+
+        # Look for trailing gender marker like "(F)" or "(M)" and remove it from species parsing
+        gender = None
+        gender_match = re.search(r'\((M|F)\)\s*$', species_gender_part, re.IGNORECASE)
+        if gender_match:
+            gender = gender_match.group(1)
+            species_gender_part = species_gender_part[:gender_match.start()].strip()
+
+        # Check for nickname: "Nickname (Species)"
+        nickname_match = re.match(r'^(.+?)\s*\((.+?)\)$', species_gender_part)
         if nickname_match:
             result['nickname'] = nickname_match.group(1).strip()
             result['species'] = nickname_match.group(2).strip()
-            if nickname_match.group(3):
-                result['held_item'] = self._normalize_identifier(nickname_match.group(3))
         else:
-            # No nickname: "Species @ Item" or just "Species"
-            item_match = re.match(r'^(.+?)\s*(?:@\s*(.+))?$', first_line)
-            if item_match:
-                result['species'] = item_match.group(1).strip()
-                if item_match.group(2):
-                    result['held_item'] = self._normalize_identifier(item_match.group(2))
-        
+            # No nickname: "Species"
+            species_match = re.match(r'^(.+?)$', species_gender_part)
+            if species_match:
+                result['species'] = species_match.group(1).strip()
+
+        if gender:
+            gender = gender.upper()
+            result['gender'] = 'female' if gender == 'F' else 'male'
+
         # Parse remaining lines
         for line in lines[1:]:
             line = line.strip()

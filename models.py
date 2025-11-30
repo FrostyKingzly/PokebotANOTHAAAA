@@ -33,7 +33,7 @@ class Pokemon:
                  owner_discord_id: int = None, nature: str = None,
                  ability: str = None, moves: List[str] = None,
                  ivs: Dict[str, int] = None, is_shiny: bool = False,
-                 form: str = None):
+                 form: str = None, gender: Optional[str] = None):
         """
         Create a new Pokemon instance
 
@@ -47,6 +47,7 @@ class Pokemon:
             ivs: IV dict (random if None)
             is_shiny: Whether this Pokemon is shiny
             form: Regional form (e.g. 'alola', 'hisui', 'galar') or None for base form
+            gender: 'male', 'female', or None to auto-generate based on species ratio
         """
         self.species_dex_number = species_data['dex_number']
         self.species_name = species_data['name']
@@ -57,8 +58,10 @@ class Pokemon:
         self.nickname = None
         self.form = form
         
-        # Generate gender based on species ratio
-        self.gender = self._generate_gender(species_data.get('gender_ratio', {}))
+        # Generate gender based on species ratio (unless provided)
+        self.gender = gender if gender is not None else self._generate_gender(
+            species_data.get('gender_ratio', {})
+        )
         
         # Nature
         from database import NaturesDatabase
