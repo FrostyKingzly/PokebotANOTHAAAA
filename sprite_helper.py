@@ -17,13 +17,22 @@ class PokemonSpriteHelper:
     SHOWDOWN_STATIC = "https://play.pokemonshowdown.com/sprites/pokemon/{name}.png"
     SHOWDOWN_STATIC_SHINY = "https://play.pokemonshowdown.com/sprites/gen5-shiny/{name}.png"
     POKEAPI_FRONT = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{id}.png"
+    POKEAPI_FRONT_FEMALE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/female/{id}.png"
     POKEAPI_SHINY = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/{id}.png"
+    POKEAPI_SHINY_FEMALE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/female/{id}.png"
     OFFICIAL_ART = "https://assets.pokemon.com/assets/cms2/img/pokedex/full/{id}.png"
     
     @staticmethod
+    def _gendered_name(name: str, gender: Optional[str]) -> str:
+        """Return the gender-adjusted sprite slug for Showdown sprites."""
+        if gender and gender.lower() == "female":
+            return f"{name}-f"
+        return name
+
+    @staticmethod
     def get_sprite(pokemon_name: str, dex_number: Optional[int] = None,
                    style: str = 'animated', shiny: bool = False, use_fallback: bool = True,
-                   form: str = None) -> str:
+                   form: str = None, gender: Optional[str] = None) -> str:
         """
         Get Pokemon sprite URL
 
@@ -63,29 +72,37 @@ class PokemonSpriteHelper:
             # Use static sprites as fallback for these Pokemon
             if dex_number and dex_number >= 810:
                 # Gen 8+ Pokemon - use Showdown static sprites (shiny-aware)
+                gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
                 if shiny:
-                    return PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=name)
-                return PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=name)
+                    return PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=gendered_name)
+                return PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=gendered_name)
             else:
                 # Gen 1-7 Pokemon - use Gen5 animated sprites
+                gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
                 if shiny:
-                    return PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=name)
-                return PokemonSpriteHelper.GEN5_ANIMATED.format(name=name)
+                    return PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=gendered_name)
+                return PokemonSpriteHelper.GEN5_ANIMATED.format(name=gendered_name)
 
         elif style == 'gen5static':
             # Gen 5 static sprites
+            gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
             if shiny:
-                return PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=name)
-            return PokemonSpriteHelper.GEN5_STATIC.format(name=name)
+                return PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=gendered_name)
+            return PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
 
         elif style == 'showdown':
+            gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
             if shiny:
-                return PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=name)
-            return PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=name)
+                return PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=gendered_name)
+            return PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=gendered_name)
 
         elif style == 'static':
             if dex_number is None:
                 raise ValueError("dex_number required for static sprites")
+            if gender and gender.lower() == "female":
+                if shiny:
+                    return PokemonSpriteHelper.POKEAPI_SHINY_FEMALE.format(id=dex_number)
+                return PokemonSpriteHelper.POKEAPI_FRONT_FEMALE.format(id=dex_number)
             if shiny:
                 return PokemonSpriteHelper.POKEAPI_SHINY.format(id=dex_number)
             return PokemonSpriteHelper.POKEAPI_FRONT.format(id=dex_number)

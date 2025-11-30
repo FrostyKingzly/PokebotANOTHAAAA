@@ -132,7 +132,9 @@ class AdminCog(commands.Cog):
             sprite_url = PokemonSpriteHelper.get_sprite(
                 pokemon.species_name,
                 species_data['dex_number'],
-                style='animated'
+                style='animated',
+                gender=pokemon.gender,
+                shiny=pokemon.is_shiny
             )
             embed.set_image(url=sprite_url)
 

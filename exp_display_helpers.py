@@ -36,7 +36,7 @@ def get_exp_progress(pokemon_data: Dict, species_data: Dict) -> Tuple[int, int, 
     exp_at_next_level = ExpSystem.exp_to_level(level + 1, growth_rate)
     
     # Calculate progress within this level
-    current_exp_in_level = total_exp - exp_at_current_level
+    current_exp_in_level = max(0, total_exp - exp_at_current_level)
     exp_needed_for_next = exp_at_next_level - exp_at_current_level
     
     # Calculate percentage

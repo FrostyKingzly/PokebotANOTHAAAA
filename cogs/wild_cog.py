@@ -122,7 +122,9 @@ class WildCog(commands.Cog):
         sprite_url = PokemonSpriteHelper.get_sprite(
             pokemon.species_name,
             pokemon.species_dex_number,
-            style='animated'
+            style='animated',
+            gender=pokemon.gender,
+            shiny=pokemon.is_shiny
         )
         embed.set_thumbnail(url=sprite_url)
 

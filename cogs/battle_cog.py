@@ -98,7 +98,9 @@ class BattleCog(commands.Cog):
         sprite_url = PokemonSpriteHelper.get_sprite(
             opponent_mon.species_name,
             opponent_mon.species_dex_number,
-            style='animated'
+            style='animated',
+            gender=getattr(opponent_mon, 'gender', None),
+            shiny=getattr(opponent_mon, 'is_shiny', False)
         )
         embed.set_thumbnail(url=sprite_url)
 
@@ -181,7 +183,9 @@ class BattleCog(commands.Cog):
             sprite_url = PokemonSpriteHelper.get_sprite(
                 wild_mon.species_name,
                 wild_mon.species_dex_number,
-                style='animated'
+                style='animated',
+                gender=getattr(wild_mon, 'gender', None),
+                shiny=getattr(wild_mon, 'is_shiny', False)
             )
             embed.set_thumbnail(url=sprite_url)
 
@@ -200,7 +204,9 @@ class BattleCog(commands.Cog):
             sprite_url = PokemonSpriteHelper.get_sprite(
                 wild_mon.species_name,
                 wild_mon.species_dex_number,
-                style='animated'
+                style='animated',
+                gender=getattr(wild_mon, 'gender', None),
+                shiny=getattr(wild_mon, 'is_shiny', False)
             )
             embed.set_thumbnail(url=sprite_url)
 
@@ -304,7 +310,9 @@ class BattleCog(commands.Cog):
             sprite_url = PokemonSpriteHelper.get_sprite(
                 opponent_active[0].species_name,
                 opponent_active[0].species_dex_number,
-                style='animated'
+                style='animated',
+                gender=getattr(opponent_active[0], 'gender', None),
+                shiny=getattr(opponent_active[0], 'is_shiny', False)
             )
             enc.set_thumbnail(url=sprite_url)
 
@@ -331,7 +339,9 @@ class BattleCog(commands.Cog):
             sprite_url = PokemonSpriteHelper.get_sprite(
                 mon.species_name,
                 mon.species_dex_number,
-                style='animated'
+                style='animated',
+                gender=getattr(mon, 'gender', None),
+                shiny=getattr(mon, 'is_shiny', False)
             )
             send_embed.set_thumbnail(url=sprite_url)
 
@@ -354,7 +364,9 @@ class BattleCog(commands.Cog):
                 sprite_url = PokemonSpriteHelper.get_sprite(
                     mon.species_name,
                     mon.species_dex_number,
-                    style='animated'
+                    style='animated',
+                    gender=getattr(mon, 'gender', None),
+                    shiny=getattr(mon, 'is_shiny', False)
                 )
                 send_embed.set_thumbnail(url=sprite_url)
 
@@ -376,7 +388,9 @@ class BattleCog(commands.Cog):
                 sprite_url = PokemonSpriteHelper.get_sprite(
                     mon.species_name,
                     mon.species_dex_number,
-                    style='animated'
+                    style='animated',
+                    gender=getattr(mon, 'gender', None),
+                    shiny=getattr(mon, 'is_shiny', False)
                 )
                 send_embed.set_thumbnail(url=sprite_url)
 
@@ -399,7 +413,9 @@ class BattleCog(commands.Cog):
                     sprite_url = PokemonSpriteHelper.get_sprite(
                         mon.species_name,
                         mon.species_dex_number,
-                        style='animated'
+                        style='animated',
+                        gender=getattr(mon, 'gender', None),
+                        shiny=getattr(mon, 'is_shiny', False)
                     )
                     send_embed.set_thumbnail(url=sprite_url)
 
