@@ -1,4 +1,12 @@
 {
+  "reverie_skyport": {
+    "name": "Reverie Skyport",
+    "description": "A tranquil aerial hub where travelers gather before departing. The views are stunning, but no wild Pokémon appear here.",
+    "channel_ids": [],
+    "amenities": [],
+    "encounters": [],
+    "npc_trainers": []
+  },
   "lights_district_central_plaza": {
     "name": "Lights District - Central Plaza",
     "description": "The heart of the Lights District. Electronic billboards stretch across the skyscrapers lining the streets, with announcements and footage of official Pokemon battles occurring in the arena playing on the center big screen.",

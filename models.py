@@ -7,6 +7,8 @@ import json
 from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 
+from exp_system import ExpSystem
+
 from social_stats import (
     SOCIAL_STAT_DEFINITIONS,
     SOCIAL_STAT_ORDER,
@@ -49,6 +51,7 @@ class Pokemon:
         self.species_dex_number = species_data['dex_number']
         self.species_name = species_data['name']
         self.species_data = species_data
+        self.growth_rate = species_data.get('growth_rate', 'medium_fast')
         self.level = level
         self.owner_discord_id = owner_discord_id
         self.nickname = None
@@ -124,9 +127,9 @@ class Pokemon:
         
         # Special flags
         self.tera_type = None  # Could be set for Terastal
-        
+
         # Experience
-        self.exp = 0
+        self.exp = ExpSystem.exp_to_level(level, self.growth_rate)
     
     def _generate_gender(self, gender_ratio: Dict) -> Optional[str]:
         """Generate gender based on species ratio"""

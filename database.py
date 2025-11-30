@@ -255,7 +255,7 @@ class PlayerDatabase:
                 birthday TEXT,
                 home_region TEXT,
                 bio TEXT,
-                current_location_id TEXT DEFAULT 'lights_district_central_plaza',
+                current_location_id TEXT DEFAULT 'reverie_skyport',
                 money INTEGER DEFAULT 5000,
 
                 boon_stat TEXT,
@@ -602,7 +602,7 @@ class PlayerDatabase:
                 """
                 INSERT INTO trainers (
                     discord_user_id, trainer_name, avatar_url,
-                    pronouns, age, birthday, home_region, bio,
+                    pronouns, age, birthday, home_region, bio, current_location_id,
                     boon_stat, bane_stat,
                     heart_rank, heart_points,
                     insight_rank, insight_points,
@@ -610,7 +610,7 @@ class PlayerDatabase:
                     fortitude_rank, fortitude_points,
                     will_rank, will_points,
                     stamina_current, stamina_max, last_stamina_update
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     discord_user_id,
@@ -621,6 +621,7 @@ class PlayerDatabase:
                     birthday,
                     home_region,
                     bio,
+                    "reverie_skyport",
                     boon_stat,
                     bane_stat,
                     stats_payload['heart_rank'],

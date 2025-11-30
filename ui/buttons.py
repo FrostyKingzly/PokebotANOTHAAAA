@@ -6,6 +6,8 @@ import discord
 from discord.ui import Button, View, Select
 from typing import Optional, List, Dict, Any
 
+from exp_system import ExpSystem
+
 try:
     from cogs.pokemon_management_cog import PokemonActionsView as ManagementPokemonActionsView
 except Exception:  # pragma: no cover - best effort import guard for runtime safety
@@ -85,7 +87,11 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
 
     # Additional attributes that might be in database
     if 'exp' in poke_data:
-        pokemon.exp = poke_data['exp']
+        base_exp = ExpSystem.exp_to_level(
+            pokemon.level,
+            species_data.get('growth_rate', 'medium_fast')
+        )
+        pokemon.exp = max(base_exp, poke_data['exp'])
     if 'bond_level' in poke_data:
         pokemon.bond_level = poke_data['bond_level']
     if 'tera_type' in poke_data:
@@ -120,7 +126,7 @@ class MainMenuView(View):
 
         if not party:
             await interaction.response.send_message(
-                "Your party is empty! This shouldn't happen - contact an admin.",
+                "Your party is empty.",
                 ephemeral=True
             )
             return

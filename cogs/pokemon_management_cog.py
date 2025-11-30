@@ -24,7 +24,7 @@ class PokemonManagementCog(commands.Cog):
         
         if not party:
             await interaction.response.send_message(
-                "Your party is empty! This shouldn't happen - contact an admin.",
+                "Your party is empty.",
                 ephemeral=True
             )
             return
