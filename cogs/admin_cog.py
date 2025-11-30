@@ -137,6 +137,12 @@ class AdminCog(commands.Cog):
                 gender=pokemon.gender,
                 shiny=pokemon.is_shiny
             )
+
+            # get_sprite may return a list when a static fallback is provided; Discord
+            # embeds require a single URL string.
+            if isinstance(sprite_url, list):
+                sprite_url = sprite_url[0]
+
             embed.set_image(url=sprite_url)
 
             await interaction.response.send_message(embed=embed)
