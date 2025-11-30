@@ -170,6 +170,8 @@ class AdminCog(commands.Cog):
         - Hidden Power Ice
         - Volt Switch
         """
+        # Normalize user input and gently fix flattened single-line submissions
+        text = self._normalize_showdown_text(text)
 
         # Normalize line endings and split into lines
         text = text.replace('\r\n', '\n').replace('\r', '\n')
@@ -200,14 +202,10 @@ class AdminCog(commands.Cog):
 
         if item_part:
             item_text = item_part.strip()
-            # Validate that the held item doesn't contain invalid characters
-            # If it contains a colon, it likely means the format wasn't properly separated by newlines
-            if ':' in item_text or '\n' in item_text:
-                raise ValueError(
-                    "Invalid format detected. The held item field appears to contain other data. "
-                    "Please ensure your Showdown format text has proper line breaks between each field. "
-                    "Each line should be on its own line, not separated by spaces."
-                )
+            # If we still see a colon, the user likely pasted everything in one line; take the
+            # portion before the next field marker as the held item.
+            if ':' in item_text:
+                item_text = item_text.split(':', 1)[0].strip()
             result['held_item'] = self._normalize_identifier(item_text)
 
         # Look for trailing gender marker like "(F)" or "(M)" and remove it from species parsing
@@ -287,6 +285,40 @@ class AdminCog(commands.Cog):
             result['moves'] = ['tackle']  # Default move
         
         return result
+
+    def _normalize_showdown_text(self, text: str) -> str:
+        """Best-effort formatter that restores expected newlines for collapsed input."""
+        if not text:
+            return ''
+
+        normalized = text.replace('\r\n', '\n').replace('\r', '\n').strip()
+
+        # Insert newlines before known field markers when the text has been flattened.
+        markers = [
+            r'Ability:',
+            r'Level:',
+            r'Shiny:',
+            r'Tera Type:',
+            r'EVs:',
+            r'IVs:',
+            r'[A-Za-z]+ Nature',
+        ]
+
+        for marker in markers:
+            normalized = re.sub(
+                rf'\s*({marker})',
+                lambda m: f"\n{m.group(1)}",
+                normalized,
+                flags=re.IGNORECASE,
+            )
+
+        # Ensure moves are on their own lines without disrupting hyphenated species names
+        normalized = re.sub(r'(?<!\S)-\s*', '\n- ', normalized)
+
+        # Collapse multiple blank lines that may have been introduced
+        normalized = re.sub(r'\n+', '\n', normalized).strip()
+
+        return normalized
     
     def _parse_stats(self, stats_text: str) -> dict:
         """
