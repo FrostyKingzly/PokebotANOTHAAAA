@@ -14,47 +14,98 @@
     "amenities": [
       "pokemon_center"
     ],
+    "type": "civilian_zone",
     "encounters": [
       {
-        "species_dex_number": 417,
-        "species_name": "Pachirisu",
-        "min_level": 5,
+        "species_dex_number": 52,
+        "species_name": "Meowth Alolan",
+        "min_level": 1,
         "max_level": 10,
-        "weight": 35
+        "weight": 12,
+        "form": "alolan"
       },
       {
-        "species_dex_number": 133,
-        "species_name": "Eevee",
-        "min_level": 5,
+        "species_dex_number": 519,
+        "species_name": "Pidove",
+        "min_level": 3,
         "max_level": 12,
-        "weight": 30
+        "weight": 12
       },
       {
-        "species_dex_number": 479,
-        "species_name": "Rotom",
-        "min_level": 10,
+        "species_dex_number": 21,
+        "species_name": "Spearow",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 396,
+        "species_name": "Starly",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 276,
+        "species_name": "Taillow",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 877,
+        "species_name": "Morpeko",
+        "min_level": 5,
         "max_level": 18,
         "weight": 10
       },
       {
-        "species_dex_number": 633,
-        "species_name": "Deino",
-        "min_level": 15,
-        "max_level": 22,
-        "weight": 15
+        "species_dex_number": 446,
+        "species_name": "Munchlax",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 8
       },
       {
-        "species_dex_number": 587,
-        "species_name": "Emolga",
-        "min_level": 8,
+        "species_dex_number": 52,
+        "species_name": "Meowth",
+        "min_level": 4,
         "max_level": 14,
-        "weight": 10
+        "weight": 7
+      },
+      {
+        "species_dex_number": 396,
+        "species_name": "Starly",
+        "min_level": 10,
+        "max_level": 18,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 519,
+        "species_name": "Pidove",
+        "min_level": 10,
+        "max_level": 18,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 446,
+        "species_name": "Munchlax",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 877,
+        "species_name": "Morpeko",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 2
       }
     ],
     "npc_trainers": [
       {
-        "name": "Pok\u00e9 Maniac Lochs",
-        "class": "Pok\u00e9 Maniac",
+        "name": "Poké Maniac Lochs",
+        "class": "Poké Maniac",
         "prize_money": 6000,
         "party": [
           {
@@ -369,6 +420,31 @@
             ]
           }
         ]
+      },
+      {
+        "name": "Street Kid Riko",
+        "class": "Street Kid",
+        "prize_money": 500,
+        "party": [
+          {
+            "species_dex_number": 519,
+            "level": 5,
+            "moves": [
+              "gust",
+              "growl",
+              "leer"
+            ]
+          },
+          {
+            "species_dex_number": 396,
+            "level": 5,
+            "moves": [
+              "tackle",
+              "growl",
+              "quick_attack"
+            ]
+          }
+        ]
       }
     ],
     "ranked_npc_trainers": [
@@ -486,7 +562,7 @@
     ],
     "npc_trainers": [
       {
-        "name": "Art Master Monka\u00e9",
+        "name": "Art Master Monkaé",
         "class": "Art Master",
         "prize_money": 6200,
         "party": [
@@ -1225,5 +1301,1047 @@
       }
     ],
     "npc_trainers": []
+  },
+  "urban_crossings": {
+    "name": "Urban District - Crossings",
+    "description": "An urban civilian zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 52,
+        "species_name": "Meowth",
+        "min_level": 2,
+        "max_level": 11,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 519,
+        "species_name": "Pidove",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 19,
+        "species_name": "Rattata",
+        "min_level": 2,
+        "max_level": 14,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 300,
+        "species_name": "Skitty",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 940,
+        "species_name": "Wattrel",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 311,
+        "species_name": "Plusle",
+        "min_level": 5,
+        "max_level": 16,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 312,
+        "species_name": "Minun",
+        "min_level": 5,
+        "max_level": 16,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 940,
+        "species_name": "Wattrel",
+        "min_level": 10,
+        "max_level": 20,
+        "weight": 9
+      },
+      {
+        "species_dex_number": 52,
+        "species_name": "Meowth",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 19,
+        "species_name": "Rattata",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 311,
+        "species_name": "Plusle",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 312,
+        "species_name": "Minun",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 2
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Commuter Nina",
+        "class": "Commuter",
+        "prize_money": 500,
+        "party": [
+          {
+            "species_dex_number": 300,
+            "level": 5,
+            "moves": [
+              "tackle",
+              "growl",
+              "tail_whip"
+            ]
+          },
+          {
+            "species_dex_number": 940,
+            "level": 5,
+            "moves": [
+              "peck",
+              "thunder_shock",
+              "growl"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "urban_streets": {
+    "name": "Urban District - Streets",
+    "description": "An urban civilian zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 519,
+        "species_name": "Pidove",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 300,
+        "species_name": "Skitty",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 940,
+        "species_name": "Wattrel",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 513,
+        "species_name": "Pansear",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 417,
+        "species_name": "Pachirisu",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 587,
+        "species_name": "Emolga",
+        "min_level": 6,
+        "max_level": 16,
+        "weight": 13
+      },
+      {
+        "species_dex_number": 513,
+        "species_name": "Pansear",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 940,
+        "species_name": "Wattrel",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 587,
+        "species_name": "Emolga",
+        "min_level": 14,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Courier Jett",
+        "class": "Courier",
+        "prize_money": 900,
+        "party": [
+          {
+            "species_dex_number": 519,
+            "level": 8,
+            "moves": [
+              "gust",
+              "growl",
+              "leer",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 940,
+            "level": 9,
+            "moves": [
+              "peck",
+              "water_gun",
+              "thunder_shock",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 587,
+            "level": 10,
+            "moves": [
+              "nuzzle",
+              "quick_attack",
+              "thunder_shock",
+              "tail_whip"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "urban_alleyways": {
+    "name": "Urban District - Alleyways",
+    "description": "An urban civilian zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 19,
+        "species_name": "Rattata Alolan",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10,
+        "form": "alolan"
+      },
+      {
+        "species_dex_number": 263,
+        "species_name": "Zigzagoon Galar",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10,
+        "form": "galar"
+      },
+      {
+        "species_dex_number": 261,
+        "species_name": "Poochyena",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 568,
+        "species_name": "Trubbish",
+        "min_level": 3,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 109,
+        "species_name": "Koffing",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 88,
+        "species_name": "Grimer Alolan",
+        "min_level": 5,
+        "max_level": 16,
+        "weight": 10,
+        "form": "alolan"
+      },
+      {
+        "species_dex_number": 559,
+        "species_name": "Scraggy",
+        "min_level": 6,
+        "max_level": 16,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 198,
+        "species_name": "Murkrow",
+        "min_level": 6,
+        "max_level": 16,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 559,
+        "species_name": "Scraggy",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 198,
+        "species_name": "Murkrow",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 109,
+        "species_name": "Koffing",
+        "min_level": 14,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Punk Rocco",
+        "class": "Punk",
+        "prize_money": 1100,
+        "party": [
+          {
+            "species_dex_number": 263,
+            "level": 10,
+            "moves": [
+              "tackle",
+              "lick",
+              "snarl",
+              "sand_attack"
+            ]
+          },
+          {
+            "species_dex_number": 261,
+            "level": 11,
+            "moves": [
+              "tackle",
+              "howl",
+              "bite",
+              "sand_attack"
+            ]
+          },
+          {
+            "species_dex_number": 198,
+            "level": 12,
+            "moves": [
+              "peck",
+              "astonish",
+              "wing_attack",
+              "haze"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "urban_wild_zone_1": {
+    "name": "Urban District - Wild Zone 1",
+    "description": "An urban wild zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "wild_zone",
+    "encounters": [
+      {
+        "species_dex_number": 406,
+        "species_name": "Budew",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 420,
+        "species_name": "Cherubi",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 546,
+        "species_name": "Cottonee",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 511,
+        "species_name": "Pansage",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 540,
+        "species_name": "Sewaddle",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 548,
+        "species_name": "Petilil",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 669,
+        "species_name": "Flabebe",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 406,
+        "species_name": "Budew",
+        "min_level": 10,
+        "max_level": 18,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 133,
+        "species_name": "Eevee",
+        "min_level": 8,
+        "max_level": 16,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 669,
+        "species_name": "Flabebe",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Gardener Lila",
+        "class": "Gardener",
+        "prize_money": 1300,
+        "party": [
+          {
+            "species_dex_number": 540,
+            "level": 12,
+            "moves": [
+              "tackle",
+              "bug_bite",
+              "razor_leaf",
+              "string_shot"
+            ]
+          },
+          {
+            "species_dex_number": 406,
+            "level": 13,
+            "moves": [
+              "absorb",
+              "growth",
+              "stun_spore",
+              "poison_sting"
+            ]
+          },
+          {
+            "species_dex_number": 133,
+            "level": 14,
+            "moves": [
+              "quick_attack",
+              "swift",
+              "bite",
+              "sand_attack"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "urban_wild_zone_2": {
+    "name": "Urban District - Wild Zone 2",
+    "description": "An urban wild zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "wild_zone",
+    "encounters": [
+      {
+        "species_dex_number": 751,
+        "species_name": "Dewpider",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 60,
+        "species_name": "Poliwag",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 283,
+        "species_name": "Surskit",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 278,
+        "species_name": "Wingull",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 515,
+        "species_name": "Panpour",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 580,
+        "species_name": "Ducklett",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 656,
+        "species_name": "Froakie",
+        "min_level": 5,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 535,
+        "species_name": "Tympole",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 938,
+        "species_name": "Tadbulb",
+        "min_level": 6,
+        "max_level": 18,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 656,
+        "species_name": "Froakie",
+        "min_level": 10,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Fisher Roan",
+        "class": "Fisher",
+        "prize_money": 1400,
+        "party": [
+          {
+            "species_dex_number": 60,
+            "level": 13,
+            "moves": [
+              "bubble",
+              "water_gun",
+              "hypnosis",
+              "mud_shot"
+            ]
+          },
+          {
+            "species_dex_number": 580,
+            "level": 14,
+            "moves": [
+              "water_gun",
+              "wing_attack",
+              "feather_dance",
+              "water_pulse"
+            ]
+          },
+          {
+            "species_dex_number": 656,
+            "level": 15,
+            "moves": [
+              "water_pulse",
+              "quick_attack",
+              "bubble",
+              "lick"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "urban_beach": {
+    "name": "Urban District - Beach",
+    "description": "An urban civilian zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 98,
+        "species_name": "Krabby",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 370,
+        "species_name": "Luvdisc",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 963,
+        "species_name": "Finizen",
+        "min_level": 3,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 960,
+        "species_name": "Wiglett",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 769,
+        "species_name": "Sandygast",
+        "min_level": 3,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 592,
+        "species_name": "Frillish",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 222,
+        "species_name": "Corsola",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 592,
+        "species_name": "Frillish",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 222,
+        "species_name": "Corsola",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Beachgoer Kai",
+        "class": "Beachgoer",
+        "prize_money": 500,
+        "party": [
+          {
+            "species_dex_number": 98,
+            "level": 5,
+            "moves": [
+              "bubble",
+              "vice_grip"
+            ]
+          },
+          {
+            "species_dex_number": 963,
+            "level": 5,
+            "moves": [
+              "water_gun",
+              "astonish",
+              "aqua_jet"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "urban_dreamyard": {
+    "name": "Urban District - Dreamyard",
+    "description": "An urban civilian zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 63,
+        "species_name": "Abra",
+        "min_level": 3,
+        "max_level": 10,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 677,
+        "species_name": "Espurr",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 39,
+        "species_name": "Jigglypuff",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 517,
+        "species_name": "Munna",
+        "min_level": 3,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 96,
+        "species_name": "Drowzee",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 177,
+        "species_name": "Natu",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 280,
+        "species_name": "Ralts",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 775,
+        "species_name": "Komala",
+        "min_level": 6,
+        "max_level": 16,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 577,
+        "species_name": "Solosis",
+        "min_level": 6,
+        "max_level": 18,
+        "weight": 20
+      },
+      {
+        "species_dex_number": 63,
+        "species_name": "Abra",
+        "min_level": 10,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Dream Researcher Emi",
+        "class": "Dream Researcher",
+        "prize_money": 1600,
+        "party": [
+          {
+            "species_dex_number": 517,
+            "level": 15,
+            "moves": [
+              "psybeam",
+              "defense_curl",
+              "yawn",
+              "hypnosis"
+            ]
+          },
+          {
+            "species_dex_number": 280,
+            "level": 16,
+            "moves": [
+              "confusion",
+              "double_team",
+              "disarming_voice",
+              "lucky_chant"
+            ]
+          },
+          {
+            "species_dex_number": 577,
+            "level": 17,
+            "moves": [
+              "psybeam",
+              "reflect",
+              "light_screen",
+              "recover"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "urban_wild_zone_3": {
+    "name": "Urban District - Wild Zone 3",
+    "description": "An urban wild zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "wild_zone",
+    "encounters": [
+      {
+        "species_dex_number": 98,
+        "species_name": "Krabby",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 278,
+        "species_name": "Wingull",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 751,
+        "species_name": "Dewpider",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 341,
+        "species_name": "Corphish",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 688,
+        "species_name": "Binacle",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 366,
+        "species_name": "Clamperl",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 222,
+        "species_name": "Corsola Galar",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 10,
+        "form": "galar"
+      },
+      {
+        "species_dex_number": 771,
+        "species_name": "Pyukumuku",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 871,
+        "species_name": "Pincurchin",
+        "min_level": 6,
+        "max_level": 18,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 845,
+        "species_name": "Cramorant",
+        "min_level": 10,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Tidewatcher Glen",
+        "class": "Tidewatcher",
+        "prize_money": 1800,
+        "party": [
+          {
+            "species_dex_number": 278,
+            "level": 17,
+            "moves": [
+              "air_cutter",
+              "water_pulse",
+              "supersonic",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 222,
+            "level": 18,
+            "moves": [
+              "ancient_power",
+              "hex",
+              "confuse_ray",
+              "recover"
+            ]
+          },
+          {
+            "species_dex_number": 871,
+            "level": 19,
+            "moves": [
+              "spark",
+              "water_gun",
+              "curse",
+              "recover"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "urban_wild_zone_4": {
+    "name": "Urban District - Wild Zone 4",
+    "description": "An urban wild zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "wild_zone",
+    "encounters": [
+      {
+        "species_dex_number": 355,
+        "species_name": "Duskull",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 92,
+        "species_name": "Gastly",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 353,
+        "species_name": "Shuppet",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 854,
+        "species_name": "Sinistea",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 607,
+        "species_name": "Litwick",
+        "min_level": 3,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 200,
+        "species_name": "Misdreavus",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 355,
+        "species_name": "Duskull",
+        "min_level": 10,
+        "max_level": 18,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 479,
+        "species_name": "Rotom",
+        "min_level": 10,
+        "max_level": 20,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 92,
+        "species_name": "Gastly",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [],
+    "ranked_npc_trainers": [
+      {
+        "name": "Occultist Mira",
+        "class": "Occultist",
+        "prize_money": 2000,
+        "party": [
+          {
+            "species_dex_number": 479,
+            "level": 20,
+            "moves": [
+              "thunderbolt",
+              "shadow_ball",
+              "confuse_ray",
+              "charge"
+            ]
+          },
+          {
+            "species_dex_number": 200,
+            "level": 20,
+            "moves": [
+              "hex",
+              "shadow_ball",
+              "confuse_ray",
+              "power_gem"
+            ]
+          },
+          {
+            "species_dex_number": 607,
+            "level": 20,
+            "moves": [
+              "flame_burst",
+              "hex",
+              "will-o-wisp",
+              "confuse_ray"
+            ]
+          }
+        ]
+      }
+    ]
   }
 }
