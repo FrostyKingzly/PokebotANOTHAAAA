@@ -402,9 +402,13 @@ class EffectHandler:
     
     def _apply_recoil(self, effect: MoveEffect, attacker: Any, damage: int) -> Optional[str]:
         """Apply recoil damage"""
+        # Only apply recoil if the move actually hit and dealt damage
+        if damage <= 0:
+            return None
+
         percentage = effect.params.get('percentage', 25)
         recoil_damage = max(1, int(damage * percentage / 100))
-        
+
         attacker.current_hp = max(0, attacker.current_hp - recoil_damage)
         return f"{attacker.species_name} took {recoil_damage} recoil damage!"
     

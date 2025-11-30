@@ -2382,11 +2382,20 @@ class PaginatedTravelView(View):
         self.pages = [
             {
                 "title": "Reverie City - Lights District",
-                "locations": ['lights_district_central_plaza', 'lights_district_art_studio']
+                "locations": [
+                    'lights_district_central_plaza',
+                    'lights_district_moonwake_port',
+                    'lights_district_crossings',
+                    'lights_district_streets',
+                    'lights_district_alleyways'
+                ]
             },
             {
                 "title": "Reverie City - Residential District",
-                "locations": []  # Add location IDs for this area
+                "locations": [
+                    'residential_district_beach',
+                    'residential_district_dreamyard'
+                ]
             },
             {
                 "title": "Wild Area α - Forest",
