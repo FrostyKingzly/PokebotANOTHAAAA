@@ -98,8 +98,9 @@ class PokemonSpriteHelper:
                 else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
             )
 
-            # Gen5 animated sprites don't exist for Pokemon from gen 8+ (dex 810+)
-            if dex_number and dex_number >= 810:
+            # Gen5 animated sprites only exist for Gen 1-5 Pokemon (dex 1-649)
+            # Gen 6 started at dex #650, so use static sprites for Gen 6+
+            if dex_number and dex_number >= 650:
                 # Always use the static version for these species
                 return static_fallback
 
