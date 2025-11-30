@@ -276,7 +276,7 @@ class PlayerDatabase:
                 -- Stamina
                 stamina_current INTEGER DEFAULT 9,
                 stamina_max INTEGER DEFAULT 9,
-                last_stamina_update INTEGER DEFAULT (strftime('%s','now')),
+                last_stamina_update INTEGER DEFAULT 0,
 
                 -- Ranked Ladder
                 rank_tier_name TEXT DEFAULT 'Qualifier',
@@ -527,7 +527,7 @@ class PlayerDatabase:
         # Stamina
         stamina_max_added = add_column('stamina_max', 'INTEGER DEFAULT 0')
         stamina_current_added = add_column('stamina_current', 'INTEGER DEFAULT 0')
-        last_stamina_update_added = add_column('last_stamina_update', "INTEGER DEFAULT (strftime('%s','now'))")
+        last_stamina_update_added = add_column('last_stamina_update', 'INTEGER DEFAULT 0')
 
         if stamina_max_added or stamina_current_added:
             cursor.execute("SELECT discord_user_id, fortitude_rank FROM trainers")
