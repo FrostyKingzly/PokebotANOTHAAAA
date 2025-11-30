@@ -12,8 +12,9 @@ BOON_MAX_POINTS = 200
 BANE_MAX_POINTS = 300
 
 # Stamina tuning
-BASE_STAMINA = 6
-STAMINA_PER_FORTITUDE_RANK = 3
+# Rank 0 should start at 3 stamina and gain +2 per Fortitude rank
+BASE_STAMINA = 3
+STAMINA_PER_FORTITUDE_RANK = 2
 
 
 @dataclass(frozen=True)
