@@ -15,7 +15,7 @@ class PokemonSpriteHelper:
     GEN5_STATIC = "https://play.pokemonshowdown.com/sprites/gen5/{name}.png"
     GEN5_STATIC_SHINY = "https://play.pokemonshowdown.com/sprites/gen5-shiny/{name}.png"
     SHOWDOWN_STATIC = "https://play.pokemonshowdown.com/sprites/pokemon/{name}.png"
-    SHOWDOWN_STATIC_SHINY = "https://play.pokemonshowdown.com/sprites/gen5-shiny/{name}.png"
+    SHOWDOWN_STATIC_SHINY = "https://play.pokemonshowdown.com/sprites/pokemon/shiny/{name}.png"
     POKEAPI_FRONT = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{id}.png"
     POKEAPI_FRONT_FEMALE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/female/{id}.png"
     POKEAPI_SHINY = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/{id}.png"
@@ -61,27 +61,58 @@ class PokemonSpriteHelper:
             >>> PokemonSpriteHelper.get_sprite("sandshrew", 27, form='alola')
             'https://play.pokemonshowdown.com/sprites/gen5ani/sandshrew-alola.gif'
         """
-        name = pokemon_name.lower().replace(' ', '').replace('-', '')
+        raw_name = pokemon_name.lower().replace(' ', '').replace("'", "").replace(".", "")
+
+        # Infer form or gender from the provided name if they aren't explicitly supplied
+        segments = raw_name.split('-')
+        inferred_gender = gender
+        inferred_form = form
+
+        if len(segments) > 1:
+            last_segment = segments[-1]
+            if inferred_gender is None and last_segment in {"f", "female", "m", "male"}:
+                inferred_gender = "female" if last_segment.startswith('f') else "male"
+                base_segments = segments[:-1]
+            elif inferred_form is None:
+                inferred_form = '-'.join(segments[1:])
+                base_segments = [segments[0]]
+            else:
+                base_segments = segments
+        else:
+            base_segments = segments
+
+        # Reconstruct the base name without hyphens so we can append forms/gender cleanly
+        name = ''.join(base_segments)
 
         # Add form suffix if specified (e.g., "sandshrew-alola")
-        if form:
-            name = f"{name}-{form.lower()}"
+        if inferred_form:
+            name = f"{name}-{inferred_form.lower()}"
+
+        gender = inferred_gender
 
         if style == 'animated':
+            gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
+            static_fallback = (
+                PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=gendered_name)
+                if shiny
+                else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
+            )
+
             # Gen5 animated sprites don't exist for Pokemon from gen 8+ (dex 810+)
-            # Use static sprites as fallback for these Pokemon
             if dex_number and dex_number >= 810:
-                # Gen 8+ Pokemon - use Showdown static sprites (shiny-aware)
-                gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
-                if shiny:
-                    return PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=gendered_name)
-                return PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=gendered_name)
-            else:
-                # Gen 1-7 Pokemon - use Gen5 animated sprites
-                gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
-                if shiny:
-                    return PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=gendered_name)
-                return PokemonSpriteHelper.GEN5_ANIMATED.format(name=gendered_name)
+                # Always use the static version for these species
+                return static_fallback
+
+            animated_url = (
+                PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=gendered_name)
+                if shiny
+                else PokemonSpriteHelper.GEN5_ANIMATED.format(name=gendered_name)
+            )
+
+            if use_fallback:
+                return [animated_url, static_fallback]
+
+            return animated_url
 
         elif style == 'gen5static':
             # Gen 5 static sprites
