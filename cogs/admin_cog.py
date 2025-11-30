@@ -156,7 +156,7 @@ class AdminCog(commands.Cog):
     def parse_showdown_format(self, text: str) -> dict:
         """
         Parse Pokemon Showdown format text into a dictionary
-        
+
         Example format:
         Pikachu @ Light Ball
         Ability: Static
@@ -170,7 +170,9 @@ class AdminCog(commands.Cog):
         - Hidden Power Ice
         - Volt Switch
         """
-        
+
+        # Normalize line endings and split into lines
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
         lines = text.strip().split('\n')
         
         # Default values
@@ -197,7 +199,16 @@ class AdminCog(commands.Cog):
         species_gender_part = species_gender_part.strip()
 
         if item_part:
-            result['held_item'] = self._normalize_identifier(item_part.strip())
+            item_text = item_part.strip()
+            # Validate that the held item doesn't contain invalid characters
+            # If it contains a colon, it likely means the format wasn't properly separated by newlines
+            if ':' in item_text or '\n' in item_text:
+                raise ValueError(
+                    "Invalid format detected. The held item field appears to contain other data. "
+                    "Please ensure your Showdown format text has proper line breaks between each field. "
+                    "Each line should be on its own line, not separated by spaces."
+                )
+            result['held_item'] = self._normalize_identifier(item_text)
 
         # Look for trailing gender marker like "(F)" or "(M)" and remove it from species parsing
         gender = None

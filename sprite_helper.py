@@ -92,22 +92,19 @@ class PokemonSpriteHelper:
 
         if style == 'animated':
             gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
-            static_fallback = (
-                PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=gendered_name)
-                if shiny
-                else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
-            )
 
-            # Gen5 animated sprites only exist for Gen 1-5 Pokemon (dex 1-649)
-            # Gen 6 started at dex #650, so use static sprites for Gen 6+
-            if dex_number and dex_number >= 650:
-                # Always use the static version for these species
-                return static_fallback
-
+            # Always try gen5ani sprites for ALL Pokemon (including Gen 6+)
+            # Many Gen 6+ Pokemon like Incineroar have gen5-style animated sprites
+            # If they don't exist, Discord will fall back to the static sprite
             animated_url = (
                 PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=gendered_name)
                 if shiny
                 else PokemonSpriteHelper.GEN5_ANIMATED.format(name=gendered_name)
+            )
+            static_fallback = (
+                PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=gendered_name)
+                if shiny
+                else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
             )
 
             if use_fallback:
