@@ -10,6 +10,7 @@ from typing import Optional, Dict, List
 from database import PlayerDatabase, SpeciesDatabase, MovesDatabase
 from exp_system import ExpSystem
 from models import Trainer, Pokemon
+from social_stats import calculate_max_stamina
 
 
 class PlayerManager:
