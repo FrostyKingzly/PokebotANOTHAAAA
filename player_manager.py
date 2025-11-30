@@ -831,6 +831,12 @@ class PlayerManager:
 
         level = pokemon.get('level', 1)
         level_up_ids: List[str] = []
+        current_move_ids: List[str] = []
+
+        for m in pokemon.get('moves', []):
+            mid = str(m.get('move_id', '')).lower()
+            if mid:
+                current_move_ids.append(mid)
 
         # Learnset format: { "level_up_moves": [ {"level": int, "move_id": str, "gen": int}, ... ] }
         for move_entry in learnset.get('level_up_moves', []):
@@ -854,10 +860,11 @@ class PlayerManager:
 
         tm_ids = learned_tm_ids
 
-        # De-duplicate while preserving order (level-up first, then TMs)
+        # De-duplicate while preserving order (current moves first to avoid dropping them)
         move_ids: List[str] = []
         seen = set()
-        for mid in level_up_ids + tm_ids:
+
+        for mid in current_move_ids + level_up_ids + tm_ids:
             if mid and mid not in seen:
                 seen.add(mid)
                 move_ids.append(mid)
