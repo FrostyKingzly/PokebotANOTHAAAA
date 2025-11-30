@@ -2253,7 +2253,7 @@ class ItemUsePokemonSelectView(View):
                 if last_result.learned_move:
                     message += f"\n📖 **Learned:** {last_result.learned_move}"
                 if last_result.evolved_into:
-                    species = self.bot.species_db.get_species_by_name(last_result.evolved_into)
+                    species = self.bot.species_db.get_species(last_result.evolved_into)
                     if species:
                         message += f"\n✨ **Evolved into:** {species['name']}!"
 

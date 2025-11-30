@@ -89,7 +89,7 @@ class ItemsCog(commands.Cog):
             if result.learned_move:
                 message += f"\n📖 **Learned:** {result.learned_move}"
             if result.evolved_into:
-                species = self.bot.species_db.get_species_by_name(result.evolved_into)
+                species = self.bot.species_db.get_species(result.evolved_into)
                 if species:
                     message += f"\n✨ **Evolved into:** {species['name']}!"
         else:

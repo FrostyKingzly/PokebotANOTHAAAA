@@ -548,7 +548,7 @@ class ItemUsageManager:
     def _trigger_evolution(self, player_id: int, pokemon: Dict, evolve_into: str) -> bool:
         """Evolve a Pokemon into a new species"""
         # Get new species data
-        new_species = self.species_db.get_species_by_name(evolve_into)
+        new_species = self.species_db.get_species(evolve_into)
         if not new_species:
             return False
 

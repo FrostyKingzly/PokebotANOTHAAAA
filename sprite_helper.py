@@ -61,7 +61,9 @@ class PokemonSpriteHelper:
             >>> PokemonSpriteHelper.get_sprite("sandshrew", 27, form='alola')
             'https://play.pokemonshowdown.com/sprites/gen5ani/sandshrew-alola.gif'
         """
-        raw_name = pokemon_name.lower().replace(' ', '').replace("'", "").replace(".", "")
+        # Convert to lowercase and replace spaces with hyphens for Showdown format
+        # Remove apostrophes and periods
+        raw_name = pokemon_name.lower().replace(' ', '-').replace("'", "").replace(".", "")
 
         # Infer form or gender from the provided name if they aren't explicitly supplied
         segments = raw_name.split('-')
