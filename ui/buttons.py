@@ -377,10 +377,19 @@ class MainMenuView(View):
         # Defer response for rolling encounters
         await interaction.response.defer(ephemeral=True)
 
-        # Roll 10 encounters
+        # Determine spawn count based on location type
+        location_type = location.get('type', '')
+        if location_type == 'wild_zone':
+            spawn_count = 5
+        elif location_type == 'civilian_zone':
+            spawn_count = 3
+        else:
+            spawn_count = 10  # Default for wild areas and other locations
+
+        # Roll encounters
         encounters = self.bot.location_manager.roll_multiple_encounters(
             current_location_id,
-            10,
+            spawn_count,
             self.bot.species_db
         )
 
@@ -2787,10 +2796,19 @@ class EncounterSelectView(View):
         
         # Roll new encounters
         await interaction.response.defer(ephemeral=True)
-        
+
+        # Determine spawn count based on location type
+        location_type = self.location.get('type', '')
+        if location_type == 'wild_zone':
+            spawn_count = 5
+        elif location_type == 'civilian_zone':
+            spawn_count = 3
+        else:
+            spawn_count = 10  # Default for wild areas and other locations
+
         new_encounters = self.bot.location_manager.roll_multiple_encounters(
             current_location_id,
-            10,
+            spawn_count,
             self.bot.species_db
         )
         
