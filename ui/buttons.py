@@ -189,86 +189,6 @@ class MainMenuView(View):
         
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
     
-    @discord.ui.button(label="⚔️ Wild Encounter", style=discord.ButtonStyle.success, row=1)
-    async def encounter_button(self, interaction: discord.Interaction, button: Button):
-        """Roll wild encounters at current location"""
-        from ui.embeds import EmbedBuilder
-        
-        # Get player's current location
-        trainer = self.bot.player_manager.get_player(interaction.user.id)
-        current_location_id = trainer.current_location_id
-
-        # Ensure the interaction is happening in the correct location channel
-        channel_location_id = self.bot.location_manager.get_location_by_channel(interaction.channel_id)
-        if not channel_location_id:
-            await interaction.response.send_message(
-                "⚠️ This channel hasn't been linked to a location yet. Use /set_location here first.",
-                ephemeral=True
-            )
-            return
-
-        if channel_location_id != current_location_id:
-            channel_location_name = self.bot.location_manager.get_location_name(channel_location_id)
-            current_location_name = self.bot.location_manager.get_location_name(current_location_id)
-            await interaction.response.send_message(
-                (
-                    f"⚠️ This channel is linked to **{channel_location_name}**, but you're currently at "
-                    f"**{current_location_name}**. Travel to that location and use its channel for wild encounters."
-                ),
-                ephemeral=True
-            )
-            return
-
-        # Get location data
-        location = self.bot.location_manager.get_location(current_location_id)
-        if not location:
-            await interaction.response.send_message(
-                "❌ This location has no wild encounters!",
-                ephemeral=True
-            )
-            return
-        
-        # Check if location has encounters
-        if not location.get('encounters'):
-            await interaction.response.send_message(
-                f"❌ {location.get('name', 'This location')} has no wild Pokémon!",
-                ephemeral=True
-            )
-            return
-        
-        # Defer response for rolling encounters
-        await interaction.response.defer(ephemeral=True)
-        
-        # Roll 10 encounters
-        encounters = self.bot.location_manager.roll_multiple_encounters(
-            current_location_id,
-            10,
-            self.bot.species_db
-        )
-        
-        if not encounters:
-            await interaction.followup.send(
-                "❌ Failed to generate encounters. Try again!",
-                ephemeral=True
-            )
-            return
-        
-        # Show encounter selection view
-        embed = EmbedBuilder.encounter_roll(encounters, location)
-        view = EncounterSelectView(
-            self.bot,
-            encounters,
-            location,
-            interaction.user.id,
-            current_location_id
-        )
-        
-        await interaction.followup.send(
-            embed=embed,
-            view=view,
-            ephemeral=True
-        )
-    
     @discord.ui.button(label="🧭 Travel", style=discord.ButtonStyle.secondary, row=1)
     async def travel_button(self, interaction: discord.Interaction, button: Button):
         """Travel to new location"""
@@ -322,7 +242,7 @@ class MainMenuView(View):
             ephemeral=True
         )
     
-    @discord.ui.button(label="🛒 Shop", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="🛍️ Shop", style=discord.ButtonStyle.secondary, row=1)
     async def shop_button(self, interaction: discord.Interaction, button: Button):
         """Open shop"""
         shop_cog = self.bot.get_cog("ShopCog")
@@ -343,7 +263,7 @@ class MainMenuView(View):
             ephemeral=True
         )
     
-    @discord.ui.button(label="🧑‍🎓 Trainer Card", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="🪪 Trainer Card", style=discord.ButtonStyle.secondary, row=1)
     async def trainer_card_button(self, interaction: discord.Interaction, button: Button):
         """View trainer card"""
         from ui.embeds import EmbedBuilder
@@ -359,9 +279,128 @@ class MainMenuView(View):
             total_pokemon=total_pokemon,
             pokedex_seen=len(pokedex)
         )
-        
+
         await interaction.response.send_message(embed=embed, ephemeral=True)
-    
+
+    @discord.ui.button(label="🤝 Team Up", style=discord.ButtonStyle.success, row=2)
+    async def party_up_button(self, interaction: discord.Interaction, button: Button):
+        """Party/Team system for Wild Areas"""
+        from wild_area_manager import WildAreaManager, PartyManager
+
+        wild_area_manager = WildAreaManager(self.bot.player_manager.db)
+        party_manager = PartyManager(self.bot.player_manager.db)
+
+        # Check if player is in a wild area
+        if not wild_area_manager.is_in_wild_area(interaction.user.id):
+            await interaction.response.send_message(
+                "❌ You must be in a Wild Area to use the team system!",
+                ephemeral=True
+            )
+            return
+
+        # Check if already in a party
+        current_party = party_manager.get_player_party(interaction.user.id)
+
+        if current_party:
+            # Show party info
+            from ui.embeds import EmbedBuilder
+            party_members = party_manager.get_party_members(current_party['party_id'])
+
+            embed = EmbedBuilder.party_info(current_party, party_members, self.bot.player_manager)
+            view = PartyActionsView(self.bot, current_party, is_leader=(current_party['leader_discord_id'] == interaction.user.id))
+
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        else:
+            # Show party creation/join menu
+            from ui.embeds import EmbedBuilder
+            wild_area_state = wild_area_manager.get_wild_area_state(interaction.user.id)
+            available_parties = party_manager.get_parties_in_area(wild_area_state['area_id'])
+
+            embed = EmbedBuilder.party_menu(wild_area_state, available_parties)
+            view = PartyJoinCreateView(self.bot, wild_area_state)
+
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+    @discord.ui.button(label="⚔️ Wild Encounter", style=discord.ButtonStyle.success, row=2)
+    async def encounter_button(self, interaction: discord.Interaction, button: Button):
+        """Roll wild encounters at current location"""
+        from ui.embeds import EmbedBuilder
+
+        # Get player's current location
+        trainer = self.bot.player_manager.get_player(interaction.user.id)
+        current_location_id = trainer.current_location_id
+
+        # Ensure the interaction is happening in the correct location channel
+        channel_location_id = self.bot.location_manager.get_location_by_channel(interaction.channel_id)
+        if not channel_location_id:
+            await interaction.response.send_message(
+                "⚠️ This channel hasn't been linked to a location yet. Use /set_location here first.",
+                ephemeral=True
+            )
+            return
+
+        if channel_location_id != current_location_id:
+            channel_location_name = self.bot.location_manager.get_location_name(channel_location_id)
+            current_location_name = self.bot.location_manager.get_location_name(current_location_id)
+            await interaction.response.send_message(
+                (
+                    f"⚠️ This channel is linked to **{channel_location_name}**, but you're currently at "
+                    f"**{current_location_name}**. Travel to that location and use its channel for wild encounters."
+                ),
+                ephemeral=True
+            )
+            return
+
+        # Get location data
+        location = self.bot.location_manager.get_location(current_location_id)
+        if not location:
+            await interaction.response.send_message(
+                "❌ This location has no wild encounters!",
+                ephemeral=True
+            )
+            return
+
+        # Check if location has encounters
+        if not location.get('encounters'):
+            await interaction.response.send_message(
+                f"❌ {location.get('name', 'This location')} has no wild Pokémon!",
+                ephemeral=True
+            )
+            return
+
+        # Defer response for rolling encounters
+        await interaction.response.defer(ephemeral=True)
+
+        # Roll 10 encounters
+        encounters = self.bot.location_manager.roll_multiple_encounters(
+            current_location_id,
+            10,
+            self.bot.species_db
+        )
+
+        if not encounters:
+            await interaction.followup.send(
+                "❌ Failed to generate encounters. Try again!",
+                ephemeral=True
+            )
+            return
+
+        # Show encounter selection view
+        embed = EmbedBuilder.encounter_roll(encounters, location)
+        view = EncounterSelectView(
+            self.bot,
+            encounters,
+            location,
+            interaction.user.id,
+            current_location_id
+        )
+
+        await interaction.followup.send(
+            embed=embed,
+            view=view,
+            ephemeral=True
+        )
+
     @discord.ui.button(label="⚔️ Battle", style=discord.ButtonStyle.danger, row=2)
     async def battle_button(self, interaction: discord.Interaction, button: Button):
         """Battle options"""
@@ -410,45 +449,6 @@ class MainMenuView(View):
             view=view,
             ephemeral=True
         )
-
-    @discord.ui.button(label="🤝 Team Up", style=discord.ButtonStyle.success, row=2)
-    async def party_up_button(self, interaction: discord.Interaction, button: Button):
-        """Party/Team system for Wild Areas"""
-        from wild_area_manager import WildAreaManager, PartyManager
-
-        wild_area_manager = WildAreaManager(self.bot.player_manager.db)
-        party_manager = PartyManager(self.bot.player_manager.db)
-
-        # Check if player is in a wild area
-        if not wild_area_manager.is_in_wild_area(interaction.user.id):
-            await interaction.response.send_message(
-                "❌ You must be in a Wild Area to use the team system!",
-                ephemeral=True
-            )
-            return
-
-        # Check if already in a party
-        current_party = party_manager.get_player_party(interaction.user.id)
-
-        if current_party:
-            # Show party info
-            from ui.embeds import EmbedBuilder
-            party_members = party_manager.get_party_members(current_party['party_id'])
-
-            embed = EmbedBuilder.party_info(current_party, party_members, self.bot.player_manager)
-            view = PartyActionsView(self.bot, current_party, is_leader=(current_party['leader_discord_id'] == interaction.user.id))
-
-            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-        else:
-            # Show party creation/join menu
-            from ui.embeds import EmbedBuilder
-            wild_area_state = wild_area_manager.get_wild_area_state(interaction.user.id)
-            available_parties = party_manager.get_parties_in_area(wild_area_state['area_id'])
-
-            embed = EmbedBuilder.party_menu(wild_area_state, available_parties)
-            view = PartyJoinCreateView(self.bot, wild_area_state)
-
-            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
     def _add_exit_button(self):
         """Add exit wild area button dynamically"""

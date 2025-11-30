@@ -3,15 +3,20 @@ Player Manager - Handles trainer profile operations
 """
 
 import json
+import math
+import time
 from pathlib import Path
 from typing import Optional, Dict, List
 from database import PlayerDatabase, SpeciesDatabase, MovesDatabase
+from exp_system import ExpSystem
 from models import Trainer, Pokemon
 
 
 class PlayerManager:
     """Manages player/trainer data"""
-    
+
+    STAMINA_FULL_RECOVERY_SECONDS = 7 * 24 * 60 * 60  # One week for full recovery
+
     def __init__(self, db_path: str = "data/players.db", species_db=None, items_db=None):
         self.db = PlayerDatabase(db_path)
         self.species_db = species_db
@@ -61,6 +66,61 @@ class PlayerManager:
                 inventory.append(row)
                 self._set_cached_quantity(row["discord_user_id"], row["item_id"], row["quantity"])
         return inventory
+
+    def _apply_passive_stamina(self, trainer_data: Dict) -> Dict:
+        if not trainer_data:
+            return trainer_data
+
+        data = dict(trainer_data)
+        discord_user_id = data.get("discord_user_id")
+        now = int(time.time())
+
+        stamina_max = calculate_max_stamina(data.get("fortitude_rank", 0) or 0)
+        current_max = int(data.get("stamina_max") or stamina_max)
+        current = int(data.get("stamina_current") or stamina_max)
+
+        update_fields: Dict[str, int] = {}
+
+        # Keep stamina_max in sync with Fortitude changes
+        if current_max != stamina_max:
+            update_fields["stamina_max"] = stamina_max
+            current = min(current, stamina_max)
+        else:
+            stamina_max = current_max
+
+        last_update_raw = data.get("last_stamina_update")
+        if last_update_raw is None:
+            last_update = now
+            update_fields["last_stamina_update"] = last_update
+        else:
+            try:
+                last_update = int(last_update_raw)
+            except (TypeError, ValueError):
+                last_update = now
+                update_fields["last_stamina_update"] = last_update
+
+        elapsed = max(0, now - last_update)
+        if stamina_max > 0 and elapsed > 0 and current < stamina_max:
+            regen_amount = int(
+                math.floor((stamina_max * elapsed) / self.STAMINA_FULL_RECOVERY_SECONDS)
+            )
+            if regen_amount > 0:
+                current = min(stamina_max, current + regen_amount)
+                last_update = now
+                update_fields["stamina_current"] = current
+                update_fields["last_stamina_update"] = last_update
+
+        if current > stamina_max:
+            current = stamina_max
+            update_fields["stamina_current"] = current
+
+        data["stamina_max"] = stamina_max
+        data["stamina_current"] = current
+        data["last_stamina_update"] = update_fields.get("last_stamina_update", last_update)
+
+        if update_fields and discord_user_id is not None:
+            self.db.update_trainer(discord_user_id, **update_fields)
+        return data
     
     # ============================================================
     # TRAINER OPERATIONS
@@ -70,7 +130,8 @@ class PlayerManager:
         """Get a trainer profile"""
         data = self.db.get_trainer(discord_user_id)
         if data:
-            return Trainer(data)
+            refreshed = self._apply_passive_stamina(data)
+            return Trainer(refreshed)
         return None
     
     def player_exists(self, discord_user_id: int) -> bool:
@@ -125,6 +186,53 @@ class PlayerManager:
     def update_player(self, discord_user_id: int, **kwargs):
         """Update trainer fields"""
         self.db.update_trainer(discord_user_id, **kwargs)
+
+    def consume_stamina(self, discord_user_id: int, amount: int) -> tuple[bool, int]:
+        """Consume a specific amount of stamina for a trainer."""
+        if amount <= 0:
+            return False, 0
+
+        trainer_data = self.db.get_trainer(discord_user_id)
+        if not trainer_data:
+            return False, 0
+
+        trainer_data = self._apply_passive_stamina(trainer_data)
+        current = int(trainer_data.get("stamina_current", 0))
+
+        if current < amount:
+            return False, current
+
+        new_current = max(0, current - amount)
+        self.db.update_trainer(
+            discord_user_id,
+            stamina_current=new_current,
+            last_stamina_update=int(time.time()),
+        )
+        return True, new_current
+
+    def restore_stamina(self, discord_user_id: int, amount: int) -> tuple[bool, int]:
+        """Restore stamina, clamped to the trainer's maximum."""
+        if amount <= 0:
+            return False, 0
+
+        trainer_data = self.db.get_trainer(discord_user_id)
+        if not trainer_data:
+            return False, 0
+
+        trainer_data = self._apply_passive_stamina(trainer_data)
+        stamina_max = int(trainer_data.get("stamina_max", 0))
+        current = int(trainer_data.get("stamina_current", 0))
+
+        if stamina_max <= 0:
+            return False, current
+
+        new_current = min(stamina_max, current + amount)
+        self.db.update_trainer(
+            discord_user_id,
+            stamina_current=new_current,
+            last_stamina_update=int(time.time()),
+        )
+        return True, new_current
         
     def update_location(self, discord_id: int, location_id: str) -> bool:
         """
@@ -791,6 +899,46 @@ class PlayerManager:
             "moves_available_to_learn": [],
         }
         return levelup_result
+
+    def grant_experience(self, discord_user_id: int, pokemon_id: str, exp_amount: int) -> Optional[Dict]:
+        """Grant flat EXP to a Pokemon and handle level-ups."""
+        if exp_amount <= 0:
+            return None
+
+        pokemon = self.get_pokemon(pokemon_id)
+        if not pokemon:
+            return None
+
+        if pokemon.get("owner_discord_id") != discord_user_id:
+            return None
+
+        species_db = self.species_db or SpeciesDatabase('data/pokemon_species.json')
+        species_data = species_db.get_species(pokemon['species_dex_number']) if species_db else None
+        growth_rate = species_data.get('growth_rate', 'medium_fast') if species_data else 'medium_fast'
+
+        current_exp = int(pokemon.get('exp', 0))
+        old_level = int(pokemon.get('level', 1))
+        new_total_exp = max(0, current_exp + exp_amount)
+        new_level = ExpSystem._calculate_level_from_exp(new_total_exp, growth_rate)
+
+        level_up_data = None
+        if new_level > old_level:
+            level_up_data = self.level_up_pokemon(discord_user_id, pokemon_id, set_level=new_level)
+
+        self.db.update_pokemon(
+            pokemon_id,
+            {
+                'exp': new_total_exp,
+                'level': new_level,
+            }
+        )
+
+        return {
+            'old_level': old_level,
+            'new_level': new_level,
+            'new_exp': new_total_exp,
+            'level_up_data': level_up_data,
+        }
 
     def equip_pokemon_moves(self, discord_user_id: int, pokemon_id: str, new_move_ids: List[str]) -> tuple[bool, str]:
         """Equip a new set of moves (1–4) for a Pokemon and persist to the DB.

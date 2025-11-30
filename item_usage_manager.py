@@ -34,6 +34,13 @@ class ItemUsageManager:
 
         # Load evolution data
         self.evolution_data = self._load_evolution_data()
+        self.exp_candy_values = {
+            'exp_candy_xs': 100,
+            'exp_candy_s': 800,
+            'exp_candy_m': 3000,
+            'exp_candy_l': 10000,
+            'exp_candy_xl': 30000,
+        }
 
     def _load_evolution_data(self) -> Dict:
         """Load or create evolution data mapping"""
@@ -236,6 +243,9 @@ class ItemUsageManager:
         # Check item category and handle appropriately
         category = item.get('category', '').lower()
 
+        if item_id in self.exp_candy_values:
+            return self._use_exp_candy(player_id, pokemon, item_id, item)
+
         if item_id == 'rare_candy' or 'rare' in item_id and 'candy' in item_id:
             return self._use_rare_candy(player_id, pokemon, item)
 
@@ -251,23 +261,26 @@ class ItemUsageManager:
         else:
             return ItemUseResult(False, f"❌ Don't know how to use {item.get('name', item_id)}!")
 
+    def _get_species_display_name(self, pokemon: Dict) -> str:
+        """Resolve a readable species name for messages."""
+        species_name = pokemon.get('species_name')
+        if species_name:
+            return species_name
+
+        try:
+            species_id = pokemon.get('species_dex_number')
+            if species_id and self.bot.species_db:
+                species_data = self.bot.species_db.get_species(species_id)
+                if species_data:
+                    return species_data.get('name', 'Pokemon')
+        except Exception:
+            return 'Pokemon'
+
+        return 'Pokemon'
+
     def _use_rare_candy(self, player_id: int, pokemon: Dict, item: Dict) -> ItemUseResult:
         """Level up Pokemon with Rare Candy"""
-        # Determine a readable name for messages
-        species_name = pokemon.get('species_name')
-        if not species_name:
-            # Try to look up from species_dex_number if available
-            try:
-                species_id = pokemon.get('species_dex_number')
-                if species_id and self.bot.species_db:
-                    species_data = self.bot.species_db.get_species(species_id)
-                    if species_data:
-                        species_name = species_data.get('name', 'Pokemon')
-            except Exception:
-                species_name = None
-
-        if not species_name:
-            species_name = 'Pokemon'
+        species_name = self._get_species_display_name(pokemon)
 
         if pokemon.get('level', 1) >= 100:
             return ItemUseResult(False, f"❌ {species_name} is already at max level (100)!")
@@ -303,6 +316,37 @@ class ItemUsageManager:
             evolution_triggered=can_evolve and method == 'level',
             level_up_data=levelup_result,
             new_level=new_level,
+        )
+
+    def _use_exp_candy(self, player_id: int, pokemon: Dict, item_id: str, item: Dict) -> ItemUseResult:
+        """Grant EXP based on the candy tier."""
+        species_name = self._get_species_display_name(pokemon)
+        exp_amount = self.exp_candy_values.get(item_id, 0)
+
+        if exp_amount <= 0:
+            return ItemUseResult(False, "❌ Invalid EXP candy configuration.")
+
+        result = self.bot.player_manager.grant_experience(
+            player_id,
+            pokemon.get('pokemon_id'),
+            exp_amount,
+        )
+
+        if not result:
+            return ItemUseResult(False, "❌ Failed to apply EXP candy.")
+
+        self.bot.player_manager.remove_item(player_id, item_id, 1)
+
+        message = f"✨ {species_name} gained **{exp_amount} EXP** from {item.get('name', item_id)}!"
+        if result['new_level'] > result['old_level']:
+            message += f"\n⬆️ Level {result['old_level']} → {result['new_level']}!"
+
+        return ItemUseResult(
+            success=True,
+            message=message,
+            pokemon_changed=True,
+            level_up_data=result.get('level_up_data'),
+            new_level=result.get('new_level'),
         )
 
     def _use_tm(self, player_id: int, pokemon: Dict, item: Dict, item_id: str) -> ItemUseResult:
