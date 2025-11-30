@@ -47,6 +47,14 @@ class SpeciesDatabase:
         for species in self.data.values():
             if self._normalize_name(species['name']) == normalized_query:
                 return species
+
+        # Last resort: partial match for base species name (for Pokemon with forms)
+        # e.g., "urshifu" will match "Urshifu Single Strike"
+        for species in self.data.values():
+            species_base = species['name'].lower().split()[0]  # Get first word
+            if species_base == identifier_lower:
+                return species
+
         return None
 
     def _normalize_name(self, name: str) -> str:
