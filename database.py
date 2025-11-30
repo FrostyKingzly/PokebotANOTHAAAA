@@ -4,6 +4,7 @@ Database Module - Handles loading game data and player data storage
 
 import json
 import sqlite3
+import time
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 import uuid
@@ -275,6 +276,7 @@ class PlayerDatabase:
                 -- Stamina
                 stamina_current INTEGER DEFAULT 9,
                 stamina_max INTEGER DEFAULT 9,
+                last_stamina_update INTEGER DEFAULT (strftime('%s','now')),
 
                 -- Ranked Ladder
                 rank_tier_name TEXT DEFAULT 'Qualifier',
@@ -525,6 +527,7 @@ class PlayerDatabase:
         # Stamina
         stamina_max_added = add_column('stamina_max', 'INTEGER DEFAULT 0')
         stamina_current_added = add_column('stamina_current', 'INTEGER DEFAULT 0')
+        last_stamina_update_added = add_column('last_stamina_update', "INTEGER DEFAULT (strftime('%s','now'))")
 
         if stamina_max_added or stamina_current_added:
             cursor.execute("SELECT discord_user_id, fortitude_rank FROM trainers")
@@ -538,6 +541,9 @@ class PlayerDatabase:
                     "UPDATE trainers SET stamina_max = ?, stamina_current = ? WHERE discord_user_id = ?",
                     (stamina_max, stamina_max, row['discord_user_id'] if isinstance(row, sqlite3.Row) else row[0])
                 )
+
+        if last_stamina_update_added:
+            cursor.execute("UPDATE trainers SET last_stamina_update = strftime('%s','now')")
 
         add_column('has_omni_ring', 'INTEGER DEFAULT 0')
         add_column('omni_ring_gimmicks', 'TEXT')
@@ -603,8 +609,8 @@ class PlayerDatabase:
                     charisma_rank, charisma_points,
                     fortitude_rank, fortitude_points,
                     will_rank, will_points,
-                    stamina_current, stamina_max
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    stamina_current, stamina_max, last_stamina_update
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     discord_user_id,
@@ -629,6 +635,7 @@ class PlayerDatabase:
                     stats_payload['will_points'],
                     stamina_max,
                     stamina_max,
+                    int(time.time()),
                 ),
             )
 
