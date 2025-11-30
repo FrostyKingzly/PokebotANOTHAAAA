@@ -29,7 +29,7 @@ class SpeciesDatabase:
     def __init__(self, json_path: str):
         with open(json_path, 'r', encoding='utf-8') as f:
             self.data = json.load(f)
-    
+
     def get_species(self, identifier) -> Optional[Dict]:
         """Get species by dex number or name"""
         # Try as dex number first
@@ -160,10 +160,30 @@ class MovesDatabase:
     def __init__(self, json_path: str):
         with open(json_path, 'r', encoding='utf-8') as f:
             self.data = json.load(f)
-    
+
+        # Build an alias map so we can resolve common formatting differences
+        # (e.g., Showdown's "firefang" -> our stored "fire_fang").
+        self._alias_map = {}
+        for move_id in self.data.keys():
+            collapsed = re.sub(r'[\s_-]+', '', move_id.lower())
+            # Preserve the first occurrence for any collision; Showdown names
+            # are unique enough that conflicts are unlikely in practice.
+            self._alias_map.setdefault(collapsed, move_id)
+
     def get_move(self, move_id: str) -> Optional[Dict]:
         """Get move by ID"""
-        return self.data.get(move_id.lower().replace(' ', '_'))
+        normalized = move_id.lower().replace(' ', '_')
+        move = self.data.get(normalized)
+        if move:
+            return move
+
+        # Fallback: collapse spaces, hyphens, and underscores to find Showdown-style IDs
+        collapsed = re.sub(r'[\s_-]+', '', move_id.lower())
+        alias = self._alias_map.get(collapsed)
+        if alias:
+            return self.data.get(alias)
+
+        return None
     
     def get_moves_by_type(self, move_type: str) -> List[Dict]:
         """Get all moves of a specific type"""

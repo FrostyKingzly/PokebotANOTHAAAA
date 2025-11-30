@@ -4,6 +4,7 @@ Player Manager - Handles trainer profile operations
 
 import json
 import math
+import re
 import time
 from pathlib import Path
 from typing import Optional, Dict, List
@@ -831,6 +832,12 @@ class PlayerManager:
 
         level = pokemon.get('level', 1)
         level_up_ids: List[str] = []
+        current_move_ids: List[str] = []
+
+        for m in pokemon.get('moves', []):
+            mid = str(m.get('move_id', '')).lower()
+            if mid:
+                current_move_ids.append(mid)
 
         # Learnset format: { "level_up_moves": [ {"level": int, "move_id": str, "gen": int}, ... ] }
         for move_entry in learnset.get('level_up_moves', []):
@@ -845,21 +852,27 @@ class PlayerManager:
 
         # Only expose TM moves that this Pokémon has actually learned via TM usage.
         # We do this by intersecting its current move list with the species' TM list.
-        all_tm_ids = {str(m).lower() for m in learnset.get('tm_moves', [])}
+        collapse = lambda mid: re.sub(r'[\s_-]+', '', str(mid).lower())
+
+        all_tm_ids = {collapse(m) for m in learnset.get('tm_moves', [])}
         learned_tm_ids: List[str] = []
         for m in pokemon.get('moves', []):
-            mid = str(m.get('move_id', '')).lower()
-            if mid and mid in all_tm_ids:
-                learned_tm_ids.append(mid)
+            raw_mid = str(m.get('move_id', '')).lower()
+            if raw_mid:
+                collapsed_mid = collapse(raw_mid)
+                if collapsed_mid in all_tm_ids:
+                    learned_tm_ids.append(raw_mid)
 
         tm_ids = learned_tm_ids
 
-        # De-duplicate while preserving order (level-up first, then TMs)
+        # De-duplicate while preserving order (current moves first to avoid dropping them)
         move_ids: List[str] = []
         seen = set()
-        for mid in level_up_ids + tm_ids:
-            if mid and mid not in seen:
-                seen.add(mid)
+
+        for mid in current_move_ids + level_up_ids + tm_ids:
+            normalized_mid = (mid or "").lower()
+            if normalized_mid and normalized_mid not in seen:
+                seen.add(normalized_mid)
                 move_ids.append(mid)
 
         moves_db = MovesDatabase('data/moves.json')
@@ -867,7 +880,9 @@ class PlayerManager:
         for mid in move_ids:
             move_data = moves_db.get_move(mid)
             if move_data:
-                available[mid] = move_data
+                canonical_id = move_data.get('id', mid.lower())
+                if canonical_id not in available:
+                    available[canonical_id] = move_data
         return available
 
     def level_up_pokemon(self, discord_user_id: int, pokemon_id: str, set_level: int | None = None) -> Optional[Dict]:

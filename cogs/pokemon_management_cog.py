@@ -4,6 +4,7 @@ Pokemon Management Cog - Commands for managing party and boxes
 
 import asyncio
 import discord
+from discord import NotFound
 from discord import app_commands
 from discord.ext import commands
 from discord.ui import Button, View, Select, Modal
@@ -493,7 +494,11 @@ class PokemonActionsView(View):
 
                 embed = EmbedBuilder.pokemon_summary(updated_pokemon, new_species, move_data_list)
                 new_view = PokemonActionsView(self.bot, updated_pokemon, new_species)
-                await interaction.message.edit(embed=embed, view=new_view)
+                try:
+                    await interaction.message.edit(embed=embed, view=new_view)
+                except NotFound:
+                    # Original message expired or was deleted; fall back to a fresh update
+                    await interaction.followup.send(embed=embed, view=new_view, ephemeral=True)
         else:
             await interaction.followup.send("[X] Evolution failed!", ephemeral=True)
 
