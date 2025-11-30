@@ -1,7 +1,7 @@
 {
-  "reverie_skyport": {
-    "name": "Reverie Skyport",
-    "description": "A tranquil aerial hub where travelers gather before departing. The views are stunning, but no wild Pokémon appear here.",
+  "lights_district_moonwake_port": {
+    "name": "Lights District - Moonwake Port",
+    "description": "Both air and sea come and leave from here, all expertly designed into one section to minimize space taken up. This is where your journey in Reverie City probably began!",
     "channel_ids": [],
     "amenities": [],
     "encounters": [],
@@ -1302,11 +1302,13 @@
     ],
     "npc_trainers": []
   },
-  "urban_crossings": {
-    "name": "Urban District - Crossings",
-    "description": "An urban civilian zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+  "lights_district_crossings": {
+    "name": "Lights District - Crossings",
+    "description": "One of the various crossings in the Lights district. With all the heavy foot traffic, there's lots of little bits of food that can be found on the floor. For a little bit, anyway, before it's found by one of the various Pokemon that can be found here.",
     "channel_ids": [],
-    "amenities": [],
+    "amenities": [
+      "pokemon_center"
+    ],
     "type": "civilian_zone",
     "encounters": [
       {
@@ -1422,11 +1424,13 @@
       }
     ]
   },
-  "urban_streets": {
-    "name": "Urban District - Streets",
-    "description": "An urban civilian zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+  "lights_district_streets": {
+    "name": "Lights District - Streets",
+    "description": "One of the various streets in the Lights District. Electricity flows through the city. Every building, every sign, every street. Electric Pokemon are drawn to it, but only the smallest tend to be able to thrive in the busy streets alongside a few birds and rodents.",
     "channel_ids": [],
-    "amenities": [],
+    "amenities": [
+      "pokemon_center"
+    ],
     "type": "civilian_zone",
     "encounters": [
       {
@@ -1533,9 +1537,9 @@
       }
     ]
   },
-  "urban_alleyways": {
-    "name": "Urban District - Alleyways",
-    "description": "An urban civilian zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+  "lights_district_alleyways": {
+    "name": "Lights District - Alleyways",
+    "description": "While the absolute majority of the city lights up there are a few nooks and crevices that are dark. Damp and dark alleyways creating shortcuts between buildings, where trash bins can be found. A few Pokemon tend to thrive here, though.",
     "channel_ids": [],
     "amenities": [],
     "type": "civilian_zone",
@@ -1661,9 +1665,9 @@
       }
     ]
   },
-  "urban_wild_zone_1": {
-    "name": "Urban District - Wild Zone 1",
-    "description": "An urban wild zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+  "lights_district_wild_zone_1": {
+    "name": "Lights District - Wild Zone 1",
+    "description": "The Lights District Gardens. A little life existing amongst the glass, concrete and metal towers, vibrant green grass with an assortment of flowers from across the world accompanied by a few trees. With the abundance of Pokemon coming into the city, a few wild were bound to find and make this place there home. To ensure their safety, the City took inspiration from another project in Kalos. Thus, the first Wild Area was formed.",
     "channel_ids": [],
     "amenities": [],
     "type": "wild_zone",
@@ -1779,9 +1783,9 @@
       }
     ]
   },
-  "urban_wild_zone_2": {
-    "name": "Urban District - Wild Zone 2",
-    "description": "An urban wild zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+  "lights_district_wild_zone_2": {
+    "name": "Lights District - Wild Zone 2",
+    "description": "A large fountain that became a frequent spot for Wild Pokemon. It was quickly turned into a Wild Area after the first to prevent heavy foot-traffic and reduce littering into the water.",
     "channel_ids": [],
     "amenities": [],
     "type": "wild_zone",
@@ -1897,9 +1901,9 @@
       }
     ]
   },
-  "urban_beach": {
-    "name": "Urban District - Beach",
-    "description": "An urban civilian zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+  "residential_district_beach": {
+    "name": "Residential District - Beach",
+    "description": "A long, stretching beach across the edge of the Residential district. During the day it serves a purpose to sun-tanners and surfers for families all day, while the night provides a cool, romantic atmosphere guided by the relaxing sound of waves crashing- and thankfully only the very distant hum of the Lights district.",
     "channel_ids": [],
     "amenities": [],
     "type": "civilian_zone",
@@ -1995,9 +1999,9 @@
       }
     ]
   },
-  "urban_dreamyard": {
-    "name": "Urban District - Dreamyard",
-    "description": "An urban civilian zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+  "residential_district_dreamyard": {
+    "name": "Residential District - Dreamyard",
+    "description": "A run down area that used to be a place lots of scientists and researchers visited. It's hardly ever visited now, though. Pokemon drawn to a certain kind of energy seem to have taken up residence here, along with a strange individual locals have noticed.",
     "channel_ids": [],
     "amenities": [],
     "type": "civilian_zone",
@@ -2113,9 +2117,9 @@
       }
     ]
   },
-  "urban_wild_zone_3": {
-    "name": "Urban District - Wild Zone 3",
-    "description": "An urban wild zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+  "residential_district_wild_zone_3": {
+    "name": "Residential District - Wild Zone 3",
+    "description": "A large section next to the beach formed entirely out of tidepools. Lots of Pokemon make the gaps and crevasses their home, which also makes it the perfect hunting ground for some birds hunting for an easy catch on some aquatic Pokemon.",
     "channel_ids": [],
     "amenities": [],
     "type": "wild_zone",
@@ -2232,9 +2236,9 @@
       }
     ]
   },
-  "urban_wild_zone_4": {
-    "name": "Urban District - Wild Zone 4",
-    "description": "An urban wild zone in the city. Urban area with Pokemon levels ranging from 1 to 20.",
+  "residential_district_wild_zone_4": {
+    "name": "Residential District - Wild Zone 4",
+    "description": "A large abandoned building. It's actually a very nice place, that should've been really easy for a wealthy family to live in. Unfortunately, it became infested with ghost types that wanted to make it their home instead. Rather than trying to convince them to leave, the past owners just opted to let them have it. Since then, it's been turned into an official wild area for its protection.",
     "channel_ids": [],
     "amenities": [],
     "type": "wild_zone",

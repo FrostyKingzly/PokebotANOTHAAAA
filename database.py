@@ -255,7 +255,7 @@ class PlayerDatabase:
                 birthday TEXT,
                 home_region TEXT,
                 bio TEXT,
-                current_location_id TEXT DEFAULT 'reverie_skyport',
+                current_location_id TEXT DEFAULT 'lights_district_moonwake_port',
                 money INTEGER DEFAULT 5000,
 
                 boon_stat TEXT,
@@ -621,7 +621,7 @@ class PlayerDatabase:
                     birthday,
                     home_region,
                     bio,
-                    "reverie_skyport",
+                    "lights_district_moonwake_port",
                     boon_stat,
                     bane_stat,
                     stats_payload['heart_rank'],
