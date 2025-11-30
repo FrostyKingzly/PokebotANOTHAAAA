@@ -329,6 +329,74 @@ class PlayerManager:
     def get_pokemon(self, pokemon_id: str) -> Optional[Dict]:
         """Get a specific Pokemon by ID"""
         return self.db.get_pokemon(pokemon_id)
+
+    def update_pokemon(self, discord_user_id: int, pokemon: Dict) -> bool:
+        """Persist Pokemon changes after validating ownership."""
+        if not pokemon:
+            return False
+
+        pokemon_id = pokemon.get('pokemon_id')
+        if not pokemon_id:
+            return False
+
+        owner_id = pokemon.get('owner_discord_id')
+        if owner_id is not None and owner_id != discord_user_id:
+            return False
+
+        allowed_fields = {
+            'owner_discord_id',
+            'species_dex_number',
+            'form',
+            'nickname',
+            'level',
+            'exp',
+            'gender',
+            'nature',
+            'ability',
+            'held_item',
+            'current_hp',
+            'max_hp',
+            'status_condition',
+            'iv_hp',
+            'iv_attack',
+            'iv_defense',
+            'iv_sp_attack',
+            'iv_sp_defense',
+            'iv_speed',
+            'ev_hp',
+            'ev_attack',
+            'ev_defense',
+            'ev_sp_attack',
+            'ev_sp_defense',
+            'ev_speed',
+            'moves',
+            'friendship',
+            'bond_level',
+            'in_party',
+            'party_position',
+            'box_position',
+            'is_shiny',
+            'can_mega_evolve',
+            'tera_type',
+        }
+
+        updates: Dict = {}
+        for key in allowed_fields:
+            if key in pokemon:
+                updates[key] = pokemon[key]
+
+        # Backwards-compatible mapping for status field used by some callers
+        if 'status' in pokemon and 'status_condition' not in updates:
+            updates['status_condition'] = pokemon['status']
+
+        moves = updates.get('moves')
+        if isinstance(moves, list):
+            updates['moves'] = json.dumps(moves)
+
+        if not updates:
+            return False
+
+        return self.db.update_pokemon(pokemon_id, updates)
     
     def get_party(self, discord_user_id: int) -> List[Dict]:
         """Get trainer's party"""

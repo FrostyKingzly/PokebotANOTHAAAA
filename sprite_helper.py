@@ -86,6 +86,16 @@ class PokemonSpriteHelper:
         # Reconstruct the base name without hyphens so we can append forms/gender cleanly
         name = ''.join(base_segments)
 
+        # Normalize certain forms to match Showdown sprite naming
+        if inferred_form:
+            form_key = (name, inferred_form.lower())
+            if form_key == ("lycanroc", "midday"):
+                inferred_form = None  # Midday uses the base lycanroc sprite
+            elif form_key == ("urshifu", "single-strike"):
+                inferred_form = None  # Single Strike is the default Urshifu sprite
+            elif form_key == ("urshifu", "rapid-strike"):
+                inferred_form = "rapidstrike"
+
         # Add form suffix if specified (e.g., "sandshrew-alola")
         if inferred_form:
             name = f"{name}-{inferred_form.lower()}"
