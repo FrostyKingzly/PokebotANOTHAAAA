@@ -428,7 +428,8 @@ class EmbedBuilder:
             pokemon['species_dex_number'],
             style='animated',
             shiny=pokemon.get('is_shiny', False),
-            gender=pokemon.get('gender')
+            gender=pokemon.get('gender'),
+            use_fallback=False
         )
         embed.set_thumbnail(url=sprite_url)
 

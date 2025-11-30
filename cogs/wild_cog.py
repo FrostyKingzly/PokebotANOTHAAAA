@@ -124,7 +124,8 @@ class WildCog(commands.Cog):
             pokemon.species_dex_number,
             style='animated',
             gender=pokemon.gender,
-            shiny=pokemon.is_shiny
+            shiny=pokemon.is_shiny,
+            use_fallback=False
         )
         embed.set_thumbnail(url=sprite_url)
 
