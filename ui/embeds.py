@@ -8,6 +8,7 @@ from models import Trainer
 from exp_display_helpers import create_exp_text
 from rank_manager import get_rank_tier_definition
 from sprite_helper import PokemonSpriteHelper
+from database import NaturesDatabase
 
 class EmbedBuilder:
     """Builds Discord embeds for the bot"""
@@ -55,6 +56,51 @@ class EmbedBuilder:
     @staticmethod
     def _category_to_emoji(category: str) -> str:
         return EmbedBuilder.CATEGORY_EMOJIS.get(category.lower(), category.title())
+
+    @staticmethod
+    def _calculate_display_stats(pokemon: Dict, species_data: Dict) -> Dict[str, int]:
+        """Calculate actual stats for display using stored IVs/EVs and nature."""
+        natures_db = NaturesDatabase('data/natures.json')
+        nature_data = natures_db.get_nature(pokemon.get('nature')) or {}
+
+        base_stats = species_data.get('base_stats', {})
+        ivs = {
+            'hp': pokemon.get('iv_hp', 31),
+            'attack': pokemon.get('iv_attack', 31),
+            'defense': pokemon.get('iv_defense', 31),
+            'sp_attack': pokemon.get('iv_sp_attack', 31),
+            'sp_defense': pokemon.get('iv_sp_defense', 31),
+            'speed': pokemon.get('iv_speed', 31),
+        }
+        evs = {
+            'hp': pokemon.get('ev_hp', 0),
+            'attack': pokemon.get('ev_attack', 0),
+            'defense': pokemon.get('ev_defense', 0),
+            'sp_attack': pokemon.get('ev_sp_attack', 0),
+            'sp_defense': pokemon.get('ev_sp_defense', 0),
+            'speed': pokemon.get('ev_speed', 0),
+        }
+
+        level = pokemon.get('level', 1)
+        stats = {
+            'hp': int(
+                ((2 * base_stats.get('hp', 0) + ivs['hp'] + (evs['hp'] // 4))
+                 * level // 100) + level + 10
+            )
+        }
+
+        for stat in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
+            base = base_stats.get(stat, 0)
+            value = int(((2 * base + ivs[stat] + (evs[stat] // 4)) * level // 100) + 5)
+
+            if nature_data.get('increased_stat') == stat:
+                value = int(value * 1.1)
+            elif nature_data.get('decreased_stat') == stat:
+                value = int(value * 0.9)
+
+            stats[stat] = value
+
+        return stats
 
 
     @staticmethod
@@ -460,13 +506,10 @@ class EmbedBuilder:
         embed.add_field(name="❤️ Health", value=hp_status, inline=True)
 
         # Stats (calculate actual stats from IVs/EVs)
-        stats_text = f"**HP:** {pokemon['max_hp']}\n"
+        display_stats = EmbedBuilder._calculate_display_stats(pokemon, species_data)
+        stats_text = f"**HP:** {display_stats['hp']}\n"
 
-        # We need to calculate the other stats
-        # For now, show base stats + indication of IVs using a 5-star IV judge scale
         for stat_name in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
-            # This is a simplified display - actual calculation happens in Pokemon class
-            base_stat = species_data['base_stats'][stat_name]
             iv = pokemon.get(f'iv_{stat_name}', 31)
 
             # IV judge-style rating (like in-game) with 5-star scale
@@ -499,7 +542,7 @@ class EmbedBuilder:
 
             stats_text += (
                 f"**{display_name_map[stat_name]}:** "
-                f"~{base_stat + iv} {stars} ({judge})\n"
+                f"{display_stats[stat_name]} {stars} ({judge})\n"
             )
 
         embed.add_field(name="📊 Stats", value=stats_text, inline=True)
