@@ -44,7 +44,12 @@ class BattleCog(commands.Cog):
                 learnset_db = None
 
         try:
-            return BattleExpHandler(species_db, learnset_db, player_manager)
+            return BattleExpHandler(
+                species_db,
+                learnset_db,
+                player_manager,
+                getattr(self.bot, "item_usage_manager", None)
+            )
         except Exception:
             return None
 

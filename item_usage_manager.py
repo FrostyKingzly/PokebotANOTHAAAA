@@ -4,6 +4,7 @@ Handles Rare Candy, TMs/HMs, Evolution Items, and all other consumable items
 """
 
 import json
+from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
 
@@ -44,7 +45,20 @@ class ItemUsageManager:
 
     def _load_evolution_data(self) -> Dict:
         """Load or create evolution data mapping"""
-        # Comprehensive evolution data based on official Pokemon games
+        data_dir = Path(__file__).resolve().parent / 'data'
+        json_path = data_dir / 'evolution_data.json'
+
+        if json_path.exists():
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    raw = json.load(f)
+                # Normalize keys for consistent lookups
+                return {str(k).lower(): v for k, v in raw.items()}
+            except Exception:
+                # Fall back to the baked-in defaults if the JSON is malformed
+                pass
+
+        # Comprehensive evolution data based on official Pokemon games (default fallback)
         return {
             # Gen 1 - Level evolutions
             'bulbasaur': {'method': 'level', 'level': 16, 'into': 'ivysaur'},
@@ -157,6 +171,11 @@ class ItemUsageManager:
             'quilava': {'method': 'level', 'level': 36, 'into': 'typhlosion'},
             'totodile': {'method': 'level', 'level': 18, 'into': 'croconaw'},
             'croconaw': {'method': 'level', 'level': 30, 'into': 'feraligatr'},
+
+            # Gen 9 pseudo-legendary line
+            'frigibax': {'method': 'level', 'level': 35, 'into': 'arctibax'},
+            'arctibax': {'method': 'level', 'level': 54, 'into': 'baxcalibur'},
+            'baxcalibur': {'method': 'none'},
 
             # Add more as needed - this covers Gen 1-2 basics
         }
