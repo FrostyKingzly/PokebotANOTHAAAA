@@ -3,6 +3,8 @@ Pokemon Sprite Helper
 Easy integration of Pokemon images into Discord embeds
 """
 
+import re
+import unicodedata
 from typing import Optional
 
 
@@ -21,6 +23,32 @@ class PokemonSpriteHelper:
     POKEAPI_SHINY = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/{id}.png"
     POKEAPI_SHINY_FEMALE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/female/{id}.png"
     OFFICIAL_ART = "https://assets.pokemon.com/assets/cms2/img/pokedex/full/{id}.png"
+
+    KNOWN_FORM_SUFFIXES = {
+        "alola", "galar", "hisui", "paldea", "gmax", "mega", "primal",
+        "dawn", "dusk", "midday", "midnight", "school", "totem", "therian",
+        "incarnate", "origin", "sky", "ash", "zen", "frost", "heat", "mow",
+        "wash", "fan", "sunny", "rainy", "snowy", "attack", "defense", "speed",
+        "plant", "sandy", "trash", "black", "white", "shadow", "busted",
+        "disguised", "pau", "pom-pom", "sensu", "baile", "blade", "shield",
+        "crowned", "low-key", "amped", "resolute", "pirouette", "unbound",
+        "eternamax", "starter", "dada", "rapid-strike", "single-strike",
+        "dawn-wings", "dusk-mane", "male", "female",
+    }
+
+    @staticmethod
+    def _strip_accents(text: str) -> str:
+        """Return text with diacritic marks removed."""
+        normalized = unicodedata.normalize("NFKD", text)
+        return "".join(ch for ch in normalized if not unicodedata.combining(ch))
+
+    @staticmethod
+    def _sanitize_component(text: str, allow_hyphens: bool = False) -> str:
+        """Normalize a name/form component for Showdown sprite slugs."""
+        text = PokemonSpriteHelper._strip_accents(text.lower())
+        if allow_hyphens:
+            return re.sub(r"[^a-z0-9-]", "", text)
+        return re.sub(r"[^a-z0-9]", "", text)
     
     @staticmethod
     def _gendered_name(name: str, gender: Optional[str]) -> str:
@@ -41,7 +69,7 @@ class PokemonSpriteHelper:
             dex_number: National Dex number (required for 'static' and 'official' styles)
             style: 'animated', 'gen5static', 'static', 'official', 'showdown'
             shiny: Whether to get shiny sprite (animated/gen5static/showdown use Showdown shinies)
-            use_fallback: If True and style='animated', returns a list [animated_url, gen5static_url]
+            use_fallback: If True and style='animated', returns a prioritized list of URLs
             form: Regional form (e.g., 'alola', 'hisui', 'galar') or None for base form
 
         Returns:
@@ -61,9 +89,17 @@ class PokemonSpriteHelper:
             >>> PokemonSpriteHelper.get_sprite("sandshrew", 27, form='alola')
             'https://play.pokemonshowdown.com/sprites/gen5ani/sandshrew-alola.gif'
         """
-        # Convert to lowercase and replace spaces with hyphens for Showdown format
-        # Remove apostrophes and periods
-        raw_name = pokemon_name.lower().replace(' ', '-').replace("'", "").replace(".", "")
+        # Convert to lowercase, remove diacritics, and replace spaces with hyphens for parsing
+        # Remove apostrophes, periods, and colons so names like "Mr. Mime" or "Type: Null"
+        # line up with Showdown's sprite IDs.
+        raw_name = (
+            PokemonSpriteHelper._strip_accents(pokemon_name.lower())
+            .replace(' ', '-')
+            .replace("'", "")
+            .replace(".", "")
+            .replace(":", "")
+            .replace("%", "")
+        )
 
         # Infer form or gender from the provided name if they aren't explicitly supplied
         segments = raw_name.split('-')
@@ -75,7 +111,7 @@ class PokemonSpriteHelper:
             if inferred_gender is None and last_segment in {"f", "female", "m", "male"}:
                 inferred_gender = "female" if last_segment.startswith('f') else "male"
                 base_segments = segments[:-1]
-            elif inferred_form is None:
+            elif inferred_form is None and last_segment in PokemonSpriteHelper.KNOWN_FORM_SUFFIXES:
                 inferred_form = '-'.join(segments[1:])
                 base_segments = [segments[0]]
             else:
@@ -84,11 +120,12 @@ class PokemonSpriteHelper:
             base_segments = segments
 
         # Reconstruct the base name without hyphens so we can append forms/gender cleanly
-        name = ''.join(base_segments)
+        base_name = ''.join(base_segments)
+        base_name = PokemonSpriteHelper._sanitize_component(base_name)
 
         # Normalize certain forms to match Showdown sprite naming
         if inferred_form:
-            form_key = (name, inferred_form.lower())
+            form_key = (base_name, inferred_form.lower())
             if form_key == ("lycanroc", "midday"):
                 inferred_form = None  # Midday uses the base lycanroc sprite
             elif form_key == ("urshifu", "single-strike"):
@@ -98,31 +135,46 @@ class PokemonSpriteHelper:
 
         # Add form suffix if specified (e.g., "sandshrew-alola")
         if inferred_form:
-            name = f"{name}-{inferred_form.lower()}"
+            form_slug = PokemonSpriteHelper._sanitize_component(inferred_form, allow_hyphens=True)
+            name = f"{base_name}-{form_slug}"
+        else:
+            name = base_name
 
         gender = inferred_gender
 
         if style == 'animated':
             gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
 
-            # Always try gen5ani sprites for ALL Pokemon (including Gen 6+)
-            # Many Gen 6+ Pokemon like Incineroar have gen5-style animated sprites
-            # If they don't exist, Discord will fall back to the static sprite
-            animated_url = (
-                PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=gendered_name)
+            sprite_urls = []
+            allow_gen5 = dex_number is None or dex_number <= 649
+
+            if allow_gen5:
+                animated_url = (
+                    PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=gendered_name)
+                    if shiny
+                    else PokemonSpriteHelper.GEN5_ANIMATED.format(name=gendered_name)
+                )
+                static_fallback = (
+                    PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=gendered_name)
+                    if shiny
+                    else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
+                )
+                sprite_urls.extend([animated_url, static_fallback])
+
+            showdown_static = (
+                PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=gendered_name)
                 if shiny
-                else PokemonSpriteHelper.GEN5_ANIMATED.format(name=gendered_name)
+                else PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=gendered_name)
             )
-            static_fallback = (
-                PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=gendered_name)
-                if shiny
-                else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
-            )
+            sprite_urls.append(showdown_static)
+
+            if dex_number is not None:
+                sprite_urls.append(PokemonSpriteHelper.OFFICIAL_ART.format(id=f"{dex_number:03d}"))
 
             if use_fallback:
-                return [animated_url, static_fallback]
+                return sprite_urls
 
-            return animated_url
+            return sprite_urls[0]
 
         elif style == 'gen5static':
             # Gen 5 static sprites
@@ -189,7 +241,10 @@ class PokemonSpriteHelper:
             >>> PokemonSpriteHelper.add_to_embed(embed, "pikachu", 25)
         """
         url = PokemonSpriteHelper.get_sprite(pokemon_name, dex_number, style)
-        
+
+        if isinstance(url, list):
+            url = url[0]
+
         if position == 'thumbnail':
             embed.set_thumbnail(url=url)
         elif position == 'image':
