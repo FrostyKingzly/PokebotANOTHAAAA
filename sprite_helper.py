@@ -50,11 +50,24 @@ class PokemonSpriteHelper:
             return re.sub(r"[^a-z0-9-]", "", text)
         return re.sub(r"[^a-z0-9]", "", text)
     
+    FEMALE_SPRITE_SPECIES = {
+        # Species with distinct female Showdown sprite slugs
+        "basculegion", "frillish", "hippopotas", "hippowdon", "indeedee",
+        "jellicent", "meowstic", "oinkologne", "pyroar", "unfezant",
+    }
+
     @staticmethod
     def _gendered_name(name: str, gender: Optional[str]) -> str:
-        """Return the gender-adjusted sprite slug for Showdown sprites."""
+        """Return the gender-adjusted sprite slug for Showdown sprites.
+
+        Only a handful of species have dedicated "-f" sprites on Showdown. For
+        everything else we stick to the base slug so we don't request missing
+        assets (which Discord then shows as a broken image).
+        """
         if gender and gender.lower() == "female":
-            return f"{name}-f"
+            base_species = name.split("-", 1)[0]
+            if base_species in PokemonSpriteHelper.FEMALE_SPRITE_SPECIES:
+                return f"{name}-f"
         return name
 
     @staticmethod
@@ -146,19 +159,25 @@ class PokemonSpriteHelper:
             gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
 
             sprite_urls = []
-            allow_gen5 = dex_number is None or dex_number <= 649
 
-            if allow_gen5:
-                animated_url = (
-                    PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=gendered_name)
-                    if shiny
-                    else PokemonSpriteHelper.GEN5_ANIMATED.format(name=gendered_name)
-                )
-                static_fallback = (
-                    PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=gendered_name)
-                    if shiny
-                    else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
-                )
+            animated_url = (
+                PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=gendered_name)
+                if shiny
+                else PokemonSpriteHelper.GEN5_ANIMATED.format(name=gendered_name)
+            )
+            static_fallback = (
+                PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=gendered_name)
+                if shiny
+                else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
+            )
+
+            prefers_static_first = bool(dex_number and dex_number > 649)
+            if inferred_form:
+                prefers_static_first = True
+
+            if prefers_static_first:
+                sprite_urls.extend([static_fallback, animated_url])
+            else:
                 sprite_urls.extend([animated_url, static_fallback])
 
             showdown_static = (
@@ -168,13 +187,10 @@ class PokemonSpriteHelper:
             )
             sprite_urls.append(showdown_static)
 
-            if dex_number is not None:
-                sprite_urls.append(PokemonSpriteHelper.OFFICIAL_ART.format(id=f"{dex_number:03d}"))
+            if not use_fallback:
+                return sprite_urls[0]
 
-            if use_fallback:
-                return sprite_urls
-
-            return sprite_urls[0]
+            return sprite_urls
 
         elif style == 'gen5static':
             # Gen 5 static sprites
