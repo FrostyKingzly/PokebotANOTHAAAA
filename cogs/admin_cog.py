@@ -704,14 +704,14 @@ Modest Nature
             inline=True
         )
         
-        # Social stats
+        # Star traits
         social_stats = player.get_social_stats_dict()
         stats_text = "\n".join([
             f"**{name}:** Rank {info['rank']} ({info['points']}/{info['cap']} pts)"
             for name, info in social_stats.items()
         ])
         embed.add_field(
-            name="📊 Social Stats",
+            name="📊 Star Traits",
             value=stats_text,
             inline=False
         )

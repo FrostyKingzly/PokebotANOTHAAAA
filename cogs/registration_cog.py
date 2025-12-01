@@ -6,6 +6,14 @@ from discord.ext import commands
 from discord.ui import Modal, View, Button, Select
 
 from ui.embeds import EmbedBuilder
+from social_stats import SOCIAL_STAT_DEFINITIONS
+
+
+def get_stat_display_name(stat_key: str) -> str:
+    """Return the display name for a stat key, falling back to title-casing."""
+
+    definition = SOCIAL_STAT_DEFINITIONS.get(stat_key)
+    return definition.display_name if definition else stat_key.title()
 
 
 # Registration step constants
@@ -217,15 +225,15 @@ class BioModal(Modal, title="About You"):
 
     async def show_social_stats(self, interaction: discord.Interaction):
         embed = discord.Embed(
-            title="✨ Choose Your Social Stats",
+            title="✨ Choose Your Star Traits",
             description=(
                 "\"Alright! Now let's determine your strengths and weaknesses.\"\n\n"
-                "Every trainer has 5 social stats:\n\n"
-                "**Heart** - Empathy & compassion\n"
+                "Every trainer has 5 Star Traits:\n\n"
+                "**Heart** - Empathy & connection\n"
                 "**Insight** - Perception & intellect\n"
-                "**Charisma** - Confidence & influence\n"
-                "**Fortitude** - Physical grit & stamina\n"
-                "**Will** - Determination & inner strength\n\n"
+                "**Charisma** - Charm & influence\n"
+                "**Fortitude** - Strength & willpower\n"
+                "**Clarity** - Focus & discipline\n\n"
                 "Choose one **Boon** (Rank 2) and one **Bane** (Rank 0).\n"
                 "The other three will start at Rank 1."
             ),
@@ -251,15 +259,15 @@ class BioStepView(View):
         reg_data.bio = None
 
         embed = discord.Embed(
-            title="✨ Choose Your Social Stats",
+            title="✨ Choose Your Star Traits",
             description=(
                 "\"Alright! Now let's determine your strengths and weaknesses.\"\n\n"
-                "Every trainer has 5 social stats:\n\n"
-                "**Heart** - Empathy & compassion\n"
+                "Every trainer has 5 Star Traits:\n\n"
+                "**Heart** - Empathy & connection\n"
                 "**Insight** - Perception & intellect\n"
-                "**Charisma** - Confidence & influence\n"
-                "**Fortitude** - Physical grit & stamina\n"
-                "**Will** - Determination & inner strength\n\n"
+                "**Charisma** - Charm & influence\n"
+                "**Fortitude** - Strength & willpower\n"
+                "**Clarity** - Focus & discipline\n\n"
                 "Choose one **Boon** (Rank 2) and one **Bane** (Rank 0).\n"
                 "The other three will start at Rank 1."
             ),
@@ -270,9 +278,9 @@ class BioStepView(View):
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
-# Step 6: Social Stats Selection
+# Step 6: Star Traits Selection
 class SocialStatsView(View):
-    """Social stats boon/bane selection"""
+    """Star Traits boon/bane selection"""
 
     def __init__(self):
         super().__init__(timeout=300)
@@ -282,15 +290,15 @@ class SocialStatsView(View):
         # Add boon select
         boon_options = [
             discord.SelectOption(label="Heart", value="heart",
-                               description="Empathy & compassion for people and Pokémon"),
+                               description="Empathy & connection for people and Pokémon"),
             discord.SelectOption(label="Insight", value="insight",
                                description="Perception, research, and tactical thinking"),
             discord.SelectOption(label="Charisma", value="charisma",
-                               description="Confidence, influence, and negotiations"),
+                               description="Charm, influence, and negotiations"),
             discord.SelectOption(label="Fortitude", value="fortitude",
-                               description="Physical grit, travel, and athletic feats"),
-            discord.SelectOption(label="Will", value="will",
-                               description="Determination and inner strength"),
+                               description="Strength, travel, and athletic feats"),
+            discord.SelectOption(label="Clarity", value="will",
+                               description="Focus, discipline, and resilience"),
         ]
 
         boon_select = Select(
@@ -317,7 +325,7 @@ class SocialStatsView(View):
         reg_data.boon_stat = self.boon_stat
 
         await interaction.response.send_message(
-            f"✔ **{self.boon_stat.title()}** will be your strength! (Rank 2)",
+            f"✔ **{get_stat_display_name(self.boon_stat)}** will be your strength! (Rank 2)",
             ephemeral=True
         )
 
@@ -341,7 +349,7 @@ class SocialStatsView(View):
         reg_data.bane_stat = self.bane_stat
 
         await interaction.response.send_message(
-            f"✔ **{self.bane_stat.title()}** will be your weakness. (Rank 0)\n\n"
+            f"✔ **{get_stat_display_name(self.bane_stat)}** will be your weakness. (Rank 0)\n\n"
             f"Moving to confirmation...",
             ephemeral=True
         )
@@ -399,8 +407,8 @@ class AvatarModal(Modal, title="Character Photo"):
         if reg_data.bio:
             embed.add_field(name="📝 About You", value=reg_data.bio, inline=False)
 
-        stats_summary = f"Boon: **{reg_data.boon_stat.title()}** | Bane: **{reg_data.bane_stat.title()}**"
-        embed.add_field(name="📊 Social Stats", value=stats_summary, inline=False)
+        stats_summary = f"Boon: **{get_stat_display_name(reg_data.boon_stat)}** | Bane: **{get_stat_display_name(reg_data.bane_stat)}**"
+        embed.add_field(name="📊 Star Traits", value=stats_summary, inline=False)
 
         if reg_data.avatar_url:
             embed.set_thumbnail(url=reg_data.avatar_url)
@@ -445,8 +453,8 @@ class AvatarStepView(View):
         if reg_data.bio:
             embed.add_field(name="📝 About You", value=reg_data.bio, inline=False)
 
-        stats_summary = f"Boon: **{reg_data.boon_stat.title()}** | Bane: **{reg_data.bane_stat.title()}**"
-        embed.add_field(name="📊 Social Stats", value=stats_summary, inline=False)
+        stats_summary = f"Boon: **{get_stat_display_name(reg_data.boon_stat)}** | Bane: **{get_stat_display_name(reg_data.bane_stat)}**"
+        embed.add_field(name="📊 Star Traits", value=stats_summary, inline=False)
 
         if reg_data.avatar_url:
             embed.set_thumbnail(url=reg_data.avatar_url)
@@ -544,7 +552,7 @@ class EditStepView(View):
             discord.SelectOption(label="Birthday", value="birthday", emoji="🎉"),
             discord.SelectOption(label="Home Region", value="region", emoji="🌍"),
             discord.SelectOption(label="Bio", value="bio", emoji="📝"),
-            discord.SelectOption(label="Social Stats", value="stats", emoji="📊"),
+            discord.SelectOption(label="Star Traits", value="stats", emoji="📊"),
             discord.SelectOption(label="Photo", value="photo", emoji="📸"),
         ]
 
@@ -590,14 +598,14 @@ class EditStepView(View):
             await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
         elif choice == "stats":
             embed = discord.Embed(
-                title="✨ Choose Your Social Stats",
+                title="✨ Choose Your Star Traits",
                 description=(
-                    "Every trainer has 5 social stats:\n\n"
-                    "**Heart** - Empathy & compassion\n"
+                    "Every trainer has 5 Star Traits:\n\n"
+                    "**Heart** - Empathy & connection\n"
                     "**Insight** - Perception & intellect\n"
-                    "**Charisma** - Confidence & influence\n"
-                    "**Fortitude** - Physical grit & stamina\n"
-                    "**Will** - Determination & inner strength\n\n"
+                    "**Charisma** - Charm & influence\n"
+                    "**Fortitude** - Strength & willpower\n"
+                    "**Clarity** - Focus & discipline\n\n"
                     "Choose one **Boon** (Rank 2) and one **Bane** (Rank 0)."
                 ),
                 color=discord.Color.blue(),

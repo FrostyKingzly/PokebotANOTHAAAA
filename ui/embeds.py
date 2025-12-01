@@ -9,6 +9,7 @@ from exp_display_helpers import create_exp_text
 from rank_manager import get_rank_tier_definition
 from sprite_helper import PokemonSpriteHelper
 from database import NaturesDatabase
+from social_stats import SOCIAL_STAT_DEFINITIONS, SOCIAL_STAT_ORDER
 
 class EmbedBuilder:
     """Builds Discord embeds for the bot"""
@@ -249,7 +250,7 @@ class EmbedBuilder:
             inline=False
         )
         
-        # Social stats
+        # Star traits
         stats = trainer.get_social_stats_dict()
         stat_lines = []
         for name, info in stats.items():
@@ -261,10 +262,10 @@ class EmbedBuilder:
                 # No star shown when rank is 0
                 line = f"**{name}:** —"
             stat_lines.append(line)
-        stats_text = "\n".join(stat_lines) if stat_lines else "No social stats yet."
+        stats_text = "\n".join(stat_lines) if stat_lines else "No star traits yet."
 
         embed.add_field(
-            name="📊 Social Stats",
+            name="📊 Star Traits",
             value=stats_text,
             inline=True
         )
@@ -367,25 +368,23 @@ class EmbedBuilder:
             inline=False
         )
         
-        # Social stats preview
-        stats_preview = "• **Heart:** Rank 1\n"
-        stats_preview += "• **Insight:** Rank 1\n"
-        stats_preview += "• **Charisma:** Rank 1\n"
-        stats_preview += "• **Fortitude:** Rank 1\n"
-        stats_preview += "• **Will:** Rank 1"
-        
-        # Apply boon/bane
-        stats_preview = stats_preview.replace(
-            f"**{boon_stat.title()}:** Rank 1",
-            f"**{boon_stat.title()}:** Rank 2 ⬆️"
-        )
-        stats_preview = stats_preview.replace(
-            f"**{bane_stat.title()}:** Rank 1",
-            f"**{bane_stat.title()}:** Rank 0 ⬇️"
-        )
-        
+        # Star traits preview
+        stats_preview_lines = []
+        for stat_key in SOCIAL_STAT_ORDER:
+            display_name = SOCIAL_STAT_DEFINITIONS[stat_key].display_name
+            rank = 1
+            marker = ""
+            if stat_key == boon_stat:
+                rank = 2
+                marker = " ⬆️"
+            elif stat_key == bane_stat:
+                rank = 0
+                marker = " ⬇️"
+            stats_preview_lines.append(f"• **{display_name}:** Rank {rank}{marker}")
+        stats_preview = "\n".join(stats_preview_lines)
+
         embed.add_field(
-            name="📊 Social Stats",
+            name="📊 Star Traits",
             value=stats_preview,
             inline=False
         )
