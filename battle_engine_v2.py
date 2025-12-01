@@ -103,6 +103,9 @@ class BattleState:
     # Screens and field effects
     trainer_screens: Dict[str, int] = field(default_factory=dict)  # 'reflect': 5, 'light_screen': 3
     opponent_screens: Dict[str, int] = field(default_factory=dict)
+
+    # Trick Room
+    trick_room_turns: int = 0
     
     # Turn actions (stored for simultaneous resolution)
     pending_actions: Dict[str, 'BattleAction'] = field(default_factory=dict)  # battler_id -> action
@@ -1128,12 +1131,16 @@ class BattleEngine:
             if action.action_type == 'move':
                 move_data = self.moves_db.get_move(action.move_id)
                 priority = move_data.get('priority', 0)
-                
+
                 # Get Pokemon speed
                 battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
                 pokemon = battler.get_active_pokemon()[0]  # Simplified for now
                 speed = self._get_effective_speed(pokemon)
-                
+
+                # Trick Room reverses speed order for same priority moves
+                if battle.trick_room_turns > 0:
+                    speed = -speed
+
                 return (priority, speed)
             
             # Flee
@@ -1896,6 +1903,12 @@ class BattleEngine:
             if battle.terrain_turns <= 0:
                 messages.append(f"The {battle.terrain} terrain faded!")
                 battle.terrain = None
+
+        # Trick Room duration
+        if getattr(battle, 'trick_room_turns', 0) > 0:
+            battle.trick_room_turns -= 1
+            if battle.trick_room_turns <= 0:
+                messages.append("The dimensions returned to normal!")
 
         return messages
     
