@@ -504,8 +504,9 @@ class BattleCog(commands.Cog):
             # Show opponent team leader's Pokemon
             for idx, opp_mon in enumerate(opponent_active):
                 opp_value = f"HP: {self._hp_bar(opp_mon)} ({max(0, opp_mon.current_hp)}/{opp_mon.max_hp})"
+                foe_name = self._format_pokemon_name(opp_mon)
                 e.add_field(
-                    name=f"{FOE} {battle.opponent.battler_name}'s {opp_mon.species_name}",
+                    name=f"{FOE} {battle.opponent.battler_name}'s {foe_name}",
                     value=opp_value,
                     inline=True
                 )
@@ -515,8 +516,9 @@ class BattleCog(commands.Cog):
                 partner_active = battle.opponent_partner.get_active_pokemon()
                 for idx, partner_mon in enumerate(partner_active):
                     partner_value = f"HP: {self._hp_bar(partner_mon)} ({max(0, partner_mon.current_hp)}/{partner_mon.max_hp})"
+                    partner_name = self._format_pokemon_name(partner_mon)
                     e.add_field(
-                        name=f"{FOE} {battle.opponent_partner.battler_name}'s {partner_mon.species_name}",
+                        name=f"{FOE} {battle.opponent_partner.battler_name}'s {partner_name}",
                         value=partner_value,
                         inline=True
                     )
@@ -527,8 +529,9 @@ class BattleCog(commands.Cog):
             # Show player team leader's Pokemon
             for idx, trainer_mon in enumerate(trainer_active):
                 trainer_value = f"HP: {self._hp_bar(trainer_mon)} ({max(0, trainer_mon.current_hp)}/{trainer_mon.max_hp})"
+                trainer_name = self._format_pokemon_name(trainer_mon)
                 e.add_field(
-                    name=f"{YOU} {battle.trainer.battler_name}'s {trainer_mon.species_name}",
+                    name=f"{YOU} {battle.trainer.battler_name}'s {trainer_name}",
                     value=trainer_value,
                     inline=True
                 )
@@ -538,8 +541,9 @@ class BattleCog(commands.Cog):
                 partner_active = battle.trainer_partner.get_active_pokemon()
                 for idx, partner_mon in enumerate(partner_active):
                     partner_value = f"HP: {self._hp_bar(partner_mon)} ({max(0, partner_mon.current_hp)}/{partner_mon.max_hp})"
+                    partner_name = self._format_pokemon_name(partner_mon)
                     e.add_field(
-                        name=f"{YOU} {battle.trainer_partner.battler_name}'s {partner_mon.species_name}",
+                        name=f"{YOU} {battle.trainer_partner.battler_name}'s {partner_name}",
                         value=partner_value,
                         inline=True
                     )
@@ -550,8 +554,9 @@ class BattleCog(commands.Cog):
                 opp_value = f"HP: {self._hp_bar(opp_mon)} ({max(0, opp_mon.current_hp)}/{opp_mon.max_hp})"
 
                 position_label = f" (Slot {idx+1})" if is_doubles else ""
+                opp_name = self._format_pokemon_name(opp_mon)
                 e.add_field(
-                    name=f"{FOE} {opp_mon.species_name}{position_label}",
+                    name=f"{FOE} {opp_name}{position_label}",
                     value=opp_value,
                     inline=is_doubles
                 )
@@ -565,8 +570,9 @@ class BattleCog(commands.Cog):
                 trainer_value = f"HP: {self._hp_bar(trainer_mon)} ({max(0, trainer_mon.current_hp)}/{trainer_mon.max_hp})"
 
                 position_label = f" (Slot {idx+1})" if is_doubles else ""
+                trainer_name = self._format_pokemon_name(trainer_mon)
                 e.add_field(
-                    name=f"{YOU} {trainer_mon.species_name}{position_label}",
+                    name=f"{YOU} {trainer_name}{position_label}",
                     value=trainer_value,
                     inline=is_doubles
                 )
@@ -589,34 +595,93 @@ class BattleCog(commands.Cog):
     def _create_battle_view(self, battle) -> discord.ui.View:
         return BattleActionView(battle.battle_id, battle.trainer.battler_id, self.battle_engine, battle, self)
 
-    def _build_turn_embed(self, messages: list[str]) -> discord.Embed:
-        if messages:
-            spaced = []
-            for msg in messages:
-                spaced.append(msg)
-                spaced.append("")
-            if spaced and spaced[-1] == "":
-                spaced.pop()
-            desc = "\n".join(spaced)
-        else:
-            desc = "The turn resolves."
-        return discord.Embed(title="Turn Result", description=desc, color=discord.Color.orange())
+    def _format_pokemon_name(self, pokemon) -> str:
+        name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
+        level = getattr(pokemon, "level", None)
+        return f"{name} Lv{level}" if level is not None else name
 
-    def _build_switch_embed(self, messages: list[str], title: str = "Switch", color: Optional[discord.Color] = None):
+    def _build_turn_embeds(self, turn_result: dict) -> list[discord.Embed]:
+        events = turn_result.get("action_events") or []
+        embeds: list[discord.Embed] = []
+
+        if not events:
+            messages = turn_result.get("messages") or []
+            embeds.append(self._build_action_embed(messages, title="Turn Result"))
+            return [emb for emb in embeds if emb]
+
+        for event in events:
+            messages = event.get("messages") or []
+            if not messages:
+                continue
+
+            if event.get("type") == "end_of_turn":
+                title = "End of Turn"
+                color = discord.Color.orange()
+            else:
+                actor = event.get("actor")
+                actor_name = self._format_pokemon_name(actor) if actor else "Action"
+                title = f"{actor_name}'s Action" if actor else "Action"
+                color = discord.Color.orange()
+
+            embed = self._build_action_embed(messages, title=title, color=color)
+            if embed:
+                embeds.append(embed)
+
+        if not embeds:
+            fallback = self._build_action_embed(turn_result.get("messages") or [], title="Turn Result")
+            if fallback:
+                embeds.append(fallback)
+
+        return embeds
+
+    def _build_action_embed(self, messages: list[str], title: str, color: Optional[discord.Color] = None) -> Optional[discord.Embed]:
+        if not messages:
+            return None
+        spaced = []
+        for msg in messages:
+            if msg is None:
+                continue
+            spaced.append(str(msg))
+            spaced.append("")
+        if spaced and spaced[-1] == "":
+            spaced.pop()
+        desc = "\n".join(spaced) if spaced else "The turn resolves."
+        return discord.Embed(title=title, description=desc, color=color or discord.Color.orange())
+
+    def _build_switch_embed(self, messages: list[str], title: str = "Switch", color: Optional[discord.Color] = None, pokemon=None):
         if not messages:
             return None
         embed_color = color or (discord.Color.blurple() if title == "Send-out" else discord.Color.teal())
-        return discord.Embed(title=title, description="\n".join(messages), color=embed_color)
+        embed = discord.Embed(title=title, description="\n".join(messages), color=embed_color)
+
+        if pokemon:
+            sprite_url = PokemonSpriteHelper.get_sprite(
+                getattr(pokemon, "species_name", None),
+                getattr(pokemon, "species_dex_number", None),
+                style='animated',
+                gender=getattr(pokemon, 'gender', None),
+                shiny=getattr(pokemon, 'is_shiny', False),
+                use_fallback=False
+            )
+            if sprite_url:
+                embed.set_thumbnail(url=sprite_url)
+
+        return embed
 
     async def _send_turn_resolution(self, interaction: discord.Interaction, turn_result: dict):
-        # Send turn result first, then switch messages (fixes issue where switch embed appeared before turn result)
-        turn_msgs = turn_result.get("narration", []) or turn_result.get("messages", [])
-        await interaction.followup.send(embed=self._build_turn_embed(turn_msgs))
+        action_embeds = self._build_turn_embeds(turn_result)
+        for embed in action_embeds:
+            await interaction.followup.send(embed=embed)
 
-        switch_msgs = [msg for msg in (turn_result.get('switch_messages') or []) if msg]
-        switch_embed = self._build_switch_embed(switch_msgs)
-        if switch_embed:
-            await interaction.followup.send(embed=switch_embed)
+        switch_events = turn_result.get("switch_events")
+        if switch_events is None:
+            switch_msgs = [msg for msg in (turn_result.get('switch_messages') or []) if msg]
+            switch_events = ([{"messages": switch_msgs}] if switch_msgs else [])
+
+        for event in switch_events or []:
+            embed = self._build_switch_embed(event.get("messages") or [], pokemon=event.get("pokemon"))
+            if embed:
+                await interaction.followup.send(embed=embed)
 
     async def _prompt_forced_switch(self, interaction: discord.Interaction, battle, battler_id: int):
         if battler_id != battle.trainer.battler_id:
@@ -1019,29 +1084,7 @@ class MoveButton(discord.ui.Button):
 
         if res.get("ready_to_resolve") and cog:
             turn = await self.engine.process_turn(self.battle_id)
-            # Compose a narration + refreshed battle panel
-            msgs = turn.get("narration", [])
-            if not msgs and "messages" in turn:
-                msgs = turn["messages"]
-            # Add spacing between messages for better readability
-            if msgs:
-                spaced_msgs = []
-                for msg in msgs[-6:]:
-                    spaced_msgs.append(msg)
-                    spaced_msgs.append("")  # Add blank line after each message
-                # Remove trailing blank line
-                if spaced_msgs and spaced_msgs[-1] == "":
-                    spaced_msgs.pop()
-                desc = "\n".join(spaced_msgs)
-            else:
-                desc = "The turn resolves."
-            e = discord.Embed(title="Turn Result", description=desc, color=discord.Color.orange())
-            await interaction.followup.send(embed=e)
-            # Send separate AI send-out embed AFTER turn result (not before)
-            switch_msgs = turn.get('switch_messages') or []
-            if switch_msgs:
-                send_embed = discord.Embed(title='Send-out', description='\n\n'.join(switch_msgs), color=discord.Color.blurple())
-                await interaction.followup.send(embed=send_embed)
+            await cog._send_turn_resolution(interaction, turn)
         battle = self.engine.get_battle(self.battle_id)
         if battle:
             from cogs.battle_cog import BattleCog  # type: ignore
@@ -1143,7 +1186,7 @@ class PartySelect(discord.ui.Select):
                 return
             messages = result.get('messages', [])
             if cog:
-                send_embed = cog._build_switch_embed(messages, title="Send-out")
+                send_embed = cog._build_switch_embed(messages, title="Send-out", pokemon=result.get("pokemon"))
                 if send_embed:
                     await interaction.followup.send(embed=send_embed)
                 battle = parent_view.engine.get_battle(parent_view.battle_id)
