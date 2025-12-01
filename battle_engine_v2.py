@@ -1290,7 +1290,7 @@ class BattleEngine:
                     terrain=battle.terrain,
                     battle_state=battle
                 )
-                damage = int(damage * spread_modifier)
+                damage = min(int(damage * spread_modifier), defender.current_hp)
             else:
                 damage = int(10 * spread_modifier)
                 is_crit = False
@@ -1429,6 +1429,8 @@ class BattleEngine:
         if self.held_item_manager:
             damage, held_msgs = self.held_item_manager.modify_damage(attacker, defender, move_data, damage)
             effect_msgs.extend(held_msgs)
+
+        damage = min(damage, defender.current_hp)
 
         # Endure check: if this hit would KO and defender is under ENDURE, leave at 1 HP
         if damage >= defender.current_hp and hasattr(defender, 'status_manager') and 'endure' in getattr(defender.status_manager, 'volatile_statuses', {}):

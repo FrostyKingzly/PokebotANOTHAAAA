@@ -595,10 +595,28 @@ class BattleCog(commands.Cog):
     def _create_battle_view(self, battle) -> discord.ui.View:
         return BattleActionView(battle.battle_id, battle.trainer.battler_id, self.battle_engine, battle, self)
 
-    def _format_pokemon_name(self, pokemon) -> str:
+    def _format_pokemon_name(self, pokemon, include_level: bool = True) -> str:
         name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
         level = getattr(pokemon, "level", None)
-        return f"{name} Lv{level}" if level is not None else name
+        if include_level and level is not None:
+            return f"{name} Lv{level}"
+        return name
+
+    @staticmethod
+    def _split_faint_messages(messages: list[str]) -> tuple[list[str], list[str]]:
+        action_msgs: list[str] = []
+        faint_msgs: list[str] = []
+
+        for msg in messages:
+            if not msg:
+                continue
+
+            if "fainted" in msg.lower():
+                faint_msgs.append(msg)
+            else:
+                action_msgs.append(msg)
+
+        return action_msgs, faint_msgs
 
     def _build_turn_embeds(self, turn_result: dict) -> list[discord.Embed]:
         events = turn_result.get("action_events") or []
@@ -606,31 +624,45 @@ class BattleCog(commands.Cog):
 
         if not events:
             messages = turn_result.get("messages") or []
-            embeds.append(self._build_action_embed(messages, title="Turn Result"))
+            action_msgs, faint_msgs = self._split_faint_messages(messages)
+            embeds.append(self._build_action_embed(action_msgs, title="Turn Result"))
+            if faint_msgs:
+                embeds.append(self._build_action_embed(faint_msgs, title="Pokémon Fainted", color=discord.Color.red()))
             return [emb for emb in embeds if emb]
 
         for event in events:
-            messages = event.get("messages") or []
-            if not messages:
-                continue
+            raw_messages = event.get("messages") or []
+            action_msgs, faint_msgs = self._split_faint_messages(raw_messages)
 
-            if event.get("type") == "end_of_turn":
-                title = "End of Turn"
-                color = discord.Color.orange()
-            else:
-                actor = event.get("actor")
-                actor_name = self._format_pokemon_name(actor) if actor else "Action"
-                title = f"{actor_name}'s Action" if actor else "Action"
-                color = discord.Color.orange()
+            if action_msgs:
+                if event.get("type") == "end_of_turn":
+                    title = "End of Turn"
+                    color = discord.Color.orange()
+                else:
+                    actor = event.get("actor")
+                    actor_name = self._format_pokemon_name(actor, include_level=False) if actor else "Action"
+                    title = f"{actor_name}'s Action" if actor else "Action"
+                    color = discord.Color.orange()
 
-            embed = self._build_action_embed(messages, title=title, color=color)
-            if embed:
-                embeds.append(embed)
+                embed = self._build_action_embed(action_msgs, title=title, color=color)
+                if embed:
+                    embeds.append(embed)
+
+            if faint_msgs:
+                faint_embed = self._build_action_embed(faint_msgs, title="Pokémon Fainted", color=discord.Color.red())
+                if faint_embed:
+                    embeds.append(faint_embed)
 
         if not embeds:
-            fallback = self._build_action_embed(turn_result.get("messages") or [], title="Turn Result")
+            messages = turn_result.get("messages") or []
+            action_msgs, faint_msgs = self._split_faint_messages(messages)
+            fallback = self._build_action_embed(action_msgs, title="Turn Result")
             if fallback:
                 embeds.append(fallback)
+            if faint_msgs:
+                faint_fallback = self._build_action_embed(faint_msgs, title="Pokémon Fainted", color=discord.Color.red())
+                if faint_fallback:
+                    embeds.append(faint_fallback)
 
         return embeds
 
