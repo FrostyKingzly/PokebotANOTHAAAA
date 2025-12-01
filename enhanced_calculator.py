@@ -88,14 +88,17 @@ class EnhancedDamageCalculator:
         damage, is_critical, effectiveness = self._calculate_base_damage(
             attacker, defender, move_data, is_blocked, weather, terrain
         )
-        
+
+        # Clamp damage to the target's remaining HP so recoil/drain scale off actual damage dealt
+        damage_dealt = min(damage, defender.current_hp)
+
         # Apply move effects (drain, recoil, status, stat changes, etc.)
         effects = self.effect_handler.apply_move_effects(
-            move_data, attacker, defender, damage, battle_state
+            move_data, attacker, defender, damage_dealt, battle_state
         )
         effect_messages.extend(effects)
-        
-        return damage, is_critical, effectiveness, effect_messages
+
+        return damage_dealt, is_critical, effectiveness, effect_messages
     
     def _calculate_base_damage(
         self,
