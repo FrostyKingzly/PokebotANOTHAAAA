@@ -12,7 +12,7 @@ import json
 class BattleExpHandler:
     """Handles EXP rewards at the end of battles - simplified version"""
     
-    def __init__(self, species_db, learnset_db, player_manager):
+    def __init__(self, species_db, learnset_db, player_manager, item_usage_manager=None):
         """
         Initialize the handler
         
@@ -24,6 +24,8 @@ class BattleExpHandler:
         self.species_db = species_db
         self.learnset_db = learnset_db
         self.player_manager = player_manager
+        self.item_usage_manager = item_usage_manager
+        self.evolution_data = getattr(item_usage_manager, 'evolution_data', {}) if item_usage_manager else {}
     
     async def award_battle_exp(
         self,
@@ -122,14 +124,36 @@ class BattleExpHandler:
         Returns:
             True if can evolve, False otherwise
         """
-        # Evolution levels for common Pokemon
+        # Prefer comprehensive evolution data from ItemUsageManager
+        evolution = self.evolution_data.get(getattr(pokemon, 'species_name', '').lower())
+        if evolution:
+            if evolution.get('method') != 'level':
+                return False
+
+            required_level = evolution.get('level')
+            if required_level is None or pokemon.level < required_level:
+                return False
+
+            required_move = evolution.get('move')
+            if required_move:
+                moves = getattr(pokemon, 'moves', []) or []
+                move_ids = []
+                for move in moves:
+                    if isinstance(move, dict):
+                        move_ids.append(move.get('move_id'))
+                    else:
+                        move_ids.append(getattr(move, 'move_id', None))
+
+                if required_move not in move_ids:
+                    return False
+
+            return True
+
+        # Fallback legacy mappings for older datasets
         level_evolutions = {
-            # Gen 1 Starters
             'bulbasaur': 16, 'ivysaur': 32,
             'charmander': 16, 'charmeleon': 36,
             'squirtle': 16, 'wartortle': 36,
-            
-            # Gen 1 Commons
             'pidgey': 18, 'pidgeotto': 36,
             'rattata': 20,
             'caterpie': 7, 'metapod': 10,
@@ -137,17 +161,12 @@ class BattleExpHandler:
             'spearow': 20,
             'ekans': 22,
             'sandshrew': 22,
-            
-            # Add more as needed
         }
-        
+
         species_name_lower = pokemon.species_name.lower()
         required_level = level_evolutions.get(species_name_lower)
-        
-        if required_level and pokemon.level >= required_level:
-            return True
-        
-        return False
+
+        return bool(required_level and pokemon.level >= required_level)
     
     def create_exp_embed(
         self,

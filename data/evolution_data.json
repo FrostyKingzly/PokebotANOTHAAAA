@@ -1,0 +1,517 @@
+{
+  "abra": {
+    "into": "kadabra",
+    "level": 16,
+    "method": "level"
+  },
+  "aerodactyl": {
+    "method": "none"
+  },
+  "arctibax": {
+    "into": "baxcalibur",
+    "level": 54,
+    "method": "level"
+  },
+  "articuno": {
+    "method": "none"
+  },
+  "baxcalibur": {
+    "method": "none"
+  },
+  "bayleef": {
+    "into": "meganium",
+    "level": 32,
+    "method": "level"
+  },
+  "bellsprout": {
+    "into": "weepinbell",
+    "level": 21,
+    "method": "level"
+  },
+  "bulbasaur": {
+    "into": "ivysaur",
+    "level": 16,
+    "method": "level"
+  },
+  "caterpie": {
+    "into": "metapod",
+    "level": 7,
+    "method": "level"
+  },
+  "chansey": {
+    "into": "blissey",
+    "method": "friendship"
+  },
+  "charmander": {
+    "into": "charmeleon",
+    "level": 16,
+    "method": "level"
+  },
+  "charmeleon": {
+    "into": "charizard",
+    "level": 36,
+    "method": "level"
+  },
+  "chikorita": {
+    "into": "bayleef",
+    "level": 16,
+    "method": "level"
+  },
+  "clefairy": {
+    "into": "clefable",
+    "method": "stone",
+    "stone": "moon_stone"
+  },
+  "croconaw": {
+    "into": "feraligatr",
+    "level": 30,
+    "method": "level"
+  },
+  "cubone": {
+    "into": "marowak",
+    "level": 28,
+    "method": "level"
+  },
+  "cyndaquil": {
+    "into": "quilava",
+    "level": 14,
+    "method": "level"
+  },
+  "diglett": {
+    "into": "dugtrio",
+    "level": 26,
+    "method": "level"
+  },
+  "ditto": {
+    "method": "none"
+  },
+  "doduo": {
+    "into": "dodrio",
+    "level": 31,
+    "method": "level"
+  },
+  "dragonair": {
+    "into": "dragonite",
+    "level": 55,
+    "method": "level"
+  },
+  "dratini": {
+    "into": "dragonair",
+    "level": 30,
+    "method": "level"
+  },
+  "drowzee": {
+    "into": "hypno",
+    "level": 26,
+    "method": "level"
+  },
+  "eevee": {
+    "evolutions": [
+      {
+        "into": "vaporeon",
+        "method": "stone",
+        "stone": "water_stone"
+      },
+      {
+        "into": "jolteon",
+        "method": "stone",
+        "stone": "thunder_stone"
+      },
+      {
+        "into": "flareon",
+        "method": "stone",
+        "stone": "fire_stone"
+      },
+      {
+        "into": "espeon",
+        "method": "friendship",
+        "time": "day"
+      },
+      {
+        "into": "umbreon",
+        "method": "friendship",
+        "time": "night"
+      },
+      {
+        "into": "leafeon",
+        "method": "stone",
+        "stone": "leaf_stone"
+      },
+      {
+        "into": "glaceon",
+        "method": "stone",
+        "stone": "ice_stone"
+      },
+      {
+        "into": "sylveon",
+        "method": "friendship",
+        "move_type": "fairy"
+      }
+    ],
+    "method": "multiple"
+  },
+  "ekans": {
+    "into": "arbok",
+    "level": 22,
+    "method": "level"
+  },
+  "electabuzz": {
+    "into": "electivire",
+    "item": "electirizer",
+    "method": "trade"
+  },
+  "exeggcute": {
+    "into": "exeggutor",
+    "method": "stone",
+    "stone": "leaf_stone"
+  },
+  "farfetchd": {
+    "method": "none"
+  },
+  "frigibax": {
+    "into": "arctibax",
+    "level": 35,
+    "method": "level"
+  },
+  "gastly": {
+    "into": "haunter",
+    "level": 25,
+    "method": "level"
+  },
+  "geodude": {
+    "into": "graveler",
+    "level": 25,
+    "method": "level"
+  },
+  "gloom": {
+    "into": "vileplume",
+    "method": "stone",
+    "stone": "leaf_stone"
+  },
+  "goldeen": {
+    "into": "seaking",
+    "level": 33,
+    "method": "level"
+  },
+  "graveler": {
+    "into": "golem",
+    "method": "trade"
+  },
+  "grimer": {
+    "into": "muk",
+    "level": 38,
+    "method": "level"
+  },
+  "growlithe": {
+    "into": "arcanine",
+    "method": "stone",
+    "stone": "fire_stone"
+  },
+  "haunter": {
+    "into": "gengar",
+    "method": "trade"
+  },
+  "hitmon chan": {
+    "method": "none"
+  },
+  "hitmonchan": {
+    "method": "none"
+  },
+  "horsea": {
+    "into": "seadra",
+    "level": 32,
+    "method": "level"
+  },
+  "ivysaur": {
+    "into": "venusaur",
+    "level": 32,
+    "method": "level"
+  },
+  "jigglypuff": {
+    "into": "wigglytuff",
+    "method": "stone",
+    "stone": "moon_stone"
+  },
+  "kabuto": {
+    "into": "kabutops",
+    "level": 40,
+    "method": "level"
+  },
+  "kadabra": {
+    "into": "alakazam",
+    "method": "trade"
+  },
+  "kakuna": {
+    "into": "beedrill",
+    "level": 10,
+    "method": "level"
+  },
+  "kangaskhan": {
+    "method": "none"
+  },
+  "koffing": {
+    "into": "weezing",
+    "level": 35,
+    "method": "level"
+  },
+  "krabby": {
+    "into": "kingler",
+    "level": 28,
+    "method": "level"
+  },
+  "lapras": {
+    "method": "none"
+  },
+  "lickitung": {
+    "into": "lickilicky",
+    "level": 33,
+    "method": "level",
+    "move": "rollout"
+  },
+  "machoke": {
+    "into": "machamp",
+    "method": "trade"
+  },
+  "machop": {
+    "into": "machoke",
+    "level": 28,
+    "method": "level"
+  },
+  "magikarp": {
+    "into": "gyarados",
+    "level": 20,
+    "method": "level"
+  },
+  "magmar": {
+    "into": "magmortar",
+    "item": "magmarizer",
+    "method": "trade"
+  },
+  "magnemite": {
+    "into": "magneton",
+    "level": 30,
+    "method": "level"
+  },
+  "mankey": {
+    "into": "primeape",
+    "level": 28,
+    "method": "level"
+  },
+  "meowth": {
+    "into": "persian",
+    "level": 28,
+    "method": "level"
+  },
+  "metapod": {
+    "into": "butterfree",
+    "level": 10,
+    "method": "level"
+  },
+  "mew": {
+    "method": "none"
+  },
+  "mewtwo": {
+    "method": "none"
+  },
+  "moltres": {
+    "method": "none"
+  },
+  "nidoran-f": {
+    "into": "nidorina",
+    "level": 16,
+    "method": "level"
+  },
+  "nidoran-m": {
+    "into": "nidorino",
+    "level": 16,
+    "method": "level"
+  },
+  "nidorina": {
+    "into": "nidoqueen",
+    "method": "stone",
+    "stone": "moon_stone"
+  },
+  "nidorino": {
+    "into": "nidoking",
+    "method": "stone",
+    "stone": "moon_stone"
+  },
+  "oddish": {
+    "into": "gloom",
+    "level": 21,
+    "method": "level"
+  },
+  "omanyte": {
+    "into": "omastar",
+    "level": 40,
+    "method": "level"
+  },
+  "onix": {
+    "into": "steelix",
+    "item": "metal_coat",
+    "method": "trade"
+  },
+  "paras": {
+    "into": "parasect",
+    "level": 24,
+    "method": "level"
+  },
+  "pidgeotto": {
+    "into": "pidgeot",
+    "level": 36,
+    "method": "level"
+  },
+  "pidgey": {
+    "into": "pidgeotto",
+    "level": 18,
+    "method": "level"
+  },
+  "pikachu": {
+    "into": "raichu",
+    "method": "stone",
+    "stone": "thunder_stone"
+  },
+  "pinsir": {
+    "method": "none"
+  },
+  "poliwag": {
+    "into": "poliwhirl",
+    "level": 25,
+    "method": "level"
+  },
+  "poliwhirl": {
+    "into": "poliwrath",
+    "method": "stone",
+    "stone": "water_stone"
+  },
+  "ponyta": {
+    "into": "rapidash",
+    "level": 40,
+    "method": "level"
+  },
+  "porygon": {
+    "into": "porygon2",
+    "item": "upgrade",
+    "method": "trade"
+  },
+  "psyduck": {
+    "into": "golduck",
+    "level": 33,
+    "method": "level"
+  },
+  "quilava": {
+    "into": "typhlosion",
+    "level": 36,
+    "method": "level"
+  },
+  "rattata": {
+    "into": "raticate",
+    "level": 20,
+    "method": "level"
+  },
+  "rhyhorn": {
+    "into": "rhydon",
+    "level": 42,
+    "method": "level"
+  },
+  "sandshrew": {
+    "into": "sandslash",
+    "level": 22,
+    "method": "level"
+  },
+  "scyther": {
+    "into": "scizor",
+    "item": "metal_coat",
+    "method": "trade"
+  },
+  "seel": {
+    "into": "dewgong",
+    "level": 34,
+    "method": "level"
+  },
+  "shellder": {
+    "into": "cloyster",
+    "method": "stone",
+    "stone": "water_stone"
+  },
+  "slowpoke": {
+    "into": "slowbro",
+    "level": 37,
+    "method": "level"
+  },
+  "snorlax": {
+    "method": "none"
+  },
+  "spearow": {
+    "into": "fearow",
+    "level": 20,
+    "method": "level"
+  },
+  "squirtle": {
+    "into": "wartortle",
+    "level": 16,
+    "method": "level"
+  },
+  "staryu": {
+    "into": "starmie",
+    "method": "stone",
+    "stone": "water_stone"
+  },
+  "tangela": {
+    "into": "tangrowth",
+    "level": 33,
+    "method": "level",
+    "move": "ancient_power"
+  },
+  "tauros": {
+    "method": "none"
+  },
+  "tentacool": {
+    "into": "tentacruel",
+    "level": 30,
+    "method": "level"
+  },
+  "totodile": {
+    "into": "croconaw",
+    "level": 18,
+    "method": "level"
+  },
+  "venonat": {
+    "into": "venomoth",
+    "level": 31,
+    "method": "level"
+  },
+  "voltorb": {
+    "into": "electrode",
+    "level": 30,
+    "method": "level"
+  },
+  "vulpix": {
+    "into": "ninetales",
+    "method": "stone",
+    "stone": "fire_stone"
+  },
+  "wartortle": {
+    "into": "blastoise",
+    "level": 36,
+    "method": "level"
+  },
+  "weedle": {
+    "into": "kakuna",
+    "level": 7,
+    "method": "level"
+  },
+  "weepinbell": {
+    "into": "victreebel",
+    "method": "stone",
+    "stone": "leaf_stone"
+  },
+  "zapdos": {
+    "method": "none"
+  },
+  "zubat": {
+    "into": "golbat",
+    "level": 22,
+    "method": "level"
+  }
+}
