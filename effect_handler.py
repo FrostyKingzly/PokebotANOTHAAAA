@@ -270,7 +270,16 @@ class EffectHandler:
                 chance=100,
                 target='self'
             ))
-        
+
+        # Trick Room (reverse move order for 5 turns)
+        if move_id == 'trick_room':
+            effects.append(MoveEffect(
+                effect_type='trick_room',
+                chance=100,
+                target='field',
+                params={'duration': 5}
+            ))
+
         return effects
     
     def apply_move_effects(
@@ -356,6 +365,11 @@ class EffectHandler:
 
             elif effect.effect_type == 'terrain':
                 result = self._apply_terrain(effect, battle_state)
+                if result:
+                    messages.append(result)
+
+            elif effect.effect_type == 'trick_room':
+                result = self._apply_trick_room(effect, battle_state)
                 if result:
                     messages.append(result)
 
@@ -555,6 +569,17 @@ class EffectHandler:
         battle_state.terrain = terrain
         battle_state.terrain_turns = 5  # Default 5 turns
         return terrain_messages.get(terrain, f"The terrain changed to {terrain}!")
+
+    def _apply_trick_room(self, effect: MoveEffect, battle_state: Any) -> Optional[str]:
+        """Apply Trick Room to the field"""
+        if not battle_state:
+            return None
+
+        if getattr(battle_state, 'trick_room_turns', 0) > 0:
+            return "But it failed! The dimensions are already twisted."
+
+        battle_state.trick_room_turns = effect.params.get('duration', 5)
+        return "The dimensions twisted! Slower Pokémon will move first."
     
     def get_stat_multiplier(self, stage: int) -> float:
         """Get the stat multiplier for a given stage (-6 to +6)"""
