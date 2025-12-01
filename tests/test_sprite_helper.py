@@ -13,28 +13,48 @@ def test_showdown_slug_normalization_strips_accents():
     assert url.endswith("/flabebe.png")
 
 
-def test_modern_species_use_gen5_chain_even_when_outside_gen5_dex():
+def test_modern_species_prefer_animation_when_available(monkeypatch):
+    def fake_exists(url: str) -> bool:
+        return "gen5ani" in url or "gen5/armarouge.png" in url
+
+    monkeypatch.setattr(PokemonSpriteHelper, "_url_exists", staticmethod(fake_exists))
+
     urls = PokemonSpriteHelper.get_sprite("Armarouge", 936)
     assert isinstance(urls, list)
-    assert urls[0].endswith("gen5/armarouge.png")
-    assert urls[1].endswith("gen5ani/armarouge.gif")
+    assert urls[0].endswith("gen5ani/armarouge.gif")
+    assert urls[1].endswith("gen5/armarouge.png")
     assert PokemonSpriteHelper.OFFICIAL_ART.format(id="936") not in urls
 
 
-def test_modern_species_without_fallback_use_static_gen5():
+def test_modern_species_without_animation_use_static(monkeypatch):
+    def fake_exists(url: str) -> bool:
+        return "gen5/baxcalibur.png" in url
+
+    monkeypatch.setattr(PokemonSpriteHelper, "_url_exists", staticmethod(fake_exists))
+
     url = PokemonSpriteHelper.get_sprite(
         "Baxcalibur", 998, style="animated", use_fallback=False
     )
     assert url.endswith("gen5/baxcalibur.png")
 
 
-def test_regional_forms_prefer_static_when_no_animation_available():
+def test_regional_forms_fallback_to_static_when_animation_missing(monkeypatch):
+    def fake_exists(url: str) -> bool:
+        return "gen5ani/growlithe-hisui.gif" not in url
+
+    monkeypatch.setattr(PokemonSpriteHelper, "_url_exists", staticmethod(fake_exists))
+
     urls = PokemonSpriteHelper.get_sprite("growlithe-hisui", 58)
     assert urls[0].endswith("gen5/growlithe-hisui.png")
-    assert urls[1].endswith("gen5ani/growlithe-hisui.gif")
+    assert PokemonSpriteHelper.SHOWDOWN_STATIC.format(name="growlithe-hisui") in urls
 
 
-def test_gen_one_species_keep_gen5_animation_chain():
+def test_gen_one_species_keep_gen5_animation_chain(monkeypatch):
+    def fake_exists(url: str) -> bool:
+        return "charizard" in url and "pokemon/" not in url
+
+    monkeypatch.setattr(PokemonSpriteHelper, "_url_exists", staticmethod(fake_exists))
+
     urls = PokemonSpriteHelper.get_sprite("Charizard", 6)
     assert urls[0].endswith("gen5ani/charizard.gif")
     assert PokemonSpriteHelper.SHOWDOWN_STATIC.format(name="charizard") in urls

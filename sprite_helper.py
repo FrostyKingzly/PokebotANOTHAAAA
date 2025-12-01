@@ -3,8 +3,11 @@ Pokemon Sprite Helper
 Easy integration of Pokemon images into Discord embeds
 """
 
+import functools
 import re
 import unicodedata
+import urllib.error
+import urllib.request
 from typing import Optional
 
 
@@ -69,6 +72,42 @@ class PokemonSpriteHelper:
             if base_species in PokemonSpriteHelper.FEMALE_SPRITE_SPECIES:
                 return f"{name}-f"
         return name
+
+    @staticmethod
+    @functools.lru_cache(maxsize=2048)
+    def _url_exists(url: str) -> bool:
+        """Return True if the remote sprite URL responds with a success status.
+
+        A lightweight HEAD request is attempted first; if the host rejects HEAD
+        (e.g., 405 Method Not Allowed) we retry with GET. Any network or HTTP
+        errors are treated as the URL being unavailable so callers can safely
+        fall back to alternative sprite sources.
+        """
+
+        try:
+            request = urllib.request.Request(url, method="HEAD")
+            with urllib.request.urlopen(request, timeout=3) as response:
+                return 200 <= response.status < 400
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                return False
+
+            if exc.code != 405:
+                return True
+
+            # Some hosts reject HEAD requests; retry with GET.
+            try:
+                request = urllib.request.Request(url, method="GET")
+                with urllib.request.urlopen(request, timeout=3) as response:
+                    return 200 <= response.status < 400
+            except urllib.error.HTTPError as get_exc:
+                return get_exc.code != 404
+            except Exception:
+                return True
+        except Exception:
+            # If connectivity is restricted, assume the sprite exists so we still
+            # prefer Gen 5 assets over generic Showdown sprites.
+            return True
 
     @staticmethod
     def get_sprite(pokemon_name: str, dex_number: Optional[int] = None,
@@ -158,8 +197,6 @@ class PokemonSpriteHelper:
         if style == 'animated':
             gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
 
-            sprite_urls = []
-
             animated_url = (
                 PokemonSpriteHelper.GEN5_ANIMATED_SHINY.format(name=gendered_name)
                 if shiny
@@ -171,21 +208,28 @@ class PokemonSpriteHelper:
                 else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
             )
 
-            prefers_static_first = bool(dex_number and dex_number > 649)
-            if inferred_form:
-                prefers_static_first = True
+            sprite_urls = []
 
-            if prefers_static_first:
-                sprite_urls.extend([static_fallback, animated_url])
-            else:
-                sprite_urls.extend([animated_url, static_fallback])
+            animated_available = PokemonSpriteHelper._url_exists(animated_url)
+            static_available = PokemonSpriteHelper._url_exists(static_fallback)
+
+            if animated_available:
+                sprite_urls.append(animated_url)
+
+            if static_available:
+                sprite_urls.append(static_fallback)
 
             showdown_static = (
                 PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=gendered_name)
                 if shiny
                 else PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=gendered_name)
             )
-            sprite_urls.append(showdown_static)
+
+            if showdown_static not in sprite_urls:
+                sprite_urls.append(showdown_static)
+
+            if not sprite_urls:
+                sprite_urls.append(static_fallback)
 
             if not use_fallback:
                 return sprite_urls[0]
