@@ -123,10 +123,22 @@ class MainMenuView(View):
             if wild_area_manager.is_in_wild_area(user_id):
                 # Add exit button dynamically
                 self._add_exit_button()
+
+    async def _deny_if_in_battle(self, interaction: discord.Interaction) -> bool:
+        battle_cog = self.bot.get_cog("BattleCog")
+        if battle_cog and interaction.user.id in getattr(battle_cog, "user_battles", {}):
+            await interaction.response.send_message(
+                "❌ You can't use the Rotom-Phone while you're in a battle!",
+                ephemeral=True
+            )
+            return True
+        return False
     
     @discord.ui.button(label="👥 Party", style=discord.ButtonStyle.primary, row=0)
     async def party_button(self, interaction: discord.Interaction, button: Button):
         """View party Pokemon with management options"""
+        if await self._deny_if_in_battle(interaction):
+            return
         from ui.embeds import EmbedBuilder
 
         # Get player's party
@@ -158,6 +170,8 @@ class MainMenuView(View):
     @discord.ui.button(label="📦 Boxes", style=discord.ButtonStyle.primary, row=0)
     async def boxes_button(self, interaction: discord.Interaction, button: Button):
         """View stored Pokemon"""
+        if await self._deny_if_in_battle(interaction):
+            return
         from ui.embeds import EmbedBuilder
         
         # Get boxed Pokemon
@@ -179,6 +193,8 @@ class MainMenuView(View):
     @discord.ui.button(label="🎒 Bag", style=discord.ButtonStyle.primary, row=0)
     async def bag_button(self, interaction: discord.Interaction, button: Button):
         """Open bag/inventory"""
+        if await self._deny_if_in_battle(interaction):
+            return
         from ui.embeds import EmbedBuilder
         
         # Get player's inventory
@@ -206,6 +222,8 @@ class MainMenuView(View):
     @discord.ui.button(label="🧭 Travel", style=discord.ButtonStyle.secondary, row=1)
     async def travel_button(self, interaction: discord.Interaction, button: Button):
         """Travel to new location"""
+        if await self._deny_if_in_battle(interaction):
+            return
         from ui.embeds import EmbedBuilder
         from wild_area_manager import WildAreaManager
 
@@ -259,6 +277,8 @@ class MainMenuView(View):
     @discord.ui.button(label="🛍️ Shop", style=discord.ButtonStyle.secondary, row=1)
     async def shop_button(self, interaction: discord.Interaction, button: Button):
         """Open shop"""
+        if await self._deny_if_in_battle(interaction):
+            return
         shop_cog = self.bot.get_cog("ShopCog")
         if not shop_cog:
             await interaction.response.send_message(
@@ -272,6 +292,8 @@ class MainMenuView(View):
     @discord.ui.button(label="📘 Pokédex", style=discord.ButtonStyle.secondary, row=1)
     async def pokedex_button(self, interaction: discord.Interaction, button: Button):
         """View Pokedex"""
+        if await self._deny_if_in_battle(interaction):
+            return
         await interaction.response.send_message(
             "📘 Pokédex coming soon!",
             ephemeral=True
@@ -280,6 +302,8 @@ class MainMenuView(View):
     @discord.ui.button(label="🪪 Trainer Card", style=discord.ButtonStyle.secondary, row=1)
     async def trainer_card_button(self, interaction: discord.Interaction, button: Button):
         """View trainer card"""
+        if await self._deny_if_in_battle(interaction):
+            return
         from ui.embeds import EmbedBuilder
         
         trainer = self.bot.player_manager.get_player(interaction.user.id)
@@ -299,6 +323,8 @@ class MainMenuView(View):
     @discord.ui.button(label="🤝 Team Up", style=discord.ButtonStyle.success, row=2)
     async def party_up_button(self, interaction: discord.Interaction, button: Button):
         """Party/Team system for Wild Areas"""
+        if await self._deny_if_in_battle(interaction):
+            return
         from wild_area_manager import WildAreaManager, PartyManager
 
         wild_area_manager = WildAreaManager(self.bot.player_manager.db)
@@ -427,6 +453,8 @@ class MainMenuView(View):
     @discord.ui.button(label="⚔️ Battle", style=discord.ButtonStyle.danger, row=2)
     async def battle_button(self, interaction: discord.Interaction, button: Button):
         """Battle options"""
+        if await self._deny_if_in_battle(interaction):
+            return
         from ui.embeds import EmbedBuilder
 
         # Get player's current location

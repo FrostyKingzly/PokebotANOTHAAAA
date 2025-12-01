@@ -1002,7 +1002,8 @@ class BattleEngine:
                         'executed': False
                     }
 
-        manual_switch_messages: List[str] = []
+        manual_switch_events: List[Dict[str, Any]] = []
+        action_events: List[Dict[str, Any]] = []
 
         # Execute actions in order
         for action in actions:
@@ -1013,6 +1014,7 @@ class BattleEngine:
             # Skip actions for fainted Pokemon
             battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
             active_pokemon = battler.get_active_pokemon()
+            acting_pokemon = None
 
             # In doubles, check the specific Pokemon's HP
             if battle.battle_format == BattleFormat.DOUBLES and hasattr(action, 'pokemon_position'):
@@ -1030,6 +1032,7 @@ class BattleEngine:
                 if not active_pokemon or all(p.current_hp <= 0 for p in active_pokemon):
                     # This side has no conscious active Pokémon right now
                     continue
+                acting_pokemon = active_pokemon[0]
 
             # If a forced switch is pending for this battler, ignore non-switch actions
             # In doubles, only skip actions from the specific position that needs to switch
@@ -1069,9 +1072,11 @@ class BattleEngine:
                     messages = [f"{acting_pokemon.species_name} used {move_name}!"]
 
             if action.action_type == 'switch':
-                manual_switch_messages.extend(messages)
+                switch_event = {"messages": messages, "pokemon": result.get("pokemon") or result.get("switched_in")}
+                manual_switch_events.append(switch_event)
             else:
                 battle.turn_log.extend(messages)
+                action_events.append({"type": action.action_type, "actor": acting_pokemon, "messages": messages})
 
         # Check for registered actions that were not executed and add explanatory messages
         # This helps debug issues where moves don't show up in turn embeds
@@ -1087,14 +1092,16 @@ class BattleEngine:
         # End of turn effects (skip if wild Pokémon is in the special 'dazed' state)
         if getattr(battle, "wild_dazed", False):
             eot_messages = []
-            auto_switch_messages = []
+            auto_switch_events = []
         else:
             eot_messages = self._process_end_of_turn(battle)
-            auto_switch_messages = self.auto_switch_if_forced_ai(battle)
+            auto_switch_events = self.auto_switch_if_forced_ai(battle)
 
         battle.turn_log.extend(eot_messages)
+        if eot_messages:
+            action_events.append({"type": "end_of_turn", "messages": eot_messages})
 
-        switch_messages = manual_switch_messages + auto_switch_messages
+        switch_events = manual_switch_events + auto_switch_events
         
         # Check for battle end
         self._check_battle_end(battle)
@@ -1109,7 +1116,8 @@ class BattleEngine:
             "success": True,
             "turn_number": battle.turn_number - 1,
             "messages": battle.turn_log,
-            "switch_messages": switch_messages,
+            "action_events": action_events,
+            "switch_events": switch_events,
             "is_over": battle.is_over,
             "winner": battle.winner,
             "battle_over": battle.is_over
@@ -1559,7 +1567,7 @@ class BattleEngine:
 
     
     
-    def auto_switch_if_forced_ai(self, battle: BattleState) -> List[str]:
+    def auto_switch_if_forced_ai(self, battle: BattleState) -> List[Dict[str, Any]]:
         """Perform any queued AI forced switch and return narration.
 
         This is used at end-of-turn (and can be re-used after manual switches).
@@ -1648,7 +1656,7 @@ class BattleEngine:
                 battle.forced_switch_battler_id = None
                 battle.forced_switch_position = None
 
-        return result.get("messages", [])
+        return [{"messages": result.get("messages", []), "pokemon": result.get("pokemon") or result.get("switched_in")}] if result else []
 
     def _apply_entry_hazards(self, battle: BattleState, battler: Battler, pokemon: Any) -> List[str]:
         """Apply field hazards to a newly-entered pokemon and return narration.
@@ -1788,7 +1796,8 @@ class BattleEngine:
             ]
 
         return {
-            "messages": lead_messages + messages
+            "messages": lead_messages + messages,
+            "pokemon": new_pokemon
         }
 
     def force_switch(self, battle_id: str, battler_id: int, switch_to_position: int) -> Dict:
