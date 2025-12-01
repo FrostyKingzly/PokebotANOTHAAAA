@@ -7,6 +7,14 @@ from discord.ui import Button, View, Select
 from typing import Optional, List, Dict, Any
 
 from exp_system import ExpSystem
+from social_stats import SOCIAL_STAT_DEFINITIONS
+
+
+def get_stat_display_name(stat_key: str) -> str:
+    """Return the display label for a stat key."""
+
+    definition = SOCIAL_STAT_DEFINITIONS.get(stat_key)
+    return definition.display_name if definition else stat_key.title()
 
 try:
     from cogs.pokemon_management_cog import PokemonActionsView as ManagementPokemonActionsView
@@ -772,7 +780,7 @@ class DexNumberModal(discord.ui.Modal, title="Enter Pokédex Number"):
 
 
 class SocialStatsView(View):
-    """Social stats boon/bane selection"""
+    """Star Traits boon/bane selection"""
     
     def __init__(self):
         super().__init__(timeout=300)
@@ -782,15 +790,15 @@ class SocialStatsView(View):
         # Add boon select
         boon_options = [
             discord.SelectOption(label="Heart", value="heart",
-                               description="Empathy & compassion for people and Pokémon"),
+                               description="Empathy & connection for people and Pokémon"),
             discord.SelectOption(label="Insight", value="insight",
                                description="Perception, research, and tactical thinking"),
             discord.SelectOption(label="Charisma", value="charisma",
-                               description="Confidence, influence, and negotiations"),
+                               description="Charm, influence, and negotiations"),
             discord.SelectOption(label="Fortitude", value="fortitude",
-                               description="Physical grit, travel, and athletic feats"),
-            discord.SelectOption(label="Will", value="will",
-                               description="Determination and inner strength"),
+                               description="Strength, travel, and athletic feats"),
+            discord.SelectOption(label="Clarity", value="will",
+                               description="Focus, discipline, and resilience"),
         ]
         
         boon_select = Select(
@@ -814,7 +822,7 @@ class SocialStatsView(View):
         """Handle boon selection"""
         self.boon_stat = interaction.data['values'][0]
         await interaction.response.send_message(
-            f"✔ **{self.boon_stat.title()}** will be your strength! (Rank 2)",
+            f"✔ **{get_stat_display_name(self.boon_stat)}** will be your strength! (Rank 2)",
             ephemeral=True
         )
         
@@ -835,7 +843,7 @@ class SocialStatsView(View):
             return
         
         await interaction.response.send_message(
-            f"✔ **{self.bane_stat.title()}** will be your weakness. (Rank 0)\n\n"
+            f"✔ **{get_stat_display_name(self.bane_stat)}** will be your weakness. (Rank 0)\n\n"
             f"Moving to confirmation...",
             ephemeral=True
         )

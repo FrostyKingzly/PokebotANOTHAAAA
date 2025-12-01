@@ -30,7 +30,7 @@ SOCIAL_STAT_DEFINITIONS: Dict[str, SocialStatDefinition] = {
     "heart": SocialStatDefinition(
         key="heart",
         display_name="Heart",
-        description="Empathy and compassion. Helps with bonds and emotional moments.",
+        description="Empathy and connection. Helps with bonds and emotional moments.",
     ),
     "insight": SocialStatDefinition(
         key="insight",
@@ -40,17 +40,17 @@ SOCIAL_STAT_DEFINITIONS: Dict[str, SocialStatDefinition] = {
     "charisma": SocialStatDefinition(
         key="charisma",
         display_name="Charisma",
-        description="Confidence and influence. Helps with negotiations and leadership.",
+        description="Charm and influence. Helps with negotiations and leadership.",
     ),
     "fortitude": SocialStatDefinition(
         key="fortitude",
         display_name="Fortitude",
-        description="Physical grit and endurance. Fuels travel, athletics, and stamina.",
+        description="Strength and willpower. Fuels travel, athletics, and stamina.",
     ),
     "will": SocialStatDefinition(
         key="will",
-        display_name="Will",
-        description="Determination and inner strength. Helps you push through adversity.",
+        display_name="Clarity",
+        description="Focus and discipline. Helps you push through adversity.",
     ),
 }
 
