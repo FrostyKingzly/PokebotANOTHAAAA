@@ -342,6 +342,7 @@ class PlayerDatabase:
                 nature TEXT NOT NULL,
                 ability TEXT NOT NULL,
                 held_item TEXT,
+                pokeball TEXT DEFAULT 'poke_ball',
 
                 -- Battle Stats
                 current_hp INTEGER NOT NULL,
@@ -591,6 +592,11 @@ class PlayerDatabase:
         # Add form column for regional variants
         add_column('form', 'TEXT')
 
+        # Track the Poké Ball each Pokémon was caught in
+        pokeball_added = add_column('pokeball', "TEXT DEFAULT 'poke_ball'")
+        if pokeball_added:
+            cursor.execute("UPDATE pokemon_instances SET pokeball = 'poke_ball' WHERE pokeball IS NULL")
+
     def get_connection(self):
         """Get database connection"""
         conn = sqlite3.connect(self.db_path)
@@ -772,14 +778,14 @@ class PlayerDatabase:
         cursor.execute("""
             INSERT INTO pokemon_instances (
                 pokemon_id, owner_discord_id, species_dex_number, form, nickname,
-                level, exp, gender, nature, ability, held_item,
+                level, exp, gender, nature, ability, held_item, pokeball,
                 current_hp, max_hp, status_condition,
                 iv_hp, iv_attack, iv_defense, iv_sp_attack, iv_sp_defense, iv_speed,
                 ev_hp, ev_attack, ev_defense, ev_sp_attack, ev_sp_defense, ev_speed,
                 moves, friendship, bond_level, in_party, party_position, box_position,
                 is_shiny, can_mega_evolve, tera_type
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             pokemon_id,
             pokemon_data['owner_discord_id'],
@@ -792,6 +798,7 @@ class PlayerDatabase:
             pokemon_data['nature'],
             pokemon_data['ability'],
             pokemon_data.get('held_item'),
+            pokemon_data.get('pokeball', 'poke_ball'),
             pokemon_data['current_hp'],
             pokemon_data['max_hp'],
             pokemon_data.get('status_condition'),

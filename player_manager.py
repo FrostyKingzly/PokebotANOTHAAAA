@@ -355,6 +355,7 @@ class PlayerManager:
             'nature',
             'ability',
             'held_item',
+            'pokeball',
             'current_hp',
             'max_hp',
             'status_condition',
