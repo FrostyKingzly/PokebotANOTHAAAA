@@ -1,0 +1,458 @@
+[
+  {
+    "base_species": 19,
+    "form": "alola",
+    "name": "Rattata-Alola",
+    "types": ["dark", "normal"],
+    "abilities": {"primary": "gluttony", "secondary": "hustle", "hidden": "thick_fat"},
+    "aliases": ["Alolan Rattata"]
+  },
+  {
+    "base_species": 20,
+    "form": "alola",
+    "name": "Raticate-Alola",
+    "types": ["dark", "normal"],
+    "abilities": {"primary": "gluttony", "secondary": "hustle", "hidden": "thick_fat"},
+    "aliases": ["Alolan Raticate"]
+  },
+  {
+    "base_species": 26,
+    "form": "alola",
+    "name": "Raichu-Alola",
+    "types": ["electric", "psychic"],
+    "abilities": {"primary": "surge_surfer", "secondary": null, "hidden": "surge_surfer"},
+    "aliases": ["Alolan Raichu"]
+  },
+  {
+    "base_species": 27,
+    "form": "alola",
+    "name": "Sandshrew-Alola",
+    "types": ["ice", "steel"],
+    "abilities": {"primary": "snow_cloak", "secondary": null, "hidden": "slush_rush"},
+    "aliases": ["Alolan Sandshrew"]
+  },
+  {
+    "base_species": 28,
+    "form": "alola",
+    "name": "Sandslash-Alola",
+    "types": ["ice", "steel"],
+    "abilities": {"primary": "snow_cloak", "secondary": null, "hidden": "slush_rush"},
+    "aliases": ["Alolan Sandslash"]
+  },
+  {
+    "base_species": 37,
+    "form": "alola",
+    "name": "Vulpix-Alola",
+    "types": ["ice"],
+    "abilities": {"primary": "snow_cloak", "secondary": null, "hidden": "snow_warning"},
+    "aliases": ["Alolan Vulpix"]
+  },
+  {
+    "base_species": 38,
+    "form": "alola",
+    "name": "Ninetales-Alola",
+    "types": ["ice", "fairy"],
+    "abilities": {"primary": "snow_cloak", "secondary": null, "hidden": "snow_warning"},
+    "aliases": ["Alolan Ninetales"]
+  },
+  {
+    "base_species": 50,
+    "form": "alola",
+    "name": "Diglett-Alola",
+    "types": ["ground", "steel"],
+    "abilities": {"primary": "sand_veil", "secondary": "tangling_hair", "hidden": "sand_force"},
+    "aliases": ["Alolan Diglett"]
+  },
+  {
+    "base_species": 51,
+    "form": "alola",
+    "name": "Dugtrio-Alola",
+    "types": ["ground", "steel"],
+    "abilities": {"primary": "sand_veil", "secondary": "tangling_hair", "hidden": "sand_force"},
+    "aliases": ["Alolan Dugtrio"]
+  },
+  {
+    "base_species": 52,
+    "form": "alola",
+    "name": "Meowth-Alola",
+    "types": ["dark"],
+    "abilities": {"primary": "pickup", "secondary": "technician", "hidden": "rattled"},
+    "aliases": ["Alolan Meowth"]
+  },
+  {
+    "base_species": 53,
+    "form": "alola",
+    "name": "Persian-Alola",
+    "types": ["dark"],
+    "abilities": {"primary": "fur_coat", "secondary": "technician", "hidden": "rattled"},
+    "aliases": ["Alolan Persian"]
+  },
+  {
+    "base_species": 74,
+    "form": "alola",
+    "name": "Geodude-Alola",
+    "types": ["rock", "electric"],
+    "abilities": {"primary": "magnet_pull", "secondary": "sturdy", "hidden": "galvanize"},
+    "aliases": ["Alolan Geodude"]
+  },
+  {
+    "base_species": 75,
+    "form": "alola",
+    "name": "Graveler-Alola",
+    "types": ["rock", "electric"],
+    "abilities": {"primary": "magnet_pull", "secondary": "sturdy", "hidden": "galvanize"},
+    "aliases": ["Alolan Graveler"]
+  },
+  {
+    "base_species": 76,
+    "form": "alola",
+    "name": "Golem-Alola",
+    "types": ["rock", "electric"],
+    "abilities": {"primary": "magnet_pull", "secondary": "sturdy", "hidden": "galvanize"},
+    "aliases": ["Alolan Golem"]
+  },
+  {
+    "base_species": 88,
+    "form": "alola",
+    "name": "Grimer-Alola",
+    "types": ["poison", "dark"],
+    "abilities": {"primary": "poison_touch", "secondary": "gluttony", "hidden": "power_of_alchemy"},
+    "aliases": ["Alolan Grimer"]
+  },
+  {
+    "base_species": 89,
+    "form": "alola",
+    "name": "Muk-Alola",
+    "types": ["poison", "dark"],
+    "abilities": {"primary": "poison_touch", "secondary": "gluttony", "hidden": "power_of_alchemy"},
+    "aliases": ["Alolan Muk"]
+  },
+  {
+    "base_species": 103,
+    "form": "alola",
+    "name": "Exeggutor-Alola",
+    "types": ["grass", "dragon"],
+    "abilities": {"primary": "frisk", "secondary": null, "hidden": "harvest"},
+    "aliases": ["Alolan Exeggutor"]
+  },
+  {
+    "base_species": 105,
+    "form": "alola",
+    "name": "Marowak-Alola",
+    "types": ["fire", "ghost"],
+    "abilities": {"primary": "cursed_body", "secondary": "lightning_rod", "hidden": "rock_head"},
+    "aliases": ["Alolan Marowak"]
+  },
+  {
+    "base_species": 52,
+    "form": "galar",
+    "name": "Meowth-Galar",
+    "types": ["steel"],
+    "abilities": {"primary": "pickup", "secondary": "tough_claws", "hidden": "unnerve"},
+    "aliases": ["Galarian Meowth"]
+  },
+  {
+    "base_species": 77,
+    "form": "galar",
+    "name": "Ponyta-Galar",
+    "types": ["psychic"],
+    "abilities": {"primary": "run_away", "secondary": "pastel_veil", "hidden": "anticipation"},
+    "aliases": ["Galarian Ponyta"]
+  },
+  {
+    "base_species": 78,
+    "form": "galar",
+    "name": "Rapidash-Galar",
+    "types": ["psychic", "fairy"],
+    "abilities": {"primary": "run_away", "secondary": "pastel_veil", "hidden": "anticipation"},
+    "aliases": ["Galarian Rapidash"]
+  },
+  {
+    "base_species": 83,
+    "form": "galar",
+    "name": "Farfetchd-Galar",
+    "types": ["fighting"],
+    "abilities": {"primary": "steadfast", "secondary": null, "hidden": "scrappy"},
+    "aliases": ["Galarian Farfetch'd"]
+  },
+  {
+    "base_species": 89,
+    "form": "galar",
+    "name": "Weezing-Galar",
+    "types": ["poison", "fairy"],
+    "abilities": {"primary": "levitate", "secondary": "neutralizing_gas", "hidden": "misty_surge"},
+    "aliases": ["Galarian Weezing"]
+  },
+  {
+    "base_species": 122,
+    "form": "galar",
+    "name": "MrMime-Galar",
+    "types": ["ice", "psychic"],
+    "abilities": {"primary": "vital_spirit", "secondary": "screen_cleaner", "hidden": "ice_body"},
+    "aliases": ["Galarian Mr. Mime"]
+  },
+  {
+    "base_species": 144,
+    "form": "galar",
+    "name": "Articuno-Galar",
+    "types": ["psychic", "flying"],
+    "abilities": {"primary": "competitive", "secondary": null, "hidden": "competitive"},
+    "aliases": ["Galarian Articuno"]
+  },
+  {
+    "base_species": 145,
+    "form": "galar",
+    "name": "Zapdos-Galar",
+    "types": ["fighting", "flying"],
+    "abilities": {"primary": "defiant", "secondary": null, "hidden": "defiant"},
+    "aliases": ["Galarian Zapdos"]
+  },
+  {
+    "base_species": 146,
+    "form": "galar",
+    "name": "Moltres-Galar",
+    "types": ["dark", "flying"],
+    "abilities": {"primary": "berserk", "secondary": null, "hidden": "berserk"},
+    "aliases": ["Galarian Moltres"]
+  },
+  {
+    "base_species": 79,
+    "form": "galar",
+    "name": "Slowpoke-Galar",
+    "types": ["psychic"],
+    "abilities": {"primary": "gluttony", "secondary": "own_tempo", "hidden": "regenerator"},
+    "aliases": ["Galarian Slowpoke"]
+  },
+  {
+    "base_species": 80,
+    "form": "galar",
+    "name": "Slowbro-Galar",
+    "types": ["poison", "psychic"],
+    "abilities": {"primary": "quick_draw", "secondary": "own_tempo", "hidden": "regenerator"},
+    "aliases": ["Galarian Slowbro"]
+  },
+  {
+    "base_species": 199,
+    "form": "galar",
+    "name": "Slowking-Galar",
+    "types": ["poison", "psychic"],
+    "abilities": {"primary": "curious_medicine", "secondary": null, "hidden": "regenerator"},
+    "aliases": ["Galarian Slowking"]
+  },
+  {
+    "base_species": 222,
+    "form": "galar",
+    "name": "Corsola-Galar",
+    "types": ["ghost"],
+    "abilities": {"primary": "weak_armor", "secondary": null, "hidden": "cursed_body"},
+    "aliases": ["Galarian Corsola"]
+  },
+  {
+    "base_species": 263,
+    "form": "galar",
+    "name": "Zigzagoon-Galar",
+    "types": ["dark", "normal"],
+    "abilities": {"primary": "pickup", "secondary": "gluttony", "hidden": "quick_feet"},
+    "aliases": ["Galarian Zigzagoon"]
+  },
+  {
+    "base_species": 264,
+    "form": "galar",
+    "name": "Linoone-Galar",
+    "types": ["dark", "normal"],
+    "abilities": {"primary": "pickup", "secondary": "gluttony", "hidden": "quick_feet"},
+    "aliases": ["Galarian Linoone"]
+  },
+  {
+    "base_species": 554,
+    "form": "galar",
+    "name": "Darumaka-Galar",
+    "types": ["ice"],
+    "abilities": {"primary": "hustle", "secondary": null, "hidden": "slush_rush"},
+    "aliases": ["Galarian Darumaka"]
+  },
+  {
+    "base_species": 555,
+    "form": "galar",
+    "name": "Darmanitan-Galar",
+    "types": ["ice"],
+    "abilities": {"primary": "gorilla_tactics", "secondary": null, "hidden": "zen_mode"},
+    "aliases": ["Galarian Darmanitan"]
+  },
+  {
+    "base_species": 562,
+    "form": "galar",
+    "name": "Yamask-Galar",
+    "types": ["ground", "ghost"],
+    "abilities": {"primary": "wandering_spirit", "secondary": null, "hidden": "wandering_spirit"},
+    "aliases": ["Galarian Yamask"]
+  },
+  {
+    "base_species": 618,
+    "form": "galar",
+    "name": "Stunfisk-Galar",
+    "types": ["ground", "steel"],
+    "abilities": {"primary": "mimicry", "secondary": null, "hidden": "mimicry"},
+    "aliases": ["Galarian Stunfisk"]
+  },
+  {
+    "base_species": 58,
+    "form": "hisui",
+    "name": "Growlithe-Hisui",
+    "types": ["fire", "rock"],
+    "abilities": {"primary": "intimidate", "secondary": "flash_fire", "hidden": "rock_head"},
+    "aliases": ["Hisuian Growlithe"]
+  },
+  {
+    "base_species": 59,
+    "form": "hisui",
+    "name": "Arcanine-Hisui",
+    "types": ["fire", "rock"],
+    "abilities": {"primary": "intimidate", "secondary": "flash_fire", "hidden": "rock_head"},
+    "aliases": ["Hisuian Arcanine"]
+  },
+  {
+    "base_species": 100,
+    "form": "hisui",
+    "name": "Voltorb-Hisui",
+    "types": ["electric", "grass"],
+    "abilities": {"primary": "soundproof", "secondary": "static", "hidden": "aftermath"},
+    "aliases": ["Hisuian Voltorb"]
+  },
+  {
+    "base_species": 101,
+    "form": "hisui",
+    "name": "Electrode-Hisui",
+    "types": ["electric", "grass"],
+    "abilities": {"primary": "soundproof", "secondary": "static", "hidden": "aftermath"},
+    "aliases": ["Hisuian Electrode"]
+  },
+  {
+    "base_species": 157,
+    "form": "hisui",
+    "name": "Typhlosion-Hisui",
+    "types": ["fire", "ghost"],
+    "abilities": {"primary": "blaze", "secondary": null, "hidden": "flash_fire"},
+    "aliases": ["Hisuian Typhlosion"]
+  },
+  {
+    "base_species": 503,
+    "form": "hisui",
+    "name": "Samurott-Hisui",
+    "types": ["water", "dark"],
+    "abilities": {"primary": "torrent", "secondary": null, "hidden": "shell_armor"},
+    "aliases": ["Hisuian Samurott"]
+  },
+  {
+    "base_species": 549,
+    "form": "hisui",
+    "name": "Lilligant-Hisui",
+    "types": ["grass", "fighting"],
+    "abilities": {"primary": "chlorophyll", "secondary": "hustle", "hidden": "leaf_guard"},
+    "aliases": ["Hisuian Lilligant"]
+  },
+  {
+    "base_species": 570,
+    "form": "hisui",
+    "name": "Zorua-Hisui",
+    "types": ["normal", "ghost"],
+    "abilities": {"primary": "illusion", "secondary": null, "hidden": "illusion"},
+    "aliases": ["Hisuian Zorua"]
+  },
+  {
+    "base_species": 571,
+    "form": "hisui",
+    "name": "Zoroark-Hisui",
+    "types": ["normal", "ghost"],
+    "abilities": {"primary": "illusion", "secondary": null, "hidden": "illusion"},
+    "aliases": ["Hisuian Zoroark"]
+  },
+  {
+    "base_species": 628,
+    "form": "hisui",
+    "name": "Braviary-Hisui",
+    "types": ["psychic", "flying"],
+    "abilities": {"primary": "keen_eye", "secondary": "sheer_force", "hidden": "tinted_lens"},
+    "aliases": ["Hisuian Braviary"]
+  },
+  {
+    "base_species": 705,
+    "form": "hisui",
+    "name": "Sliggoo-Hisui",
+    "types": ["steel", "dragon"],
+    "abilities": {"primary": "sap_sipper", "secondary": "overcoat", "hidden": "gooey"},
+    "aliases": ["Hisuian Sliggoo"]
+  },
+  {
+    "base_species": 706,
+    "form": "hisui",
+    "name": "Goodra-Hisui",
+    "types": ["steel", "dragon"],
+    "abilities": {"primary": "sap_sipper", "secondary": "overcoat", "hidden": "gooey"},
+    "aliases": ["Hisuian Goodra"]
+  },
+  {
+    "base_species": 713,
+    "form": "hisui",
+    "name": "Avalugg-Hisui",
+    "types": ["ice", "rock"],
+    "abilities": {"primary": "strong_jaw", "secondary": "ice_body", "hidden": "sturdy"},
+    "aliases": ["Hisuian Avalugg"]
+  },
+  {
+    "base_species": 724,
+    "form": "hisui",
+    "name": "Decidueye-Hisui",
+    "types": ["grass", "fighting"],
+    "abilities": {"primary": "overgrow", "secondary": null, "hidden": "scrappy"},
+    "aliases": ["Hisuian Decidueye"]
+  },
+  {
+    "base_species": 211,
+    "form": "hisui",
+    "name": "Qwilfish-Hisui",
+    "types": ["dark", "poison"],
+    "abilities": {"primary": "poison_point", "secondary": "swift_swim", "hidden": "intimidate"},
+    "aliases": ["Hisuian Qwilfish"]
+  },
+  {
+    "base_species": 215,
+    "form": "hisui",
+    "name": "Sneasel-Hisui",
+    "types": ["fighting", "poison"],
+    "abilities": {"primary": "inner_focus", "secondary": "keen_eye", "hidden": "poison_touch"},
+    "aliases": ["Hisuian Sneasel"]
+  },
+  {
+    "base_species": 194,
+    "form": "paldea",
+    "name": "Wooper-Paldea",
+    "types": ["poison", "ground"],
+    "abilities": {"primary": "poison_point", "secondary": "water_absorb", "hidden": "unaware"},
+    "aliases": ["Paldean Wooper"]
+  },
+  {
+    "base_species": 128,
+    "form": "paldea",
+    "name": "Tauros-Paldea-Combat",
+    "types": ["fighting"],
+    "abilities": {"primary": "intimidate", "secondary": "anger_point", "hidden": "cud_chew"},
+    "aliases": ["Paldean Tauros", "Paldean Tauros Combat"]
+  },
+  {
+    "base_species": 128,
+    "form": "paldea-blaze",
+    "name": "Tauros-Paldea-Blaze",
+    "types": ["fighting", "fire"],
+    "abilities": {"primary": "intimidate", "secondary": "anger_point", "hidden": "cud_chew"},
+    "aliases": ["Paldean Tauros Blaze"]
+  },
+  {
+    "base_species": 128,
+    "form": "paldea-aqua",
+    "name": "Tauros-Paldea-Aqua",
+    "types": ["fighting", "water"],
+    "abilities": {"primary": "intimidate", "secondary": "anger_point", "hidden": "cud_chew"},
+    "aliases": ["Paldean Tauros Aqua"]
+  }
+]

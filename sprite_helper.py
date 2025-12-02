@@ -208,24 +208,26 @@ class PokemonSpriteHelper:
                 else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
             )
 
-            sprite_urls = [animated_url, static_fallback]
-
             showdown_static = (
                 PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=gendered_name)
                 if shiny
                 else PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=gendered_name)
             )
 
-            if showdown_static not in sprite_urls:
-                sprite_urls.append(showdown_static)
+            sprite_urls = [animated_url, static_fallback, showdown_static]
+            available_urls = [url for url in sprite_urls if PokemonSpriteHelper._url_exists(url)]
 
-            if not sprite_urls:
-                sprite_urls.append(static_fallback)
+            if available_urls:
+                prioritized_urls = available_urls + [
+                    url for url in sprite_urls if url not in available_urls
+                ]
+            else:
+                prioritized_urls = sprite_urls
 
             if not use_fallback:
-                return sprite_urls[0]
+                return prioritized_urls[0]
 
-            return sprite_urls
+            return prioritized_urls
 
         elif style == 'gen5static':
             # Gen 5 static sprites

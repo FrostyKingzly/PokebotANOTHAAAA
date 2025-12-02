@@ -57,7 +57,7 @@ class Pokemon:
         self.level = level
         self.owner_discord_id = owner_discord_id
         self.nickname = None
-        self.form = form
+        self.form = form if form is not None else species_data.get('form')
         
         # Generate gender based on species ratio (unless provided)
         self.gender = gender if gender is not None else self._generate_gender(
