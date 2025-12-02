@@ -30,6 +30,13 @@ class SpeciesDatabase:
         with open(json_path, 'r', encoding='utf-8') as f:
             self.data = json.load(f)
 
+        # Load regional variants and merge them into the main species map so lookups
+        # (both by name and dex number) can return form-specific data.
+        forms_path = Path(json_path).with_name('regional_forms.json')
+        self._alias_map: Dict[str, Dict] = {}
+        if forms_path.exists():
+            self._load_regional_forms(forms_path)
+
     def get_species(self, identifier) -> Optional[Dict]:
         """Get species by dex number or name"""
         # Try as dex number first
@@ -42,8 +49,12 @@ class SpeciesDatabase:
             if species['name'].lower() == identifier_lower:
                 return species
 
-        # Fallback to normalized comparison (handles Showdown formatting)
+        # Check alias map for regional forms and alternate spellings
         normalized_query = self._normalize_name(identifier_lower)
+        if normalized_query in self._alias_map:
+            return self._alias_map[normalized_query]
+
+        # Fallback to normalized comparison (handles Showdown formatting)
         for species in self.data.values():
             if self._normalize_name(species['name']) == normalized_query:
                 return species
@@ -67,6 +78,59 @@ class SpeciesDatabase:
         normalized = re.sub(r'[^a-z0-9 ]+', ' ', normalized)
         normalized = re.sub(r'\s+', '', normalized)
         return normalized
+
+    def _load_regional_forms(self, forms_path: Path) -> None:
+        """Merge regional variants into the species list.
+
+        Regional forms inherit data from their base species and override
+        properties like types, abilities, and stats as needed. Each form
+        registers multiple aliases so users can request "alolan vulpix",
+        "vulpix-alola", or "vulpix (alola)" and receive the correct entry.
+        """
+
+        with open(forms_path, 'r', encoding='utf-8') as f:
+            forms_data = json.load(f)
+
+        for form_entry in forms_data:
+            base_identifier = form_entry['base_species']
+            base_species = self.data.get(str(base_identifier))
+            if base_species is None:
+                base_species = next(
+                    (s for s in self.data.values() if s['name'].lower() == str(base_identifier).lower()),
+                    None,
+                )
+
+            if base_species is None:
+                continue
+
+            form = form_entry['form']
+            variant = json.loads(json.dumps(base_species))  # deep copy
+            variant['form'] = form
+            variant['name'] = form_entry.get('name', f"{base_species['name']}-{form}")
+            variant['types'] = form_entry.get('types', base_species.get('types', []))
+            variant['abilities'] = form_entry.get('abilities', base_species.get('abilities', {}))
+
+            if 'base_stats' in form_entry:
+                variant['base_stats'] = form_entry['base_stats']
+
+            # Use a predictable key so variants don't overwrite the base species
+            variant_id = form_entry.get('id', f"{base_species['dex_number']}-{form}")
+            variant['dex_number'] = base_species['dex_number']
+            self.data[str(variant_id)] = variant
+
+            # Register aliases for flexible lookups
+            base_name = base_species['name']
+            aliases = set(form_entry.get('aliases', []))
+            aliases.update(
+                {
+                    f"{base_name}-{form}",
+                    f"{form} {base_name}",
+                    f"{base_name} ({form})",
+                }
+            )
+
+            for alias in aliases:
+                self._alias_map[self._normalize_name(alias)] = variant
     
     def get_all_starters(self) -> List[Dict]:
         """Get all non-legendary Pokemon suitable as starters"""
