@@ -4242,6 +4242,7 @@ class NpcTrainerSelectView(View):
         self.npc_trainers = npc_trainers
         self.location = location
         self.ranked = ranked
+        self.selected_rank_override: Optional[int] = None
 
         # Add NPC select dropdown
         options = []
@@ -4271,6 +4272,43 @@ class NpcTrainerSelectView(View):
         )
         select.callback = self.npc_callback
         self.add_item(select)
+
+        if ranked:
+            rank_options = [
+                discord.SelectOption(
+                    label="Use NPC's default rank",
+                    value="npc_default",
+                    description="Keep the trainer's configured tier"
+                )
+            ]
+            for tier in range(1, 9):
+                rank_options.append(
+                    discord.SelectOption(
+                        label=f"Tier {tier}",
+                        value=str(tier),
+                        description=f"Force this battle to use Tier {tier}"
+                    )
+                )
+
+            rank_select = Select(
+                placeholder="Choose the NPC's rank tier (defaults to NPC's tier)",
+                options=rank_options,
+                custom_id="ranked_npc_rank_select",
+            )
+
+            async def rank_callback(interaction: discord.Interaction):
+                choice = interaction.data['values'][0]
+                if choice == "npc_default":
+                    self.selected_rank_override = None
+                    message = "Using the NPC's configured rank tier."
+                else:
+                    self.selected_rank_override = int(choice)
+                    message = f"NPC rank set to Tier {self.selected_rank_override}."
+
+                await interaction.response.send_message(message, ephemeral=True, delete_after=10)
+
+            rank_select.callback = rank_callback
+            self.add_item(rank_select)
     
     async def npc_callback(self, interaction: discord.Interaction):
         """Handle NPC selection - start trainer battle"""
@@ -4365,7 +4403,7 @@ class NpcTrainerSelectView(View):
             )
             return
         
-        ranked_context = self._build_ranked_context(npc_data, extra_context)
+        ranked_context = self._build_ranked_context(npc_data, extra_context, self.selected_rank_override)
 
         # Determine battle format from NPC data
         battle_format_str = npc_data.get('battle_format', 'singles').lower()
@@ -4401,10 +4439,15 @@ class NpcTrainerSelectView(View):
 
         self.stop()
 
-    def _build_ranked_context(self, npc_data: dict, extra_context: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    def _build_ranked_context(
+        self,
+        npc_data: dict,
+        extra_context: Optional[Dict[str, Any]] = None,
+        rank_override: Optional[int] = None,
+    ) -> Optional[Dict[str, Any]]:
         if not self.ranked:
             return None
-        npc_rank = npc_data.get('rank_tier_number') or npc_data.get('rank') or 1
+        npc_rank = rank_override or npc_data.get('rank_tier_number') or npc_data.get('rank') or 1
         context = {
             'mode': 'npc',
             'npc_rank': npc_rank,

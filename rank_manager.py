@@ -14,7 +14,7 @@ RANK_TIER_DEFINITIONS: List[Dict[str, Any]] = [
         "tier": 1,
         "name": "Qualifiers",
         "group": "Qualifiers",
-        "ticket_threshold": 120,
+        "ticket_threshold": 100,
         "point_cap": 200,
         "description": "Earn enough points to prove you're worthy of the Challenger ladder.",
     },
