@@ -33,7 +33,8 @@ class Pokemon:
                  owner_discord_id: int = None, nature: str = None,
                  ability: str = None, moves: List[str] = None,
                  ivs: Dict[str, int] = None, is_shiny: bool = False,
-                 form: str = None, gender: Optional[str] = None):
+                 form: str = None, gender: Optional[str] = None,
+                 pokeball: Optional[str] = None):
         """
         Create a new Pokemon instance
 
@@ -118,6 +119,9 @@ class Pokemon:
         # Social
         self.friendship = 70
         self.bond_level = 0
+
+        # Capture metadata
+        self.pokeball = pokeball or 'poke_ball'
         
         # Battle state
         self.held_item = None
@@ -258,6 +262,7 @@ class Pokemon:
             'ev_sp_defense': self.evs['sp_defense'],
             'ev_speed': self.evs['speed'],
             'moves': self.moves,
+            'pokeball': self.pokeball,
             'friendship': self.friendship,
             'bond_level': self.bond_level,
             'in_party': 1 if self.in_party else 0,

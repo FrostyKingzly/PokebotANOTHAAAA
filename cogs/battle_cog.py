@@ -10,10 +10,22 @@ from learnset_database import LearnsetDatabase
 from sprite_helper import PokemonSpriteHelper
 # Emoji placeholders (fallbacks if ui.emoji is missing)
 try:
-    from ui.emoji import SWORD, FIELD, EVENTS, YOU, FOE, TYPE_EMOJIS
+    from ui.emoji import (
+        SWORD,
+        FIELD,
+        EVENTS,
+        YOU,
+        FOE,
+        TYPE_EMOJIS,
+        POKEBALL_EMOJIS,
+        DEFAULT_POKEBALL_ID,
+        BALL,
+    )
 except Exception:
-    SWORD = "⚔️"; FIELD = "🌦️"; EVENTS = "📋"; YOU = "👉"; FOE = "🎯"
+    SWORD = "⚔️"; FIELD = "🌦️"; EVENTS = "📋"; YOU = "👉"; FOE = "🎯"; BALL = "🔴"
     TYPE_EMOJIS = {}
+    POKEBALL_EMOJIS = {}
+    DEFAULT_POKEBALL_ID = "poke_ball"
 
 try:
     from version import BUILD_TAG
@@ -165,6 +177,7 @@ class BattleCog(commands.Cog):
             # Add Pokemon to trainer and end battle
             pm = self.bot.player_manager
             wild_mon.owner_discord_id = interaction.user.id
+            wild_mon.pokeball = item_id or 'poke_ball'
 
             # Decide whether it goes to party or box
             party = pm.get_party(interaction.user.id)
@@ -472,6 +485,19 @@ class BattleCog(commands.Cog):
             filled = 0
         return ("🟩" * filled) + ("⬜" * (10 - filled))
 
+    def _get_pokeball_id(self, mon) -> str:
+        if hasattr(mon, 'pokeball') and getattr(mon, 'pokeball'):
+            return getattr(mon, 'pokeball') or DEFAULT_POKEBALL_ID
+
+        if isinstance(mon, dict) and mon.get('pokeball'):
+            return mon.get('pokeball') or DEFAULT_POKEBALL_ID
+
+        return DEFAULT_POKEBALL_ID
+
+    def _get_pokeball_emoji(self, mon) -> str:
+        ball_id = (self._get_pokeball_id(mon) or DEFAULT_POKEBALL_ID).lower()
+        return POKEBALL_EMOJIS.get(ball_id, POKEBALL_EMOJIS.get(DEFAULT_POKEBALL_ID, BALL))
+
     def _held_item_text(self, mon) -> Optional[str]:
         item_id = getattr(mon, 'held_item', None)
         if not item_id:
@@ -505,8 +531,9 @@ class BattleCog(commands.Cog):
             for idx, opp_mon in enumerate(opponent_active):
                 opp_value = f"HP: {self._hp_bar(opp_mon)} ({max(0, opp_mon.current_hp)}/{opp_mon.max_hp})"
                 foe_name = self._format_pokemon_name(opp_mon)
+                foe_ball = self._get_pokeball_emoji(opp_mon)
                 e.add_field(
-                    name=f"{FOE} {battle.opponent.battler_name}'s {foe_name}",
+                    name=f"{foe_ball} {battle.opponent.battler_name}'s {foe_name}",
                     value=opp_value,
                     inline=True
                 )
@@ -517,8 +544,9 @@ class BattleCog(commands.Cog):
                 for idx, partner_mon in enumerate(partner_active):
                     partner_value = f"HP: {self._hp_bar(partner_mon)} ({max(0, partner_mon.current_hp)}/{partner_mon.max_hp})"
                     partner_name = self._format_pokemon_name(partner_mon)
+                    partner_ball = self._get_pokeball_emoji(partner_mon)
                     e.add_field(
-                        name=f"{FOE} {battle.opponent_partner.battler_name}'s {partner_name}",
+                        name=f"{partner_ball} {battle.opponent_partner.battler_name}'s {partner_name}",
                         value=partner_value,
                         inline=True
                     )
@@ -530,8 +558,9 @@ class BattleCog(commands.Cog):
             for idx, trainer_mon in enumerate(trainer_active):
                 trainer_value = f"HP: {self._hp_bar(trainer_mon)} ({max(0, trainer_mon.current_hp)}/{trainer_mon.max_hp})"
                 trainer_name = self._format_pokemon_name(trainer_mon)
+                trainer_ball = self._get_pokeball_emoji(trainer_mon)
                 e.add_field(
-                    name=f"{YOU} {battle.trainer.battler_name}'s {trainer_name}",
+                    name=f"{trainer_ball} {battle.trainer.battler_name}'s {trainer_name}",
                     value=trainer_value,
                     inline=True
                 )
@@ -542,8 +571,9 @@ class BattleCog(commands.Cog):
                 for idx, partner_mon in enumerate(partner_active):
                     partner_value = f"HP: {self._hp_bar(partner_mon)} ({max(0, partner_mon.current_hp)}/{partner_mon.max_hp})"
                     partner_name = self._format_pokemon_name(partner_mon)
+                    partner_ball = self._get_pokeball_emoji(partner_mon)
                     e.add_field(
-                        name=f"{YOU} {battle.trainer_partner.battler_name}'s {partner_name}",
+                        name=f"{partner_ball} {battle.trainer_partner.battler_name}'s {partner_name}",
                         value=partner_value,
                         inline=True
                     )
@@ -555,8 +585,9 @@ class BattleCog(commands.Cog):
 
                 position_label = f" (Slot {idx+1})" if is_doubles else ""
                 opp_name = self._format_pokemon_name(opp_mon)
+                opp_ball = self._get_pokeball_emoji(opp_mon)
                 e.add_field(
-                    name=f"{FOE} {opp_name}{position_label}",
+                    name=f"{opp_ball} {opp_name}{position_label}",
                     value=opp_value,
                     inline=is_doubles
                 )
@@ -571,8 +602,9 @@ class BattleCog(commands.Cog):
 
                 position_label = f" (Slot {idx+1})" if is_doubles else ""
                 trainer_name = self._format_pokemon_name(trainer_mon)
+                trainer_ball = self._get_pokeball_emoji(trainer_mon)
                 e.add_field(
-                    name=f"{YOU} {trainer_name}{position_label}",
+                    name=f"{trainer_ball} {trainer_name}{position_label}",
                     value=trainer_value,
                     inline=is_doubles
                 )

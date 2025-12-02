@@ -96,7 +96,8 @@ class AdminCog(commands.Cog):
                 moves=pokemon_data['moves'],
                 ivs=pokemon_data['ivs'],
                 is_shiny=pokemon_data['shiny'],
-                gender=pokemon_data['gender']
+                gender=pokemon_data['gender'],
+                pokeball=pokemon_data['pokeball']
             )
             
             # Set EVs
@@ -183,6 +184,7 @@ class AdminCog(commands.Cog):
             'nickname': None,
             'gender': None,
             'held_item': None,
+            'pokeball': 'poke_ball',
             'ability': None,
             'level': 5,
             'shiny': False,
@@ -243,6 +245,11 @@ class AdminCog(commands.Cog):
             elif line.startswith('Level:'):
                 level = line.split(':', 1)[1].strip()
                 result['level'] = int(level)
+
+            # Poké Ball
+            elif line.lower().startswith('pokeball:') or line.lower().startswith('ball:'):
+                ball_text = line.split(':', 1)[1].strip()
+                result['pokeball'] = self._normalize_identifier(ball_text)
             
             # Shiny
             elif line.lower().startswith('shiny:'):
@@ -298,6 +305,7 @@ class AdminCog(commands.Cog):
             r'Ability:',
             r'Level:',
             r'Shiny:',
+            r'Pokeball:',
             r'Tera Type:',
             r'EVs:',
             r'IVs:',
