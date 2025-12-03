@@ -428,6 +428,9 @@ class Trainer:
         # Normalize any legacy/default 'Rookie' label into the proper first rank
         if str(base_name).strip().lower() == "rookie":
             base_name = "Qualifiers"
+        if str(base_name).strip().lower().startswith("qualifier"):
+            return "Qualifier"
+
         if self.rank_tier_number:
             return f"{base_name} {self.rank_tier_number}"
         return base_name

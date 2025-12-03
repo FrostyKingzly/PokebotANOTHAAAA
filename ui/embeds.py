@@ -138,11 +138,24 @@ class EmbedBuilder:
         return f"{bar} ({suffix})"
     
     @staticmethod
-    def main_menu(trainer: Trainer, rank_manager=None) -> discord.Embed:
+    def _format_location_name(location_id: str, location_manager=None) -> str:
+        """Return a formatted location name, preferring data from the manager."""
+        if not location_id:
+            return "Unknown Location"
+
+        if location_manager:
+            try:
+                return location_manager.get_location_name(location_id)
+            except Exception:
+                pass
+
+        return location_id.replace('_', ' ').title()
+
+    @staticmethod
+    def main_menu(trainer: Trainer, rank_manager=None, location_manager=None) -> discord.Embed:
         """Create the main menu embed."""
         embed = discord.Embed(
             title=f"{trainer.trainer_name}'s Phone",
-            description="Select an option below to continue your journey!",
             color=EmbedBuilder.PRIMARY_COLOR
         )
 
@@ -156,7 +169,10 @@ class EmbedBuilder:
         # Location
         embed.add_field(
             name="📍 Location",
-            value=trainer.current_location_id.replace('_', ' ').title(),
+            value=EmbedBuilder._format_location_name(
+                trainer.current_location_id,
+                location_manager
+            ),
             inline=True
         )
 
@@ -222,14 +238,6 @@ class EmbedBuilder:
                 inline=False
             )
 
-        # Avatar
-        if getattr(trainer, "bio", None):
-            embed.add_field(
-                name="📝 About",
-                value=trainer.bio,
-                inline=False,
-            )
-
         if trainer.avatar_url:
             embed.set_thumbnail(url=trainer.avatar_url)
 
@@ -276,8 +284,9 @@ class EmbedBuilder:
         return embed
 
     @staticmethod
-    def trainer_card(trainer: Trainer, party_count: int = 0, 
-                    total_pokemon: int = 0, pokedex_seen: int = 0) -> discord.Embed:
+    def trainer_card(trainer: Trainer, party_count: int = 0,
+                    total_pokemon: int = 0, pokedex_seen: int = 0,
+                    location_manager=None) -> discord.Embed:
         """Create trainer card embed"""
         embed = discord.Embed(
             title=f"Trainer Card",
@@ -299,19 +308,26 @@ class EmbedBuilder:
         if getattr(trainer, "home_region", None):
             info_text += f"**Home Region:** {trainer.home_region.title()}\n"
 
-        info_text += f"**Location:** {trainer.current_location_id.replace('_', ' ').title()}\n"
+        info_text += (
+            f"**Location:** "
+            f"{EmbedBuilder._format_location_name(trainer.current_location_id, location_manager)}\n"
+        )
         info_text += f"**Rank:** {trainer.get_rank_display()}\n"
         info_text += EmbedBuilder.format_rank_progress(trainer) + "\n"
         info_text += f"**Money:** ${trainer.money:,}"
-
-        if getattr(trainer, "bio", None):
-            info_text += f"\n\n*{trainer.bio}*"
 
         embed.add_field(
             name="👤 Profile",
             value=info_text,
             inline=False
         )
+
+        if getattr(trainer, "bio", None):
+            embed.add_field(
+                name="📝 About",
+                value=trainer.bio,
+                inline=False,
+            )
         
         # Star traits
         stats = trainer.get_social_stats_dict()
