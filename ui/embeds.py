@@ -4,6 +4,7 @@ Embed Builders - Creates Discord embeds for various UI elements
 
 import discord
 from typing import List, Dict, Optional
+from ui.emoji import POKEBALL_EMOJIS, DEFAULT_POKEBALL_ID
 from models import Trainer
 from exp_display_helpers import create_exp_text
 from rank_manager import get_rank_tier_definition
@@ -57,6 +58,11 @@ class EmbedBuilder:
     @staticmethod
     def _category_to_emoji(category: str) -> str:
         return EmbedBuilder.CATEGORY_EMOJIS.get(category.lower(), category.title())
+
+    @staticmethod
+    def _pokeball_emoji(pokemon: Dict) -> str:
+        ball_id = (pokemon.get('pokeball') or DEFAULT_POKEBALL_ID).lower()
+        return POKEBALL_EMOJIS.get(ball_id, POKEBALL_EMOJIS.get(DEFAULT_POKEBALL_ID, "🔴"))
 
     @staticmethod
     def _calculate_display_stats(pokemon: Dict, species_data: Dict) -> Dict[str, int]:
@@ -304,16 +310,15 @@ class EmbedBuilder:
             species = species_db.get_species(pokemon['species_dex_number'])
             name = pokemon.get('nickname') or species['name']
 
-            # Build Pokemon info - simplified format
-            info = f"HP: {pokemon['current_hp']}/{pokemon['max_hp']}"
-
-            if pokemon.get('status_condition'):
-                info += f"\nStatus: {pokemon['status_condition'].upper()}"
+            pokeball = EmbedBuilder._pokeball_emoji(pokemon)
+            types = species.get('types', []) if species else []
+            type_emojis = " ".join(EmbedBuilder._type_to_emoji(t) for t in types) or "Unknown type"
+            hp_text = f"HP: {pokemon['current_hp']}/{pokemon['max_hp']}"
 
             embed.add_field(
-                name=f"{i}. {name} Lv. {pokemon['level']}",
-                value=info,
-                inline=False
+                name=f"{i}. {pokeball} {name} Lv. {pokemon['level']}",
+                value=f"{type_emojis}\n{hp_text}",
+                inline=True
             )
 
         return embed
