@@ -151,9 +151,8 @@ class BoxManagementView(View):
         # Add Pokemon selection dropdown for current page
         self.add_box_select()
         
-        # Add navigation if needed
-        if self.total_pages > 1:
-            self.add_navigation_buttons()
+        # Add navigation controls (disabled automatically at bounds)
+        self.add_navigation_buttons()
     
     def add_box_select(self):
         """Add Pokemon selection dropdown"""
