@@ -830,6 +830,19 @@ class BattleCog(commands.Cog):
         if ranked_embed:
             await interaction.followup.send(embed=ranked_embed)
 
+        player_manager = getattr(self.bot, 'player_manager', None)
+        if player_manager:
+            if getattr(battle, 'battle_type', None) == BattleType.TRAINER and result == 'trainer':
+                identifier = getattr(battle.opponent, 'battler_name', 'opponent')
+                target_type = 'npc_ranked' if getattr(battle, 'is_ranked', False) else 'npc_casual'
+                duration = None if getattr(battle, 'is_ranked', False) else 24 * 60 * 60
+                player_manager.set_battle_cooldown(battle.trainer.battler_id, target_type, identifier, duration)
+            elif getattr(battle, 'battle_type', None) == BattleType.PVP and getattr(battle, 'is_ranked', False):
+                winner_id = battle.trainer.battler_id if result == 'trainer' else battle.opponent.battler_id
+                loser_id = battle.opponent.battler_id if result == 'trainer' else battle.trainer.battler_id
+                if isinstance(winner_id, int) and isinstance(loser_id, int):
+                    player_manager.set_battle_cooldown(winner_id, 'pvp_ranked', str(loser_id), 24 * 60 * 60)
+
         self.battle_engine.end_battle(battle.battle_id)
         self._unregister_battle(battle)
 

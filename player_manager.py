@@ -19,6 +19,17 @@ class PlayerManager:
 
     STAMINA_FULL_RECOVERY_SECONDS = 7 * 24 * 60 * 60  # One week for full recovery
 
+    LEVEL_CAP_BY_TIER = {
+        1: 20,   # Qualifier
+        2: 30,   # Challenger 1
+        3: 40,   # Challenger 2
+        4: 50,   # Great 1
+        5: 60,   # Great 2
+        6: 70,   # Ultra 1
+        7: 80,   # Ultra 2
+        8: 100,  # Master
+    }
+
     def __init__(self, db_path: str = "data/players.db", species_db=None, items_db=None):
         self.db = PlayerDatabase(db_path)
         self.species_db = species_db
@@ -188,6 +199,40 @@ class PlayerManager:
     def update_player(self, discord_user_id: int, **kwargs):
         """Update trainer fields"""
         self.db.update_trainer(discord_user_id, **kwargs)
+
+    def get_level_cap_for_trainer(self, trainer: Trainer) -> int:
+        """Return the maximum level allowed for a trainer's Pokémon based on rank."""
+
+        tier = getattr(trainer, "rank_tier_number", None) or 1
+        return self.LEVEL_CAP_BY_TIER.get(tier, 20)
+
+    def is_on_battle_cooldown(self, discord_user_id: int, target_type: str, target_identifier: str) -> tuple[bool, Optional[int]]:
+        """Check if a trainer is on cooldown for a specific opponent."""
+
+        now = int(time.time())
+        self.db.clear_expired_cooldowns(now)
+        expires_at = self.db.get_battle_cooldown(discord_user_id, target_type, target_identifier)
+        if expires_at is None:
+            return False, None
+        if expires_at < 0:
+            return True, None
+        if expires_at <= now:
+            return False, None
+        return True, expires_at - now
+
+    def set_battle_cooldown(
+        self,
+        discord_user_id: int,
+        target_type: str,
+        target_identifier: str,
+        duration_seconds: Optional[int],
+    ):
+        """Persist a battle cooldown for a trainer."""
+
+        expires_at = -1
+        if duration_seconds:
+            expires_at = int(time.time()) + int(duration_seconds)
+        self.db.set_battle_cooldown(discord_user_id, target_type, target_identifier, expires_at)
 
     def consume_stamina(self, discord_user_id: int, amount: int) -> tuple[bool, int]:
         """Consume a specific amount of stamina for a trainer."""

@@ -137,6 +137,7 @@ class Pokemon:
 
         # Experience
         self.exp = ExpSystem.exp_to_level(level, self.growth_rate)
+        self.stored_exp = 0
     
     def _generate_gender(self, gender_ratio: Dict) -> Optional[str]:
         """Generate gender based on species ratio"""
@@ -265,6 +266,7 @@ class Pokemon:
             'pokeball': self.pokeball,
             'friendship': self.friendship,
             'bond_level': self.bond_level,
+            'stored_exp': self.stored_exp,
             'in_party': 1 if self.in_party else 0,
             'party_position': self.party_position,
             'box_position': self.box_position,
