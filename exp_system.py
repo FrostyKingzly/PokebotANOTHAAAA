@@ -318,7 +318,8 @@ class ExpSystem:
         pokemon,
         exp_gained: int,
         species_db = None,
-        learnset_db = None
+        learnset_db = None,
+        level_cap: Optional[int] = None
     ) -> Optional[LevelUpResult]:
         """
         Apply EXP to a Pokemon and check if it levels up
@@ -346,11 +347,33 @@ class ExpSystem:
         else:
             growth_rate = 'medium_fast'
         
-        # Add EXP
-        pokemon.exp += exp_gained
-        
-        # Check for level up
+        # Apply any stored EXP if the cap allows it
+        stored_exp = getattr(pokemon, "stored_exp", 0)
+        if stored_exp and (level_cap is None or pokemon.level < level_cap):
+            exp_gained += stored_exp
+            pokemon.stored_exp = 0
+
+        # Determine cap boundary
+        cap_level = min(level_cap, 100) if level_cap else 100
+        cap_exp = ExpSystem.exp_to_level(cap_level, growth_rate) if cap_level else None
+
+        # If already capped, store EXP
+        if level_cap and pokemon.level >= cap_level:
+            pokemon.stored_exp += exp_gained
+            return None
+
+        # Add EXP up to the cap
+        if cap_exp is not None and pokemon.exp + exp_gained > cap_exp:
+            overflow = pokemon.exp + exp_gained - cap_exp
+            pokemon.exp = cap_exp
+            pokemon.stored_exp += overflow
+        else:
+            pokemon.exp += exp_gained
+
+        # Check for level up (respecting cap)
         new_level = ExpSystem._calculate_level_from_exp(pokemon.exp, growth_rate)
+        if cap_level:
+            new_level = min(new_level, cap_level)
         
         if new_level > old_level:
             # Level up!
@@ -491,7 +514,8 @@ class ExpShareManager:
         active_pokemon_index: int = 0,
         species_db = None,
         learnset_db = None,
-        is_trainer_battle: bool = False
+        is_trainer_battle: bool = False,
+        level_cap: Optional[int] = None
     ) -> Dict[str, any]:
         """
         Award EXP to party from battle and handle level-ups
@@ -537,7 +561,8 @@ class ExpShareManager:
                 pokemon=pokemon,
                 exp_gained=exp_gained,
                 species_db=species_db,
-                learnset_db=learnset_db
+                learnset_db=learnset_db,
+                level_cap=level_cap
             )
             
             if levelup_result:

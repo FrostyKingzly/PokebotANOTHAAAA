@@ -80,6 +80,8 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
         'speed': poke_data.get('ev_speed', 0)
     }
 
+    pokemon.stored_exp = poke_data.get('stored_exp', 0) or 0
+
     # Recalculate stats with EVs (in case EVs were trained)
     pokemon._calculate_stats()
 
@@ -3723,6 +3725,23 @@ class PvPChallengeResponseView(View):
             if BattleFormat and self.battle_format == BattleFormat.DOUBLES:
                 format_label = 'doubles'
             extra_context: Dict[str, Any] = {}
+            player_manager = getattr(self.bot, 'player_manager', None)
+            if player_manager:
+                pairs = [
+                    (self.challenger_id, self.opponent_id),
+                    (self.opponent_id, self.challenger_id),
+                ]
+                for source, target in pairs:
+                    on_cooldown, remaining = player_manager.is_on_battle_cooldown(
+                        source, 'pvp_ranked', str(target)
+                    )
+                    if on_cooldown:
+                        who = "You" if source == self.challenger_id else self.opponent_name
+                        message = f"{who} recently battled this opponent in ranked play."
+                        if remaining:
+                            hours = max(1, int(round(remaining / 3600)))
+                            message = f"{who} can rematch in about {hours} hour(s)."
+                        return message
             rank_manager = getattr(self.bot, 'rank_manager', None)
             if rank_manager:
                 allowed, message, extra_context = rank_manager.prepare_ranked_battle(
@@ -4398,6 +4417,21 @@ class NpcTrainerSelectView(View):
         
         npc_index = int(interaction.data['values'][0])
         npc_data = self.npc_trainers[npc_index]
+
+        player_manager = getattr(self.bot, 'player_manager', None)
+        identifier = npc_data.get('id') or npc_data.get('name') or str(npc_index)
+        target_type = 'npc_ranked' if self.ranked else 'npc_casual'
+        if player_manager:
+            on_cooldown, remaining = player_manager.is_on_battle_cooldown(
+                interaction.user.id, target_type, identifier
+            )
+            if on_cooldown:
+                message = "⏳ You need to wait before rematching this trainer."
+                if remaining:
+                    hours = max(1, int(round(remaining / 3600)))
+                    message = f"⏳ You can rematch this trainer in about {hours} hour(s)."
+                await interaction.response.send_message(message, ephemeral=True)
+                return
 
         # Check if already in battle
         battle_cog = self.bot.get_cog('BattleCog')

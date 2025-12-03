@@ -656,10 +656,26 @@ class PlayerDatabase:
         # Add form column for regional variants
         add_column('form', 'TEXT')
 
+        # Track stored experience earned while at a level cap
+        add_column('stored_exp', 'INTEGER DEFAULT 0')
+
         # Track the Poké Ball each Pokémon was caught in
         pokeball_added = add_column('pokeball', "TEXT DEFAULT 'poke_ball'")
         if pokeball_added:
             cursor.execute("UPDATE pokemon_instances SET pokeball = 'poke_ball' WHERE pokeball IS NULL")
+
+        # Cooldown tracking for per-opponent battles
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS battle_cooldowns (
+                discord_user_id INTEGER NOT NULL,
+                target_type TEXT NOT NULL,
+                target_identifier TEXT NOT NULL,
+                expires_at INTEGER,
+                PRIMARY KEY (discord_user_id, target_type, target_identifier)
+            )
+            """
+        )
 
     def get_connection(self):
         """Get database connection"""
@@ -827,6 +843,59 @@ class PlayerDatabase:
         
         conn.commit()
         conn.close()
+
+    # ------------------------------------------------------------
+    # Battle cooldown operations
+    # ------------------------------------------------------------
+    def set_battle_cooldown(
+        self,
+        discord_user_id: int,
+        target_type: str,
+        target_identifier: str,
+        expires_at: Optional[int],
+    ):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO battle_cooldowns (discord_user_id, target_type, target_identifier, expires_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(discord_user_id, target_type, target_identifier)
+            DO UPDATE SET expires_at=excluded.expires_at
+            """,
+            (discord_user_id, target_type, target_identifier, expires_at),
+        )
+        conn.commit()
+        conn.close()
+
+    def get_battle_cooldown(self, discord_user_id: int, target_type: str, target_identifier: str) -> Optional[int]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT expires_at FROM battle_cooldowns
+            WHERE discord_user_id = ? AND target_type = ? AND target_identifier = ?
+            """,
+            (discord_user_id, target_type, target_identifier),
+        )
+        row = cursor.fetchone()
+        conn.close()
+        if not row:
+            return None
+        value = row[0] if not isinstance(row, sqlite3.Row) else row["expires_at"]
+        return value
+
+    def clear_expired_cooldowns(self, now_ts: Optional[int] = None):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        if now_ts is None:
+            now_ts = int(time.time())
+        cursor.execute(
+            "DELETE FROM battle_cooldowns WHERE expires_at IS NOT NULL AND expires_at >= 0 AND expires_at <= ?",
+            (now_ts,),
+        )
+        conn.commit()
+        conn.close()
     
     # ============================================================
     # POKEMON OPERATIONS
@@ -842,7 +911,7 @@ class PlayerDatabase:
         cursor.execute("""
             INSERT INTO pokemon_instances (
                 pokemon_id, owner_discord_id, species_dex_number, form, nickname,
-                level, exp, gender, nature, ability, held_item, pokeball,
+                level, exp, stored_exp, gender, nature, ability, held_item, pokeball,
                 current_hp, max_hp, status_condition,
                 iv_hp, iv_attack, iv_defense, iv_sp_attack, iv_sp_defense, iv_speed,
                 ev_hp, ev_attack, ev_defense, ev_sp_attack, ev_sp_defense, ev_speed,
@@ -858,6 +927,7 @@ class PlayerDatabase:
             pokemon_data.get('nickname'),
             pokemon_data.get('level', 5),
             pokemon_data.get('exp', 0),
+            pokemon_data.get('stored_exp', 0),
             pokemon_data.get('gender'),
             pokemon_data['nature'],
             pokemon_data['ability'],

@@ -49,13 +49,20 @@ class BattleExpHandler:
             Results dictionary with EXP gains and level-ups
         """
         # Award EXP and handle level-ups
+        level_cap = None
+        if self.player_manager:
+            trainer = self.player_manager.get_player(trainer_id)
+            if trainer:
+                level_cap = self.player_manager.get_level_cap_for_trainer(trainer)
+
         results = ExpShareManager.award_exp_from_battle(
             party=party,
             defeated_pokemon=defeated_pokemon,
             active_pokemon_index=active_pokemon_index,
             species_db=self.species_db,
             learnset_db=self.learnset_db,
-            is_trainer_battle=is_trainer_battle
+            is_trainer_battle=is_trainer_battle,
+            level_cap=level_cap
         )
         
         # Check for evolution readiness
@@ -99,7 +106,8 @@ class BattleExpHandler:
                 'level': pokemon.level,
                 'current_hp': pokemon.current_hp,
                 'max_hp': pokemon.max_hp,
-                'moves': json.dumps(pokemon.moves)
+                'moves': json.dumps(pokemon.moves),
+                'stored_exp': getattr(pokemon, 'stored_exp', 0)
             }
             
             print(f"[DEBUG] Updating {pokemon.species_name}: Level {pokemon.level}, EXP {pokemon.exp}, HP {pokemon.current_hp}/{pokemon.max_hp}")
