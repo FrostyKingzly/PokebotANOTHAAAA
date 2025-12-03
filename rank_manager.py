@@ -157,19 +157,31 @@ class RankManager:
     # Persistence helpers
     # ------------------------------------------------------------------
     def _load_state(self) -> Dict[str, Any]:
+        default_state = {
+            "highest_unlocked_tier": 1,
+            "twilight_invite_active": False,
+            "twilight_started": False,
+            "twilight_participants": [],
+        }
+
         if self.state_path.exists():
             try:
                 with open(self.state_path, "r", encoding="utf-8") as handle:
                     data = json.load(handle)
                     if isinstance(data, dict):
-                        return data
+                        # Merge in any newly added defaults
+                        merged = {**default_state, **data}
+                        # Ensure list fields always exist even if missing or wrong type
+                        if not isinstance(merged.get("twilight_participants"), list):
+                            merged["twilight_participants"] = []
+                        return merged
             except (OSError, json.JSONDecodeError):
                 pass
+
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
-        default = {"highest_unlocked_tier": 1}
         with open(self.state_path, "w", encoding="utf-8") as handle:
-            json.dump(default, handle, indent=2)
-        return default
+            json.dump(default_state, handle, indent=2)
+        return default_state
 
     def _save_state(self):
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
@@ -315,6 +327,16 @@ class RankManager:
         trainer = self.player_manager.get_player(discord_id)
         if not trainer:
             return "You need a registered trainer before battling."
+
+        if not self._state.get("twilight_started", False):
+            return "⚠️ Ranked battles are locked until the Twilight Summit officially begins."
+
+        if not self.is_twilight_participant(discord_id):
+            return (
+                "🚫 You haven't signed up for the Twilight Summit yet. Use your Rotom-Phone alerts "
+                "to join and unlock ranked battles."
+            )
+
         if getattr(trainer, "has_promotion_ticket", False):
             match = self._find_match_for_pair(trainer.discord_user_id)
             if match is None:
@@ -331,6 +353,10 @@ class RankManager:
         npc_name: Optional[str] = None,
         format_name: str = "singles",
     ) -> Tuple[bool, Optional[str], Dict[str, Any]]:
+        lock_message = self.player_locked_from_ranked(challenger_id)
+        if lock_message:
+            return False, lock_message, {}
+
         trainer = self.player_manager.get_player(challenger_id)
         if not trainer:
             return False, "You must register before battling.", {}
@@ -378,6 +404,89 @@ class RankManager:
             context["match_id"] = match_context.match_id
             context["match_tier"] = match_context.tier
         return True, None, context
+
+    # ------------------------------------------------------------------
+    # Twilight Summit & alerts
+    # ------------------------------------------------------------------
+    def activate_twilight_invite(self) -> None:
+        """Enable the Twilight Summit invite for all players."""
+
+        self._state["twilight_invite_active"] = True
+        self._state.setdefault("twilight_started", False)
+        self._state.setdefault("twilight_participants", [])
+        self._save_state()
+
+    def twilight_invite_active(self) -> bool:
+        return bool(self._state.get("twilight_invite_active", False))
+
+    def begin_twilight_summit(self) -> None:
+        """Unlock ranked battles for participants by starting the event."""
+
+        self._state["twilight_invite_active"] = True
+        self._state["twilight_started"] = True
+        self._save_state()
+
+    def twilight_started(self) -> bool:
+        return bool(self._state.get("twilight_started", False))
+
+    def is_twilight_participant(self, discord_id: int) -> bool:
+        participants = self._state.get("twilight_participants") or []
+        return int(discord_id) in {int(pid) for pid in participants}
+
+    def register_twilight_participant(self, discord_id: int) -> tuple[bool, str]:
+        if not self._state.get("twilight_invite_active", False):
+            return False, "There is no active Twilight Summit invite to join right now."
+
+        if self.is_twilight_participant(discord_id):
+            return False, "You're already registered for the Twilight Summit."
+
+        participants = self._state.setdefault("twilight_participants", [])
+        participants.append(int(discord_id))
+        self._state["twilight_participants"] = participants
+        self._save_state()
+
+        trainer = self.player_manager.get_player(discord_id)
+        if trainer:
+            rank_name = "Qualifier"
+            rank_number = trainer.rank_tier_number or 1
+            if rank_number < 1:
+                rank_number = 1
+            self.player_manager.update_player(
+                discord_user_id=discord_id,
+                rank_tier_name=rank_name,
+                rank_tier_number=rank_number,
+            )
+        return True, "You've signed up for the Twilight Summit! Ranked progress is now unlocked."
+
+    def get_alerts_for_player(self, trainer: Any) -> List[Dict[str, Any]]:
+        alerts: List[Dict[str, Any]] = []
+        if not trainer:
+            return alerts
+
+        invite_active = self._state.get("twilight_invite_active", False)
+        started = self._state.get("twilight_started", False)
+        if invite_active:
+            participant = self.is_twilight_participant(trainer.discord_user_id)
+            body_lines = [
+                "The Twilight Summit is about to begin.",
+                "Please sign up here to participate.",
+            ]
+            if started:
+                body_lines.append("Ranked battles are now live for registered participants.")
+
+            alerts.append(
+                {
+                    "id": "twilight_summit_invite",
+                    "title": "Twilight Summit Invitation",
+                    "summary": "Join the Summit to unlock your ranked profile.",
+                    "details": "\n".join(body_lines),
+                    "action": "sign_up",
+                    "status": "joined" if participant else "pending",
+                    "cta_label": "Sign Up" if not participant else "Already Signed",
+                }
+            )
+
+        return alerts
 
     # ------------------------------------------------------------------
     # Battle resolution
