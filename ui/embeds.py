@@ -162,15 +162,34 @@ class EmbedBuilder:
 
         # Stamina
         embed.add_field(
-            name="💪 Stamina",
+            name="⚡️ Stamina",
             value=trainer.get_stamina_display(),
             inline=False
         )
 
         # Rank
+        rank_lines = []
+        show_progress = True
+        if rank_manager and hasattr(rank_manager, "is_twilight_participant"):
+            is_participant = rank_manager.is_twilight_participant(trainer.discord_user_id)
+            if is_participant:
+                rank_lines.append(trainer.get_rank_display())
+            else:
+                rank_lines.append("Unranked")
+                rank_lines.append("Sign up via Alerts to unlock ranked play.")
+                show_progress = False
+
+            if hasattr(rank_manager, "twilight_started") and not rank_manager.twilight_started():
+                rank_lines.append("Ranked battles are locked until the Summit begins.")
+        else:
+            rank_lines.append(trainer.get_rank_display())
+
+        if show_progress:
+            rank_lines.append(EmbedBuilder.format_rank_progress(trainer))
+
         embed.add_field(
             name="🏅 Rank",
-            value=f"{trainer.get_rank_display()}\n{EmbedBuilder.format_rank_progress(trainer)}",
+            value="\n".join(rank_lines),
             inline=False
         )
 
@@ -215,6 +234,44 @@ class EmbedBuilder:
             embed.set_thumbnail(url=trainer.avatar_url)
 
         embed.set_footer(text="Use the buttons below to navigate")
+
+        return embed
+
+    @staticmethod
+    def alerts_overview(alerts: List[Dict[str, str]]) -> discord.Embed:
+        embed = discord.Embed(
+            title="🔔 Notifications",
+            color=EmbedBuilder.INFO_COLOR,
+        )
+
+        if not alerts:
+            embed.description = "You're all caught up! No alerts right now."
+            return embed
+
+        lines = []
+        for alert in alerts:
+            status = alert.get("status")
+            prefix = "✅" if status == "joined" else "⚠️"
+            summary = alert.get("summary") or ""
+            lines.append(f"{prefix} **{alert.get('title', 'Alert')}** — {summary}")
+
+        embed.description = "\n".join(lines)
+        embed.set_footer(text="Select an alert from the dropdown to read more.")
+        return embed
+
+    @staticmethod
+    def alert_detail(alert: Dict[str, str]) -> discord.Embed:
+        embed = discord.Embed(
+            title=f"🔔 {alert.get('title', 'Alert')}",
+            description=alert.get("details", "No details provided."),
+            color=EmbedBuilder.INFO_COLOR,
+        )
+
+        status = alert.get("status")
+        if status == "joined":
+            embed.add_field(name="Status", value="✅ You're signed up.", inline=False)
+        elif status:
+            embed.add_field(name="Status", value=status.title(), inline=False)
 
         return embed
 

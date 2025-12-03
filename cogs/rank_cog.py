@@ -138,6 +138,35 @@ class RankCog(commands.Cog):
             )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    @app_commands.command(name="twilight_invite", description="[ADMIN] Send Twilight Summit invites to all trainers")
+    @app_commands.check(is_admin)
+    async def twilight_invite(self, interaction: discord.Interaction):
+        manager = self._get_manager()
+        if not manager:
+            await interaction.response.send_message("Rank system offline.", ephemeral=True)
+            return
+
+        manager.activate_twilight_invite()
+        await interaction.response.send_message(
+            "✅ Twilight Summit invites have been delivered. New trainers will see the alert automatically.",
+            ephemeral=True,
+        )
+
+    @app_commands.command(name="twilight_begin", description="[ADMIN] Begin the Twilight Summit and unlock ranked battles")
+    @app_commands.check(is_admin)
+    async def twilight_begin(self, interaction: discord.Interaction):
+        manager = self._get_manager()
+        if not manager:
+            await interaction.response.send_message("Rank system offline.", ephemeral=True)
+            return
+
+        manager.begin_twilight_summit()
+        participants = manager._state.get("twilight_participants") or []
+        await interaction.response.send_message(
+            f"✅ The Twilight Summit has begun for {len(participants)} registered trainers.",
+            ephemeral=True,
+        )
+
     @app_commands.command(name="rank_unlock", description="[ADMIN] Unlock the next rank tier")
     @app_commands.describe(tier="Highest tier (1-8) that should be unlocked")
     @app_commands.check(is_admin)

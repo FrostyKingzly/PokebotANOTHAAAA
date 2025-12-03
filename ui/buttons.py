@@ -122,6 +122,23 @@ async def _show_main_menu(interaction: discord.Interaction, bot, user_id: int):
     await interaction.response.edit_message(embed=embed, view=view)
 
 
+def _get_alert_data(bot, user_id: int):
+    trainer = bot.player_manager.get_player(user_id)
+    rank_manager = getattr(bot, "rank_manager", None)
+    alerts = rank_manager.get_alerts_for_player(trainer) if rank_manager else []
+    return trainer, alerts
+
+
+async def _show_alerts_menu(interaction: discord.Interaction, bot, user_id: int):
+    from ui.embeds import EmbedBuilder
+
+    trainer, alerts = _get_alert_data(bot, user_id)
+    embed = EmbedBuilder.alerts_overview(alerts)
+    view = AlertsView(bot, user_id=user_id)
+
+    await interaction.response.edit_message(embed=embed, view=view)
+
+
 def _add_back_button(view: View, callback: Callable[[discord.Interaction], Awaitable[None]], *, row: int = 4):
     """Attach a standardized back button to a view."""
 
@@ -136,6 +153,127 @@ def _add_back_button(view: View, callback: Callable[[discord.Interaction], Await
 
     back_button.callback = _back
     view.add_item(back_button)
+
+
+class AlertsView(View):
+    """List available notifications for a trainer."""
+
+    def __init__(self, bot, user_id: int):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+
+        _, alerts = _get_alert_data(bot, user_id)
+        self.alerts = alerts
+
+        if alerts:
+            options = [
+                discord.SelectOption(
+                    label=alert.get("title", "Alert")[:100],
+                    description=(alert.get("summary") or "")[:100],
+                    value=alert.get("id", "") or f"alert_{idx}",
+                )
+                for idx, alert in enumerate(alerts)
+            ]
+
+            select = Select(
+                placeholder="Choose an alert to view...",
+                options=options,
+                min_values=1,
+                max_values=1,
+            )
+
+            async def _select(interaction: discord.Interaction):
+                await self.show_alert_detail(interaction, select.values[0])
+
+            select.callback = _select
+            self.add_item(select)
+
+        _add_back_button(self, lambda i: _show_main_menu(i, self.bot, self.user_id))
+
+    async def show_alert_detail(self, interaction: discord.Interaction, alert_id: str):
+        from ui.embeds import EmbedBuilder
+
+        _, alerts = _get_alert_data(self.bot, self.user_id)
+        alert = next((a for a in alerts if a.get("id") == alert_id), None)
+        if not alert:
+            await interaction.response.send_message(
+                "❌ That alert is no longer available.",
+                ephemeral=True,
+            )
+            return
+
+        embed = EmbedBuilder.alert_detail(alert)
+        view = AlertDetailView(self.bot, self.user_id, alert_id)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+
+class AlertDetailView(View):
+    """Show details for a single alert."""
+
+    def __init__(self, bot, user_id: int, alert_id: str):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+        self.alert_id = alert_id
+
+        self._add_action_button()
+
+        alerts_back = Button(
+            label="⬅️ Alerts",
+            style=discord.ButtonStyle.secondary,
+            row=3,
+        )
+
+        async def _back(interaction: discord.Interaction):
+            await _show_alerts_menu(interaction, self.bot, self.user_id)
+
+        alerts_back.callback = _back
+        self.add_item(alerts_back)
+
+        _add_back_button(self, lambda i: _show_main_menu(i, self.bot, self.user_id), row=4)
+
+    def _current_alert(self) -> Optional[Dict[str, Any]]:
+        _, alerts = _get_alert_data(self.bot, self.user_id)
+        return next((a for a in alerts if a.get("id") == self.alert_id), None)
+
+    def _add_action_button(self):
+        alert = self._current_alert()
+        if not alert:
+            return
+
+        action = alert.get("action")
+        if action == "sign_up" and alert.get("status") != "joined":
+            cta_label = alert.get("cta_label") or "Sign Up"
+            signup_button = Button(
+                label=cta_label,
+                style=discord.ButtonStyle.success,
+                row=2,
+            )
+
+            async def _signup(interaction: discord.Interaction):
+                rank_manager = getattr(self.bot, "rank_manager", None)
+                if not rank_manager:
+                    await interaction.response.send_message(
+                        "❌ The ranked system isn't available right now.",
+                        ephemeral=True,
+                    )
+                    return
+
+                success, message = rank_manager.register_twilight_participant(self.user_id)
+                if not success:
+                    await interaction.response.send_message(f"❌ {message}", ephemeral=True)
+                    return
+
+                from ui.embeds import EmbedBuilder
+
+                refreshed_alert = self._current_alert() or alert
+                embed = EmbedBuilder.alert_detail(refreshed_alert)
+                new_view = AlertDetailView(self.bot, self.user_id, self.alert_id)
+                await interaction.response.edit_message(embed=embed, view=new_view)
+
+            signup_button.callback = _signup
+            self.add_item(signup_button)
 
 
 class MainMenuView(View):
@@ -366,6 +504,14 @@ class MainMenuView(View):
         )
 
         await interaction.response.edit_message(embed=embed, view=None)
+
+    @discord.ui.button(label="🔔 Alerts", style=discord.ButtonStyle.secondary, row=3)
+    async def alerts_button(self, interaction: discord.Interaction, button: Button):
+        """Open the notifications center"""
+        if await self._deny_if_in_battle(interaction):
+            return
+
+        await _show_alerts_menu(interaction, self.bot, interaction.user.id)
 
     @discord.ui.button(label="🤝 Team Up", style=discord.ButtonStyle.success, row=2)
     async def party_up_button(self, interaction: discord.Interaction, button: Button):
