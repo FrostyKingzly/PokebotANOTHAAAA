@@ -1504,9 +1504,8 @@ class BoxManagementView(View):
             select.callback = self.pokemon_callback
             self.add_item(select)
         
-        # Add pagination if needed
-        if self.total_pages > 1:
-            self.add_navigation_buttons()
+        # Add pagination controls (disabled automatically at bounds)
+        self.add_navigation_buttons()
 
         if self.back_callback:
             _add_back_button(self, self.back_callback)

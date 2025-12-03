@@ -264,12 +264,12 @@ class AdminCog(commands.Cog):
             # EVs
             elif line.startswith('EVs:'):
                 evs_text = line.split(':', 1)[1].strip()
-                result['evs'] = self._parse_stats(evs_text)
+                result['evs'] = self._parse_stats(evs_text, default_value=0)
             
             # IVs
             elif line.startswith('IVs:'):
                 ivs_text = line.split(':', 1)[1].strip()
-                result['ivs'] = self._parse_stats(ivs_text)
+                result['ivs'] = self._parse_stats(ivs_text, default_value=31)
             
             # Nature
             elif 'Nature' in line:
@@ -328,7 +328,7 @@ class AdminCog(commands.Cog):
 
         return normalized
     
-    def _parse_stats(self, stats_text: str) -> dict:
+    def _parse_stats(self, stats_text: str, default_value: int = 0) -> dict:
         """
         Parse stat string like "252 SpA / 4 SpD / 252 Spe"
         Returns dict with full stat names
@@ -349,7 +349,7 @@ class AdminCog(commands.Cog):
             'speed': 'speed'
         }
         
-        stats = {'hp': 0, 'attack': 0, 'defense': 0, 'sp_attack': 0, 'sp_defense': 0, 'speed': 0}
+        stats = {stat: default_value for stat in ['hp', 'attack', 'defense', 'sp_attack', 'sp_defense', 'speed']}
         
         # Split by /
         parts = stats_text.split('/')
