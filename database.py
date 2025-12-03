@@ -905,65 +905,68 @@ class PlayerDatabase:
         """Add a Pokemon to a trainer's collection"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
+
         pokemon_id = pokemon_data.get('pokemon_id', str(uuid.uuid4()))
-        
-        cursor.execute("""
-            INSERT INTO pokemon_instances (
-                pokemon_id, owner_discord_id, species_dex_number, form, nickname,
-                level, exp, stored_exp, gender, nature, ability, held_item, pokeball,
-                current_hp, max_hp, status_condition,
-                iv_hp, iv_attack, iv_defense, iv_sp_attack, iv_sp_defense, iv_speed,
-                ev_hp, ev_attack, ev_defense, ev_sp_attack, ev_sp_defense, ev_speed,
-                moves, friendship, bond_level, in_party, party_position, box_position,
-                is_shiny, can_mega_evolve, tera_type
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            pokemon_id,
-            pokemon_data['owner_discord_id'],
-            pokemon_data['species_dex_number'],
-            pokemon_data.get('form'),
-            pokemon_data.get('nickname'),
-            pokemon_data.get('level', 5),
-            pokemon_data.get('exp', 0),
-            pokemon_data.get('stored_exp', 0),
-            pokemon_data.get('gender'),
-            pokemon_data['nature'],
-            pokemon_data['ability'],
-            pokemon_data.get('held_item'),
-            pokemon_data.get('pokeball', 'poke_ball'),
-            pokemon_data['current_hp'],
-            pokemon_data['max_hp'],
-            pokemon_data.get('status_condition'),
-            pokemon_data.get('iv_hp', 31),
-            pokemon_data.get('iv_attack', 31),
-            pokemon_data.get('iv_defense', 31),
-            pokemon_data.get('iv_sp_attack', 31),
-            pokemon_data.get('iv_sp_defense', 31),
-            pokemon_data.get('iv_speed', 31),
-            pokemon_data.get('ev_hp', 0),
-            pokemon_data.get('ev_attack', 0),
-            pokemon_data.get('ev_defense', 0),
-            pokemon_data.get('ev_sp_attack', 0),
-            pokemon_data.get('ev_sp_defense', 0),
-            pokemon_data.get('ev_speed', 0),
-            json.dumps(pokemon_data['moves']),
-            pokemon_data.get('friendship', 70),
-            pokemon_data.get('bond_level', 0),
-            pokemon_data.get('in_party', 0),
-            pokemon_data.get('party_position'),
-            pokemon_data.get('box_position'),
-            pokemon_data.get('is_shiny', 0),
-            pokemon_data.get('can_mega_evolve', 0),
-            pokemon_data.get('tera_type')
-        ))
-        
+
+        # Keep the column ordering and the placeholder count in sync to avoid
+        # "X values for Y columns" errors when inserting new Pokémon.
+        column_value_pairs = [
+            ('pokemon_id', pokemon_id),
+            ('owner_discord_id', pokemon_data['owner_discord_id']),
+            ('species_dex_number', pokemon_data['species_dex_number']),
+            ('form', pokemon_data.get('form')),
+            ('nickname', pokemon_data.get('nickname')),
+            ('level', pokemon_data.get('level', 5)),
+            ('exp', pokemon_data.get('exp', 0)),
+            ('stored_exp', pokemon_data.get('stored_exp', 0)),
+            ('gender', pokemon_data.get('gender')),
+            ('nature', pokemon_data['nature']),
+            ('ability', pokemon_data['ability']),
+            ('held_item', pokemon_data.get('held_item')),
+            ('pokeball', pokemon_data.get('pokeball', 'poke_ball')),
+            ('current_hp', pokemon_data['current_hp']),
+            ('max_hp', pokemon_data['max_hp']),
+            ('status_condition', pokemon_data.get('status_condition')),
+            ('iv_hp', pokemon_data.get('iv_hp', 31)),
+            ('iv_attack', pokemon_data.get('iv_attack', 31)),
+            ('iv_defense', pokemon_data.get('iv_defense', 31)),
+            ('iv_sp_attack', pokemon_data.get('iv_sp_attack', 31)),
+            ('iv_sp_defense', pokemon_data.get('iv_sp_defense', 31)),
+            ('iv_speed', pokemon_data.get('iv_speed', 31)),
+            ('ev_hp', pokemon_data.get('ev_hp', 0)),
+            ('ev_attack', pokemon_data.get('ev_attack', 0)),
+            ('ev_defense', pokemon_data.get('ev_defense', 0)),
+            ('ev_sp_attack', pokemon_data.get('ev_sp_attack', 0)),
+            ('ev_sp_defense', pokemon_data.get('ev_sp_defense', 0)),
+            ('ev_speed', pokemon_data.get('ev_speed', 0)),
+            ('moves', json.dumps(pokemon_data['moves'])),
+            ('friendship', pokemon_data.get('friendship', 70)),
+            ('bond_level', pokemon_data.get('bond_level', 0)),
+            ('in_party', pokemon_data.get('in_party', 0)),
+            ('party_position', pokemon_data.get('party_position')),
+            ('box_position', pokemon_data.get('box_position')),
+            ('is_shiny', pokemon_data.get('is_shiny', 0)),
+            ('can_mega_evolve', pokemon_data.get('can_mega_evolve', 0)),
+            ('tera_type', pokemon_data.get('tera_type')),
+        ]
+
+        columns = ", ".join(name for name, _ in column_value_pairs)
+        placeholders = ", ".join("?" for _ in column_value_pairs)
+        values = tuple(value for _, value in column_value_pairs)
+
+        cursor.execute(
+            f"""
+            INSERT INTO pokemon_instances ({columns})
+            VALUES ({placeholders})
+        """,
+            values,
+        )
+
         conn.commit()
         conn.close()
-        
+
         return pokemon_id
-    
+
     def get_pokemon(self, pokemon_id: str) -> Optional[Dict]:
         """Get a specific Pokemon by ID"""
         conn = self.get_connection()
