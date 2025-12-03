@@ -4,7 +4,7 @@ import logging
 
 import discord
 from discord.ui import Button, View, Select
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Callable, Awaitable
 
 from exp_system import ExpSystem
 from social_stats import SOCIAL_STAT_DEFINITIONS
@@ -108,6 +108,34 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
     return pokemon
 
 
+async def _show_main_menu(interaction: discord.Interaction, bot, user_id: int):
+    """Re-render the main menu in the existing ephemeral message."""
+    from ui.embeds import EmbedBuilder
+
+    player_data = bot.player_manager.get_player(user_id)
+    rank_manager = getattr(bot, "rank_manager", None)
+    embed = EmbedBuilder.main_menu(player_data, rank_manager=rank_manager)
+    view = MainMenuView(bot, user_id=user_id)
+
+    await interaction.response.edit_message(embed=embed, view=view)
+
+
+def _add_back_button(view: View, callback: Callable[[discord.Interaction], Awaitable[None]], *, row: int = 4):
+    """Attach a standardized back button to a view."""
+
+    back_button = Button(
+        label="⬅️ Back",
+        style=discord.ButtonStyle.secondary,
+        row=row,
+    )
+
+    async def _back(interaction: discord.Interaction):
+        await callback(interaction)
+
+    back_button.callback = _back
+    view.add_item(back_button)
+
+
 class MainMenuView(View):
     """Main menu button interface"""
 
@@ -163,9 +191,14 @@ class MainMenuView(View):
 
         # Show party management view
         embed = EmbedBuilder.party_view(party, self.bot.species_db, trainer_name=trainer_name)
-        view = PartyManagementView(self.bot, party, can_heal_party=can_heal_party)
+        view = PartyManagementView(
+            self.bot,
+            party,
+            can_heal_party=can_heal_party,
+            back_callback=lambda i: _show_main_menu(i, self.bot, interaction.user.id),
+        )
 
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.response.edit_message(embed=embed, view=view)
     
     @discord.ui.button(label="📦 Boxes", style=discord.ButtonStyle.primary, row=0)
     async def boxes_button(self, interaction: discord.Interaction, button: Button):
@@ -186,9 +219,14 @@ class MainMenuView(View):
         
         # Show box view
         embed = EmbedBuilder.box_view(boxes, self.bot.species_db, page=0, total_pages=max(1, (len(boxes) + 29) // 30))
-        view = BoxManagementView(self.bot, boxes, page=0)
-        
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        view = BoxManagementView(
+            self.bot,
+            boxes,
+            page=0,
+            back_callback=lambda i: _show_main_menu(i, self.bot, interaction.user.id),
+        )
+
+        await interaction.response.edit_message(embed=embed, view=view)
     
     @discord.ui.button(label="🎒 Bag", style=discord.ButtonStyle.primary, row=0)
     async def bag_button(self, interaction: discord.Interaction, button: Button):
@@ -215,9 +253,14 @@ class MainMenuView(View):
             inventory = self.bot.player_manager.get_inventory(interaction.user.id)
         
         embed = EmbedBuilder.bag_view(inventory, self.bot.items_db)
-        view = BagView(self.bot, inventory, interaction.user.id)
-        
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        view = BagView(
+            self.bot,
+            inventory,
+            interaction.user.id,
+            back_callback=lambda i: _show_main_menu(i, self.bot, interaction.user.id),
+        )
+
+        await interaction.response.edit_message(embed=embed, view=view)
     
     @discord.ui.button(label="🧭 Travel", style=discord.ButtonStyle.secondary, row=1)
     async def travel_button(self, interaction: discord.Interaction, button: Button):
@@ -266,13 +309,10 @@ class MainMenuView(View):
 
         # Show travel selection with paginated view
         view = PaginatedTravelView(self.bot, combined_locations, current_location_id)
+        view.set_back_callback(lambda i: _show_main_menu(i, self.bot, interaction.user.id))
         embed = view.create_embed()
 
-        await interaction.response.send_message(
-            embed=embed,
-            view=view,
-            ephemeral=True
-        )
+        await interaction.response.edit_message(embed=embed, view=view)
     
     @discord.ui.button(label="🛍️ Shop", style=discord.ButtonStyle.secondary, row=1)
     async def shop_button(self, interaction: discord.Interaction, button: Button):
@@ -294,10 +334,15 @@ class MainMenuView(View):
         """View Pokedex"""
         if await self._deny_if_in_battle(interaction):
             return
-        await interaction.response.send_message(
-            "📘 Pokédex coming soon!",
-            ephemeral=True
+        embed = discord.Embed(
+            title="📘 Pokédex",
+            description="Coming soon!",
+            color=discord.Color.blue(),
         )
+        view = View(timeout=300)
+        _add_back_button(view, lambda i: _show_main_menu(i, self.bot, interaction.user.id))
+
+        await interaction.response.edit_message(embed=embed, view=view)
     
     @discord.ui.button(label="🪪 Trainer Card", style=discord.ButtonStyle.secondary, row=1)
     async def trainer_card_button(self, interaction: discord.Interaction, button: Button):
@@ -318,7 +363,7 @@ class MainMenuView(View):
             pokedex_seen=len(pokedex)
         )
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.edit_message(embed=embed, view=None)
 
     @discord.ui.button(label="🤝 Team Up", style=discord.ButtonStyle.success, row=2)
     async def party_up_button(self, interaction: discord.Interaction, button: Button):
@@ -347,9 +392,14 @@ class MainMenuView(View):
             party_members = party_manager.get_party_members(current_party['party_id'])
 
             embed = EmbedBuilder.party_info(current_party, party_members, self.bot.player_manager)
-            view = PartyActionsView(self.bot, current_party, is_leader=(current_party['leader_discord_id'] == interaction.user.id))
+            view = PartyActionsView(
+                self.bot,
+                current_party,
+                is_leader=(current_party['leader_discord_id'] == interaction.user.id),
+                back_callback=lambda i: _show_main_menu(i, self.bot, interaction.user.id),
+            )
 
-            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+            await interaction.response.edit_message(embed=embed, view=view)
         else:
             # Show party creation/join menu
             from ui.embeds import EmbedBuilder
@@ -357,9 +407,13 @@ class MainMenuView(View):
             available_parties = party_manager.get_parties_in_area(wild_area_state['area_id'])
 
             embed = EmbedBuilder.party_menu(wild_area_state, available_parties)
-            view = PartyJoinCreateView(self.bot, wild_area_state)
+            view = PartyJoinCreateView(
+                self.bot,
+                wild_area_state,
+                back_callback=lambda i: _show_main_menu(i, self.bot, interaction.user.id),
+            )
 
-            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+            await interaction.response.edit_message(embed=embed, view=view)
 
     @discord.ui.button(label="⚔️ Wild Encounter", style=discord.ButtonStyle.success, row=2)
     async def encounter_button(self, interaction: discord.Interaction, button: Button):
@@ -444,10 +498,10 @@ class MainMenuView(View):
             current_location_id
         )
 
-        await interaction.followup.send(
+        await interaction.followup.edit_message(
+            interaction.message.id,
             embed=embed,
             view=view,
-            ephemeral=True
         )
 
     @discord.ui.button(label="⚔️ Battle", style=discord.ButtonStyle.danger, row=2)
@@ -493,12 +547,15 @@ class MainMenuView(View):
 
         # Show battle menu
         embed = EmbedBuilder.battle_menu(location, available_pvp=available_pvp)
-        view = BattleMenuView(self.bot, location)
+        view = BattleMenuView(
+            self.bot,
+            location,
+            back_callback=lambda i: _show_main_menu(i, self.bot, interaction.user.id),
+        )
 
-        await interaction.response.send_message(
+        await interaction.response.edit_message(
             embed=embed,
             view=view,
-            ephemeral=True
         )
 
     def _add_exit_button(self):
@@ -917,11 +974,12 @@ class PokemonDetailsFallbackView(View):
 class PartyManagementView(View):
     """Party management interface"""
 
-    def __init__(self, bot, party: list, *, can_heal_party: bool = False):
+    def __init__(self, bot, party: list, *, can_heal_party: bool = False, back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None):
         super().__init__(timeout=300)
         self.bot = bot
         self.party = party
         self.can_heal_party = can_heal_party
+        self.back_callback = back_callback
 
         # Add Pokemon select menu
         options = []
@@ -993,6 +1051,9 @@ class PartyManagementView(View):
             )
             heal_button.callback = self.heal_party_callback
             self.add_item(heal_button)
+
+        if self.back_callback:
+            _add_back_button(self, self.back_callback)
     
     async def pokemon_callback(self, interaction: discord.Interaction):
         """Show detailed Pokemon info"""
@@ -1254,14 +1315,15 @@ class PartyReorderView(View):
 
 class BoxManagementView(View):
     """Box management interface with pagination"""
-    
-    def __init__(self, bot, boxes: list, page: int = 0):
+
+    def __init__(self, bot, boxes: list, page: int = 0, back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None):
         super().__init__(timeout=300)
         self.bot = bot
         self.boxes = boxes
         self.page = page
         self.items_per_page = 30
         self.total_pages = max(1, (len(boxes) + self.items_per_page - 1) // self.items_per_page)
+        self.back_callback = back_callback
         
         # Calculate page range
         start_idx = page * self.items_per_page
@@ -1297,6 +1359,9 @@ class BoxManagementView(View):
         # Add pagination if needed
         if self.total_pages > 1:
             self.add_navigation_buttons()
+
+        if self.back_callback:
+            _add_back_button(self, self.back_callback)
     
     def add_navigation_buttons(self):
         """Add page navigation"""
@@ -1369,7 +1434,7 @@ class BoxManagementView(View):
         if self.page > 0:
             self.page -= 1
             embed = EmbedBuilder.box_view(self.boxes, self.bot.species_db, self.page, self.total_pages)
-            new_view = BoxManagementView(self.bot, self.boxes, self.page)
+            new_view = BoxManagementView(self.bot, self.boxes, self.page, back_callback=self.back_callback)
             await interaction.response.edit_message(embed=embed, view=new_view)
     
     async def next_page(self, interaction: discord.Interaction):
@@ -1379,7 +1444,7 @@ class BoxManagementView(View):
         if self.page < self.total_pages - 1:
             self.page += 1
             embed = EmbedBuilder.box_view(self.boxes, self.bot.species_db, self.page, self.total_pages)
-            new_view = BoxManagementView(self.bot, self.boxes, self.page)
+            new_view = BoxManagementView(self.bot, self.boxes, self.page, back_callback=self.back_callback)
             await interaction.response.edit_message(embed=embed, view=new_view)
         release_button.callback = self.release_callback
         self.add_item(release_button)
@@ -1722,11 +1787,12 @@ class ReleaseConfirmView(View):
 class BagView(View):
     """Bag/Inventory view with categorized buttons."""
 
-    def __init__(self, bot, inventory: List[Dict], player_id: int):
+    def __init__(self, bot, inventory: List[Dict], player_id: int, back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None):
         super().__init__(timeout=300)
         self.bot = bot
         self.inventory = inventory  # List of {"item_id": ..., "quantity": ...}
         self.player_id = player_id
+        self.back_callback = back_callback
         # Track which category is currently selected
         self.current_category: str = "all"
 
@@ -1787,6 +1853,9 @@ class BagView(View):
 
         select_button.callback = select_button_callback
         self.add_item(select_button)
+
+        if self.back_callback:
+            _add_back_button(self, self.back_callback)
 
     def _filter_inventory_by_category(self, category: str) -> List[Dict]:
         """Return a filtered inventory list for the given category."""
@@ -1972,7 +2041,7 @@ class BagItemSelectView(View):
 
             inventory = self.bot.player_manager.get_inventory(self.player_id)
             embed = EmbedBuilder.bag_view(inventory, self.bot.items_db)
-            view = BagView(self.bot, inventory, self.player_id)
+            view = BagView(self.bot, inventory, self.player_id, back_callback=self.back_callback)
             await interaction.response.edit_message(embed=embed, view=view)
 
         back_button.callback = back_callback
@@ -2075,7 +2144,7 @@ class ItemActionView(View):
                 embed = EmbedBuilder.bag_view(inventory, self.bot.items_db)
                 await interaction.response.edit_message(
                     embed=embed,
-                    view=BagView(self.bot, inventory, self.player_id),
+                    view=BagView(self.bot, inventory, self.player_id, back_callback=self.back_callback),
                 )
                 return
 
@@ -2301,7 +2370,7 @@ class ItemUsePokemonSelectView(View):
             if qty <= 0:
                 inventory = self.bot.player_manager.get_inventory(self.player_id)
                 bag_embed = EmbedBuilder.bag_view(inventory, self.bot.items_db)
-                bag_view = BagView(self.bot, inventory, self.player_id)
+                bag_view = BagView(self.bot, inventory, self.player_id, back_callback=self.back_callback)
                 await interaction.response.edit_message(embed=bag_embed, view=bag_view)
             else:
                 action_view = ItemActionView(self.bot, self.player_id, self.item_id, self.item_data, self.category)
@@ -2374,7 +2443,7 @@ class ItemGivePokemonSelectView(View):
             if success and qty <= 0:
                 inventory = self.bot.player_manager.get_inventory(self.player_id)
                 bag_embed = EmbedBuilder.bag_view(inventory, self.bot.items_db)
-                bag_view = BagView(self.bot, inventory, self.player_id)
+                bag_view = BagView(self.bot, inventory, self.player_id, back_callback=self.back_callback)
                 await interaction.response.edit_message(embed=bag_embed, view=bag_view)
                 return
 
@@ -2413,6 +2482,7 @@ class PaginatedTravelView(View):
         self.all_locations = all_locations
         self.current_location_id = current_location_id
         self.current_page = 0
+        self.back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None
 
         # Define pages with area groupings
         self.pages = [
@@ -2514,6 +2584,14 @@ class PaginatedTravelView(View):
         )
         next_button.callback = self.next_page
         self.add_item(next_button)
+
+        if self.back_callback:
+            _add_back_button(self, self.back_callback)
+
+    def set_back_callback(self, callback: Callable[[discord.Interaction], Awaitable[None]]):
+        """Set and apply the back navigation callback."""
+        self.back_callback = callback
+        self.update_view()
 
     async def prev_page(self, interaction: discord.Interaction):
         """Go to previous page"""
@@ -2998,10 +3076,14 @@ class BoxPokemonActionsView(View):
 class BattleMenuView(View):
     """Battle menu with casual and ranked options"""
 
-    def __init__(self, bot, location: dict):
+    def __init__(self, bot, location: dict, back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None):
         super().__init__(timeout=300)
         self.bot = bot
         self.location = location
+        self.back_callback = back_callback
+
+        if self.back_callback:
+            _add_back_button(self, self.back_callback)
 
     def _get_available_players(self, interaction: discord.Interaction):
         trainer = self.bot.player_manager.get_player(interaction.user.id)
@@ -4509,10 +4591,14 @@ class NpcTrainerSelectView(View):
 class PartyJoinCreateView(View):
     """View for creating or joining a party"""
 
-    def __init__(self, bot, wild_area_state: Dict):
+    def __init__(self, bot, wild_area_state: Dict, back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None):
         super().__init__(timeout=300)
         self.bot = bot
         self.wild_area_state = wild_area_state
+        self.back_callback = back_callback
+
+        if self.back_callback:
+            _add_back_button(self, self.back_callback)
 
     @discord.ui.button(label="➕ Create Team", style=discord.ButtonStyle.success, row=0)
     async def create_party_button(self, interaction: discord.Interaction, button: Button):
@@ -4654,15 +4740,19 @@ class PartySelectView(View):
 class PartyActionsView(View):
     """View for party management actions"""
 
-    def __init__(self, bot, party: Dict, is_leader: bool):
+    def __init__(self, bot, party: Dict, is_leader: bool, back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None):
         super().__init__(timeout=300)
         self.bot = bot
         self.party = party
         self.is_leader = is_leader
+        self.back_callback = back_callback
 
         # Only show disband button to leader
         if not is_leader:
             self.disband_button.disabled = True
+
+        if self.back_callback:
+            _add_back_button(self, self.back_callback)
 
     @discord.ui.button(label="🚶 Leave Team", style=discord.ButtonStyle.danger, row=0)
     async def leave_button(self, interaction: discord.Interaction, button: Button):
