@@ -116,7 +116,12 @@ async def _show_main_menu(interaction: discord.Interaction, bot, user_id: int):
 
     player_data = bot.player_manager.get_player(user_id)
     rank_manager = getattr(bot, "rank_manager", None)
-    embed = EmbedBuilder.main_menu(player_data, rank_manager=rank_manager)
+    location_manager = getattr(bot, "location_manager", None)
+    embed = EmbedBuilder.main_menu(
+        player_data,
+        rank_manager=rank_manager,
+        location_manager=location_manager,
+    )
     view = MainMenuView(bot, user_id=user_id)
 
     await interaction.response.edit_message(embed=embed, view=view)
@@ -283,6 +288,20 @@ class MainMenuView(View):
         super().__init__(timeout=300)  # 5 minute timeout
         self.bot = bot
         self.user_id = user_id
+
+        # Update Alerts button label with unread count
+        if user_id and hasattr(self, "alerts_button"):
+            try:
+                _, alerts = _get_alert_data(bot, user_id)
+                alert_count = len(alerts)
+            except Exception:
+                alert_count = 0
+
+            base_label = "🛎️ Alerts"
+            if alert_count > 0:
+                self.alerts_button.label = f"{base_label} [{alert_count}]"
+            else:
+                self.alerts_button.label = base_label
 
         # Check if player is in a wild area and add exit button if so
         if user_id:
@@ -495,17 +514,19 @@ class MainMenuView(View):
         party = self.bot.player_manager.get_party(interaction.user.id)
         total_pokemon = len(self.bot.player_manager.get_all_pokemon(interaction.user.id))
         pokedex = self.bot.player_manager.get_pokedex(interaction.user.id)
-        
+        location_manager = getattr(self.bot, "location_manager", None)
+
         embed = EmbedBuilder.trainer_card(
             trainer,
             party_count=len(party),
             total_pokemon=total_pokemon,
-            pokedex_seen=len(pokedex)
+            pokedex_seen=len(pokedex),
+            location_manager=location_manager,
         )
 
         await interaction.response.edit_message(embed=embed, view=None)
 
-    @discord.ui.button(label="🔔 Alerts", style=discord.ButtonStyle.secondary, row=3)
+    @discord.ui.button(label="🛎️ Alerts", style=discord.ButtonStyle.secondary, row=3)
     async def alerts_button(self, interaction: discord.Interaction, button: Button):
         """Open the notifications center"""
         if await self._deny_if_in_battle(interaction):
