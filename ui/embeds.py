@@ -326,6 +326,9 @@ class EmbedBuilder:
             inline=False
         )
 
+        # Spacer for readability between stamina and rank
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
+
         # Rank
         rank_lines = []
         show_progress = True
