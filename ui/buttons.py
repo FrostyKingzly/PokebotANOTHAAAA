@@ -117,10 +117,16 @@ async def _show_main_menu(interaction: discord.Interaction, bot, user_id: int):
     player_data = bot.player_manager.get_player(user_id)
     rank_manager = getattr(bot, "rank_manager", None)
     location_manager = getattr(bot, "location_manager", None)
+    wild_area_manager = getattr(bot, "wild_area_manager", None)
+    weather_manager = getattr(bot, "weather_manager", None)
+    wild_area_state = wild_area_manager.get_wild_area_state(user_id) if wild_area_manager else None
     embed = EmbedBuilder.main_menu(
         player_data,
         rank_manager=rank_manager,
         location_manager=location_manager,
+        wild_area_manager=wild_area_manager,
+        wild_area_state=wild_area_state,
+        weather_manager=weather_manager,
     )
     view = MainMenuView(bot, user_id=user_id)
 

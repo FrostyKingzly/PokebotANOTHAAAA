@@ -3,6 +3,8 @@ Embed Builders - Creates Discord embeds for various UI elements
 """
 
 import discord
+import math
+import time
 from typing import List, Dict, Optional
 from ui.emoji import POKEBALL_EMOJIS, DEFAULT_POKEBALL_ID
 from models import Trainer
@@ -152,7 +154,15 @@ class EmbedBuilder:
         return location_id.replace('_', ' ').title()
 
     @staticmethod
-    def main_menu(trainer: Trainer, rank_manager=None, location_manager=None) -> discord.Embed:
+    def main_menu(
+        trainer: Trainer,
+        rank_manager=None,
+        location_manager=None,
+        *,
+        wild_area_manager=None,
+        wild_area_state: Optional[Dict] = None,
+        weather_manager=None,
+    ) -> discord.Embed:
         """Create the main menu embed."""
         embed = discord.Embed(
             title=f"{trainer.trainer_name}'s Phone",
@@ -167,12 +177,44 @@ class EmbedBuilder:
         )
 
         # Location
+        location_value = EmbedBuilder._format_location_name(
+            trainer.current_location_id,
+            location_manager
+        )
+
+        if wild_area_state:
+            area_id = wild_area_state.get('area_id')
+            zone_id = wild_area_state.get('current_zone_id')
+            area_name = area_id
+            zone_name = zone_id
+
+            if wild_area_manager:
+                try:
+                    area_data = wild_area_manager.get_wild_area(area_id)
+                    area_name = area_data.get('name', area_id) if area_data else area_id
+                    zone_data = wild_area_manager.get_zone(zone_id) if zone_id else None
+                    zone_name = zone_data.get('name', zone_id) if zone_data else zone_id
+                except Exception:
+                    pass
+
+            if area_name and zone_name:
+                location_value = f"{area_name} – {zone_name}"
+            elif area_name:
+                location_value = area_name
+
+        if weather_manager:
+            weather_info = weather_manager.get_weather_for_context(
+                trainer.current_location_id,
+                wild_area_state,
+                now=time.time(),
+            )
+            weather_line = EmbedBuilder._format_weather_line(weather_info) if weather_info else None
+            if weather_line:
+                location_value = f"{location_value}\n{weather_line}"
+
         embed.add_field(
             name="📍 Location",
-            value=EmbedBuilder._format_location_name(
-                trainer.current_location_id,
-                location_manager
-            ),
+            value=location_value,
             inline=True
         )
 
@@ -244,6 +286,35 @@ class EmbedBuilder:
         embed.set_footer(text="Use the buttons below to navigate")
 
         return embed
+
+    @staticmethod
+    def _format_weather_line(weather_info: Optional[Dict]) -> Optional[str]:
+        """Return a friendly weather status line."""
+
+        if not weather_info:
+            return None
+
+        weather = weather_info.get('current_weather')
+        if not weather:
+            return None
+
+        mode = weather_info.get('mode', 'random')
+        expires_at = weather_info.get('expires_at') or 0
+        now = time.time()
+        remaining_seconds = max(0, int(expires_at - now)) if expires_at else 0
+        remaining_minutes = math.ceil(remaining_seconds / 60) if remaining_seconds else 0
+
+        weather_display = weather.replace('_', ' ').title()
+        mode_display = 'manual' if mode == 'manual' else 'random'
+
+        if remaining_minutes > 0:
+            duration_text = f"{remaining_minutes}m left"
+        elif remaining_seconds > 0:
+            duration_text = "<1m left"
+        else:
+            duration_text = "active"
+
+        return f"🌦️ {weather_display} ({mode_display}, {duration_text})"
 
     @staticmethod
     def alerts_overview(alerts: List[Dict[str, str]]) -> discord.Embed:

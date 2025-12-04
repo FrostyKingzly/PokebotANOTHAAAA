@@ -25,6 +25,8 @@ from database import (SpeciesDatabase, MovesDatabase, AbilitiesDatabase,
                      ItemsDatabase, NaturesDatabase, TypeChart)
 from rank_manager import RankManager
 from item_usage_manager import ItemUsageManager
+from weather_manager import WeatherManager
+from wild_area_manager import WildAreaManager
 
 
 class PokemonBot(commands.Bot):
@@ -48,6 +50,8 @@ class PokemonBot(commands.Bot):
         self.location_manager = None
         self.rank_manager = None
         self.item_usage_manager = None
+        self.weather_manager = None
+        self.wild_area_manager = None
         
         # Load databases
         self.species_db = None
@@ -82,6 +86,8 @@ class PokemonBot(commands.Bot):
             channel_map_path="config/channel_locations.json"
         )
         self.item_usage_manager = ItemUsageManager(self)
+        self.wild_area_manager = WildAreaManager(self.player_manager.db)
+        self.weather_manager = WeatherManager()
 
         # Load cogs
         await self.load_cogs()
@@ -166,10 +172,21 @@ async def phone_command(interaction: discord.Interaction):
     # Create main menu embed
     rank_manager = getattr(interaction.client, "rank_manager", None)
     location_manager = getattr(interaction.client, "location_manager", None)
+    wild_area_manager = getattr(interaction.client, "wild_area_manager", None)
+    weather_manager = getattr(interaction.client, "weather_manager", None)
+    wild_area_state = (
+        wild_area_manager.get_wild_area_state(interaction.user.id)
+        if wild_area_manager
+        else None
+    )
+
     embed = EmbedBuilder.main_menu(
         player_data,
         rank_manager=rank_manager,
         location_manager=location_manager,
+        wild_area_manager=wild_area_manager,
+        wild_area_state=wild_area_state,
+        weather_manager=weather_manager,
     )
 
     # Create main menu view with buttons (pass user_id for wild area detection)
