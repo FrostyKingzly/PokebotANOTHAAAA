@@ -3,7 +3,6 @@ Embed Builders - Creates Discord embeds for various UI elements
 """
 
 import discord
-import math
 import time
 from typing import List, Dict, Optional
 from ui.emoji import POKEBALL_EMOJIS, DEFAULT_POKEBALL_ID
@@ -303,7 +302,7 @@ class EmbedBuilder:
             now=time.time(),
         )
         if rotom_quote:
-            embed.description = f"{EmbedBuilder.ROTOM_EMOJI} {rotom_quote}"
+            embed.description = f"{EmbedBuilder.ROTOM_EMOJI} “{rotom_quote}”"
 
         embed.add_field(
             name="📍 Location",
@@ -391,23 +390,8 @@ class EmbedBuilder:
         if not weather:
             return None
 
-        mode = weather_info.get('mode', 'random')
-        expires_at = weather_info.get('expires_at') or 0
-        now = time.time()
-        remaining_seconds = max(0, int(expires_at - now)) if expires_at else 0
-        remaining_minutes = math.ceil(remaining_seconds / 60) if remaining_seconds else 0
-
         weather_display = weather.replace('_', ' ').title()
-        mode_display = 'manual' if mode == 'manual' else 'random'
-
-        if remaining_minutes > 0:
-            duration_text = f"{remaining_minutes}m left"
-        elif remaining_seconds > 0:
-            duration_text = "<1m left"
-        else:
-            duration_text = "active"
-
-        return f"🌦️ {weather_display} ({mode_display}, {duration_text})"
+        return f"🌦️ {weather_display}"
 
     @staticmethod
     def alerts_overview(alerts: List[Dict[str, str]]) -> discord.Embed:
