@@ -268,26 +268,40 @@ class PokemonActionsView(View):
             can_evolve, method, evolution_data = bot.item_usage_manager.can_evolve(pokemon)
             if can_evolve:
                 self.add_evolution_button()
+
+        self._set_item_button_label()
     
-    @discord.ui.button(label="Nickname", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="⭐️ Partner Up", style=discord.ButtonStyle.success, row=0)
+    async def partner_up_button(self, interaction: discord.Interaction, button: Button):
+        """Placeholder for future partner functionality."""
+        await interaction.response.send_message(
+            "⭐️ Partner features are coming soon! Stay tuned for team-up updates.",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="✏️ Nickname", style=discord.ButtonStyle.primary, row=0)
     async def nickname_button(self, interaction: discord.Interaction, button: Button):
         """Change Pokemon nickname"""
         modal = NicknameModal(self.bot, self.pokemon)
         await interaction.response.send_modal(modal)
     
     @discord.ui.button(label="Give Item", style=discord.ButtonStyle.primary, row=0)
-    async def give_item_button(self, interaction: discord.Interaction, button: Button):
-        """Give held item to Pokemon"""
+    async def item_button(self, interaction: discord.Interaction, button: Button):
+        """Give or take a held item depending on current state."""
+        if self.pokemon.get('held_item'):
+            await self._handle_take_item(interaction)
+            return
+
         inventory = self.bot.player_manager.get_inventory(interaction.user.id)
         held_items = [item for item in inventory if item['quantity'] > 0]
-        
+
         if not held_items:
             await interaction.response.send_message(
                 "[X] You don't have any items to give!",
                 ephemeral=True
             )
             return
-        
+
         view = GiveItemView(self.bot, self.pokemon, held_items[:25])
         await interaction.response.send_message(
             "Select an item to give:",
@@ -295,26 +309,9 @@ class PokemonActionsView(View):
             ephemeral=True
         )
     
-    @discord.ui.button(label="Take Item", style=discord.ButtonStyle.primary, row=0)
-    async def take_item_button(self, interaction: discord.Interaction, button: Button):
-        """Take held item from Pokemon"""
-        if not self.pokemon.get('held_item'):
-            await interaction.response.send_message(
-                "[X] This Pokemon isn't holding an item!",
-                ephemeral=True
-            )
-            return
-        
-        success, message = self.bot.player_manager.take_item(
-            interaction.user.id,
-            self.pokemon['pokemon_id']
-        )
-        
-        await interaction.response.send_message(message, ephemeral=True)
-    
     
 
-    @discord.ui.button(label="Moves", style=discord.ButtonStyle.success, row=0)
+    @discord.ui.button(label="🎯 Moves", style=discord.ButtonStyle.success, row=0)
     async def manage_moves_button(self, interaction: discord.Interaction, button: Button):
         """Open a focused moves management menu for this Pokemon."""
         from ui.embeds import EmbedBuilder
@@ -335,7 +332,7 @@ class PokemonActionsView(View):
         view = MoveManagementView(self.bot, pokemon['pokemon_id'])
         await interaction.response.edit_message(content=None, embed=embed, view=view)
 
-    @discord.ui.button(label="Deposit", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="📦 Deposit", style=discord.ButtonStyle.secondary, row=1)
     async def deposit_button(self, interaction: discord.Interaction, button: Button):
         """Move Pokemon from party to box"""
         if not self.pokemon.get('in_party'):
@@ -352,24 +349,7 @@ class PokemonActionsView(View):
         
         await interaction.response.send_message(message, ephemeral=True)
     
-    @discord.ui.button(label="Withdraw", style=discord.ButtonStyle.secondary, row=1)
-    async def withdraw_button(self, interaction: discord.Interaction, button: Button):
-        """Move Pokemon from box to party"""
-        if self.pokemon.get('in_party'):
-            await interaction.response.send_message(
-                "[X] This Pokemon is already in your party!",
-                ephemeral=True
-            )
-            return
-        
-        success, message = self.bot.player_manager.withdraw_pokemon(
-            interaction.user.id,
-            self.pokemon['pokemon_id']
-        )
-        
-        await interaction.response.send_message(message, ephemeral=True)
-    
-    @discord.ui.button(label="Release", style=discord.ButtonStyle.danger, row=2)
+    @discord.ui.button(label="👋 Release", style=discord.ButtonStyle.danger, row=2)
     async def release_button(self, interaction: discord.Interaction, button: Button):
         """Release Pokemon (with confirmation)"""
         display_name = self.pokemon.get('nickname') or self.species['name']
@@ -393,25 +373,16 @@ class PokemonActionsView(View):
         else:
             await interaction.followup.send("[OK] Release cancelled.", ephemeral=True)
     
-    @discord.ui.button(label="Refresh", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="↪️ Refresh", style=discord.ButtonStyle.secondary, row=2)
     async def refresh_button(self, interaction: discord.Interaction, button: Button):
         """Refresh Pokemon display"""
-        pokemon = self.bot.player_manager.get_pokemon(self.pokemon['pokemon_id'])
-        
-        if not pokemon:
+        embed = self._build_summary_embed()
+
+        if not embed:
             await interaction.response.send_message("[X] Pokemon not found!", ephemeral=True)
             return
-        
-        move_data_list = []
-        for move in pokemon['moves']:
-            move_data = self.bot.moves_db.get_move(move['move_id'])
-            if move_data:
-                move_data_list.append(move_data)
-        
 
-        embed = EmbedBuilder.pokemon_summary(pokemon, self.species, move_data_list)
-
-        self.pokemon = pokemon
+        self._set_item_button_label()
         await interaction.response.edit_message(embed=embed, view=self)
 
     def add_evolution_button(self):
@@ -500,6 +471,59 @@ class PokemonActionsView(View):
                     await interaction.followup.send(embed=embed, view=new_view, ephemeral=True)
         else:
             await interaction.followup.send("[X] Evolution failed!", ephemeral=True)
+
+    async def _handle_take_item(self, interaction: discord.Interaction):
+        """Remove the held item and refresh the display."""
+        await interaction.response.defer(ephemeral=True)
+
+        success, message = self.bot.player_manager.take_item(
+            interaction.user.id,
+            self.pokemon['pokemon_id']
+        )
+
+        if success:
+            refreshed = self._reload_pokemon()
+            if refreshed:
+                self._set_item_button_label()
+                embed = self._build_summary_embed()
+                if embed:
+                    try:
+                        await interaction.message.edit(embed=embed, view=self)
+                    except Exception:
+                        pass
+
+        await interaction.followup.send(message, ephemeral=True)
+
+    def _reload_pokemon(self) -> bool:
+        """Reload Pokemon and species data from storage."""
+        pokemon = self.bot.player_manager.get_pokemon(self.pokemon['pokemon_id'])
+        if not pokemon:
+            return False
+
+        self.pokemon = pokemon
+        self.species = self.bot.species_db.get_species(pokemon['species_dex_number'])
+        return True
+
+    def _build_summary_embed(self):
+        """Construct the summary embed with the latest Pokemon data."""
+        refreshed = self._reload_pokemon()
+        if not refreshed:
+            return None
+
+        from ui.embeds import EmbedBuilder
+
+        move_data_list = []
+        for move in self.pokemon.get('moves', []):
+            move_data = self.bot.moves_db.get_move(move['move_id'])
+            if move_data:
+                move_data_list.append(move_data)
+
+        return EmbedBuilder.pokemon_summary(self.pokemon, self.species, move_data_list)
+
+    def _set_item_button_label(self):
+        """Update the item button label based on held item state."""
+        if hasattr(self, 'item_button'):
+            self.item_button.label = "Take Item" if self.pokemon.get('held_item') else "Give Item"
 
 
 class GiveItemView(View):
