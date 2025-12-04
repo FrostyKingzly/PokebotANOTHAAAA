@@ -66,15 +66,22 @@ class WeatherManager:
                 self.state = {}
 
         # Ensure defaults for every region
-        for region_id in self.REGION_SETTINGS:
+        for region_id, settings in self.REGION_SETTINGS.items():
+            default_allowed = settings.get("allowed_weathers", [])
             self.state.setdefault(
                 region_id,
                 {
                     "mode": "random",  # "random" or "manual"
                     "current_weather": None,
                     "expires_at": 0,
+                    "random_pool": list(default_allowed),
                 },
             )
+
+            # Backfill random pools for existing state files
+            region_state = self.state.get(region_id, {})
+            if not region_state.get("random_pool"):
+                region_state["random_pool"] = list(default_allowed)
 
         self._save_state()
 
@@ -118,18 +125,22 @@ class WeatherManager:
     def _roll_random_weather(self, region_id: str, now: Optional[float] = None) -> Dict:
         now = now or time.time()
         settings = self.REGION_SETTINGS[region_id]
-        allowed = settings["allowed_weathers"]
-        min_minutes, max_minutes = settings.get("random_duration_minutes", (30, 90))
-        duration_minutes = random.randint(min_minutes, max_minutes)
+        pool = self.state.get(region_id, {}).get("random_pool") or settings.get(
+            "allowed_weathers", []
+        )
 
-        weather = random.choice(allowed)
-        expires_at = now + (duration_minutes * 60)
+        if not pool:
+            pool = settings.get("allowed_weathers", [])
+
+        weather = random.choice(pool)
+        expires_at = now + (12 * 60 * 60)  # Rotate every 12 hours
 
         self.state[region_id].update(
             {
                 "mode": "random",
                 "current_weather": weather,
                 "expires_at": expires_at,
+                "random_pool": list(pool),
             }
         )
         self._save_state()
@@ -143,11 +154,6 @@ class WeatherManager:
 
         mode = region_state.get("mode", "random")
         expires_at = region_state.get("expires_at", 0) or 0
-
-        if mode == "manual" and expires_at and expires_at <= now:
-            # Manual override expired; return to random rotation
-            self._roll_random_weather(region_id, now=now)
-            return
 
         if mode == "random" and (not region_state.get("current_weather") or expires_at <= now):
             self._roll_random_weather(region_id, now=now)
@@ -187,8 +193,8 @@ class WeatherManager:
             "allowed_weathers": self.REGION_SETTINGS[region_id]["allowed_weathers"],
         }
 
-    def set_weather(self, region_id: str, weather: str, duration_minutes: int) -> Dict:
-        """Force-set weather for a region."""
+    def set_weather(self, region_id: str, weather: str) -> Dict:
+        """Force-set weather for a region indefinitely until changed."""
 
         if region_id not in self.REGION_SETTINGS:
             raise ValueError("Unknown region")
@@ -200,24 +206,39 @@ class WeatherManager:
                 f"Weather '{weather}' is not allowed for {self.REGION_SETTINGS[region_id]['display_name']}"
             )
 
-        duration_seconds = max(1, int(duration_minutes)) * 60
-        expires_at = time.time() + duration_seconds
-
         self.state[region_id].update(
             {
                 "mode": "manual",
                 "current_weather": normalized,
-                "expires_at": expires_at,
+                "expires_at": 0,
             }
         )
         self._save_state()
         return self.state[region_id]
 
-    def set_random_mode(self, region_id: str, *, reroll: bool = True) -> Dict:
+    def set_random_mode(
+        self, region_id: str, *, allowed_weathers: Optional[list[str]] = None, reroll: bool = True
+    ) -> Dict:
         """Return a region to random weather rotation."""
 
         if region_id not in self.REGION_SETTINGS:
             raise ValueError("Unknown region")
+
+        region_allowed = self.REGION_SETTINGS[region_id].get("allowed_weathers", [])
+        pool = allowed_weathers or list(region_allowed)
+
+        if not pool:
+            raise ValueError("At least one weather type must be provided for random rotation")
+
+        invalid = [w for w in pool if w not in region_allowed]
+        if invalid:
+            allowed_display = ", ".join(region_allowed)
+            raise ValueError(
+                f"Weather options {', '.join(invalid)} are not allowed for this region. "
+                f"Allowed values: {allowed_display}"
+            )
+
+        self.state.setdefault(region_id, {})["random_pool"] = list(pool)
 
         if reroll or self.state.get(region_id, {}).get("mode") != "random":
             return self._roll_random_weather(region_id)

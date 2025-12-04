@@ -1154,7 +1154,6 @@ Modest Nature
     @app_commands.describe(
         region="Which region should be affected?",
         weather="Which weather condition to set?",
-        duration_minutes="How many minutes should this weather last?",
     )
     @app_commands.choices(region=WEATHER_REGION_CHOICES, weather=WEATHER_CONDITION_CHOICES)
     @app_commands.check(is_admin)
@@ -1163,9 +1162,8 @@ Modest Nature
         interaction: discord.Interaction,
         region: app_commands.Choice[str],
         weather: app_commands.Choice[str],
-        duration_minutes: app_commands.Range[int, 1, 720] = 30,
     ):
-        """Manually set weather for a region for a limited time."""
+        """Manually set weather for a region until changed again."""
 
         manager = getattr(self.bot, "weather_manager", None)
         if not manager:
@@ -1176,7 +1174,7 @@ Modest Nature
             return
 
         try:
-            state = manager.set_weather(region.value, weather.value, duration_minutes)
+            state = manager.set_weather(region.value, weather.value)
         except ValueError as e:
             await interaction.response.send_message(str(e), ephemeral=True)
             return
@@ -1185,19 +1183,22 @@ Modest Nature
         weather_display = weather.value.replace('_', ' ').title()
 
         await interaction.response.send_message(
-            f"✅ Set weather for **{region_name}** to **{weather_display}** for {duration_minutes} minutes.\n"
-            f"It will revert to random rotation after that.",
+            f"✅ Set weather for **{region_name}** to **{weather_display}** until changed again.",
             ephemeral=True,
         )
 
     @app_commands.command(name="set_weather_random", description="[ADMIN] Return a region to random weather")
-    @app_commands.describe(region="Which region should roll random weather?")
+    @app_commands.describe(
+        region="Which region should roll random weather?",
+        weather_options="Optional comma-separated list of weather types to rotate between",
+    )
     @app_commands.choices(region=WEATHER_REGION_CHOICES)
     @app_commands.check(is_admin)
     async def set_weather_random(
         self,
         interaction: discord.Interaction,
         region: app_commands.Choice[str],
+        weather_options: Optional[str] = None,
     ):
         """Resume random weather changes for a region and roll the next condition."""
 
@@ -1209,18 +1210,25 @@ Modest Nature
             )
             return
 
+        allowed_list: Optional[list[str]] = None
+        if weather_options:
+            parsed = [w.strip().lower().replace(" ", "_") for w in weather_options.split(",")]
+            allowed_list = [w for w in parsed if w]
+
         try:
-            state = manager.set_random_mode(region.value, reroll=True)
+            state = manager.set_random_mode(region.value, allowed_weathers=allowed_list, reroll=True)
         except ValueError as e:
             await interaction.response.send_message(str(e), ephemeral=True)
             return
 
         region_name = WeatherManager.REGION_SETTINGS[region.value]["display_name"]
         weather_display = (state.get("current_weather") or "Unknown").replace('_', ' ').title()
-        remaining_minutes = math.ceil(max(0, state.get("expires_at", 0) - time.time()) / 60)
+        pool = state.get("random_pool") or WeatherManager.REGION_SETTINGS[region.value].get("allowed_weathers", [])
+        pool_display = ", ".join([w.replace('_', ' ').title() for w in pool])
 
         await interaction.response.send_message(
-            f"🔀 {region_name} weather is now random. Current roll: **{weather_display}** (~{remaining_minutes}m left).",
+            f"🔀 {region_name} weather is now random. Current roll: **{weather_display}**.\n"
+            f"Rotating every 12 hours between: {pool_display}.",
             ephemeral=True,
         )
 
