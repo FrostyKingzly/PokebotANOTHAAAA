@@ -10,6 +10,28 @@ from discord.ext import commands
 from discord.ui import Button, View, Select, Modal
 from typing import Optional
 from ui.embeds import EmbedBuilder
+from sprite_helper import PokemonSpriteHelper
+
+
+def _get_pokemon_display_name(pokemon: dict, species: dict) -> str:
+    return pokemon.get('nickname') or species.get('name')
+
+
+def _build_pokemon_summary(bot, pokemon: dict):
+    """Helper to rebuild the Pokemon summary embed and actions view."""
+    if not pokemon:
+        return None, None
+
+    species = bot.species_db.get_species(pokemon['species_dex_number'])
+    move_data_list = []
+    for move in pokemon.get('moves', []):
+        move_data = bot.moves_db.get_move(move.get('move_id')) if isinstance(move, dict) else None
+        if move_data:
+            move_data_list.append(move_data)
+
+    embed = EmbedBuilder.pokemon_summary(pokemon, species, move_data_list)
+    view = PokemonActionsView(bot, pokemon, species)
+    return embed, view
 
 
 class PokemonManagementCog(commands.Cog):
@@ -68,18 +90,8 @@ class PokemonManagementCog(commands.Cog):
             await interaction.response.send_message("[X] This isn't your Pokemon!", ephemeral=True)
             return
         
-        # Get species and move data
-        species = self.bot.species_db.get_species(pokemon['species_dex_number'])
-        move_data_list = []
-        for move in pokemon['moves']:
-            move_data = self.bot.moves_db.get_move(move['move_id'])
-            if move_data:
-                move_data_list.append(move_data)
-        
+        embed, view = _build_pokemon_summary(self.bot, pokemon)
 
-        embed = EmbedBuilder.pokemon_summary(pokemon, species, move_data_list)
-        view = PokemonActionsView(self.bot, pokemon, species)
-        
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
@@ -124,17 +136,8 @@ class PartyManagementView(View):
             await interaction.response.send_message("[X] Pokemon not found!", ephemeral=True)
             return
         
-        species = self.bot.species_db.get_species(pokemon['species_dex_number'])
-        move_data_list = []
-        for move in pokemon['moves']:
-            move_data = self.bot.moves_db.get_move(move['move_id'])
-            if move_data:
-                move_data_list.append(move_data)
-        
+        embed, view = _build_pokemon_summary(self.bot, pokemon)
 
-        embed = EmbedBuilder.pokemon_summary(pokemon, species, move_data_list)
-        view = PokemonActionsView(self.bot, pokemon, species)
-        
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
@@ -262,6 +265,7 @@ class PokemonActionsView(View):
         self.bot = bot
         self.pokemon = pokemon
         self.species = species
+        self.trainer = self.bot.player_manager.get_player(pokemon.get('owner_discord_id'))
 
         # Check if Pokemon can evolve and add button dynamically
         if hasattr(bot, 'item_usage_manager'):
@@ -270,13 +274,55 @@ class PokemonActionsView(View):
                 self.add_evolution_button()
 
         self._set_item_button_label()
+
+        if hasattr(self, 'partner_up_button') and self.partner_up_button in self.children:
+            if not self._should_show_partner_button():
+                self.remove_item(self.partner_up_button)
+
+    def _should_show_partner_button(self) -> bool:
+        if self.pokemon.get('is_partner'):
+            return False
+        if self.trainer and getattr(self.trainer, 'partner_pokemon_id', None):
+            return False
+        return True
     
     @discord.ui.button(label="⭐️ Partner Up", style=discord.ButtonStyle.success, row=0)
     async def partner_up_button(self, interaction: discord.Interaction, button: Button):
-        """Placeholder for future partner functionality."""
-        await interaction.response.send_message(
-            "⭐️ Partner features are coming soon! Stay tuned for team-up updates.",
-            ephemeral=True,
+        """Begin the partner confirmation flow."""
+        trainer = self.trainer or self.bot.player_manager.get_player(interaction.user.id)
+
+        if interaction.user.id != self.pokemon.get('owner_discord_id'):
+            await interaction.response.send_message("[X] This isn't your Pokemon!", ephemeral=True)
+            return
+
+        if trainer and getattr(trainer, 'partner_pokemon_id', None):
+            await interaction.response.send_message(
+                "[X] You've already chosen a partner Pokemon.",
+                ephemeral=True,
+            )
+            return
+
+        if self.pokemon.get('is_partner'):
+            await interaction.response.send_message(
+                "[X] This Pokemon is already set as a partner.",
+                ephemeral=True,
+            )
+            return
+
+        name = _get_pokemon_display_name(self.pokemon, self.species)
+        intro_embed = discord.Embed(
+            title=f"Partner up with {name}?",
+            description=(
+                "Partnering with this Pokémon will make them your best friend and constant companion. "
+                "This is your eternal vow to push each other forward and reach for your dreams as one. "
+                "Together, anything is possible."
+            ),
+            color=discord.Color.gold(),
+        )
+
+        await interaction.response.edit_message(
+            embed=intro_embed,
+            view=PartnerIntroView(self.bot, self.pokemon, self.species),
         )
 
     @discord.ui.button(label="✏️ Nickname", style=discord.ButtonStyle.primary, row=0)
@@ -524,6 +570,132 @@ class PokemonActionsView(View):
         """Update the item button label based on held item state."""
         if hasattr(self, 'item_button'):
             self.item_button.label = "Take Item" if self.pokemon.get('held_item') else "Give Item"
+
+
+class PartnerIntroView(View):
+    """First step of the partner confirmation flow."""
+
+    def __init__(self, bot, pokemon: dict, species: dict):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.pokemon = pokemon
+        self.species = species
+
+    async def _return_to_actions(self, interaction: discord.Interaction):
+        refreshed = self.bot.player_manager.get_pokemon(self.pokemon['pokemon_id'])
+        embed, view = _build_pokemon_summary(self.bot, refreshed)
+        if embed and view:
+            await interaction.response.edit_message(embed=embed, view=view)
+        else:
+            await interaction.response.send_message("[X] Pokemon not found.", ephemeral=True)
+
+    @discord.ui.button(label="Let's do it!", style=discord.ButtonStyle.success)
+    async def continue_button(self, interaction: discord.Interaction, button: Button):
+        name = _get_pokemon_display_name(self.pokemon, self.species)
+        confirm_embed = discord.Embed(
+            title="This decision cannot be undone.",
+            description=f"Are you sure you wish to partner with {name}?",
+            color=discord.Color.orange(),
+        )
+        await interaction.response.edit_message(
+            embed=confirm_embed,
+            view=PartnerFinalConfirmView(self.bot, self.pokemon, self.species),
+        )
+
+    @discord.ui.button(label="Let me think…", style=discord.ButtonStyle.secondary)
+    async def cancel_button(self, interaction: discord.Interaction, button: Button):
+        await self._return_to_actions(interaction)
+
+
+class PartnerFinalConfirmView(View):
+    """Final confirmation for locking in a partner."""
+
+    def __init__(self, bot, pokemon: dict, species: dict):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.pokemon = pokemon
+        self.species = species
+
+    async def _return_to_actions(self, interaction: discord.Interaction):
+        refreshed = self.bot.player_manager.get_pokemon(self.pokemon['pokemon_id'])
+        embed, view = _build_pokemon_summary(self.bot, refreshed)
+        if embed and view:
+            await interaction.response.edit_message(embed=embed, view=view)
+        else:
+            await interaction.response.send_message("[X] Pokemon not found.", ephemeral=True)
+
+    async def _send_congrats_embed(self, interaction: discord.Interaction, trainer, pokemon: dict):
+        species = self.species or self.bot.species_db.get_species(pokemon['species_dex_number'])
+        name = _get_pokemon_display_name(pokemon, species)
+
+        congrats_embed = discord.Embed(
+            title="A New Partnership!",
+            description=(
+                f"{trainer.trainer_name} and {name} have become partners. "
+                "May their dreams come true together in Reverie."
+            ),
+            color=discord.Color.gold(),
+        )
+
+        if getattr(trainer, 'avatar_url', None):
+            congrats_embed.set_thumbnail(url=trainer.avatar_url)
+
+        sprite_url = PokemonSpriteHelper.get_sprite(
+            species.get('name'),
+            species.get('dex_number'),
+            shiny=bool(pokemon.get('is_shiny')),
+            form=pokemon.get('form'),
+            gender=pokemon.get('gender'),
+        )
+
+        if isinstance(sprite_url, list):
+            sprite_url = sprite_url[0]
+
+        if sprite_url:
+            congrats_embed.set_image(url=sprite_url)
+
+        await interaction.followup.send(embed=congrats_embed)
+
+    @discord.ui.button(label="Yes, together!", style=discord.ButtonStyle.success)
+    async def finalize_button(self, interaction: discord.Interaction, button: Button):
+        trainer = self.bot.player_manager.get_player(interaction.user.id)
+        if not trainer:
+            await interaction.response.send_message("[X] Trainer profile not found.", ephemeral=True)
+            return
+
+        already_partnered = getattr(trainer, 'partner_pokemon_id', None) == self.pokemon.get('pokemon_id')
+
+        if getattr(trainer, 'partner_pokemon_id', None) and not already_partnered:
+            await interaction.response.send_message("[X] You've already chosen a partner Pokemon.", ephemeral=True)
+            return
+
+        success, message = self.bot.player_manager.set_partner_pokemon(
+            interaction.user.id,
+            self.pokemon['pokemon_id'],
+        )
+
+        refreshed = self.bot.player_manager.get_pokemon(self.pokemon['pokemon_id'])
+        embed, view = _build_pokemon_summary(self.bot, refreshed)
+
+        if embed and view:
+            await interaction.response.edit_message(embed=embed, view=view)
+        else:
+            await interaction.response.send_message("[X] Pokemon not found.", ephemeral=True)
+            return
+
+        if not success:
+            await interaction.followup.send(message, ephemeral=True)
+            return
+
+        if already_partnered:
+            await interaction.followup.send(message, ephemeral=True)
+            return
+
+        await self._send_congrats_embed(interaction, trainer, refreshed)
+
+    @discord.ui.button(label="No, not yet…", style=discord.ButtonStyle.secondary)
+    async def cancel_button(self, interaction: discord.Interaction, button: Button):
+        await self._return_to_actions(interaction)
 
 
 class GiveItemView(View):

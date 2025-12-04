@@ -81,6 +81,7 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
     }
 
     pokemon.stored_exp = poke_data.get('stored_exp', 0) or 0
+    pokemon.is_partner = bool(poke_data.get('is_partner'))
 
     # Recalculate stats with EVs (in case EVs were trained)
     pokemon._calculate_stats()

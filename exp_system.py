@@ -312,7 +312,23 @@ class ExpSystem:
             exp_distribution[idx] = exp_gained
         
         return exp_distribution
-    
+
+    @staticmethod
+    def apply_partner_bonus(exp_gained: int, pokemon) -> int:
+        """Apply the partner EXP bonus if applicable."""
+        is_partner = False
+        try:
+            is_partner = bool(getattr(pokemon, 'is_partner', False))
+        except Exception:
+            is_partner = False
+
+        if not is_partner and isinstance(pokemon, dict):
+            is_partner = bool(pokemon.get('is_partner'))
+
+        if is_partner:
+            return int(math.floor(exp_gained * 1.2))
+        return exp_gained
+
     @staticmethod
     def apply_exp_and_check_levelup(
         pokemon,
@@ -335,9 +351,9 @@ class ExpSystem:
         """
         if pokemon.level >= 100:
             return None
-        
+
         old_level = pokemon.level
-        
+
         # Get growth rate
         if hasattr(pokemon, 'species_data'):
             growth_rate = pokemon.species_data.get('growth_rate', 'medium_fast')
@@ -346,6 +362,8 @@ class ExpSystem:
             growth_rate = species.get('growth_rate', 'medium_fast')
         else:
             growth_rate = 'medium_fast'
+
+        exp_gained = ExpSystem.apply_partner_bonus(exp_gained, pokemon)
         
         # Apply any stored EXP if the cap allows it
         stored_exp = getattr(pokemon, "stored_exp", 0)
@@ -572,7 +590,7 @@ class ExpShareManager:
                 }
             
             results['exp_gains'][idx]['new_exp'] = pokemon.exp
-        
+
         return results
 
 

@@ -131,9 +131,10 @@ class Pokemon:
         self.in_party = False
         self.party_position = None
         self.box_position = None
-        
+
         # Special flags
         self.tera_type = None  # Could be set for Terastal
+        self.is_partner = False
 
         # Experience
         self.exp = ExpSystem.exp_to_level(level, self.growth_rate)
@@ -272,7 +273,8 @@ class Pokemon:
             'box_position': self.box_position,
             'is_shiny': 1 if self.is_shiny else 0,
             'can_mega_evolve': 0,  # Default to 0, can be set later
-            'tera_type': self.tera_type
+            'tera_type': self.tera_type,
+            'is_partner': 1 if self.is_partner else 0
         }
     
     def get_display_name(self) -> str:
@@ -378,6 +380,9 @@ class Trainer:
 
         # Following Pokemon
         self.following_pokemon_id = data.get('following_pokemon_id')
+
+        # Partner Pokemon
+        self.partner_pokemon_id = data.get('partner_pokemon_id')
     
     def get_social_stats_dict(self) -> Dict[str, Dict[str, int]]:
         """Return social stats with rank/point data keyed by display name."""
