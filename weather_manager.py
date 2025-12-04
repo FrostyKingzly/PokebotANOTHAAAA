@@ -21,18 +21,31 @@ class WeatherManager:
     REGION_SETTINGS: Dict[str, Dict] = {
         "city": {
             "display_name": "Reverie City",
-            "allowed_weathers": ["cloudy", "sunshine", "rain", "snowing"],
+            "allowed_weathers": [
+                "cloudy",
+                "sunshine",
+                "rain",
+                "snowing",
+                "thunder_storm",
+                "gentle_skies",
+            ],
             "random_duration_minutes": (30, 90),
         },
         "wild_area_alpha": {
             "display_name": "Wild Area Alpha (Forest)",
             # Same as city but without snowing or sunshine
-            "allowed_weathers": ["cloudy", "rain"],
+            "allowed_weathers": ["cloudy", "rain", "thunder_storm", "gentle_skies"],
             "random_duration_minutes": (30, 90),
         },
         "wild_area_beta": {
             "display_name": "Wild Area Beta (Canyon)",
-            "allowed_weathers": ["cloudy", "sunshine", "rain"],
+            "allowed_weathers": [
+                "cloudy",
+                "sunshine",
+                "rain",
+                "thunder_storm",
+                "gentle_skies",
+            ],
             "random_duration_minutes": (30, 90),
         },
         "wild_area_charlie": {

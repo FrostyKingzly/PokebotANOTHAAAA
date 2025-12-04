@@ -71,6 +71,15 @@ class EmbedBuilder:
         # "stamina_low": ["…"], "ranked_push": ["…"], etc.
     }
 
+    WEATHER_DISPLAY = {
+        "sunshine": {"icon": "☀️", "label": "Sunshine"},
+        "rain": {"icon": "🌧️", "label": "Raining"},
+        "snowing": {"icon": "🌨️", "label": "Snowing"},
+        "thunder_storm": {"icon": "⛈️", "label": "Thunder Storm"},
+        "cloudy": {"icon": "☁️", "label": "Cloudy"},
+        "gentle_skies": {"icon": "🌤️", "label": "Gentle Skies"},
+    }
+
     @staticmethod
     def _type_to_emoji(type_name: str) -> str:
         return EmbedBuilder.TYPE_EMOJIS.get(type_name.lower(), type_name.title())
@@ -390,8 +399,11 @@ class EmbedBuilder:
         if not weather:
             return None
 
-        weather_display = weather.replace('_', ' ').title()
-        return f"🌦️ {weather_display}"
+        normalized = weather.lower().strip()
+        display = EmbedBuilder.WEATHER_DISPLAY.get(normalized)
+        emoji = display.get("icon") if display else "🌦️"
+        label = display.get("label") if display else weather.replace('_', ' ').title()
+        return f"{emoji} {label}"
 
     @staticmethod
     def alerts_overview(alerts: List[Dict[str, str]]) -> discord.Embed:
