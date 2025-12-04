@@ -935,7 +935,7 @@ class MoveManagementView(View):
         self.bot = bot
         self.pokemon_id = pokemon_id
 
-    @discord.ui.button(label="[MOVES] Sort", style=discord.ButtonStyle.secondary, row=0)
+    @discord.ui.button(label="↕️ [MOVES] Sort", style=discord.ButtonStyle.secondary, row=0)
     async def sort_moves_button(self, interaction: discord.Interaction, button: Button):
         """Open the sort moves selector for this Pokémon."""
         from ui.embeds import EmbedBuilder
@@ -959,7 +959,7 @@ class MoveManagementView(View):
             ephemeral=True
         )
 
-    @discord.ui.button(label="[MOVES] Equip", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="☑️ [MOVES] Equip", style=discord.ButtonStyle.primary, row=0)
     async def equip_moves_button(self, interaction: discord.Interaction, button: Button):
         """Open the move equip selector for this Pokémon."""
         from ui.embeds import EmbedBuilder
@@ -985,7 +985,7 @@ class MoveManagementView(View):
             ephemeral=True
         )
 
-    @discord.ui.button(label="[BACK] Return", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="← Back", style=discord.ButtonStyle.secondary, row=1)
     async def back_button(self, interaction: discord.Interaction, button: Button):
         """Return to the main Pokemon actions view."""
         from ui.embeds import EmbedBuilder
