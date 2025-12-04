@@ -2052,7 +2052,12 @@ class BagView(View):
                 color=EmbedBuilder.PRIMARY_COLOR,
             )
             # Switch to the item selection view
-            view = BagItemSelectView(self.bot, self.player_id, self.current_category)
+            view = BagItemSelectView(
+                self.bot,
+                self.player_id,
+                self.current_category,
+                back_callback=self.back_callback,
+            )
             await interaction.response.edit_message(embed=embed, view=view)
 
         select_button.callback = select_button_callback
@@ -2131,11 +2136,18 @@ class BagView(View):
 class BagItemSelectView(View):
     """Dropdown-based item selection from the bag for a given category."""
 
-    def __init__(self, bot, player_id: int, category: str):
+    def __init__(
+        self,
+        bot,
+        player_id: int,
+        category: str,
+        back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None,
+    ):
         super().__init__(timeout=300)
         self.bot = bot
         self.player_id = player_id
         self.category = category
+        self.back_callback = back_callback
 
         # Build the item dropdown
         inventory = self.bot.player_manager.get_inventory(player_id)
@@ -2227,7 +2239,14 @@ class BagItemSelectView(View):
 
             qty = self.bot.player_manager.get_item_quantity(self.player_id, item_id)
             embed = EmbedBuilder.item_use_view(item_data, qty)
-            view = ItemActionView(self.bot, self.player_id, item_id, item_data, self.category)
+            view = ItemActionView(
+                self.bot,
+                self.player_id,
+                item_id,
+                item_data,
+                self.category,
+                back_callback=self.back_callback,
+            )
             await interaction.response.edit_message(embed=embed, view=view)
 
         select.callback = select_callback
@@ -2255,13 +2274,22 @@ class BagItemSelectView(View):
 class ItemActionView(View):
     """Actions for a specific item: use, give, discard, or go back."""
 
-    def __init__(self, bot, player_id: int, item_id: str, item_data: Dict[str, Any], category: str):
+    def __init__(
+        self,
+        bot,
+        player_id: int,
+        item_id: str,
+        item_data: Dict[str, Any],
+        category: str,
+        back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None,
+    ):
         super().__init__(timeout=300)
         self.bot = bot
         self.player_id = player_id
         self.item_id = item_id
         self.item_data = item_data
         self.category = category
+        self.back_callback = back_callback
 
         use_button = Button(
             label="Use",
@@ -2302,7 +2330,15 @@ class ItemActionView(View):
 
                 embed = EmbedBuilder.party_view(party, self.bot.species_db)
                 embed.title = f"Choose Pokémon for {self.item_data['name']}"
-                view = ItemUsePokemonSelectView(self.bot, self.player_id, self.item_id, self.item_data, self.category, quantity=1)
+                view = ItemUsePokemonSelectView(
+                    self.bot,
+                    self.player_id,
+                    self.item_id,
+                    self.item_data,
+                    self.category,
+                    quantity=1,
+                    back_callback=self.back_callback,
+                )
                 await interaction.response.edit_message(embed=embed, view=view)
                 return
 
@@ -2312,7 +2348,15 @@ class ItemActionView(View):
                 description=f"You have **{qty}**. How many do you want to use at once?",
                 color=EmbedBuilder.PRIMARY_COLOR,
             )
-            view = ItemUseQuantitySelectView(self.bot, self.player_id, self.item_id, self.item_data, self.category, max_quantity=qty)
+            view = ItemUseQuantitySelectView(
+                self.bot,
+                self.player_id,
+                self.item_id,
+                self.item_data,
+                self.category,
+                max_quantity=qty,
+                back_callback=self.back_callback,
+            )
             await interaction.response.edit_message(embed=embed, view=view)
 
         async def give_callback(interaction: discord.Interaction):
@@ -2369,7 +2413,7 @@ class ItemActionView(View):
                 description="Choose an item from the dropdown below to use, give, or discard.",
                 color=EmbedBuilder.PRIMARY_COLOR,
             )
-            view = BagItemSelectView(self.bot, self.player_id, self.category)
+            view = BagItemSelectView(self.bot, self.player_id, self.category, back_callback=self.back_callback)
             await interaction.response.edit_message(embed=embed, view=view)
 
         use_button.callback = use_callback
@@ -2387,7 +2431,16 @@ class ItemActionView(View):
 class ItemUseQuantitySelectView(View):
     """Select how many copies of an item to use at once before choosing a Pokémon."""
 
-    def __init__(self, bot, player_id: int, item_id: str, item_data: Dict[str, Any], category: str, max_quantity: int):
+    def __init__(
+        self,
+        bot,
+        player_id: int,
+        item_id: str,
+        item_data: Dict[str, Any],
+        category: str,
+        max_quantity: int,
+        back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None,
+    ):
         super().__init__(timeout=300)
         self.bot = bot
         self.player_id = player_id
@@ -2395,6 +2448,7 @@ class ItemUseQuantitySelectView(View):
         self.item_data = item_data
         self.category = category
         self.max_quantity = max_quantity
+        self.back_callback = back_callback
 
         # Build quantity options (1 up to max_quantity, but cap at 10 for readability)
         upper = min(self.max_quantity, 10)
@@ -2454,6 +2508,7 @@ class ItemUseQuantitySelectView(View):
                 self.item_data,
                 self.category,
                 quantity=chosen,
+                back_callback=self.back_callback,
             )
             await interaction.response.edit_message(embed=embed, view=view)
 
@@ -2472,7 +2527,14 @@ class ItemUseQuantitySelectView(View):
 
             qty = self.bot.player_manager.get_item_quantity(self.player_id, self.item_id)
             embed = EmbedBuilder.item_use_view(self.item_data, qty)
-            view = ItemActionView(self.bot, self.player_id, self.item_id, self.item_data, self.category)
+            view = ItemActionView(
+                self.bot,
+                self.player_id,
+                self.item_id,
+                self.item_data,
+                self.category,
+                back_callback=self.back_callback,
+            )
             await interaction.response.edit_message(embed=embed, view=view)
 
         back_button.callback = back_callback
@@ -2482,7 +2544,16 @@ class ItemUseQuantitySelectView(View):
 class ItemUsePokemonSelectView(View):
     """Select which Pokémon to use an item on."""
 
-    def __init__(self, bot, player_id: int, item_id: str, item_data: Dict[str, Any], category: str, quantity: int = 1):
+    def __init__(
+        self,
+        bot,
+        player_id: int,
+        item_id: str,
+        item_data: Dict[str, Any],
+        category: str,
+        quantity: int = 1,
+        back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None,
+    ):
         super().__init__(timeout=300)
         self.bot = bot
         self.player_id = player_id
@@ -2491,6 +2562,7 @@ class ItemUsePokemonSelectView(View):
         self.category = category
         # How many copies of the item to use in one action
         self.quantity = max(1, int(quantity))
+        self.back_callback = back_callback
 
         party = self.bot.player_manager.get_party(player_id)
         options: List[discord.SelectOption] = []
