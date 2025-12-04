@@ -146,6 +146,39 @@ class PlayerManager:
             refreshed = self._apply_passive_stamina(data)
             return Trainer(refreshed)
         return None
+
+    def get_partner_pokemon(self, discord_user_id: int) -> Optional[Dict]:
+        """Return the trainer's designated partner Pokemon, if any."""
+        trainer = self.get_player(discord_user_id)
+        if not trainer or not getattr(trainer, 'partner_pokemon_id', None):
+            return None
+        return self.get_pokemon(trainer.partner_pokemon_id)
+
+    def set_partner_pokemon(self, discord_user_id: int, pokemon_id: str) -> tuple[bool, str]:
+        """Lock in a forever partner for the trainer.
+
+        Returns a tuple of (success, message).
+        """
+
+        trainer = self.get_player(discord_user_id)
+        if not trainer:
+            return False, "[X] You need a trainer profile first."
+
+        current_partner_id = getattr(trainer, 'partner_pokemon_id', None)
+        if current_partner_id and current_partner_id != pokemon_id:
+            return False, "[X] You've already chosen a partner Pokemon."
+
+        pokemon = self.get_pokemon(pokemon_id)
+        if not pokemon or pokemon.get('owner_discord_id') != discord_user_id:
+            return False, "[X] That Pokemon doesn't belong to you."
+
+        if pokemon.get('is_partner'):
+            # Already set as partner, just ensure trainer record is synced
+            self.db.set_partner_pokemon(discord_user_id, pokemon_id)
+            return True, "✅ This Pokemon is already your partner."
+
+        self.db.set_partner_pokemon(discord_user_id, pokemon_id)
+        return True, "✅ Partner set!"
     
     def player_exists(self, discord_user_id: int) -> bool:
         """Check if player has registered"""
@@ -425,6 +458,7 @@ class PlayerManager:
             'is_shiny',
             'can_mega_evolve',
             'tera_type',
+            'is_partner',
         }
 
         updates: Dict = {}
@@ -1048,6 +1082,7 @@ class PlayerManager:
 
         current_exp = int(pokemon.get('exp', 0))
         old_level = int(pokemon.get('level', 1))
+        exp_amount = ExpSystem.apply_partner_bonus(exp_amount, pokemon)
         new_total_exp = max(0, current_exp + exp_amount)
         new_level = ExpSystem._calculate_level_from_exp(new_total_exp, growth_rate)
 

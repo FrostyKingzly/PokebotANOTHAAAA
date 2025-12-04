@@ -383,6 +383,9 @@ class PlayerDatabase:
                 -- Following Pokemon
                 following_pokemon_id TEXT,
 
+                -- Forever Partner Pokemon
+                partner_pokemon_id TEXT,
+
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -445,6 +448,9 @@ class PlayerDatabase:
                 is_shiny INTEGER DEFAULT 0,
                 can_mega_evolve INTEGER DEFAULT 0,
                 tera_type TEXT,
+
+                -- Special Flags
+                is_partner INTEGER DEFAULT 0,
 
                 caught_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -640,6 +646,7 @@ class PlayerDatabase:
 
         add_column('has_omni_ring', 'INTEGER DEFAULT 0')
         add_column('omni_ring_gimmicks', 'TEXT')
+        add_column('partner_pokemon_id', 'TEXT')
 
     def _ensure_pokemon_columns(self, cursor):
         """Add missing pokemon_instances columns when migrating older databases."""
@@ -663,6 +670,9 @@ class PlayerDatabase:
         pokeball_added = add_column('pokeball', "TEXT DEFAULT 'poke_ball'")
         if pokeball_added:
             cursor.execute("UPDATE pokemon_instances SET pokeball = 'poke_ball' WHERE pokeball IS NULL")
+
+        # Forever partner flag
+        add_column('is_partner', 'INTEGER DEFAULT 0')
 
         # Cooldown tracking for per-opponent battles
         cursor.execute(
@@ -844,6 +854,31 @@ class PlayerDatabase:
         conn.commit()
         conn.close()
 
+    def set_partner_pokemon(self, discord_user_id: int, pokemon_id: str):
+        """Mark a Pokemon as the trainer's forever partner and clear other flags."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "UPDATE pokemon_instances SET is_partner = 0 WHERE owner_discord_id = ?",
+            (discord_user_id,),
+        )
+        cursor.execute(
+            "UPDATE pokemon_instances SET is_partner = 1 WHERE pokemon_id = ?",
+            (pokemon_id,),
+        )
+        cursor.execute(
+            """
+            UPDATE trainers
+            SET partner_pokemon_id = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE discord_user_id = ?
+            """,
+            (pokemon_id, discord_user_id),
+        )
+
+        conn.commit()
+        conn.close()
+
     # ------------------------------------------------------------
     # Battle cooldown operations
     # ------------------------------------------------------------
@@ -939,16 +974,17 @@ class PlayerDatabase:
             ('ev_sp_attack', pokemon_data.get('ev_sp_attack', 0)),
             ('ev_sp_defense', pokemon_data.get('ev_sp_defense', 0)),
             ('ev_speed', pokemon_data.get('ev_speed', 0)),
-            ('moves', json.dumps(pokemon_data['moves'])),
-            ('friendship', pokemon_data.get('friendship', 70)),
-            ('bond_level', pokemon_data.get('bond_level', 0)),
-            ('in_party', pokemon_data.get('in_party', 0)),
-            ('party_position', pokemon_data.get('party_position')),
-            ('box_position', pokemon_data.get('box_position')),
-            ('is_shiny', pokemon_data.get('is_shiny', 0)),
-            ('can_mega_evolve', pokemon_data.get('can_mega_evolve', 0)),
-            ('tera_type', pokemon_data.get('tera_type')),
-        ]
+                ('moves', json.dumps(pokemon_data['moves'])),
+                ('friendship', pokemon_data.get('friendship', 70)),
+                ('bond_level', pokemon_data.get('bond_level', 0)),
+                ('in_party', pokemon_data.get('in_party', 0)),
+                ('party_position', pokemon_data.get('party_position')),
+                ('box_position', pokemon_data.get('box_position')),
+                ('is_shiny', pokemon_data.get('is_shiny', 0)),
+                ('can_mega_evolve', pokemon_data.get('can_mega_evolve', 0)),
+                ('tera_type', pokemon_data.get('tera_type')),
+                ('is_partner', pokemon_data.get('is_partner', 0)),
+            ]
 
         columns = ", ".join(name for name, _ in column_value_pairs)
         placeholders = ", ".join("?" for _ in column_value_pairs)
@@ -979,6 +1015,7 @@ class PlayerDatabase:
         if row:
             pokemon = dict(row)
             pokemon['moves'] = json.loads(pokemon['moves'])
+            pokemon['is_partner'] = bool(pokemon.get('is_partner'))
             return pokemon
         return None
     
@@ -1000,6 +1037,7 @@ class PlayerDatabase:
         for row in rows:
             pokemon = dict(row)
             pokemon['moves'] = json.loads(pokemon['moves'])
+            pokemon['is_partner'] = bool(pokemon.get('is_partner'))
             party.append(pokemon)
 
         return party
@@ -1037,6 +1075,7 @@ class PlayerDatabase:
         for row in rows:
             pokemon = dict(row)
             pokemon['moves'] = json.loads(pokemon['moves'])
+            pokemon['is_partner'] = bool(pokemon.get('is_partner'))
             boxes.append(pokemon)
 
         return boxes
