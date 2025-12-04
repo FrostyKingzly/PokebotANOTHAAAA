@@ -16,7 +16,9 @@ from social_stats import SOCIAL_STAT_DEFINITIONS, SOCIAL_STAT_ORDER
 
 class EmbedBuilder:
     """Builds Discord embeds for the bot"""
-    
+
+    ROTOM_EMOJI = "<:rotomphone:1445206692936683662>"
+
     # Color scheme
     PRIMARY_COLOR = discord.Color.blue()
     SUCCESS_COLOR = discord.Color.green()
@@ -53,6 +55,23 @@ class EmbedBuilder:
         # "status": "<:status:ID>",
     }
 
+    # Rotom quotes
+    ROTOM_QUOTES_GENERAL = [
+        "Bzzt! Rotom-Drone online! Please don't drop me this time!",
+        "Processing… processing… just kidding, I'm always fast!",
+        "Did someone say Adven-Tour?!",
+        "If you catch something cool today, promise you'll let me take a picture!",
+        "Rotom Tip: Staying hydrated!",
+        "Let's go do something productive!",
+        "I ran a system scan and found… absolutely nothing. Clean as a Whimsicott!",
+        "Reminder: I believe in you! Also reminder: Charge your phone.",
+    ]
+
+    ROTOM_QUOTES_CONTEXTUAL = {
+        # Add new context-specific quote lists here, e.g. "weather_sunny": ["…"],
+        # "stamina_low": ["…"], "ranked_push": ["…"], etc.
+    }
+
     @staticmethod
     def _type_to_emoji(type_name: str) -> str:
         return EmbedBuilder.TYPE_EMOJIS.get(type_name.lower(), type_name.title())
@@ -65,6 +84,70 @@ class EmbedBuilder:
     def _pokeball_emoji(pokemon: Dict) -> str:
         ball_id = (pokemon.get('pokeball') or DEFAULT_POKEBALL_ID).lower()
         return POKEBALL_EMOJIS.get(ball_id, POKEBALL_EMOJIS.get(DEFAULT_POKEBALL_ID, "🔴"))
+
+    @staticmethod
+    def _time_of_day(hour: int) -> str:
+        if 5 <= hour < 12:
+            return "morning"
+        if 12 <= hour < 17:
+            return "afternoon"
+        if 17 <= hour < 21:
+            return "evening"
+        return "night"
+
+    @staticmethod
+    def _rotom_context_tags(trainer: Trainer, weather_info: Optional[Dict], now: float) -> List[str]:
+        """Collect contextual tags so we can expand quotes later."""
+
+        timestamp = time.localtime(now)
+        tags = [f"time:{EmbedBuilder._time_of_day(timestamp.tm_hour)}"]
+
+        weather = None
+        if weather_info:
+            weather = weather_info.get("current_weather")
+            if weather:
+                tags.append(f"weather:{weather}")
+
+        stamina_ratio = 1.0
+        if getattr(trainer, "stamina_max", 0):
+            stamina_ratio = max(0, trainer.stamina_current) / max(1, trainer.stamina_max)
+
+        if stamina_ratio <= 0.25:
+            tags.append("stamina:low")
+        elif stamina_ratio >= 0.9:
+            tags.append("stamina:full")
+
+        ladder_points = getattr(trainer, "ladder_points", 0)
+        if ladder_points >= 50:
+            tags.append("rank:climbing")
+
+        # Additional tags can be added later without changing selection logic
+        return tags
+
+    @staticmethod
+    def _select_rotom_quote(
+        trainer: Trainer,
+        weather_info: Optional[Dict],
+        *,
+        now: Optional[float] = None,
+    ) -> str:
+        """Pick a deterministic Rotom quote for the current hour/context."""
+
+        now = now or time.time()
+        tags = EmbedBuilder._rotom_context_tags(trainer, weather_info, now)
+
+        candidates: List[str] = list(EmbedBuilder.ROTOM_QUOTES_GENERAL)
+        for tag in tags:
+            if tag in EmbedBuilder.ROTOM_QUOTES_CONTEXTUAL:
+                candidates.extend(EmbedBuilder.ROTOM_QUOTES_CONTEXTUAL[tag])
+
+        if not candidates:
+            return ""
+
+        hour_bucket = int(now // 3600)
+        selection_key = f"{hour_bucket}|{'|'.join(tags)}"
+        index = abs(hash(selection_key)) % len(candidates)
+        return candidates[index]
 
     @staticmethod
     def _calculate_display_stats(pokemon: Dict, species_data: Dict) -> Dict[str, int]:
@@ -169,6 +252,8 @@ class EmbedBuilder:
             color=EmbedBuilder.PRIMARY_COLOR
         )
 
+        weather_info: Optional[Dict] = None
+
         # Money
         embed.add_field(
             name="💰 Money",
@@ -211,6 +296,14 @@ class EmbedBuilder:
             weather_line = EmbedBuilder._format_weather_line(weather_info) if weather_info else None
             if weather_line:
                 location_value = f"{location_value}\n{weather_line}"
+
+        rotom_quote = EmbedBuilder._select_rotom_quote(
+            trainer,
+            weather_info,
+            now=time.time(),
+        )
+        if rotom_quote:
+            embed.description = f"{EmbedBuilder.ROTOM_EMOJI} {rotom_quote}"
 
         embed.add_field(
             name="📍 Location",
