@@ -3,8 +3,10 @@ Admin Cog - Admin commands for testing and management
 Commands for giving Pokemon, items, and money to players
 """
 
+import math
 import random
 import re
+import time
 
 import discord
 from discord import app_commands
@@ -12,6 +14,7 @@ from discord.ext import commands
 from typing import Optional, Dict
 
 from guild_config import set_rank_announcement_channel
+from weather_manager import WeatherManager
 
 from models import Pokemon
 from sprite_helper import PokemonSpriteHelper
@@ -36,6 +39,20 @@ STAT_ROLL_MODIFIER_PER_RANK = 2
 SOCIAL_STAT_CHOICES = [
     app_commands.Choice(name=SOCIAL_STAT_DEFINITIONS[key].display_name, value=key)
     for key in SOCIAL_STAT_ORDER
+]
+
+WEATHER_REGION_CHOICES = [
+    app_commands.Choice(name=data["display_name"], value=region_id)
+    for region_id, data in WeatherManager.REGION_SETTINGS.items()
+]
+
+WEATHER_CONDITION_CHOICES = [
+    app_commands.Choice(name=condition.replace('_', ' ').title(), value=condition)
+    for condition in sorted({
+        weather
+        for settings in WeatherManager.REGION_SETTINGS.values()
+        for weather in settings["allowed_weathers"]
+    })
 ]
 
 
@@ -1127,6 +1144,84 @@ Modest Nature
         await interaction.response.send_message(
             f"✅ Deleted {user.mention}'s trainer data. They can register again whenever they're ready.",
             ephemeral=True
+        )
+
+    # ============================================================
+    # WEATHER CONTROL
+    # ============================================================
+
+    @app_commands.command(name="set_weather", description="[ADMIN] Force weather for a region")
+    @app_commands.describe(
+        region="Which region should be affected?",
+        weather="Which weather condition to set?",
+        duration_minutes="How many minutes should this weather last?",
+    )
+    @app_commands.choices(region=WEATHER_REGION_CHOICES, weather=WEATHER_CONDITION_CHOICES)
+    @app_commands.check(is_admin)
+    async def set_weather(
+        self,
+        interaction: discord.Interaction,
+        region: app_commands.Choice[str],
+        weather: app_commands.Choice[str],
+        duration_minutes: app_commands.Range[int, 1, 720] = 30,
+    ):
+        """Manually set weather for a region for a limited time."""
+
+        manager = getattr(self.bot, "weather_manager", None)
+        if not manager:
+            await interaction.response.send_message(
+                "⚠️ Weather manager is not configured.",
+                ephemeral=True,
+            )
+            return
+
+        try:
+            state = manager.set_weather(region.value, weather.value, duration_minutes)
+        except ValueError as e:
+            await interaction.response.send_message(str(e), ephemeral=True)
+            return
+
+        region_name = WeatherManager.REGION_SETTINGS[region.value]["display_name"]
+        weather_display = weather.value.replace('_', ' ').title()
+
+        await interaction.response.send_message(
+            f"✅ Set weather for **{region_name}** to **{weather_display}** for {duration_minutes} minutes.\n"
+            f"It will revert to random rotation after that.",
+            ephemeral=True,
+        )
+
+    @app_commands.command(name="set_weather_random", description="[ADMIN] Return a region to random weather")
+    @app_commands.describe(region="Which region should roll random weather?")
+    @app_commands.choices(region=WEATHER_REGION_CHOICES)
+    @app_commands.check(is_admin)
+    async def set_weather_random(
+        self,
+        interaction: discord.Interaction,
+        region: app_commands.Choice[str],
+    ):
+        """Resume random weather changes for a region and roll the next condition."""
+
+        manager = getattr(self.bot, "weather_manager", None)
+        if not manager:
+            await interaction.response.send_message(
+                "⚠️ Weather manager is not configured.",
+                ephemeral=True,
+            )
+            return
+
+        try:
+            state = manager.set_random_mode(region.value, reroll=True)
+        except ValueError as e:
+            await interaction.response.send_message(str(e), ephemeral=True)
+            return
+
+        region_name = WeatherManager.REGION_SETTINGS[region.value]["display_name"]
+        weather_display = (state.get("current_weather") or "Unknown").replace('_', ' ').title()
+        remaining_minutes = math.ceil(max(0, state.get("expires_at", 0) - time.time()) / 60)
+
+        await interaction.response.send_message(
+            f"🔀 {region_name} weather is now random. Current roll: **{weather_display}** (~{remaining_minutes}m left).",
+            ephemeral=True,
         )
 
     # ============================================================
