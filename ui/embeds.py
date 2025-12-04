@@ -311,7 +311,8 @@ class EmbedBuilder:
             now=time.time(),
         )
         if rotom_quote:
-            embed.description = f"{EmbedBuilder.ROTOM_EMOJI} “{rotom_quote}”"
+            # Add a spacer after the Rotom quote so the following fields have breathing room
+            embed.description = f"{EmbedBuilder.ROTOM_EMOJI} “{rotom_quote}”\n\u200b"
 
         embed.add_field(
             name="📍 Location",
