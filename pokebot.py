@@ -165,7 +165,7 @@ async def phone_command(interaction: discord.Interaction):
     
     # Create main menu embed
     rank_manager = getattr(interaction.client, "rank_manager", None)
-    location_manager = getattr(bot, "location_manager", None)
+    location_manager = getattr(interaction.client, "location_manager", None)
     embed = EmbedBuilder.main_menu(
         player_data,
         rank_manager=rank_manager,
