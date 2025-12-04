@@ -311,7 +311,7 @@ class EmbedBuilder:
             now=time.time(),
         )
         if rotom_quote:
-            embed.description = f"{EmbedBuilder.ROTOM_EMOJI} “{rotom_quote}”"
+            embed.description = f"{EmbedBuilder.ROTOM_EMOJI} “{rotom_quote}”\n\u200b"
 
         embed.add_field(
             name="📍 Location",
@@ -325,9 +325,6 @@ class EmbedBuilder:
             value=trainer.get_stamina_display(),
             inline=False
         )
-
-        # Spacer for readability between stamina and rank
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
 
         # Rank
         rank_lines = []
