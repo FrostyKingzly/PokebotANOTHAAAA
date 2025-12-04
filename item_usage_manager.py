@@ -60,22 +60,62 @@ class ItemUsageManager:
         key = key.replace('.', '')
         return key
 
+
     def _load_evolution_data(self) -> Dict:
-        """Load or create evolution data mapping"""
+        """Load evolution data from disk and ensure every species is covered."""
         data_dir = Path(__file__).resolve().parent / 'data'
         json_path = data_dir / 'evolution_data.json'
 
+        loaded_data: Dict[str, Dict] = {}
         if json_path.exists():
             try:
                 with open(json_path, 'r', encoding='utf-8') as f:
                     raw = json.load(f)
-                # Normalize keys for consistent lookups
-                return {self._normalize_species_key(k): v for k, v in raw.items()}
+                loaded_data = {self._normalize_species_key(k): v for k, v in raw.items()}
             except Exception:
                 # Fall back to the baked-in defaults if the JSON is malformed
-                pass
+                loaded_data = {}
 
-        # Comprehensive evolution data based on official Pokemon games (default fallback)
+        base_data = self._default_evolution_data()
+        evolution_data: Dict[str, Dict] = {**base_data, **loaded_data}
+
+        # Ensure every species in the local dex has an entry so lookups never fail.
+        species_names = self._load_species_names()
+        missing_species = []
+        for name in species_names:
+            if name not in evolution_data:
+                evolution_data[name] = {'method': 'none'}
+                missing_species.append(name)
+
+        if missing_species:
+            print(
+                f"[EvolutionData] Added {len(missing_species)} placeholder entries. "
+                "Run tools/generate_evolution_data.py to refresh with full evolution rules."
+            )
+
+        return evolution_data
+
+    def _load_species_names(self) -> set:
+        """Load all species names from the bundled dex for coverage checks."""
+        species_path = Path(__file__).resolve().parent / 'data' / 'pokemon_species.json'
+        names = set()
+        try:
+            with open(species_path, 'r', encoding='utf-8') as f:
+                species_data = json.load(f)
+            for entry in species_data.values():
+                norm = self._normalize_species_key(entry.get('name'))
+                if norm:
+                    names.add(norm)
+                for form in entry.get('forms', []):
+                    form_name = self._normalize_species_key(form.get('name'))
+                    if form_name:
+                        names.add(form_name)
+        except Exception:
+            pass
+        return names
+
+    def _default_evolution_data(self) -> Dict:
+        """Baked-in fallback evolution data for when no external dataset is present."""
         return {
             # Gen 1 - Level evolutions
             'bulbasaur': {'method': 'level', 'level': 16, 'into': 'ivysaur'},
@@ -126,7 +166,6 @@ class ItemUsageManager:
             'ponyta': {'method': 'level', 'level': 40, 'into': 'rapidash'},
             'slowpoke': {'method': 'level', 'level': 37, 'into': 'slowbro'},
             'magnemite': {'method': 'level', 'level': 30, 'into': 'magneton'},
-            'farfetchd': {'method': 'none'},  # Doesn't evolve
             'doduo': {'method': 'level', 'level': 31, 'into': 'dodrio'},
             'seel': {'method': 'level', 'level': 34, 'into': 'dewgong'},
             'grimer': {'method': 'level', 'level': 38, 'into': 'muk'},
@@ -139,7 +178,7 @@ class ItemUsageManager:
             'voltorb': {'method': 'level', 'level': 30, 'into': 'electrode'},
             'exeggcute': {'method': 'stone', 'stone': 'leaf_stone', 'into': 'exeggutor'},
             'cubone': {'method': 'level', 'level': 28, 'into': 'marowak'},
-            'hitmon chan': {'method': 'none'},  # Doesn't evolve
+            'hitmon chan': {'method': 'none'},
             'hitmonchan': {'method': 'none'},
             'lickitung': {'method': 'level', 'level': 33, 'move': 'rollout', 'into': 'lickilicky'},
             'koffing': {'method': 'level', 'level': 35, 'into': 'weezing'},
@@ -193,10 +232,7 @@ class ItemUsageManager:
             'frigibax': {'method': 'level', 'level': 35, 'into': 'arctibax'},
             'arctibax': {'method': 'level', 'level': 54, 'into': 'baxcalibur'},
             'baxcalibur': {'method': 'none'},
-
-            # Add more as needed - this covers Gen 1-2 basics
         }
-
     def can_evolve(self, pokemon: Dict) -> Tuple[bool, Optional[str], Optional[Dict]]:
         """
         Check if Pokemon can evolve
