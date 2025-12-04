@@ -12,8 +12,16 @@ class LearnsetDatabase:
     
     def __init__(self, filepath: str):
         """Load learnsets from JSON file"""
-        with open(filepath, 'r', encoding='utf-8') as f:
-            self.data = json.load(f)
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                self.data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError) as exc:
+            # If the learnset data is missing or corrupted, avoid crashing the bot
+            # and fall back to an empty dataset instead.
+            # This preserves functionality for commands that can operate without
+            # learnset data while surfacing the underlying issue for debugging.
+            print(f"Failed to load learnsets from {filepath}: {exc}")
+            self.data = {}
     
     def get_learnset(self, pokemon_name: str) -> Optional[Dict]:
         """
