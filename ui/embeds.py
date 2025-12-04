@@ -550,7 +550,7 @@ class EmbedBuilder:
 
             embed.add_field(
                 name=f"{i}. {pokeball} {name} Lv. {pokemon['level']}",
-                value=f"{type_emojis}\n{hp_text}",
+                value=f"{type_emojis} {hp_text}",
                 inline=True
             )
 
