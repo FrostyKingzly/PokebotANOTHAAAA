@@ -43,6 +43,23 @@ class ItemUsageManager:
             'exp_candy_xl': 30000,
         }
 
+    def _normalize_species_key(self, raw: Optional[str]) -> Optional[str]:
+        """Normalize species identifiers for robust lookups.
+
+        Evolution data keys use lowercase with hyphens. Player data can contain
+        spaces, underscores, mixed casing, or trailing punctuation. This helper
+        standardizes names so every lookup path (species name, dex number, held
+        item checks) resolves to the same key.
+        """
+        if not raw:
+            return None
+
+        key = str(raw).strip().lower()
+        key = key.replace('_', '-').replace(' ', '-')
+        key = key.replace("'", "")
+        key = key.replace('.', '')
+        return key
+
     def _load_evolution_data(self) -> Dict:
         """Load or create evolution data mapping"""
         data_dir = Path(__file__).resolve().parent / 'data'
@@ -53,7 +70,7 @@ class ItemUsageManager:
                 with open(json_path, 'r', encoding='utf-8') as f:
                     raw = json.load(f)
                 # Normalize keys for consistent lookups
-                return {str(k).lower(): v for k, v in raw.items()}
+                return {self._normalize_species_key(k): v for k, v in raw.items()}
             except Exception:
                 # Fall back to the baked-in defaults if the JSON is malformed
                 pass
@@ -187,18 +204,17 @@ class ItemUsageManager:
         """
         # Resolve species name robustly. Prefer an explicit species_name field,
         # but fall back to looking up via species_dex_number if needed.
-        raw_name = pokemon.get('species_name')
         species_name: Optional[str] = None
-
+        raw_name = pokemon.get('species_name')
         if raw_name:
-            species_name = str(raw_name).lower()
+            species_name = self._normalize_species_key(raw_name)
         else:
             try:
                 species_id = pokemon.get('species_dex_number')
                 if species_id and self.bot.species_db:
                     species_data = self.bot.species_db.get_species(species_id)
                     if species_data:
-                        species_name = str(species_data.get('name', '')).lower()
+                        species_name = self._normalize_species_key(species_data.get('name', ''))
             except Exception:
                 species_name = None
 
@@ -225,6 +241,10 @@ class ItemUsageManager:
             return False, 'stone', evolution  # Needs item to evolve
 
         elif method == 'trade':
+            # Support trade evolutions when holding the required item (e.g., Metal Coat)
+            required_item = evolution.get('item')
+            if required_item and pokemon.get('held_item') == required_item:
+                return True, 'trade', evolution
             return False, 'trade', evolution
 
         elif method == 'friendship':
@@ -233,7 +253,14 @@ class ItemUsageManager:
                 return True, 'friendship', evolution
 
         elif method == 'multiple':
-            return False, 'multiple', evolution  # Eevee-like, needs item choice
+            # Multiple options (e.g., Eevee). If a compatible item is already held,
+            # surface the option so the evolution button can appear.
+            held_item = pokemon.get('held_item')
+            if held_item:
+                for option in evolution.get('evolutions', []):
+                    if option.get('method') == 'stone' and option.get('stone') == held_item:
+                        return True, 'multiple', {**option, 'into': option.get('into')}
+            return False, 'multiple', evolution  # Needs item choice
 
         return False, None, None
 
@@ -455,7 +482,7 @@ class ItemUsageManager:
         """Use an evolution stone or item"""
         raw_name = pokemon.get('species_name')
         lookup_key = (raw_name or '').lower()
-        evolution = self.evolution_data.get(lookup_key)
+        evolution = self.evolution_data.get(self._normalize_species_key(lookup_key))
 
         if not evolution:
             # Try to get a readable name for messaging
