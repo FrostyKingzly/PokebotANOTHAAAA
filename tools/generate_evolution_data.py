@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List
 from urllib.request import urlopen
 
+DATA_DIR = Path(__file__).resolve().parents[1] / "pokeapi_csv_bot"
 BASE_URL = "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/"
 CSV_FILES = {
     "pokemon_species": "pokemon_species.csv",
@@ -20,7 +21,15 @@ CSV_FILES = {
 
 
 def fetch_csv(name: str) -> List[Dict[str, str]]:
-    url = BASE_URL + CSV_FILES[name]
+    csv_name = CSV_FILES[name]
+    local_path = DATA_DIR / csv_name
+
+    if local_path.exists():
+        with open(local_path, "r", encoding="utf-8") as f:
+            content = f.read().splitlines()
+        return list(csv.DictReader(content))
+
+    url = BASE_URL + csv_name
     with urlopen(url) as resp:
         content = resp.read().decode("utf-8")
     return list(csv.DictReader(content.splitlines()))
