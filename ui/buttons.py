@@ -362,6 +362,7 @@ class MainMenuView(View):
             party,
             can_heal_party=can_heal_party,
             back_callback=lambda i: _show_main_menu(i, self.bot, interaction.user.id),
+            trainer_name=trainer_name,
         )
 
         await interaction.response.edit_message(embed=embed, view=view)
@@ -1150,12 +1151,21 @@ class PokemonDetailsFallbackView(View):
 class PartyManagementView(View):
     """Party management interface"""
 
-    def __init__(self, bot, party: list, *, can_heal_party: bool = False, back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None):
+    def __init__(
+        self,
+        bot,
+        party: list,
+        *,
+        can_heal_party: bool = False,
+        back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None,
+        trainer_name: Optional[str] = None,
+    ):
         super().__init__(timeout=300)
         self.bot = bot
         self.party = party
         self.can_heal_party = can_heal_party
         self.back_callback = back_callback
+        self.trainer_name = trainer_name
 
         # Add Pokemon select menu
         options = []
@@ -1230,6 +1240,24 @@ class PartyManagementView(View):
 
         if self.back_callback:
             _add_back_button(self, self.back_callback)
+
+    async def show_party_overview(self, interaction: discord.Interaction):
+        from ui.embeds import EmbedBuilder
+
+        party = self.bot.player_manager.get_party(interaction.user.id)
+        trainer = self.bot.player_manager.get_player(interaction.user.id)
+        trainer_name = getattr(trainer, "trainer_name", None) if trainer else self.trainer_name
+
+        embed = EmbedBuilder.party_view(party, self.bot.species_db, trainer_name=trainer_name)
+        view = PartyManagementView(
+            self.bot,
+            party,
+            can_heal_party=self.can_heal_party,
+            back_callback=self.back_callback,
+            trainer_name=trainer_name,
+        )
+
+        await interaction.response.edit_message(embed=embed, view=view)
     
     async def pokemon_callback(self, interaction: discord.Interaction):
         """Show detailed Pokemon info"""
@@ -1274,8 +1302,9 @@ class PartyManagementView(View):
             view = ManagementPokemonActionsView(self.bot, pokemon_data, species_data)
         else:
             view = PokemonDetailsFallbackView()
+        _add_back_button(view, self.show_party_overview)
 
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.response.edit_message(embed=embed, view=view)
     
 
     async def swap_party_callback(self, interaction: discord.Interaction):
