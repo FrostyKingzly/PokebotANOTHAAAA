@@ -316,8 +316,13 @@ class BattleCog(commands.Cog):
 
             await self._send_raid_sendouts(interaction, battle)
 
+            field_embed = self._create_field_effects_embed(battle)
+
             if battle_begin_embed:
                 await interaction.followup.send(embed=battle_begin_embed)
+
+            if field_embed:
+                await interaction.followup.send(embed=field_embed)
 
             await interaction.followup.send(embed=status_embed)
             await interaction.followup.send(embed=party_embed, view=view)
@@ -472,27 +477,9 @@ class BattleCog(commands.Cog):
                     await interaction.followup.send(embed=send_embed)
 
         # If there are entry messages or field effects, send them in a final embed
-        if entry_messages or getattr(battle, "weather", None) or getattr(battle, "terrain", None):
-            effects_embed = discord.Embed(
-                title=f"{FIELD} Field Effects",
-                color=discord.Color.blurple()
-            )
-
-            if entry_messages:
-                effects_embed.description = "\n".join([f"• {msg}" for msg in entry_messages])
-
-            fields = []
-            if getattr(battle, "weather", None):
-                wt = getattr(battle, "weather_turns", None)
-                fields.append(f"Weather: **{battle.weather.title()}**" + (f" ({wt} turns)" if wt else ""))
-            if getattr(battle, "terrain", None):
-                tt = getattr(battle, "terrain_turns", None)
-                fields.append(f"Terrain: **{battle.terrain.title()}**" + (f" ({tt} turns)" if tt else ""))
-
-            if fields:
-                effects_embed.add_field(name="Conditions", value="\n".join(fields), inline=False)
-
-            await interaction.followup.send(embed=effects_embed)
+        field_embed = self._create_field_effects_embed(battle, entry_messages)
+        if field_embed:
+            await interaction.followup.send(embed=field_embed)
 
         # 3) Main action embed + view
         main_embed = self._create_battle_embed(battle)
@@ -508,6 +495,33 @@ class BattleCog(commands.Cog):
         except Exception:
             filled = 0
         return ("🟩" * filled) + ("⬜" * (10 - filled))
+
+    def _create_field_effects_embed(self, battle, entry_messages: Optional[list[str]] = None) -> Optional[discord.Embed]:
+        entry_messages = entry_messages or list(getattr(battle, "entry_messages", []) or [])
+
+        if not (entry_messages or getattr(battle, "weather", None) or getattr(battle, "terrain", None)):
+            return None
+
+        effects_embed = discord.Embed(
+            title=f"{FIELD} Field Effects",
+            color=discord.Color.blurple()
+        )
+
+        if entry_messages:
+            effects_embed.description = "\n".join([f"• {msg}" for msg in entry_messages])
+
+        fields = []
+        if getattr(battle, "weather", None):
+            wt = getattr(battle, "weather_turns", None)
+            fields.append(f"Weather: **{battle.weather.title()}**" + (f" ({wt} turns)" if wt else ""))
+        if getattr(battle, "terrain", None):
+            tt = getattr(battle, "terrain_turns", None)
+            fields.append(f"Terrain: **{battle.terrain.title()}**" + (f" ({tt} turns)" if tt else ""))
+
+        if fields:
+            effects_embed.add_field(name="Conditions", value="\n".join(fields), inline=False)
+
+        return effects_embed
 
     def _get_pokeball_id(self, mon) -> str:
         if hasattr(mon, 'pokeball') and getattr(mon, 'pokeball'):
@@ -1023,8 +1037,9 @@ class BattleCog(commands.Cog):
             raid_name = getattr(raid_mon, 'species_name', opponent_name)
             if result == 'trainer':
                 desc = (
-                    f"Dreamlites dissipate from {raid_name}…\n\n"
-                    f"***The Rogue {raid_name} is defeated!!! Victory!!!***"
+                    f"The Dreamlites dissipate…\n\n"
+                    f"***The Rogue {raid_name} Fainted!!!***\n\n"
+                    "***Victory!!!***"
                 )
                 title = 'Raid Over'
                 color = discord.Color.gold()
@@ -1528,10 +1543,19 @@ class PartySelect(discord.ui.Select):
                     await interaction.followup.send(embed=send_embed)
                 battle = parent_view.engine.get_battle(parent_view.battle_id)
                 if battle:
-                    await interaction.followup.send(
-                        embed=cog._create_battle_embed(battle),
-                        view=cog._create_battle_view(battle),
-                    )
+                    if battle.battle_format == BattleFormat.RAID:
+                        await interaction.followup.send(
+                            embed=cog._create_raid_status_embed(battle),
+                        )
+                        await interaction.followup.send(
+                            embed=cog._create_raid_party_embed(battle),
+                            view=cog._create_battle_view(battle),
+                        )
+                    else:
+                        await interaction.followup.send(
+                            embed=cog._create_battle_embed(battle),
+                            view=cog._create_battle_view(battle),
+                        )
             else:
                 text = "\n".join(messages) or "A new Pokémon entered the battle."
                 await interaction.followup.send(text)
