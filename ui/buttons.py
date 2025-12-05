@@ -1,6 +1,7 @@
 """Button Views - Interactive Discord UI components"""
 
 import logging
+import random
 
 import discord
 from discord.ui import Button, View, Select
@@ -3665,7 +3666,8 @@ class RaidReadyCheckView(View):
             battle_type=BattleType.TRAINER if BattleType else None,
             battle_format=BattleFormat.RAID if BattleFormat else None,
             opponent_name=f"Rogue {raid_boss.species_name}",
-            opponent_id=raid.created_by,
+            # Use a negative ID to avoid key collisions with trainer actions
+            opponent_id=-(raid.created_by or random.randint(1000, 9999)),
             raid_party_size=len(participant_entries) or 1,
         )
 
