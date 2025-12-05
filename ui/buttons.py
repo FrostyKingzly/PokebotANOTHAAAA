@@ -3599,6 +3599,8 @@ class RaidReadyCheckView(View):
         trainer_party: List = []
         trainer_names: List[str] = []
         errors: List[str] = []
+        participant_entries: List[Dict[str, Any]] = []
+        remaining_slots = 6
 
         for user_id in raid.join_order:
             if user_id not in ready_ids:
@@ -3618,10 +3620,27 @@ class RaidReadyCheckView(View):
                 errors.append(f"<@{user_id}> can't battle: {error or 'No Pokémon ready.'}")
                 continue
 
-            trainer_party.extend(party)
-            trainer_names.append(getattr(trainer, "trainer_name", f"Trainer {user_id}"))
+            if remaining_slots <= 0:
+                break
 
-            if len(trainer_party) >= 6:
+            trainer_name = getattr(trainer, "trainer_name", f"Trainer {user_id}")
+            allowed_party = party[:remaining_slots]
+            if not allowed_party:
+                continue
+
+            trainer_party.extend(allowed_party)
+            trainer_names.append(trainer_name)
+            participant_entries.append(
+                {
+                    "user_id": user_id,
+                    "trainer_name": trainer_name,
+                    "party": allowed_party,
+                }
+            )
+
+            remaining_slots -= len(allowed_party)
+
+            if remaining_slots <= 0:
                 break
 
         if errors:
@@ -3649,8 +3668,12 @@ class RaidReadyCheckView(View):
             opponent_id=raid.created_by,
         )
 
-        for uid in ready_ids:
-            battle_cog.user_battles[uid] = battle_id
+        battle = battle_cog.battle_engine.get_battle(battle_id)
+        if battle:
+            battle.raid_participants = participant_entries
+
+        for entry in participant_entries:
+            battle_cog.user_battles[entry.get("user_id")] = battle_id
 
         raid_manager.clear_raid(self.location_id)
 

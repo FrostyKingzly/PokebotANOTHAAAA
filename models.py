@@ -136,6 +136,12 @@ class Pokemon:
         self.tera_type = None  # Could be set for Terastal
         self.is_partner = False
 
+        # Raid attributes
+        self.is_raid_boss = False
+        self.raid_stat_multiplier = 1.0
+        self.raid_hp_multiplier = 1.0
+        self.raid_level_cap = None
+
         # Experience
         self.exp = ExpSystem.exp_to_level(level, self.growth_rate)
         self.stored_exp = 0
@@ -166,7 +172,7 @@ class Pokemon:
         
         # HP calculation (different formula)
         self.max_hp = int(
-            ((2 * self.base_stats['hp'] + self.ivs['hp'] + (self.evs['hp'] // 4)) 
+            ((2 * self.base_stats['hp'] + self.ivs['hp'] + (self.evs['hp'] // 4))
              * self.level // 100) + self.level + 10
         )
         
@@ -185,8 +191,19 @@ class Pokemon:
                     value = int(value * 1.1)
                 elif nature_data.get('decreased_stat') == stat:
                     value = int(value * 0.9)
-            
+
             setattr(self, stat, value)
+
+        # Apply raid multipliers (HP uses dedicated multiplier; other stats share raid_stat_multiplier)
+        if getattr(self, "is_raid_boss", False):
+            hp_multi = max(1.0, getattr(self, "raid_hp_multiplier", 1.0))
+            stat_multi = max(1.0, getattr(self, "raid_stat_multiplier", 1.0))
+
+            self.max_hp = int(self.max_hp * hp_multi)
+
+            for stat in ['attack', 'defense', 'sp_attack', 'sp_defense']:
+                boosted = int(getattr(self, stat, 0) * stat_multi)
+                setattr(self, stat, boosted)
     
     def _generate_starting_moves(self) -> List[str]:
         """

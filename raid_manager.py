@@ -18,6 +18,7 @@ class RaidPokemonConfig:
     move_ids: List[str]
     source: str = "random"
     raid_stat_multiplier: float = 2.0
+    raid_hp_multiplier: float = 5.0
     enrages_after_turns: Optional[int] = None
 
 
@@ -93,12 +94,16 @@ class RaidManager:
         # Mark this Pokemon as a raid boss for downstream systems
         pokemon.is_raid_boss = True
         pokemon.raid_stat_multiplier = 2.0
+        pokemon.raid_hp_multiplier = 5.0
         pokemon.raid_level_cap = self.MAX_LEVEL
+        pokemon._calculate_stats()
+        pokemon.current_hp = pokemon.max_hp
 
         config = RaidPokemonConfig(
             pokemon=pokemon,
             move_ids=resolved_moves,
             source=source,
+            raid_hp_multiplier=5.0,
         )
 
         encounter = RaidEncounter(
@@ -168,8 +173,11 @@ class RaidManager:
         )
         pokemon.is_raid_boss = True
         pokemon.raid_stat_multiplier = base.raid_stat_multiplier
+        pokemon.raid_hp_multiplier = base.raid_hp_multiplier
         pokemon.raid_level_cap = self.MAX_LEVEL
         pokemon.moves = pokemon._create_move_objects(list(base.move_ids))
+        pokemon._calculate_stats()
+        pokemon.current_hp = pokemon.max_hp
         return pokemon
 
     # ------------------------------------------------------------------

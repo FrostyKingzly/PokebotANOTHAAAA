@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 import math
 
 from battle_engine_v2 import BattleEngine, BattleType, BattleAction, BattleFormat, HeldItemManager
@@ -304,16 +304,23 @@ class BattleCog(commands.Cog):
         # Raid-specific dramatic intro and UI layout
         if battle.battle_format == BattleFormat.RAID:
             raid_mon = opponent_active[0] if opponent_active else None
-            await self._send_raid_intro(interaction, raid_mon)
+            battle_begin_embed = await self._send_raid_intro(interaction, raid_mon)
 
             sprite_embed = self._create_raid_sprite_embed(raid_mon)
             status_embed = self._create_raid_status_embed(battle)
+            party_embed = self._create_raid_party_embed(battle)
             view = self._create_battle_view(battle)
 
             if sprite_embed:
                 await interaction.followup.send(embed=sprite_embed)
 
-            await interaction.followup.send(embed=status_embed, view=view)
+            await self._send_raid_sendouts(interaction, battle)
+
+            if battle_begin_embed:
+                await interaction.followup.send(embed=battle_begin_embed)
+
+            await interaction.followup.send(embed=status_embed)
+            await interaction.followup.send(embed=party_embed, view=view)
             return
 
         # 1) Opening embed: differentiate wild encounters vs trainer battles
@@ -699,6 +706,44 @@ class BattleCog(commands.Cog):
         embed.set_footer(text="Raid Pokémon move after all challengers act.")
         return embed
 
+    def _create_raid_party_embed(self, battle) -> discord.Embed:
+        embed = discord.Embed(
+            title="Raid Party",
+            description="Trainers, choose your actions!",
+            color=discord.Color.blurple(),
+        )
+
+        participants = getattr(battle, "raid_participants", [])
+        entries: list[tuple[str, Any]] = []
+
+        for entry in participants:
+            trainer_name = entry.get("trainer_name") or "Trainer"
+            for mon in entry.get("party") or []:
+                entries.append((trainer_name, mon))
+                if len(entries) >= 8:
+                    break
+            if len(entries) >= 8:
+                break
+
+        if not entries:
+            for mon in getattr(battle.trainer, "party", [])[:8]:
+                entries.append((battle.trainer.battler_name, mon))
+
+        for idx, (trainer_name, mon) in enumerate(entries):
+            hp_value = f"HP: {self._hp_bar(mon)} ({max(0, mon.current_hp)}/{mon.max_hp})"
+            mon_name = self._format_pokemon_name(mon, include_level=False)
+            ball = self._get_pokeball_emoji(mon)
+            embed.add_field(
+                name=f"{ball} {trainer_name}'s {mon_name}",
+                value=hp_value,
+                inline=True,
+            )
+
+            if (idx + 1) % 4 == 0:
+                embed.add_field(name="\u200b", value="\u200b", inline=False)
+
+        return embed
+
     def _create_raid_sprite_embed(self, raid_mon) -> Optional[discord.Embed]:
         if not raid_mon:
             return None
@@ -719,27 +764,76 @@ class BattleCog(commands.Cog):
             embed.set_image(url=sprite_url)
         return embed
 
-    async def _send_raid_intro(self, interaction: discord.Interaction, raid_mon):
+    async def _send_raid_intro(self, interaction: discord.Interaction, raid_mon) -> Optional[discord.Embed]:
         name = getattr(raid_mon, "species_name", "The Pokémon") if raid_mon else "The foe"
-        intro_lines = [
-            f"The {name} gathers and absorbs dreamlites…",
-            ". . .",
-            "***!!!***",
-            f"The Rogue {name} erupts with power!",
-            "***RAID BATTLE - BEGIN!!!***",
+
+        lead_embeds = [
+            discord.Embed(
+                description="\n".join(
+                    [
+                        f"The {name} gathers and absorbs dreamlites…",
+                        ". . .",
+                    ]
+                ),
+                color=discord.Color.purple(),
+            ),
+            discord.Embed(
+                description="\n".join(
+                    [
+                        "***!!!***",
+                        f"The Rogue {name} erupts with power!",
+                    ]
+                ),
+                color=discord.Color.dark_red(),
+            ),
         ]
 
-        colors = [
-            discord.Color.purple(),
-            discord.Color.dark_purple(),
-            discord.Color.dark_red(),
-            discord.Color.red(),
-            discord.Color.gold(),
-        ]
-
-        for text, color in zip(intro_lines, colors):
-            embed = discord.Embed(description=text, color=color)
+        for embed in lead_embeds:
             await interaction.followup.send(embed=embed)
+
+        return discord.Embed(
+            description="***RAID BATTLE - BEGIN!!!***",
+            color=discord.Color.gold(),
+        )
+
+    async def _send_raid_sendouts(self, interaction: discord.Interaction, battle):
+        participants = getattr(battle, "raid_participants", [])
+        if not participants:
+            return
+
+        for entry in participants:
+            trainer_name = entry.get("trainer_name") or "Trainer"
+            party = entry.get("party") or []
+            if not party:
+                continue
+
+            lead = None
+            for mon in party:
+                if getattr(mon, "current_hp", 0) > 0:
+                    lead = mon
+                    break
+
+            if not lead:
+                continue
+
+            send_embed = discord.Embed(
+                title="Send-out",
+                description=f"**{trainer_name}** sent out **{lead.species_name}**!",
+                color=discord.Color.blurple(),
+            )
+
+            sprite_url = PokemonSpriteHelper.get_sprite(
+                lead.species_name,
+                lead.species_dex_number,
+                style='animated',
+                gender=getattr(lead, 'gender', None),
+                shiny=getattr(lead, 'is_shiny', False),
+                use_fallback=False,
+            )
+            if sprite_url:
+                send_embed.set_thumbnail(url=sprite_url)
+
+            await interaction.followup.send(embed=send_embed)
 
     @staticmethod
     def _split_faint_messages(messages: list[str]) -> tuple[list[str], list[str]]:
@@ -1073,7 +1167,10 @@ class BattleCog(commands.Cog):
         if battle.battle_format == BattleFormat.RAID:
             await interaction.followup.send(
                 embed=self._create_raid_status_embed(battle),
-                view=self._create_battle_view(battle)
+            )
+            await interaction.followup.send(
+                embed=self._create_raid_party_embed(battle),
+                view=self._create_battle_view(battle),
             )
             return
 
@@ -1118,6 +1215,18 @@ class BattleActionView(discord.ui.View):
         self.battle = battle
         self.cog = battle_cog
 
+    def _resolve_battler_id(self, interaction: discord.Interaction, battle) -> Optional[int]:
+        if battle.trainer.battler_id == interaction.user.id:
+            return battle.trainer.battler_id
+        if battle.opponent.battler_id == interaction.user.id:
+            return battle.opponent.battler_id
+
+        cog = self.cog or interaction.client.get_cog("BattleCog")
+        if battle.battle_format == BattleFormat.RAID and cog:
+            if getattr(cog, "user_battles", {}).get(interaction.user.id) == battle.battle_id:
+                return battle.trainer.battler_id
+        return None
+
     @discord.ui.button(label="⚔️ Fight", style=discord.ButtonStyle.danger, row=0)
     async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Always grab the freshest battle state
@@ -1127,12 +1236,7 @@ class BattleActionView(discord.ui.View):
             return
 
         # Work out which side this user actually controls (battler_id stores Discord IDs for players)
-        battler_id: int | None = None
-        if battle.trainer.battler_id == interaction.user.id:
-            battler_id = battle.trainer.battler_id
-        elif battle.opponent.battler_id == interaction.user.id:
-            battler_id = battle.opponent.battler_id
-
+        battler_id = self._resolve_battler_id(interaction, battle)
         if battler_id is None:
             await interaction.response.send_message("You are not a participant in this battle.", ephemeral=True)
             return
@@ -1152,7 +1256,7 @@ class BattleActionView(discord.ui.View):
             # Singles battle
             await interaction.response.send_message(
                 "Choose a move:",
-                view=MoveSelectView(battle, battler_id, self.engine),
+                view=MoveSelectView(battle, battler_id, self.engine, controller_id=interaction.user.id),
                 ephemeral=True,
             )
 
@@ -1165,12 +1269,7 @@ class BattleActionView(discord.ui.View):
             return
 
         # Work out which side this user actually controls (battler_id stores Discord IDs for players)
-        battler_id: int | None = None
-        if battle.trainer.battler_id == interaction.user.id:
-            battler_id = battle.trainer.battler_id
-        elif battle.opponent.battler_id == interaction.user.id:
-            battler_id = battle.opponent.battler_id
-
+        battler_id = self._resolve_battler_id(interaction, battle)
         if battler_id is None:
             await interaction.response.send_message("You are not a participant in this battle.", ephemeral=True)
             return
@@ -1188,6 +1287,11 @@ class BattleActionView(discord.ui.View):
         if not battle:
             await interaction.response.send_message("Battle not found.", ephemeral=True)
             return
+        battler_id = self._resolve_battler_id(interaction, battle)
+        if battler_id is None:
+            await interaction.response.send_message("You are not a participant in this battle.", ephemeral=True)
+            return
+
         cog = self.cog or interaction.client.get_cog("BattleCog")
         if not cog:
             await interaction.response.send_message("Bag system is not available right now.", ephemeral=True)
@@ -1201,6 +1305,12 @@ class BattleActionView(discord.ui.View):
             description="Forfeiting counts as a loss. Are you sure you want to run?",
             color=discord.Color.dark_red()
         )
+        battle = self.engine.get_battle(self.battle_id) or self.battle
+        battler_id = self._resolve_battler_id(interaction, battle) if battle else None
+        if battler_id is None:
+            await interaction.response.send_message("You are not a participant in this battle.", ephemeral=True)
+            return
+
         await interaction.response.send_message(embed=embed, view=ForfeitConfirmView(self), ephemeral=True)
 
     async def _handle_forfeit(self, interaction: discord.Interaction):
@@ -1223,16 +1333,25 @@ class BattleActionView(discord.ui.View):
             self.engine.end_battle(self.battle_id)
 
 class MoveSelectView(discord.ui.View):
-    def __init__(self, battle, battler_id: int, engine: BattleEngine):
+    def __init__(self, battle, battler_id: int, engine: BattleEngine, controller_id: Optional[int] = None):
         super().__init__(timeout=None)
         self.battle = battle
         self.battle_id = battle.battle_id
         self.battler_id = battler_id
         self.engine = engine
+        self.controller_id = controller_id
 
         # Figure out which active Pokémon belongs to this battler
         battler = battle.trainer if battler_id == battle.trainer.battler_id else battle.opponent
-        active_pokemon = battler.get_active_pokemon()[0] if battler.get_active_pokemon() else None
+        active_pokemon = None
+        active_list = battler.get_active_pokemon() if battler else []
+        if battle.battle_format == BattleFormat.RAID and controller_id:
+            for mon in active_list:
+                if getattr(mon, "owner_discord_id", None) == controller_id:
+                    active_pokemon = mon
+                    break
+        if not active_pokemon and active_list:
+            active_pokemon = active_list[0]
 
         if not active_pokemon:
             return
