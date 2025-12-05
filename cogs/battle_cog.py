@@ -2,12 +2,14 @@ import discord
 from discord.ext import commands
 from pathlib import Path
 from typing import Optional
+import math
 
 from battle_engine_v2 import BattleEngine, BattleType, BattleAction, BattleFormat, HeldItemManager
 from battle_exp_integration import BattleExpHandler
 from capture import simulate_throw, guaranteed_capture
 from learnset_database import LearnsetDatabase
 from sprite_helper import PokemonSpriteHelper
+from ui.embeds import EmbedBuilder
 # Emoji placeholders (fallbacks if ui.emoji is missing)
 try:
     from ui.emoji import (
@@ -299,6 +301,21 @@ class BattleCog(commands.Cog):
 
         battle_mode = battle_type or battle.battle_type
 
+        # Raid-specific dramatic intro and UI layout
+        if battle.battle_format == BattleFormat.RAID:
+            raid_mon = opponent_active[0] if opponent_active else None
+            await self._send_raid_intro(interaction, raid_mon)
+
+            sprite_embed = self._create_raid_sprite_embed(raid_mon)
+            status_embed = self._create_raid_status_embed(battle)
+            view = self._create_battle_view(battle)
+
+            if sprite_embed:
+                await interaction.followup.send(embed=sprite_embed)
+
+            await interaction.followup.send(embed=status_embed, view=view)
+            return
+
         # 1) Opening embed: differentiate wild encounters vs trainer battles
         if battle_mode == BattleType.WILD:
             enc_title = f"{SWORD} Encounter!"
@@ -505,6 +522,9 @@ class BattleCog(commands.Cog):
         return item_id.replace('_', ' ').title()
 
     def _create_battle_embed(self, battle) -> discord.Embed:
+        if battle.battle_format == BattleFormat.RAID:
+            return self._create_raid_status_embed(battle)
+
         trainer_active = battle.trainer.get_active_pokemon()
         opponent_active = battle.opponent.get_active_pokemon()
 
@@ -633,6 +653,93 @@ class BattleCog(commands.Cog):
         if include_level and level is not None:
             return f"{name} Lv{level}"
         return name
+
+    def _build_raid_hp_bars(self, mon) -> str:
+        total_segments = min(3, max(1, math.ceil(getattr(mon, "level", 1) / 100)))
+        hp_ratio = max(0.0, getattr(mon, "current_hp", 0) / max(1, getattr(mon, "max_hp", 1)))
+        segment_size = 1 / total_segments
+
+        bars: list[str] = []
+        for idx in range(total_segments):
+            filled_ratio = min(segment_size, max(0.0, hp_ratio - (idx * segment_size))) / segment_size
+            bars.append(EmbedBuilder._create_hp_bar(filled_ratio * 100, length=30))
+
+        return "\n".join(bars)
+
+    def _create_raid_status_embed(self, battle) -> discord.Embed:
+        raid_mon = (battle.opponent.get_active_pokemon() or [None])[0]
+        if not raid_mon:
+            return discord.Embed(title="Raid Battle", description="Prepare for battle!", color=discord.Color.dark_red())
+
+        hp_bars = self._build_raid_hp_bars(raid_mon)
+        type_list = getattr(raid_mon, "species_data", {}).get("types", [])
+        type_emojis = " / ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
+
+        embed = discord.Embed(
+            title=f"Rogue {raid_mon.species_name}",
+            description=f"**HP**\n{hp_bars}\n**{max(0, int(getattr(raid_mon, 'current_hp', 0)))}/{int(getattr(raid_mon, 'max_hp', 1))}**",
+            color=discord.Color.dark_red(),
+        )
+
+        embed.add_field(name="Level", value=getattr(raid_mon, "level", "?"), inline=True)
+        if type_emojis:
+            embed.add_field(name="Type", value=type_emojis, inline=True)
+
+        sprite_url = PokemonSpriteHelper.get_sprite(
+            getattr(raid_mon, "species_name", None),
+            getattr(raid_mon, "species_dex_number", None),
+            style='animated',
+            gender=getattr(raid_mon, 'gender', None),
+            shiny=getattr(raid_mon, 'is_shiny', False),
+            use_fallback=False
+        )
+        if sprite_url:
+            embed.set_thumbnail(url=sprite_url)
+
+        embed.set_footer(text="Raid Pokémon move after all challengers act.")
+        return embed
+
+    def _create_raid_sprite_embed(self, raid_mon) -> Optional[discord.Embed]:
+        if not raid_mon:
+            return None
+
+        embed = discord.Embed(
+            title=f"{raid_mon.species_name} looms large!",
+            color=discord.Color.dark_red(),
+        )
+        sprite_url = PokemonSpriteHelper.get_sprite(
+            getattr(raid_mon, "species_name", None),
+            getattr(raid_mon, "species_dex_number", None),
+            style='official',
+            gender=getattr(raid_mon, 'gender', None),
+            shiny=getattr(raid_mon, 'is_shiny', False),
+            use_fallback=False,
+        )
+        if sprite_url:
+            embed.set_image(url=sprite_url)
+        return embed
+
+    async def _send_raid_intro(self, interaction: discord.Interaction, raid_mon):
+        name = getattr(raid_mon, "species_name", "The Pokémon") if raid_mon else "The foe"
+        intro_lines = [
+            f"The {name} gathers and absorbs dreamlites…",
+            ". . .",
+            "***!!!***",
+            f"The Rogue {name} erupts with power!",
+            "***RAID BATTLE - BEGIN!!!***",
+        ]
+
+        colors = [
+            discord.Color.purple(),
+            discord.Color.dark_purple(),
+            discord.Color.dark_red(),
+            discord.Color.red(),
+            discord.Color.gold(),
+        ]
+
+        for text, color in zip(intro_lines, colors):
+            embed = discord.Embed(description=text, color=color)
+            await interaction.followup.send(embed=embed)
 
     @staticmethod
     def _split_faint_messages(messages: list[str]) -> tuple[list[str], list[str]]:
@@ -815,9 +922,20 @@ class BattleCog(commands.Cog):
         except Exception:
             pass
 
-        desc = f"🏆 Battle Over\n\nAll of {loser_name}'s Pokémon have fainted! {winner_name} wins!"
+        if battle.battle_format == BattleFormat.RAID and result == 'trainer':
+            raid_mon = (battle.opponent.get_active_pokemon() or [None])[0]
+            raid_name = getattr(raid_mon, 'species_name', opponent_name)
+            desc = (
+                f"Dreamlites dissipate from {raid_name}…\n\n"
+                f"***The Rogue {raid_name} is defeated!!! Victory!!!***"
+            )
+            title = 'Raid Over'
+        else:
+            desc = f"🏆 Battle Over\n\nAll of {loser_name}'s Pokémon have fainted! {winner_name} wins!"
+            title = 'Battle Over'
+
         await interaction.followup.send(
-            embed=discord.Embed(title='Battle Over', description=desc, color=discord.Color.gold())
+            embed=discord.Embed(title=title, description=desc, color=discord.Color.gold())
         )
 
         exp_embed = None
@@ -950,6 +1068,13 @@ class BattleCog(commands.Cog):
         # Check for forced switches (either from KO or from U-turn/Volt Switch)
         if battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and battle.forced_switch_battler_id:
             await self._prompt_forced_switch(interaction, battle, battle.forced_switch_battler_id)
+            return
+
+        if battle.battle_format == BattleFormat.RAID:
+            await interaction.followup.send(
+                embed=self._create_raid_status_embed(battle),
+                view=self._create_battle_view(battle)
+            )
             return
 
         await interaction.followup.send(
