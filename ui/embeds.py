@@ -965,7 +965,7 @@ class EmbedBuilder:
         """Create bag/inventory view embed"""
         embed = discord.Embed(
             title="Bag",
-            description="Your items organized by category",
+            description="Your items organized by category. Use **Select Item** to pick a category and item.",
             color=EmbedBuilder.PRIMARY_COLOR
         )
         
