@@ -6,6 +6,7 @@ Based on Pokemon Showdown's condition system
 
 from enum import Enum
 from typing import Dict, Optional, Any, Callable
+import csv
 from dataclasses import dataclass, field
 import random
 
@@ -79,9 +80,24 @@ class StatusConditionManager:
     def __init__(self):
         self.major_status: Optional[StatusCondition] = None
         self.volatile_statuses: Dict[str, StatusCondition] = {}
-        
+
         # Status immunity tracking
         self.immunities = set()  # Set of status types this Pokemon is immune to
+        self.freeze_flavor_text = self._load_freeze_flavor_text()
+
+    def _load_freeze_flavor_text(self) -> str:
+        """Grab a short Gen 9-friendly freeze blurb from pokeapi CSVs."""
+        try:
+            with open('pokeapi_csv_bot/move_meta_ailment_names.csv', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader, None)  # skip header
+                for row in reader:
+                    # move_meta_ailment_id, local_language_id, name
+                    if len(row) >= 3 and row[0] == '3' and row[1] == '9':
+                        return f"{row[2]} wore off as the ice melted away."
+        except Exception:
+            pass
+        return "The ice melted away."
     
     def has_status(self, status_type: str) -> bool:
         """Check if Pokemon has a specific status"""
@@ -276,7 +292,7 @@ class StatusConditionManager:
                 # 20% chance to thaw
                 if random.random() < 0.2:
                     self.major_status = None
-                    return True, f"{pokemon.species_name} thawed out!"
+                    return True, f"{pokemon.species_name} thawed out! {self.freeze_flavor_text}"
                 return False, f"{pokemon.species_name} is frozen solid!"
 
             elif status == StatusType.SLEEP.value:
@@ -302,10 +318,12 @@ class StatusConditionManager:
             return speed // 2
         return speed
     
-    def modify_attack_stat(self, attack: int, is_physical: bool) -> int:
+    def modify_attack_stat(self, attack: int, is_physical: bool, pokemon: Any = None) -> int:
         """Apply attack stat modifications from status"""
         if self.major_status and self.major_status.status_type == StatusType.BURN.value and is_physical:
-            return attack // 2
+            ability_id = getattr(pokemon, 'ability', '') if pokemon else ''
+            if str(ability_id).lower() != 'guts':
+                return attack // 2
         return attack
     
     def _get_status_application_message(self, status_type: str) -> str:

@@ -280,6 +280,15 @@ class EffectHandler:
                 params={'duration': 5}
             ))
 
+        # Taunt (prevents status moves)
+        if move_id == 'taunt':
+            effects.append(MoveEffect(
+                effect_type='inflict_volatile',
+                chance=100,
+                target='normal',
+                params={'status': 'taunt'}
+            ))
+
         return effects
     
     def apply_move_effects(
@@ -294,6 +303,10 @@ class EffectHandler:
         Apply all effects of a move after it hits
         Returns list of messages describing effects
         """
+        if move_data.get('id') == 'revival_blessing':
+            revival_msg = self._apply_revival_blessing(attacker, battle_state)
+            return [revival_msg] if revival_msg else ["But it failed! There was no one to revive."]
+
         messages = []
         effects = self.parse_move_effects(move_data)
         
@@ -374,6 +387,32 @@ class EffectHandler:
                     messages.append(result)
 
         return messages
+
+    def _apply_revival_blessing(self, attacker: Any, battle_state: Any) -> Optional[str]:
+        """Revive a fainted party member at half HP."""
+        if not battle_state:
+            return None
+
+        target_battler = None
+        for battler in battle_state.get_all_battlers():
+            if attacker in getattr(battler, 'party', []):
+                target_battler = battler
+                break
+
+        if not target_battler:
+            return None
+
+        fainted_allies = [mon for mon in target_battler.party if getattr(mon, 'current_hp', 0) <= 0]
+        if not fainted_allies:
+            return None
+
+        ally = fainted_allies[0]
+        ally.current_hp = max(1, ally.max_hp // 2)
+        if hasattr(ally, 'status_manager'):
+            ally.status_manager.major_status = None
+            ally.status_manager.clear_volatile_statuses()
+
+        return f"{attacker.species_name}'s Revival Blessing revived {ally.species_name}! ({ally.current_hp}/{ally.max_hp} HP)"
     
     def _apply_hazard(self, effect: MoveEffect, battle_state: Any) -> Optional[str]:
         """Apply hazard to the field"""
@@ -526,6 +565,8 @@ class EffectHandler:
             duration = random.randint(4, 5)  # 4-5 turns
         elif status in ['flinch', 'protect', 'detect', 'endure']:
             duration = 1  # These only last until end of turn
+        elif status == 'taunt':
+            duration = 3  # Gen 9 duration
 
         success, message = target.status_manager.apply_status(status, duration=duration)
         if success:

@@ -1300,6 +1300,12 @@ class BattleEngine:
             # Apply damage
             if damage > 0:
                 defender.current_hp = max(0, defender.current_hp - damage)
+                if (
+                    ENHANCED_SYSTEMS_AVAILABLE
+                    and move_data.get('category') in ['physical', 'special']
+                    and attacker_battler != defender_battler
+                ):
+                    defender.rage_fist_hits_taken = getattr(defender, 'rage_fist_hits_taken', 0) + 1
 
             # Build damage message
             crit_text = " It's a critical hit!" if is_crit else ""
@@ -1343,16 +1349,29 @@ class BattleEngine:
         pokemon_pos = action.pokemon_position if action.pokemon_position < len(active_pokemon_list) else 0
         attacker = active_pokemon_list[pokemon_pos]
 
+        messages: List[str] = []
+
         # Check if attacker can move (status conditions, flinch, etc.)
         if ENHANCED_SYSTEMS_AVAILABLE and hasattr(attacker, 'status_manager'):
             can_move, prevention_msg = attacker.status_manager.can_move(attacker)
             if not can_move:
                 return {"messages": [prevention_msg]}
+            if prevention_msg:
+                messages.append(prevention_msg)
 
         # Get move data
         move_data = self.moves_db.get_move(action.move_id)
         if not move_data:
             return {"messages": [f"{attacker.species_name} tried to use an unknown move!"]}
+
+        # Taunt prevents status-category moves
+        if (
+            ENHANCED_SYSTEMS_AVAILABLE
+            and hasattr(attacker, 'status_manager')
+            and attacker.status_manager.has_status('taunt')
+            and move_data.get('category') == 'status'
+        ):
+            return {"messages": [f"{attacker.species_name} fell for the Taunt and can't use {move_data['name']}!"]}
 
         # Determine all targets based on move target type
         target_type = move_data.get('target', 'single')
@@ -1440,9 +1459,14 @@ class BattleEngine:
 # Apply damage
         if damage > 0:
             defender.current_hp = max(0, defender.current_hp - damage)
-        
+            if (
+                ENHANCED_SYSTEMS_AVAILABLE
+                and move_data.get('category') in ['physical', 'special']
+                and attacker_battler != defender_battler
+            ):
+                defender.rage_fist_hits_taken = getattr(defender, 'rage_fist_hits_taken', 0) + 1
+
         # Build message
-        messages = []
         crit_text = " It's a critical hit!" if is_crit else ""
         effectiveness_text = ""
         if effectiveness > 1:
