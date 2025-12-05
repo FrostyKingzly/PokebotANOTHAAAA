@@ -89,88 +89,122 @@ class AdminCog(commands.Cog):
             return
         
         try:
-            # Parse the Showdown format
-            pokemon_data = self.parse_showdown_format(showdown_text)
+            pokemon_entries = self.parse_showdown_import(showdown_text)
 
-            # Get species data
-            species_name = pokemon_data['species']
-            species_data = self.bot.species_db.get_species(species_name)
-            
-            if not species_data:
-                await interaction.response.send_message(
-                    f"âŒ Could not find species: {pokemon_data['species']}",
-                    ephemeral=True
+            created_pokemon = []
+
+            for pokemon_data in pokemon_entries:
+                # Get species data
+                species_name = pokemon_data['species']
+                species_data = self.bot.species_db.get_species(species_name)
+
+                if not species_data:
+                    await interaction.response.send_message(
+                        f"â�Ž Could not find species: {pokemon_data['species']}",
+                        ephemeral=True
+                    )
+                    return
+
+                # Create the Pokemon
+                pokemon = Pokemon(
+                    species_data=species_data,
+                    level=pokemon_data['level'],
+                    owner_discord_id=user.id,
+                    nature=pokemon_data['nature'],
+                    ability=pokemon_data['ability'],
+                    moves=pokemon_data['moves'],
+                    ivs=pokemon_data['ivs'],
+                    is_shiny=pokemon_data['shiny'],
+                    gender=pokemon_data['gender'],
+                    pokeball=pokemon_data['pokeball']
                 )
-                return
-            
-            # Create the Pokemon
-            pokemon = Pokemon(
-                species_data=species_data,
-                level=pokemon_data['level'],
-                owner_discord_id=user.id,
-                nature=pokemon_data['nature'],
-                ability=pokemon_data['ability'],
-                moves=pokemon_data['moves'],
-                ivs=pokemon_data['ivs'],
-                is_shiny=pokemon_data['shiny'],
-                gender=pokemon_data['gender'],
-                pokeball=pokemon_data['pokeball']
-            )
-            
-            # Set EVs
-            pokemon.evs = pokemon_data['evs']
-            
-            # Set held item
-            pokemon.held_item = pokemon_data['held_item']
-            
-            # Set nickname if provided
-            if pokemon_data['nickname']:
-                pokemon.nickname = pokemon_data['nickname']
-            
-            # Set tera type if provided
-            if pokemon_data['tera_type']:
-                pokemon.tera_type = pokemon_data['tera_type']
-            
-            # Recalculate stats with EVs
-            pokemon._calculate_stats()
-            pokemon.current_hp = pokemon.max_hp
-            
-            # Add to party or box
-            pokemon_id = self.bot.player_manager.add_pokemon_to_party(pokemon)
 
-            # Create simplified embed with sprite
-            display_name = pokemon.get_display_name()
-            shiny_indicator = "✨ " if pokemon.is_shiny else ""
+                # Set EVs
+                pokemon.evs = pokemon_data['evs']
 
-            embed = discord.Embed(
-                description=f"{shiny_indicator}{user.mention} received **{display_name}**!",
-                color=discord.Color.gold() if pokemon.is_shiny else discord.Color.green()
-            )
+                # Set held item
+                pokemon.held_item = pokemon_data['held_item']
 
-            # Add Pokemon sprite (Gen 5 animated with Gen 5 static fallback)
-            sprite_url = PokemonSpriteHelper.get_sprite(
-                pokemon.species_name,
-                species_data['dex_number'],
-                style='animated',
-                gender=pokemon.gender,
-                shiny=pokemon.is_shiny
-            )
+                # Set nickname if provided
+                if pokemon_data['nickname']:
+                    pokemon.nickname = pokemon_data['nickname']
 
-            # get_sprite may return a list when a static fallback is provided; Discord
-            # embeds require a single URL string.
-            if isinstance(sprite_url, list):
-                sprite_url = sprite_url[0]
+                # Set tera type if provided
+                if pokemon_data['tera_type']:
+                    pokemon.tera_type = pokemon_data['tera_type']
 
-            embed.set_image(url=sprite_url)
+                # Recalculate stats with EVs
+                pokemon._calculate_stats()
+                pokemon.current_hp = pokemon.max_hp
+
+                # Add to party or box
+                pokemon_id = self.bot.player_manager.add_pokemon_to_party(pokemon)
+
+                created_pokemon.append((pokemon, species_data))
+
+            summary_lines = []
+            for pokemon, _species_data in created_pokemon:
+                shiny_indicator = "✨ " if pokemon.is_shiny else ""
+                summary_lines.append(f"{shiny_indicator}**{pokemon.get_display_name()}** (Lv. {pokemon.level})")
+
+            embed_kwargs = {
+                "description": "\n".join(summary_lines),
+                "color": discord.Color.gold() if any(pokemon.is_shiny for pokemon, _ in created_pokemon) else discord.Color.green(),
+            }
+
+            if len(created_pokemon) > 1:
+                embed_kwargs["title"] = f"{user.display_name} received {len(created_pokemon)} Pokémon!"
+
+            embed = discord.Embed(**embed_kwargs)
+
+            if created_pokemon:
+                first_pokemon, first_species_data = created_pokemon[0]
+                sprite_url = PokemonSpriteHelper.get_sprite(
+                    first_pokemon.species_name,
+                    first_species_data['dex_number'],
+                    style='animated',
+                    gender=first_pokemon.gender,
+                    shiny=first_pokemon.is_shiny
+                )
+
+                # get_sprite may return a list when a static fallback is provided; Discord
+                # embeds require a single URL string.
+                if isinstance(sprite_url, list):
+                    sprite_url = sprite_url[0]
+
+                embed.set_image(url=sprite_url)
 
             await interaction.response.send_message(embed=embed)
-            
         except Exception as e:
             await interaction.response.send_message(
                 f"âŒ Error creating Pokemon: {str(e)}\n\nMake sure your format is correct. Use `/help_showdown` for examples.",
                 ephemeral=True
             )
     
+    def parse_showdown_import(self, text: str) -> list[dict]:
+        """Parse one or more Pokemon Showdown sets from a single paste."""
+        entries = self._split_showdown_entries(text)
+
+        if not entries:
+            raise ValueError("No Pokemon data found in Showdown text")
+
+        return [self.parse_showdown_format(entry) for entry in entries]
+
+    def _split_showdown_entries(self, text: str) -> list[str]:
+        """Split a pasted Showdown team into individual Pokemon blocks."""
+        if not text:
+            return []
+
+        normalized = text.replace('\r\n', '\n').replace('\r', '\n').strip()
+
+        if not normalized:
+            return []
+
+        entries = re.split(r'\n\s*\n+', normalized)
+        entries = [entry.strip() for entry in entries if entry.strip()]
+
+        return entries or [normalized]
+
     def parse_showdown_format(self, text: str) -> dict:
         """
         Parse Pokemon Showdown format text into a dictionary

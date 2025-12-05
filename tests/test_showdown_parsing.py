@@ -56,6 +56,27 @@ Level: 5
         self.assertEqual(parsed['species'], 'Pikachu')
         self.assertEqual(parsed['gender'], 'female')
 
+    def test_multiple_pokemon_can_be_split_and_parsed(self):
+        showdown_text = """
+Pikachu @ Light Ball
+Ability: Static
+Level: 50
+Jolly Nature
+- Thunderbolt
+
+Charizard @ Heavy-Duty Boots
+Ability: Blaze
+Level: 50
+Timid Nature
+- Flamethrower
+"""
+
+        parsed = self.cog.parse_showdown_import(showdown_text)
+
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(parsed[0]['species'], 'Pikachu')
+        self.assertEqual(parsed[1]['species'], 'Charizard')
+
 
 if __name__ == '__main__':
     unittest.main()
