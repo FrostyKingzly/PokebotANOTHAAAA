@@ -533,7 +533,8 @@ class ExpShareManager:
         species_db = None,
         learnset_db = None,
         is_trainer_battle: bool = False,
-        level_cap: Optional[int] = None
+        level_cap: Optional[int] = None,
+        exp_multiplier: float = 1.0
     ) -> Dict[str, any]:
         """
         Award EXP to party from battle and handle level-ups
@@ -545,7 +546,8 @@ class ExpShareManager:
             species_db: SpeciesDatabase instance
             learnset_db: LearnsetDatabase instance
             is_trainer_battle: Whether this was a trainer battle
-        
+            exp_multiplier: Multiplier applied to all EXP gains (e.g., raid bonuses)
+
         Returns:
             Dict with results for each Pokemon that gained EXP
         """
@@ -557,7 +559,11 @@ class ExpShareManager:
             species_db=species_db,
             is_trainer_battle=is_trainer_battle
         )
-        
+
+        if exp_multiplier != 1:
+            for idx, exp_gained in list(exp_distribution.items()):
+                exp_distribution[idx] = int(math.floor(exp_gained * exp_multiplier))
+
         results = {
             'exp_gains': {},
             'level_ups': {},

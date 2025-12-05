@@ -1018,20 +1018,31 @@ class BattleCog(commands.Cog):
         except Exception:
             pass
 
-        if battle.battle_format == BattleFormat.RAID and result == 'trainer':
+        if battle.battle_format == BattleFormat.RAID:
             raid_mon = (battle.opponent.get_active_pokemon() or [None])[0]
             raid_name = getattr(raid_mon, 'species_name', opponent_name)
-            desc = (
-                f"Dreamlites dissipate from {raid_name}…\n\n"
-                f"***The Rogue {raid_name} is defeated!!! Victory!!!***"
-            )
-            title = 'Raid Over'
+            if result == 'trainer':
+                desc = (
+                    f"Dreamlites dissipate from {raid_name}…\n\n"
+                    f"***The Rogue {raid_name} is defeated!!! Victory!!!***"
+                )
+                title = 'Raid Over'
+                color = discord.Color.gold()
+            else:
+                desc = (
+                    "❌ You Lose\n\n"
+                    "All trainers’ Pokémon have fainted…\n\n"
+                    f"The Rogue {raid_name} continues to rampage…"
+                )
+                title = 'Battle Over'
+                color = discord.Color.red()
         else:
             desc = f"🏆 Battle Over\n\nAll of {loser_name}'s Pokémon have fainted! {winner_name} wins!"
             title = 'Battle Over'
+            color = discord.Color.gold() if result == 'trainer' else discord.Color.red()
 
         await interaction.followup.send(
-            embed=discord.Embed(title=title, description=desc, color=discord.Color.gold())
+            embed=discord.Embed(title=title, description=desc, color=color)
         )
 
         exp_embed = None
@@ -1106,13 +1117,16 @@ class BattleCog(commands.Cog):
         if defeated_pokemon is None:
             return None
 
+        exp_multiplier = 2.0 if battle.battle_format == BattleFormat.RAID else 1.0
+
         try:
             results = await self.exp_handler.award_battle_exp(
                 trainer_id=trainer.battler_id,
                 party=trainer.party,
                 defeated_pokemon=defeated_pokemon,
                 active_pokemon_index=active_index,
-                is_trainer_battle=(battle.battle_type == BattleType.TRAINER)
+                is_trainer_battle=(battle.battle_type == BattleType.TRAINER),
+                exp_multiplier=exp_multiplier
             )
         except Exception as exc:
             print(f"[BattleCog] Failed to award EXP: {exc}")

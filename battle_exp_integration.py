@@ -33,7 +33,8 @@ class BattleExpHandler:
         party: List,
         defeated_pokemon,
         active_pokemon_index: int = 0,
-        is_trainer_battle: bool = False
+        is_trainer_battle: bool = False,
+        exp_multiplier: float = 1.0
     ) -> Dict:
         """
         Award EXP to party after battle victory
@@ -44,7 +45,8 @@ class BattleExpHandler:
             defeated_pokemon: Pokemon that was defeated
             active_pokemon_index: Index of Pokemon that was battling
             is_trainer_battle: Whether this was a trainer battle
-        
+            exp_multiplier: Multiplier for EXP gains (e.g., raid bonus)
+
         Returns:
             Results dictionary with EXP gains and level-ups
         """
@@ -62,7 +64,8 @@ class BattleExpHandler:
             species_db=self.species_db,
             learnset_db=self.learnset_db,
             is_trainer_battle=is_trainer_battle,
-            level_cap=level_cap
+            level_cap=level_cap,
+            exp_multiplier=exp_multiplier
         )
         
         # Check for evolution readiness
