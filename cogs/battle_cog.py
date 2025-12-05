@@ -1013,6 +1013,7 @@ class BattleCog(commands.Cog):
             embed = discord.Embed(title="Pokémon Fainted!", description=desc, color=discord.Color.red())
 
         await self._safe_followup_send(
+            interaction,
             embed=embed,
             view=PartySelectView(battle, battler_id, self.battle_engine, forced=True)
         )
