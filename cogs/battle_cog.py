@@ -976,6 +976,9 @@ class BattleCog(commands.Cog):
                 await self._safe_followup_send(interaction, embed=embed)
 
     async def _prompt_forced_switch(self, interaction: discord.Interaction, battle, battler_id: int):
+        # Always refresh the battle state to avoid stale active slots or parties
+        fresh_battle = self.battle_engine.get_battle(getattr(battle, 'battle_id', None)) or battle
+        battle = fresh_battle
         if battler_id != battle.trainer.battler_id:
             await interaction.followup.send(
                 "Waiting for your opponent to choose their next Pokémon...",
@@ -1009,7 +1012,7 @@ class BattleCog(commands.Cog):
                 desc = "Select another healthy Pokémon to continue the battle."
             embed = discord.Embed(title="Pokémon Fainted!", description=desc, color=discord.Color.red())
 
-        await interaction.followup.send(
+        await self._safe_followup_send(
             embed=embed,
             view=PartySelectView(battle, battler_id, self.battle_engine, forced=True)
         )
@@ -1088,11 +1091,11 @@ class BattleCog(commands.Cog):
         if result == 'trainer':
             exp_embed = await self._create_exp_embed(battle, interaction)
         if exp_embed:
-            await interaction.followup.send(embed=exp_embed)
+            await self._safe_followup_send(interaction, embed=exp_embed)
 
         ranked_embed = self._build_ranked_result_embed(battle)
         if ranked_embed:
-            await interaction.followup.send(embed=ranked_embed)
+            await self._safe_followup_send(interaction, embed=ranked_embed)
 
         player_manager = getattr(self.bot, 'player_manager', None)
         if player_manager:
@@ -1220,16 +1223,18 @@ class BattleCog(commands.Cog):
             return
 
         if battle.battle_format == BattleFormat.RAID:
-            await interaction.followup.send(
+            await self._safe_followup_send(
+                interaction,
                 embed=self._create_raid_status_embed(battle),
             )
-            await interaction.followup.send(
+            await self._safe_followup_send(
+                interaction,
                 embed=self._create_raid_party_embed(battle),
                 view=self._create_battle_view(battle),
             )
             return
 
-        await interaction.followup.send(
+        await self._safe_followup_send(
             embed=self._create_battle_embed(battle),
             view=self._create_battle_view(battle)
         )
@@ -1574,25 +1579,32 @@ class PartySelect(discord.ui.Select):
             if cog:
                 send_embed = cog._build_switch_embed(messages, title="Send-out", pokemon=result.get("pokemon"))
                 if send_embed:
-                    await interaction.followup.send(embed=send_embed)
+                    await cog._safe_followup_send(interaction, embed=send_embed)
                 battle = parent_view.engine.get_battle(parent_view.battle_id)
                 if battle:
                     if battle.battle_format == BattleFormat.RAID:
-                        await interaction.followup.send(
+                        await cog._safe_followup_send(
+                            interaction,
                             embed=cog._create_raid_status_embed(battle),
                         )
-                        await interaction.followup.send(
+                        await cog._safe_followup_send(
+                            interaction,
                             embed=cog._create_raid_party_embed(battle),
                             view=cog._create_battle_view(battle),
                         )
                     else:
-                        await interaction.followup.send(
+                        await cog._safe_followup_send(
+                            interaction,
                             embed=cog._create_battle_embed(battle),
                             view=cog._create_battle_view(battle),
                         )
             else:
                 text = "\n".join(messages) or "A new Pokémon entered the battle."
-                await interaction.followup.send(text)
+                try:
+                    await interaction.followup.send(text)
+                except Exception:
+                    if interaction.channel:
+                        await interaction.channel.send(text)
             return
 
         action = BattleAction(action_type='switch', battler_id=self.battler_id, switch_to_position=idx)
