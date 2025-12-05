@@ -702,7 +702,6 @@ class BattleCog(commands.Cog):
         if sprite_url:
             embed.set_thumbnail(url=sprite_url)
 
-        embed.set_footer(text="Raid Pokémon move after all challengers act.")
         return embed
 
     def _create_raid_party_embed(self, battle) -> discord.Embed:
