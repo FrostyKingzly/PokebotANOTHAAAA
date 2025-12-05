@@ -1174,7 +1174,7 @@ class EmbedBuilder:
             title="⚠️ Raid Detected!",
             description=(
                 f"A powerful **{raid_summary.get('species_name', 'Unknown')}** is stirring in {location_name}.\n"
-                "Coordinate with trainers and press Fight to begin when ready."
+                "Coordinate with trainers, invite allies, and ready up to begin the fight."
             ),
             color=discord.Color.orange(),
         )
@@ -1189,6 +1189,14 @@ class EmbedBuilder:
             value=len(raid_summary.get("move_ids", []) or []),
             inline=True,
         )
+        embed.add_field(
+            name="Ready",
+            value=(
+                f"{raid_summary.get('ready_count', 0)}/"
+                f"{max(1, raid_summary.get('participant_count', 1))}"
+            ),
+            inline=True,
+        )
 
         sprite_url = PokemonSpriteHelper.get_sprite(
             raid_summary.get("species_name"),
@@ -1200,7 +1208,7 @@ class EmbedBuilder:
         if sprite_url:
             embed.set_thumbnail(url=sprite_url)
 
-        embed.set_footer(text="Raid battles are in active development. Ready checks coming soon!")
+        embed.set_footer(text="Press Fight to join the lobby, ready up, and launch the raid battle.")
         return embed
     
     @staticmethod
