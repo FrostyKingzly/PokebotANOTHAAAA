@@ -5,9 +5,9 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+from database import MovesDatabase
 from learnset_database import LearnsetDatabase
 from models import Pokemon
-from moves_database import MovesDatabase
 
 
 @dataclass
