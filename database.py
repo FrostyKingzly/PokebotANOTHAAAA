@@ -336,6 +336,11 @@ class ItemsDatabase:
 
             return pocket_map.get(pocket_identifier, 'other')
 
+        # Explicit overrides for items whose Gen 9 bag placement differs from older games
+        overrides = {
+            'rare_candy': 'other',
+        }
+
         bag_categories = {}
         with open(items_csv, newline='') as f:
             for row in csv.DictReader(f):
@@ -352,7 +357,7 @@ class ItemsDatabase:
             if not isinstance(item_data, dict):
                 continue
 
-            bag_category = bag_categories.get(item_id)
+            bag_category = overrides.get(item_id, bag_categories.get(item_id))
             if bag_category:
                 item_data['bag_category'] = bag_category
             else:

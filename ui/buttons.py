@@ -4,7 +4,7 @@ import logging
 
 import discord
 from discord.ui import Button, View, Select
-from typing import Optional, List, Dict, Any, Callable, Awaitable
+from typing import Optional, List, Dict, Any, Callable, Awaitable, Tuple
 
 from exp_system import ExpSystem
 from social_stats import SOCIAL_STAT_DEFINITIONS
@@ -1989,7 +1989,19 @@ class ReleaseConfirmView(View):
 
 
 class BagView(View):
-    """Bag/Inventory view with categorized buttons."""
+    """Bag/Inventory view with category-driven item selection."""
+
+    CATEGORY_DEFS = [
+        ("All", "all", "📚"),
+        ("Medicine", "medicine", "💊"),
+        ("Poké Balls", "pokeball", "⚪"),
+        ("Battle", "battle_item", "⚔️"),
+        ("Berries", "berries", "🍓"),
+        ("TMs", "tms", "📘"),
+        ("Omni", "omni", "✨"),
+        ("Key", "key_item", "🔑"),
+        ("Other", "other", "📦"),
+    ]
 
     def __init__(self, bot, inventory: List[Dict], player_id: int, back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None):
         super().__init__(timeout=300)
@@ -1997,65 +2009,40 @@ class BagView(View):
         self.inventory = inventory  # List of {"item_id": ..., "quantity": ...}
         self.player_id = player_id
         self.back_callback = back_callback
-        # Track which category is currently selected
-        self.current_category: str = "all"
 
-        # Button layout & internal category keys
-        # Labels are what users see, keys are used for filtering logic.
-        button_defs = [
-            ("All", "all"),
-            ("Medicine", "medicine"),
-            ("Poké Balls", "pokeball"),
-            ("Battle", "battle_item"),
-            ("Berries", "berries"),
-            ("Other", "other"),
-            ("TMs", "tms"),
-            ("Omni", "omni"),
-            ("Key", "key_item"),
-        ]
-
-        # Category filter buttons
-        for label, category in button_defs:
-            button = Button(
-                label=label,
-                style=discord.ButtonStyle.secondary,
-                custom_id=f"bag_{category}",
-            )
-            button.callback = self.create_category_callback(category)
-            self.add_item(button)
-
-        # Item selection button to act on a specific item from the current category
+        # Item selection button to drive category -> item flow
         select_button = Button(
             label="Select Item",
             style=discord.ButtonStyle.primary,
             custom_id="bag_select_item",
-            row=1,
         )
 
         async def select_button_callback(interaction: discord.Interaction):
             from ui.embeds import EmbedBuilder
-            # Filter by the currently selected category
-            # (defaults to 'all' if the player hasn't pressed a category button yet)
-            filtered_inv = self._filter_inventory_by_category(self.current_category)
 
-            if not filtered_inv:
+            available_categories = []
+            for label, category, emoji in self.CATEGORY_DEFS:
+                filtered_inv = self.filter_inventory_by_category(self.bot, self.inventory, category)
+                if filtered_inv:
+                    available_categories.append((label, category, emoji, len(filtered_inv)))
+
+            if not available_categories:
                 await interaction.response.send_message(
-                    "🎒 You don't have any items in this category to select.",
+                    "🎒 You don't have any items in your bag!",
                     ephemeral=True,
                 )
                 return
 
-            pretty_name = self.current_category.replace("_", " ").title()
             embed = discord.Embed(
-                title=f"Bag — {pretty_name}",
-                description="Choose an item from the dropdown below to use, give, or discard.",
+                title="Bag — Choose a category",
+                description="Pick which category to browse, then select an item to use, give, or discard.",
                 color=EmbedBuilder.PRIMARY_COLOR,
             )
-            # Switch to the item selection view
-            view = BagItemSelectView(
+
+            view = BagCategorySelectView(
                 self.bot,
                 self.player_id,
-                self.current_category,
+                available_categories,
                 back_callback=self.back_callback,
             )
             await interaction.response.edit_message(embed=embed, view=view)
@@ -2066,18 +2053,23 @@ class BagView(View):
         if self.back_callback:
             _add_back_button(self, self.back_callback)
 
-    def _filter_inventory_by_category(self, category: str) -> List[Dict]:
+    @staticmethod
+    def _get_item_category(item_data: Dict[str, Any]) -> str:
+        return item_data.get("bag_category") or item_data.get("category", "other")
+
+    @classmethod
+    def filter_inventory_by_category(cls, bot, inventory: List[Dict], category: str) -> List[Dict]:
         """Return a filtered inventory list for the given category."""
         # "All" just shows everything with quantity > 0
         if category == "all":
             return [
-                row for row in self.inventory
+                row for row in inventory
                 if row.get("quantity", 0) > 0
             ]
 
         filtered: List[Dict] = []
 
-        for row in self.inventory:
+        for row in inventory:
             quantity = row.get("quantity", 0)
             if quantity <= 0:
                 continue
@@ -2086,11 +2078,11 @@ class BagView(View):
             if not item_id:
                 continue
 
-            item_data = self.bot.items_db.get_item(item_id)
+            item_data = bot.items_db.get_item(item_id)
             if not item_data:
                 continue
 
-            item_cat = item_data.get("category", "other")
+            item_cat = cls._get_item_category(item_data)
             name_lower = str(item_data.get("name", "")).lower()
             id_lower = item_id.lower()
 
@@ -2108,27 +2100,74 @@ class BagView(View):
 
         return filtered
 
-    def create_category_callback(self, category: str):
-        async def callback(interaction: discord.Interaction):
-            # Remember which category is active so item selection can use it
-            self.current_category = category
+
+class BagCategorySelectView(View):
+    """Lets the user pick which bag category to browse."""
+
+    def __init__(
+        self,
+        bot,
+        player_id: int,
+        categories: List[Tuple[str, str, str, int]],
+        back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None,
+    ):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.player_id = player_id
+        self.categories = categories
+        self.back_callback = back_callback
+
+        options: List[discord.SelectOption] = []
+        for label, key, emoji, count in categories:
+            options.append(
+                discord.SelectOption(
+                    label=label,
+                    value=key,
+                    emoji=emoji,
+                    description=f"{count} item{'s' if count != 1 else ''}",
+                )
+            )
+
+        select = Select(
+            placeholder="Choose a category",
+            min_values=1,
+            max_values=1,
+            options=options,
+        )
+
+        async def select_callback(interaction: discord.Interaction):
             from ui.embeds import EmbedBuilder
 
-            filtered_inv = self._filter_inventory_by_category(category)
+            chosen = select.values[0]
+            inventory = self.bot.player_manager.get_inventory(self.player_id)
+            filtered_inv = BagView.filter_inventory_by_category(self.bot, inventory, chosen)
 
             if not filtered_inv:
-                pretty_name = category.replace("_", " ").title()
                 await interaction.response.send_message(
-                    f"🎒 No {pretty_name} items in your bag!",
+                    "🎒 You don't have items in that category anymore!",
                     ephemeral=True,
                 )
                 return
 
-            embed = EmbedBuilder.bag_view(filtered_inv, self.bot.items_db)
-            # Edit the original bag message so the same view persists
-            await interaction.response.edit_message(embed=embed, view=self)
+            pretty_name = next((label for label, key, *_ in self.categories if key == chosen), chosen.title())
+            embed = discord.Embed(
+                title=f"Bag — {pretty_name}",
+                description="Choose an item from the dropdown below to use, give, or discard.",
+                color=EmbedBuilder.PRIMARY_COLOR,
+            )
+            view = BagItemSelectView(
+                self.bot,
+                self.player_id,
+                chosen,
+                back_callback=self.back_callback,
+            )
+            await interaction.response.edit_message(embed=embed, view=view)
 
-        return callback
+        select.callback = select_callback
+        self.add_item(select)
+
+        if self.back_callback:
+            _add_back_button(self, self.back_callback)
 
 
 
@@ -2166,7 +2205,7 @@ class BagItemSelectView(View):
             if not item_data:
                 continue
 
-            item_cat = item_data.get("category", "other")
+            item_cat = BagView._get_item_category(item_data)
             name_lower = str(item_data.get("name", "")).lower()
             id_lower = item_id.lower()
 
