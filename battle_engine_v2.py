@@ -1170,8 +1170,15 @@ class BattleEngine:
             player_actions = [a for a in actions if a.battler_id not in raid_ids]
             raid_actions = [a for a in actions if a.battler_id in raid_ids]
             player_actions.sort(key=get_action_priority, reverse=True)
-            raid_actions.sort(key=get_action_priority, reverse=True)
-            return player_actions + raid_actions
+
+            # Priority raid actions can move earlier, non-priority actions always go last
+            priority_raid_actions = [a for a in raid_actions if get_action_priority(a)[0] > 0]
+            non_priority_raid_actions = [a for a in raid_actions if get_action_priority(a)[0] <= 0]
+
+            priority_raid_actions.sort(key=get_action_priority, reverse=True)
+            non_priority_raid_actions.sort(key=get_action_priority, reverse=True)
+
+            return player_actions + priority_raid_actions + non_priority_raid_actions
 
         actions.sort(key=get_action_priority, reverse=True)
         return actions
