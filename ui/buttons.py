@@ -681,6 +681,20 @@ class MainMenuView(View):
             view=view,
         )
 
+        # If an admin has spawned a raid here, surface the alert beneath the roll
+        raid_manager = getattr(self.bot, "raid_manager", None)
+        raid = raid_manager.get_raid(current_location_id) if raid_manager else None
+        if raid:
+            raid_embed = EmbedBuilder.raid_alert(raid.summary, location.get("name", "this area"))
+            raid_view = RaidEncounterView(
+                self.bot,
+                raid,
+                interaction.user.id,
+                current_location_id,
+            )
+
+            await interaction.followup.send(embed=raid_embed, view=raid_view, ephemeral=True)
+
     @discord.ui.button(label="⚔️ Battle", style=discord.ButtonStyle.danger, row=2)
     async def battle_button(self, interaction: discord.Interaction, button: Button):
         """Battle options"""
@@ -3287,6 +3301,59 @@ class EncounterSelectView(View):
             }
         else:
             self.bot.active_encounters.pop(self.player_id, None)
+
+
+class RaidEncounterView(View):
+    """Placeholder controls for raid encounters until full battles are wired up."""
+
+    def __init__(self, bot, raid, player_id: int, location_id: str):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.raid = raid
+        self.player_id = player_id
+        self.location_id = location_id
+
+    async def _not_for_you(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.player_id:
+            await interaction.response.send_message(
+                "❌ This raid prompt isn't for you! Roll encounters yourself to join.",
+                ephemeral=True,
+            )
+            return True
+        return False
+
+    @discord.ui.button(label="⚔️ Fight", style=discord.ButtonStyle.danger)
+    async def fight_button(self, interaction: discord.Interaction, button: Button):
+        if await self._not_for_you(interaction):
+            return
+
+        await interaction.response.send_message(
+            (
+                "Raid battles are being scaffolded. Ready checks, team invites, and the"
+                " raid battle engine will attach here in a future update."
+            ),
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="📨 Invite", style=discord.ButtonStyle.primary)
+    async def invite_button(self, interaction: discord.Interaction, button: Button):
+        if await self._not_for_you(interaction):
+            return
+
+        await interaction.response.send_message(
+            "Party invite hooks will live here soon. Coordinate manually for now!",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="↩️ Back", style=discord.ButtonStyle.secondary)
+    async def back_button(self, interaction: discord.Interaction, button: Button):
+        if await self._not_for_you(interaction):
+            return
+
+        await interaction.response.send_message(
+            "Raid dismissed. Use the wild encounter view above to keep exploring!",
+            ephemeral=True,
+        )
 
 
 class ReturnToEncounterView(View):
