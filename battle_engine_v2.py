@@ -39,6 +39,7 @@ class BattleFormat(Enum):
     SINGLES = "singles"  # 1v1
     DOUBLES = "doubles"  # 2v2
     MULTI = "multi"  # 2v2 with partners
+    RAID = "raid"  # Multi-trainer raid vs. a raid boss
 
 
 @dataclass
@@ -437,6 +438,10 @@ class BattleEngine:
             raise ValueError("Trainer must have at least one Pokémon to start a battle.")
         if not opponent_party:
             raise ValueError("Opponent must have at least one Pokémon to battle.")
+
+        # Raids only bring the first three Pokémon from the trainer's party
+        if battle_format == BattleFormat.RAID:
+            trainer_party = trainer_party[:3]
 
         # In multi battles, each trainer sends out 1 Pokemon (2 total per team)
         # In doubles battles, each trainer sends out 2 Pokemon
@@ -1142,7 +1147,8 @@ class BattleEngine:
 
                 # Get Pokemon speed
                 battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
-                pokemon = battler.get_active_pokemon()[0]  # Simplified for now
+                active_pokemon = battler.get_active_pokemon()
+                pokemon = active_pokemon[0] if active_pokemon else None
                 speed = self._get_effective_speed(pokemon)
 
                 # Trick Room reverses speed order for same priority moves
@@ -1150,14 +1156,25 @@ class BattleEngine:
                     speed = -speed
 
                 return (priority, speed)
-            
+
             # Flee
             return (0, 0)
-        
+
+        # In raid battles, all player actions resolve before the raid boss acts
+        if battle.battle_format == BattleFormat.RAID:
+            raid_ids = {battle.opponent.battler_id}
+            player_actions = [a for a in actions if a.battler_id not in raid_ids]
+            raid_actions = [a for a in actions if a.battler_id in raid_ids]
+            player_actions.sort(key=get_action_priority, reverse=True)
+            raid_actions.sort(key=get_action_priority, reverse=True)
+            return player_actions + raid_actions
+
         actions.sort(key=get_action_priority, reverse=True)
         return actions
 
     def _get_effective_speed(self, pokemon) -> int:
+        if pokemon is None:
+            return 0
         speed = getattr(pokemon, 'speed', 0)
         if ENHANCED_SYSTEMS_AVAILABLE and hasattr(self, 'calculator'):
             try:
