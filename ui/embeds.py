@@ -1163,7 +1163,44 @@ class EmbedBuilder:
         )
         
         embed.set_footer(text="Use the dropdown to select a Pokémon, or click Reroll for new encounters!")
-        
+
+        return embed
+
+    @staticmethod
+    def raid_alert(raid_summary: dict, location_name: str) -> discord.Embed:
+        """Build a warning embed that sits under the wild encounter roll."""
+
+        embed = discord.Embed(
+            title="⚠️ Raid Detected!",
+            description=(
+                f"A powerful **{raid_summary.get('species_name', 'Unknown')}** is stirring in {location_name}.\n"
+                "Coordinate with trainers and press Fight to begin when ready."
+            ),
+            color=discord.Color.orange(),
+        )
+
+        embed.add_field(
+            name="Level",
+            value=raid_summary.get("level", "?"),
+            inline=True,
+        )
+        embed.add_field(
+            name="Move Slots",
+            value=len(raid_summary.get("move_ids", []) or []),
+            inline=True,
+        )
+
+        sprite_url = PokemonSpriteHelper.get_sprite(
+            raid_summary.get("species_name"),
+            raid_summary.get("species_dex_number"),
+            style="animated",
+            shiny=False,
+            use_fallback=False,
+        )
+        if sprite_url:
+            embed.set_thumbnail(url=sprite_url)
+
+        embed.set_footer(text="Raid battles are in active development. Ready checks coming soon!")
         return embed
     
     @staticmethod

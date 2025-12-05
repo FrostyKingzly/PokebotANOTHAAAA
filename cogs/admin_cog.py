@@ -1754,6 +1754,83 @@ class ChannelLocationSelectView(discord.ui.View):
             ephemeral=True
         )
 
+    @app_commands.command(name="create_raid", description="[ADMIN] Spawn a raid encounter at a location")
+    @app_commands.describe(
+        location_id="Location/channel mapping ID where the raid appears",
+        species="Pokemon species (name or dex number)",
+        level="Raid level (1-300)",
+        showdown_text="Optional Showdown import to fully define the raid boss",
+    )
+    @app_commands.check(is_admin)
+    async def create_raid(
+        self,
+        interaction: discord.Interaction,
+        location_id: str,
+        species: str,
+        level: int,
+        showdown_text: Optional[str] = None,
+    ):
+        """Spawn a raid encounter that will show beneath the next wild roll."""
+
+        if not self.bot.location_manager.get_location(location_id):
+            await interaction.response.send_message(
+                f"❌ Unknown location `{location_id}`. Link a channel to it first.",
+                ephemeral=True,
+            )
+            return
+
+        move_ids = None
+        raid_level = level
+        raid_species = species
+        raid_source = "manual"
+
+        if showdown_text:
+            try:
+                parsed = self.parse_showdown_import(showdown_text)
+                if parsed:
+                    entry = parsed[0]
+                    move_ids = entry.get("moves") or None
+                    raid_level = entry.get("level") or level
+                    raid_species = entry.get("species") or species
+                    raid_source = "showdown"
+            except Exception as exc:
+                await interaction.response.send_message(
+                    f"❌ Failed to parse Showdown text: {exc}",
+                    ephemeral=True,
+                )
+                return
+
+        try:
+            raid = self.bot.raid_manager.create_manual_raid(
+                location_id=location_id,
+                species_identifier=raid_species,
+                level=raid_level,
+                created_by=interaction.user.id,
+                move_ids=move_ids,
+                source=raid_source,
+            )
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        embed = discord.Embed(
+            title="⚠️ Raid Spawned",
+            description=(
+                f"A raid featuring **{raid.summary['species_name']}** now lurks in `{location_id}`.\n"
+                "It will appear beneath the next wild encounter roll for that location."
+            ),
+            color=discord.Color.orange(),
+        )
+        embed.add_field(name="Raid Level", value=raid.summary["level"], inline=True)
+        embed.add_field(name="Move Count", value=len(raid.summary.get("move_ids", [])), inline=True)
+        embed.add_field(name="Origin", value=raid.summary.get("source", "manual").title(), inline=True)
+        embed.set_footer(text=f"Raid ID: {raid.summary['raid_id']}")
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
     @app_commands.command(name="list_wild_areas", description="[ADMIN] List all wild areas")
     @app_commands.check(is_admin)
     async def list_wild_areas(self, interaction: discord.Interaction):

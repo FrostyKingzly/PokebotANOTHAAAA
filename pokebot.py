@@ -19,6 +19,7 @@ from pathlib import Path
 from player_manager import PlayerManager
 from encounter_system import EncounterSystem
 from location_manager import LocationManager
+from raid_manager import RaidManager
 from ui.embeds import EmbedBuilder
 from ui.buttons import MainMenuView
 from database import (SpeciesDatabase, MovesDatabase, AbilitiesDatabase,
@@ -85,6 +86,7 @@ class PokemonBot(commands.Bot):
             "data/locations.json",
             channel_map_path="config/channel_locations.json"
         )
+        self.raid_manager = RaidManager(self.species_db)
         self.item_usage_manager = ItemUsageManager(self)
         self.wild_area_manager = WildAreaManager(self.player_manager.db)
         self.weather_manager = WeatherManager()
