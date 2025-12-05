@@ -3,7 +3,7 @@
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from database import MovesDatabase
 from learnset_database import LearnsetDatabase
@@ -30,6 +30,9 @@ class RaidEncounter:
     created_by: int
     created_at: float
     pokemon_config: RaidPokemonConfig
+    participants: Dict[int, bool] = field(default_factory=dict)
+    invited: Set[int] = field(default_factory=set)
+    join_order: List[int] = field(default_factory=list)
 
     @property
     def summary(self) -> Dict:
@@ -43,6 +46,8 @@ class RaidEncounter:
             "level": pokemon.level,
             "source": self.pokemon_config.source,
             "move_ids": list(self.pokemon_config.move_ids),
+            "ready_count": len([pid for pid, ready in self.participants.items() if ready]),
+            "participant_count": len(self.participants),
         }
 
 
@@ -77,17 +82,18 @@ class RaidManager:
         if not species_data:
             raise ValueError(f"Unknown species: {species_identifier}")
 
+        resolved_moves = move_ids or self._generate_raid_moveset(species_data["name"], level)
+
         pokemon = Pokemon(
             species_data=species_data,
             level=level,
             owner_discord_id=None,
+            moves=resolved_moves,
         )
         # Mark this Pokemon as a raid boss for downstream systems
         pokemon.is_raid_boss = True
         pokemon.raid_stat_multiplier = 2.0
         pokemon.raid_level_cap = self.MAX_LEVEL
-
-        resolved_moves = move_ids or self._generate_raid_moveset(species_data["name"], level)
 
         config = RaidPokemonConfig(
             pokemon=pokemon,
@@ -101,6 +107,9 @@ class RaidManager:
             created_by=created_by,
             created_at=time.time(),
             pokemon_config=config,
+            participants={created_by: False},
+            invited=set(),
+            join_order=[created_by],
         )
 
         self.active_raids[location_id] = encounter
@@ -115,6 +124,53 @@ class RaidManager:
         """Remove an active raid from a location."""
 
         self.active_raids.pop(location_id, None)
+
+    # ------------------------------------------------------------------
+    # Raid party management
+    # ------------------------------------------------------------------
+    def add_participant(self, location_id: str, user_id: int) -> Optional[RaidEncounter]:
+        raid = self.active_raids.get(location_id)
+        if not raid:
+            return None
+
+        if user_id not in raid.participants:
+            raid.participants[user_id] = False
+            raid.join_order.append(user_id)
+        return raid
+
+    def invite_participant(self, location_id: str, inviter_id: int, invited_id: int) -> Optional[RaidEncounter]:
+        raid = self.active_raids.get(location_id)
+        if not raid:
+            return None
+
+        raid.invited.add(invited_id)
+        self.add_participant(location_id, invited_id)
+        return raid
+
+    def set_ready(self, location_id: str, user_id: int, ready: bool) -> Optional[RaidEncounter]:
+        raid = self.active_raids.get(location_id)
+        if not raid:
+            return None
+
+        raid.participants[user_id] = ready
+        if user_id not in raid.join_order:
+            raid.join_order.append(user_id)
+        return raid
+
+    def build_raid_boss(self, raid: RaidEncounter) -> Pokemon:
+        """Instantiate a fresh raid boss instance for battle start."""
+
+        base = raid.pokemon_config
+        pokemon = Pokemon(
+            species_data=base.pokemon.species_data,
+            level=base.pokemon.level,
+            owner_discord_id=None,
+        )
+        pokemon.is_raid_boss = True
+        pokemon.raid_stat_multiplier = base.raid_stat_multiplier
+        pokemon.raid_level_cap = self.MAX_LEVEL
+        pokemon.moves = pokemon._create_move_objects(list(base.move_ids))
+        return pokemon
 
     # ------------------------------------------------------------------
     # Helpers
