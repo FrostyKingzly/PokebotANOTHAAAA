@@ -994,7 +994,7 @@ class EmbedBuilder:
             if not item_data:
                 continue
 
-            category = item_data.get('category', 'other')
+            category = item_data.get('bag_category') or item_data.get('category', 'other')
             if category not in categories:
                 category = 'other'
 
