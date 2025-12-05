@@ -1,8 +1,8 @@
 {
   "city": {
-    "mode": "random",
-    "current_weather": "sunshine",
-    "expires_at": 1764907767.7054143,
+    "mode": "manual",
+    "current_weather": "gentle_skies",
+    "expires_at": 0,
     "random_pool": [
       "cloudy",
       "sunshine",
