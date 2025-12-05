@@ -20,6 +20,10 @@ class EnhancedDamageCalculator:
         self.moves_db = moves_db
         self.type_chart = type_chart
         self.effect_handler = EffectHandler(moves_db, type_chart)
+
+    def _normalize_id(self, value: str) -> str:
+        """Normalize identifiers for comparisons"""
+        return (value or "").replace("-", "").replace(" ", "").lower()
     
     def calculate_damage_with_effects(
         self,
@@ -108,9 +112,9 @@ class EnhancedDamageCalculator:
         is_blocked: bool,
         weather: Optional[str],
         terrain: Optional[str]
-    ) -> Tuple[int, bool, float]:
+        ) -> Tuple[int, bool, float]:
         """Calculate base damage with all modifiers"""
-        
+
         # Get stats with stage modifications
         if move_data['category'] == 'physical':
             attack = attacker.attack
@@ -118,8 +122,8 @@ class EnhancedDamageCalculator:
             # Apply stat stages
             attack = self.effect_handler.apply_stat_stages(attacker, attack, 'attack')
             defense = self.effect_handler.apply_stat_stages(defender, defense, 'defense')
-            # Apply burn status (halves physical attack)
-            attack = attacker.status_manager.modify_attack_stat(attack, is_physical=True)
+            # Apply burn status (halves physical attack) unless ability prevents it
+            attack = attacker.status_manager.modify_attack_stat(attack, is_physical=True, pokemon=attacker)
         else:  # special
             attack = attacker.sp_attack
             defense = defender.sp_defense
@@ -130,6 +134,11 @@ class EnhancedDamageCalculator:
         level = attacker.level
         move_id = (move_data.get('id') or '').lower()
         power = move_data.get('power')
+
+        # Rage Fist: power scales with number of times the user was hit
+        if move_id == 'rage_fist':
+            hits_taken = getattr(attacker, 'rage_fist_hits_taken', 0)
+            power = min(350, 50 + 50 * hits_taken)
 
         # Special fixed-damage and fractional HP moves (e.g., Super Fang)
         if move_id in {'super_fang', 'natures_madness', 'ruination'}:
@@ -194,7 +203,13 @@ class EnhancedDamageCalculator:
         attacker_types = attacker.species_data['types']
         if move_type in attacker_types:
             damage *= 1.5
-        
+
+        # Guts ability: 1.5x physical damage when afflicted by a major status
+        ability_id = getattr(attacker, 'ability', '')
+        has_status = getattr(attacker.status_manager, 'major_status', None) is not None
+        if move_data['category'] == 'physical' and has_status and self._normalize_id(ability_id) == 'guts':
+            damage *= 1.5
+
         # Type effectiveness
         effectiveness = self._get_type_effectiveness(move_type, defender.species_data['types'])
         damage *= effectiveness
