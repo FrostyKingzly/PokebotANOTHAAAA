@@ -1006,6 +1006,16 @@ class BattleCog(commands.Cog):
     async def _finish_battle(self, interaction: discord.Interaction, battle):
         trainer_name = getattr(battle.trainer, 'battler_name', 'Trainer')
         opponent_name = getattr(battle.opponent, 'battler_name', 'Opponent')
+        trainer_has_pokemon = battle.trainer.has_usable_pokemon()
+        opponent_has_pokemon = battle.opponent.has_usable_pokemon()
+
+        if trainer_has_pokemon and not opponent_has_pokemon:
+            battle.winner = 'trainer'
+        elif opponent_has_pokemon and not trainer_has_pokemon:
+            battle.winner = 'opponent'
+        elif not trainer_has_pokemon and not opponent_has_pokemon:
+            battle.winner = 'draw'
+
         result = battle.winner
         if result == 'trainer':
             winner_name, loser_name = trainer_name, opponent_name
@@ -1045,7 +1055,7 @@ class BattleCog(commands.Cog):
                 color = discord.Color.gold()
             else:
                 desc = (
-                    "❌ You Lose\n\n"
+                    "You Lose\n\n"
                     "All trainers’ Pokémon have fainted…\n\n"
                     f"The Rogue {raid_name} continues to rampage…"
                 )
@@ -1363,6 +1373,37 @@ class BattleActionView(discord.ui.View):
         else:
             self.engine.end_battle(self.battle_id)
 
+def _build_revival_target_options(battle, battler_id: int) -> tuple[list[discord.SelectOption], dict[str, tuple[int, int]]]:
+    """Build select options for Revival Blessing targets."""
+    options: list[discord.SelectOption] = []
+    option_map: dict[str, tuple[int, int]] = {}
+
+    raid_participants = {p.get("user_id"): p.get("trainer_name") for p in getattr(battle, "raid_participants", [])}
+
+    for battler in battle.get_team_battlers(battler_id):
+        owner_label = raid_participants.get(battler.battler_id) or getattr(battler, "battler_name", "Ally")
+        for idx, mon in enumerate(battler.party):
+            if getattr(mon, "current_hp", 0) > 0:
+                continue
+
+            value = f"{battler.battler_id}:{idx}"
+            label = f"{mon.species_name} (Party {idx + 1})"
+            description = None
+
+            mon_owner = getattr(mon, "owner_discord_id", None)
+            if battle.battle_format == BattleFormat.RAID and mon_owner:
+                owner_name = raid_participants.get(mon_owner)
+                if owner_name:
+                    description = f"Trainer: {owner_name}"
+            if not description:
+                description = owner_label
+
+            options.append(discord.SelectOption(label=label, value=value, description=description[:99]))
+            option_map[value] = (battler.battler_id, idx)
+
+    return options, option_map
+
+
 class MoveSelectView(discord.ui.View):
     def __init__(self, battle, battler_id: int, engine: BattleEngine, controller_id: Optional[int] = None):
         super().__init__(timeout=None)
@@ -1406,22 +1447,48 @@ class MoveSelectView(discord.ui.View):
                     engine=engine,
                     battle_id=self.battle_id,
                     battler_id=battler_id,
+                    pokemon_position=0,
                     disabled=(cur_pp is not None and cur_pp <= 0),
                 )
             )
 
 class MoveButton(discord.ui.Button):
-    def __init__(self, label, move_id, engine: BattleEngine, battle_id: str, battler_id: int, disabled: bool = False):
+    def __init__(self, label, move_id, engine: BattleEngine, battle_id: str, battler_id: int, pokemon_position: int = 0, disabled: bool = False):
         super().__init__(label=label, style=discord.ButtonStyle.secondary, row=0, disabled=disabled)
         self.move_id = move_id
         self.engine = engine
         self.battle_id = battle_id
         self.battler_id = battler_id
+        self.pokemon_position = pokemon_position
 
 
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
+
+        battle = self.engine.get_battle(self.battle_id)
+        if self.move_id == "revival_blessing" and battle:
+            options, option_map = _build_revival_target_options(battle, self.battler_id)
+            if not options:
+                await interaction.followup.send(
+                    "There are no fainted ally Pokémon to revive.",
+                    ephemeral=True,
+                )
+                return
+
+            await interaction.followup.send(
+                "Choose a Pokémon to revive:",
+                view=RevivalTargetSelectView(
+                    battle=battle,
+                    battler_id=self.battler_id,
+                    engine=self.engine,
+                    pokemon_position=self.pokemon_position,
+                    options=options,
+                    option_map=option_map,
+                ),
+                ephemeral=True,
+            )
+            return
         action = BattleAction(action_type='move', battler_id=self.battler_id, move_id=self.move_id, target_position=0)
         res = self.engine.register_action(self.battle_id, self.battler_id, action)
         cog = interaction.client.get_cog("BattleCog")
@@ -1711,6 +1778,137 @@ class DoublesActionCollector:
         return None
 
 
+class RevivalTargetSelectView(discord.ui.View):
+    """Target selection for Revival Blessing (supports raids and doubles)."""
+
+    def __init__(
+        self,
+        battle,
+        battler_id: int,
+        engine: BattleEngine,
+        pokemon_position: int,
+        options: list[discord.SelectOption],
+        option_map: dict[str, tuple[int, int]],
+        collector: DoublesActionCollector | None = None,
+    ):
+        super().__init__(timeout=None)
+        self.battle = battle
+        self.battle_id = battle.battle_id
+        self.battler_id = battler_id
+        self.engine = engine
+        self.pokemon_position = pokemon_position
+        self.collector = collector
+        self.option_map = option_map
+
+        select = discord.ui.Select(placeholder="Select a Pokémon to revive", options=options)
+        select.callback = self._on_select
+        self.add_item(select)
+
+        if collector:
+            back_btn = discord.ui.Button(label="← Back", style=discord.ButtonStyle.secondary)
+            back_btn.callback = self._back_callback
+            self.add_item(back_btn)
+
+    async def _back_callback(self, interaction: discord.Interaction):
+        if not self.collector:
+            await interaction.response.send_message("Cannot go back.", ephemeral=True)
+            return
+
+        await interaction.response.edit_message(
+            content=f"Select move for Pokémon {self.pokemon_position + 1}:",
+            view=DoublesMoveSelectView(
+                self.battle, self.battler_id, self.engine,
+                self.pokemon_position, self.collector
+            ),
+            embed=None
+        )
+
+    async def _on_select(self, interaction: discord.Interaction):
+        value = None
+        for child in self.children:
+            if isinstance(child, discord.ui.Select) and child.values:
+                value = child.values[0]
+                break
+
+        if not value or value not in self.option_map:
+            await interaction.response.send_message("Invalid target selected.", ephemeral=True)
+            return
+
+        target_battler_id, target_index = self.option_map[value]
+
+        action = BattleAction(
+            action_type='move',
+            battler_id=self.battler_id,
+            move_id='revival_blessing',
+            target_position=0,
+            pokemon_position=self.pokemon_position,
+            revive_target_battler_id=target_battler_id,
+            revive_target_party_index=target_index,
+        )
+
+        if self.collector:
+            await self._handle_collector_submission(interaction, action)
+        else:
+            await self._handle_single_submission(interaction, action)
+
+    async def _handle_single_submission(self, interaction: discord.Interaction, action: BattleAction):
+        res = self.engine.register_action(self.battle_id, self.battler_id, action)
+        cog = interaction.client.get_cog("BattleCog")
+
+        if not res.get("ready_to_resolve"):
+            await interaction.followup.send(
+                "Move selected! Waiting for the other trainer to choose...",
+                ephemeral=True,
+            )
+            return
+
+        if res.get("ready_to_resolve") and cog:
+            turn = await self.engine.process_turn(self.battle_id)
+            await cog._send_turn_resolution(interaction, turn)
+            await cog._handle_post_turn(interaction, self.battle_id)
+
+    async def _handle_collector_submission(self, interaction: discord.Interaction, action: BattleAction):
+        if not self.collector:
+            return
+
+        self.collector.add_action(self.pokemon_position, action)
+        next_pos = self.collector.get_next_position()
+
+        if next_pos is not None:
+            battler = self.battle.trainer if self.battler_id == self.battle.trainer.battler_id else self.battle.opponent
+            next_mon = battler.get_active_pokemon()[next_pos]
+            await interaction.followup.send(
+                f"Select move for **{next_mon.species_name}** (Slot {next_pos+1}):",
+                view=DoublesMoveSelectView(
+                    self.battle, self.battler_id, self.engine,
+                    next_pos, self.collector
+                ),
+                ephemeral=True
+            )
+            return
+
+        for _, act in self.collector.actions.items():
+            self.engine.register_action(self.battle_id, self.battler_id, act)
+
+        battle = self.engine.get_battle(self.battle_id)
+        if not battle:
+            await interaction.followup.send("Battle not found.", ephemeral=True)
+            return
+
+        if not battle.opponent.is_ai:
+            if len(battle.pending_actions) < len(battle.trainer.get_active_pokemon()) + len(battle.opponent.get_active_pokemon()):
+                await interaction.followup.send(
+                    "Actions submitted! Waiting for opponent...",
+                    ephemeral=True
+                )
+                return
+
+        cog = interaction.client.get_cog("BattleCog")
+        if cog:
+            turn = await self.engine.process_turn(self.battle_id)
+            await cog._send_turn_resolution(interaction, turn)
+            await cog._handle_post_turn(interaction, self.battle_id)
+
 class TargetSelectView(discord.ui.View):
     """View for selecting which target to attack in doubles battles."""
     def __init__(self, battle, battler_id: int, move_id: str, pokemon_position: int,
@@ -1902,14 +2100,39 @@ class DoublesMoveSelectView(discord.ui.View):
 
     def _create_move_callback(self, move_id: str):
         async def callback(interaction: discord.Interaction):
-            await interaction.response.edit_message(
-                content=f"Select target for this move:",
-                view=TargetSelectView(
-                    self.battle, self.battler_id, move_id,
-                    self.pokemon_position, self.engine, self.collector
-                ),
-                embed=None
-            )
+            battle = self.engine.get_battle(self.battle_id) or self.battle
+            if move_id == "revival_blessing":
+                options, option_map = _build_revival_target_options(battle, self.battler_id)
+                if not options:
+                    await interaction.response.edit_message(
+                        content="There are no fainted ally Pokémon to revive.",
+                        view=None,
+                        embed=None,
+                    )
+                    return
+
+                await interaction.response.edit_message(
+                    content="Select a Pokémon to revive:",
+                    view=RevivalTargetSelectView(
+                        battle=battle,
+                        battler_id=self.battler_id,
+                        engine=self.engine,
+                        pokemon_position=self.pokemon_position,
+                        options=options,
+                        option_map=option_map,
+                        collector=self.collector,
+                    ),
+                    embed=None,
+                )
+            else:
+                await interaction.response.edit_message(
+                    content=f"Select target for this move:",
+                    view=TargetSelectView(
+                        self.battle, self.battler_id, move_id,
+                        self.pokemon_position, self.engine, self.collector
+                    ),
+                    embed=None
+                )
         return callback
 
     async def _back_callback(self, interaction: discord.Interaction):

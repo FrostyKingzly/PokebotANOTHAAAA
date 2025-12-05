@@ -366,6 +366,8 @@ class BattleAction:
     target_position: Optional[int] = None  # Which opponent slot to target
     mega_evolve: bool = False
     pokemon_position: int = 0  # Which of the battler's active Pokemon is acting (for doubles)
+    revive_target_battler_id: Optional[int] = None  # For Revival Blessing targeting
+    revive_target_party_index: Optional[int] = None  # Party index to revive (supports raids)
 
     # For switching
     switch_to_position: Optional[int] = None
@@ -1401,6 +1403,21 @@ class BattleEngine:
         ):
             return {"messages": [f"{attacker.species_name} fell for the Taunt and can't use {move_data['name']}!"]}
 
+        # Special handling for Revival Blessing (target selection can include fainted allies)
+        if move_data.get('id') == 'revival_blessing':
+            if self.held_item_manager:
+                restriction = self.held_item_manager.check_move_restrictions(attacker, move_data)
+                if restriction:
+                    return {"messages": [restriction]}
+
+            # Deduct PP once
+            for move in attacker.moves:
+                if move['move_id'] == action.move_id:
+                    move['pp'] = max(0, move['pp'] - 1)
+                    break
+
+            return self._execute_revival_blessing(battle, attacker_battler, attacker, action)
+
         # Determine all targets based on move target type
         target_type = move_data.get('target', 'single')
         targets = self._determine_move_targets(battle, action, move_data)
@@ -1616,6 +1633,49 @@ class BattleEngine:
                         battle.phase = 'VOLT_SWITCH'
                         battle.forced_switch_battler_id = attacker_battler.battler_id
                         messages.append(f"Choose a Pokémon to switch in!")
+
+        return {"messages": messages}
+
+    def _execute_revival_blessing(self, battle: BattleState, attacker_battler: Battler, attacker, action: BattleAction) -> Dict:
+        """Execute Revival Blessing with explicit target selection."""
+
+        messages: List[str] = [f"{attacker.species_name} used Revival Blessing!"]
+
+        # Build candidate pool: all fainted allies on the attacker's team (includes other trainers in raids)
+        team_battlers = battle.get_team_battlers(attacker_battler.battler_id)
+        candidates = []
+        for battler in team_battlers:
+            for idx, mon in enumerate(battler.party):
+                if mon is attacker:
+                    continue
+                if getattr(mon, 'current_hp', 0) <= 0:
+                    candidates.append((battler, idx, mon))
+
+        if not candidates:
+            messages.append("But it failed! There was no one to revive.")
+            return {"messages": messages}
+
+        # Find the requested target
+        target_battler_id = action.revive_target_battler_id
+        target_party_index = action.revive_target_party_index
+        target_entry = None
+        for battler, idx, mon in candidates:
+            if battler.battler_id == target_battler_id and idx == target_party_index:
+                target_entry = (battler, idx, mon)
+                break
+
+        if not target_entry:
+            target_entry = candidates[0]
+
+        _, _, ally = target_entry
+        ally.current_hp = max(1, ally.max_hp // 2)
+        if hasattr(ally, 'status_manager'):
+            ally.status_manager.major_status = None
+            ally.status_manager.clear_volatile_statuses()
+
+        messages.append(
+            f"{attacker.species_name}'s Revival Blessing revived {ally.species_name}! ({ally.current_hp}/{ally.max_hp} HP)"
+        )
 
         return {"messages": messages}
 
