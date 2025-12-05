@@ -439,16 +439,14 @@ class BattleEngine:
         if not opponent_party:
             raise ValueError("Opponent must have at least one Pokémon to battle.")
 
-        # Raids only bring the first three Pokémon from the trainer's party
-        if battle_format == BattleFormat.RAID:
-            trainer_party = trainer_party[:3]
-
         # In multi battles, each trainer sends out 1 Pokemon (2 total per team)
         # In doubles battles, each trainer sends out 2 Pokemon
         if battle_format == BattleFormat.MULTI:
             active_slot_count = 1
         elif battle_format == BattleFormat.DOUBLES:
             active_slot_count = 2
+        elif battle_format == BattleFormat.RAID:
+            active_slot_count = max(1, int(kwargs.get('raid_party_size', 1)))
         else:
             active_slot_count = 1
 
@@ -805,7 +803,7 @@ class BattleEngine:
             return {"error": "Invalid battler ID"}
 
         # Store action with composite key for doubles/multi (battler_id_position)
-        if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.MULTI]:
+        if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.MULTI, BattleFormat.RAID]:
             action_key = f"{battler_id}_{action.pokemon_position}"
         else:
             action_key = str(battler_id)
@@ -813,7 +811,7 @@ class BattleEngine:
 
         # Check if we have all actions needed
         # For doubles/multi, we need actions from all active Pokemon
-        if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.MULTI]:
+        if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.MULTI, BattleFormat.RAID]:
             required_action_keys = []
 
             # Collect actions needed from all non-AI battlers
@@ -942,7 +940,13 @@ class BattleEngine:
             # Target opponent (default for damaging moves)
             opponent = battle.opponent if battler_id == battle.trainer.battler_id else battle.trainer
             opponent_active = opponent.get_active_pokemon()
-            target_pos = random.randint(0, len(opponent_active) - 1) if opponent_active else 0
+            if opponent_active and any(getattr(p, "is_raid_boss", False) for p in battler.party):
+                def bulk_score(p):
+                    return max(0, getattr(p, "current_hp", 0)) + getattr(p, "defense", 0)
+
+                target_pos = max(range(len(opponent_active)), key=lambda idx: bulk_score(opponent_active[idx]))
+            else:
+                target_pos = random.randint(0, len(opponent_active) - 1) if opponent_active else 0
 
         return BattleAction(
             action_type='move',
@@ -1022,7 +1026,7 @@ class BattleEngine:
             acting_pokemon = None
 
             # In doubles, check the specific Pokemon's HP
-            if battle.battle_format == BattleFormat.DOUBLES and hasattr(action, 'pokemon_position'):
+            if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.RAID] and hasattr(action, 'pokemon_position'):
                 pokemon_pos = action.pokemon_position
                 if pokemon_pos < len(active_pokemon):
                     acting_pokemon = active_pokemon[pokemon_pos]
@@ -1047,7 +1051,7 @@ class BattleEngine:
                 and action.action_type != 'switch'
             ):
                 # In doubles, check if this specific Pokemon needs to switch
-                if battle.battle_format == BattleFormat.DOUBLES and battle.forced_switch_position is not None:
+                if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.RAID] and battle.forced_switch_position is not None:
                     if hasattr(action, 'pokemon_position') and action.pokemon_position == battle.forced_switch_position:
                         # This Pokemon needs to switch, skip its action
                         continue
@@ -1287,8 +1291,8 @@ class BattleEngine:
 
         messages.append(f"{attacker.species_name} used {move_data['name']} on {target_text}!")
 
-        # In doubles, spread moves have 0.75x power
-        spread_modifier = 0.75 if battle.battle_format == BattleFormat.DOUBLES and len(targets) > 1 else 1.0
+        # In doubles/raids, spread moves have 0.75x power
+        spread_modifier = 0.75 if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.RAID] and len(targets) > 1 else 1.0
 
         # Hit each target
         for defender_battler, defender in targets:

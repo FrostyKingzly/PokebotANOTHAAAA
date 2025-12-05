@@ -3600,7 +3600,7 @@ class RaidReadyCheckView(View):
         trainer_names: List[str] = []
         errors: List[str] = []
         participant_entries: List[Dict[str, Any]] = []
-        remaining_slots = 6
+        remaining_slots = 12
 
         for user_id in raid.join_order:
             if user_id not in ready_ids:
@@ -3656,17 +3656,18 @@ class RaidReadyCheckView(View):
 
         raid_boss = raid_manager.build_raid_boss(raid)
 
-        battle_id = battle_cog.battle_engine.start_battle(
-            trainer_id=self.host_id,
-            trainer_name=", ".join(trainer_names) or "Raid Team",
-            trainer_party=trainer_party,
-            opponent_party=[raid_boss],
-            opponent_is_ai=True,
-            battle_type=BattleType.TRAINER if BattleType else None,
-            battle_format=BattleFormat.RAID if BattleFormat else None,
-            opponent_name=f"Rogue {raid_boss.species_name}",
-            opponent_id=raid.created_by,
-        )
+            battle_id = battle_cog.battle_engine.start_battle(
+                trainer_id=self.host_id,
+                trainer_name=", ".join(trainer_names) or "Raid Team",
+                trainer_party=trainer_party,
+                opponent_party=[raid_boss],
+                opponent_is_ai=True,
+                battle_type=BattleType.TRAINER if BattleType else None,
+                battle_format=BattleFormat.RAID if BattleFormat else None,
+                opponent_name=f"Rogue {raid_boss.species_name}",
+                opponent_id=raid.created_by,
+                raid_party_size=len(participant_entries) or 1,
+            )
 
         battle = battle_cog.battle_engine.get_battle(battle_id)
         if battle:
