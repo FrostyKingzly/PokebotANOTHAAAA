@@ -17860,7 +17860,7 @@
     "priority": 0,
     "target": "single",
     "crit_rate": 1,
-    "description": "If the user has Terastallized, it unleashes energy of its Tera Type. This move inflicts damage using the Attack or Sp. Atk stat\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u009dwhichever is higher for the user.",
+    "description": "If the user has Terastallized, it unleashes energy of its Tera Type. This move inflicts damage using the Attack or Sp. Atk stat\u2014whichever is higher.",
     "generation": 9,
     "flags": {
       "protect": true,
@@ -18045,7 +18045,7 @@
     "priority": 0,
     "target": "single",
     "crit_rate": 1,
-    "description": "The user\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s fellows gather in droves to perform a combo attack that hits the target one to ten times in a row.",
+    "description": "The user's fellows gather in droves to perform a combo attack that hits the target one to ten times in a row.",
     "generation": 9,
     "multihit": 10,
     "flags": {
@@ -18086,7 +18086,7 @@
     "priority": 0,
     "target": "single",
     "crit_rate": 1,
-    "description": "The user throws its entire body into a reckless charge. After this move is used, attacks on the user cannot miss and will inflict double damage until the user\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s next turn.",
+    "description": "The user throws its entire body into a reckless charge. Attacks from opposing Pok\u00e9mon during the next turn cannot miss and deal double damage.",
     "generation": 9,
     "flags": {
       "contact": true,
@@ -18106,7 +18106,7 @@
     "priority": 0,
     "target": "single",
     "crit_rate": 1,
-    "description": "The user bestows a loving blessing, reviving a party Pok\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a9mon that has fainted and restoring half that Pok\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a9mon's max HP.",
+    "description": "The user bestows a loving blessing, reviving a party Pok\u00e9mon that has fainted. The revived Pok\u00e9mon regains half its max HP.",
     "generation": 9,
     "flags": {
       "heal": true,
@@ -18167,7 +18167,7 @@
     "priority": 0,
     "target": "all_opponents",
     "crit_rate": 1,
-    "description": "The user performs a spin attack that can also eliminate the effects of such moves as Bind, Wrap, and Leech Seed. This also poisons opposing Pok\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a9mon.",
+    "description": "The user performs a spin attack that also frees the user from bind, wrap, and Leech Seed. This also poisons opposing Pok\u00e9mon.",
     "generation": 9,
     "secondary": {
       "chance": 100,
@@ -18191,7 +18191,7 @@
     "priority": 0,
     "target": "single",
     "crit_rate": 1,
-    "description": "The user captures the very essence of the target in a sketch. This changes the Abilities of the user and its ally Pok\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a9mon to that of the target.",
+    "description": "The user captures the very essence of the target in a sketch, changing the Abilities of the user and its ally to that of the target.",
     "generation": 9
   },
   "fillet_away": {
@@ -18402,7 +18402,7 @@
     "priority": 0,
     "target": "single",
     "crit_rate": 1,
-    "description": "The user summons a ruinous disaster. This cuts the target\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s HP in half.",
+    "description": "The user summons a ruinous disaster, cutting the target's HP in half.",
     "generation": 9,
     "flags": {
       "protect": true,
@@ -18420,7 +18420,7 @@
     "priority": 0,
     "target": "single",
     "crit_rate": 1,
-    "description": "The user transforms and crashes to the ground, causing a massive prehistoric explosion. This move's power is boosted more than usual if it\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s a supereffective hit.",
+    "description": "The user transforms and crashes to the ground, causing a great crater. This move's effectiveness is boosted more than usual if it's super effective.",
     "generation": 9,
     "flags": {
       "contact": true,
@@ -18458,7 +18458,7 @@
     "priority": 0,
     "target": "self",
     "crit_rate": 1,
-    "description": "The user creates a substitute for itself using its own HP before switching places with a party Pok\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a9mon in waiting.",
+    "description": "The user creates a substitute for itself using its own HP before switching places with a party Pok\u00e9mon in waiting.",
     "generation": 9
   },
   "chilly_reception": {
@@ -18487,7 +18487,7 @@
     "priority": 0,
     "target": "self",
     "crit_rate": 1,
-    "description": "The user tidies up and removes the effects of Spikes, Stealth Rock, Sticky Web, Toxic Spikes, and Substitute. This also boosts the user\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s Attack and Speed stats.",
+    "description": "The user tidies up and removes the effects of Spikes, Stealth Rock, Sticky Web, and Toxic Spikes. This also boosts the user's Attack and Speed stats.",
     "generation": 9
   },
   "snowscape": {
@@ -18647,7 +18647,7 @@
     "priority": 0,
     "target": "single",
     "crit_rate": 1,
-    "description": "The user shoots its own armor out as blazing projectiles. This also lowers the user\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s Defense and Sp. Def stats.",
+    "description": "The user shoots its own armor out as blazing projectiles. This also lowers the user's Defense and Sp. Def stats.",
     "generation": 9,
     "boosts": {
       "def": -1,
@@ -19031,7 +19031,7 @@
     "priority": 0,
     "target": "all_opponents",
     "crit_rate": 1,
-    "description": "With the power of its crystals, the user bombards and eliminates the target. When used by Terapagos in its Stellar Form, this move damages all opposing Pok\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a9mon.",
+    "description": "The user unleashes a stellar beam of light. This move's type changes to match the user's Tera Type.",
     "generation": 9,
     "flags": {
       "protect": true,
@@ -19171,7 +19171,7 @@
     "priority": 0,
     "target": "all_allies",
     "crit_rate": 1,
-    "description": "The user raises its allies\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2 morale with a draconic cry so that their future attacks have a heightened chance of landing critical hits. This rouses Dragon types more.",
+    "description": "The user raises its allies' spirits with a fierce cheer. This boosts the critical-hit rate of the user and its allies, with an even greater effect on Dragon-type Pok\u00e9mon.",
     "generation": 9,
     "flags": {
       "bypasssub": true,
