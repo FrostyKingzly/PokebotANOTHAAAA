@@ -1571,14 +1571,14 @@ class BoxManagementView(View):
         """Add page navigation"""
         # Previous button
         prev_button = Button(
-            label="â—€ Previous",
+            label="< Previous",
             style=discord.ButtonStyle.secondary,
             disabled=(self.page == 0),
             row=1
         )
         prev_button.callback = self.prev_page
         self.add_item(prev_button)
-        
+
         # Page indicator
         page_button = Button(
             label=f"Page {self.page + 1}/{self.total_pages}",
@@ -1587,10 +1587,10 @@ class BoxManagementView(View):
             row=1
         )
         self.add_item(page_button)
-        
+
         # Next button
         next_button = Button(
-            label="Next â–¶",
+            label="Next >",
             style=discord.ButtonStyle.secondary,
             disabled=(self.page >= self.total_pages - 1),
             row=1
