@@ -56,6 +56,94 @@ WEATHER_CONDITION_CHOICES = [
 ]
 
 
+class ChannelLocationSelectView(discord.ui.View):
+    """Dropdown view for mapping channels to locations"""
+
+    def __init__(
+        self,
+        bot,
+        channel_id: int,
+        locations: Dict[str, Dict],
+        current_mapping: Optional[str]
+    ):
+        super().__init__(timeout=120)
+        self.bot = bot
+        self.channel_id = channel_id
+        self.current_mapping = current_mapping
+
+        # Discord selects support up to 25 options
+        sorted_locations = sorted(
+            locations.items(),
+            key=lambda item: item[1].get('name', item[0].replace('_', ' ').title())
+        )[:25]
+
+        options = []
+        for location_id, location_data in sorted_locations:
+            label = location_data.get('name', location_id.replace('_', ' ').title())
+            description = location_data.get('description', '')[:100]
+            options.append(
+                discord.SelectOption(
+                    label=label[:100],
+                    value=location_id,
+                    description=description,
+                    default=(location_id == current_mapping)
+                )
+            )
+
+        select = discord.ui.Select(
+            placeholder="Choose a location for this channel...",
+            options=options
+        )
+        select.callback = self.location_selected
+        self.add_item(select)
+
+    async def location_selected(self, interaction: discord.Interaction):
+        """Handle selection of a location for this channel"""
+        location_id = interaction.data['values'][0]
+
+        # Prevent duplicate assignments
+        if location_id == self.current_mapping:
+            location_name = self.bot.location_manager.get_location_name(location_id)
+            await interaction.response.send_message(
+                f"ℹ️ {interaction.channel.mention} is already linked to **{location_name}**.",
+                ephemeral=True
+            )
+            return
+
+        # Remove existing mapping if necessary
+        existing_mapping = self.bot.location_manager.get_location_by_channel(self.channel_id)
+        if existing_mapping and existing_mapping != location_id:
+            self.bot.location_manager.remove_channel_from_location(self.channel_id)
+
+        success = self.bot.location_manager.add_channel_to_location(
+            self.channel_id,
+            location_id
+        )
+
+        if not success:
+            await interaction.response.send_message(
+                "❌ Failed to map this channel to the selected location. Please try again.",
+                ephemeral=True
+            )
+            return
+
+        location_name = self.bot.location_manager.get_location_name(location_id)
+
+        # Disable the view to prevent further edits
+        for child in self.children:
+            child.disabled = True
+
+        await interaction.response.edit_message(
+            content=(
+                f"✅ {interaction.channel.mention} is now mapped to **{location_name}**.\n"
+                "Players must use this channel for that location's encounters."
+            ),
+            embed=None,
+            view=self
+        )
+        self.stop()
+
+
 class AdminCog(commands.Cog):
     """Admin commands for bot management and testing"""
 
@@ -1425,97 +1513,6 @@ Modest Nature
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-
-class ChannelLocationSelectView(discord.ui.View):
-    """Dropdown view for mapping channels to locations"""
-
-    def __init__(
-        self,
-        bot,
-        channel_id: int,
-        locations: Dict[str, Dict],
-        current_mapping: Optional[str]
-    ):
-        super().__init__(timeout=120)
-        self.bot = bot
-        self.channel_id = channel_id
-        self.current_mapping = current_mapping
-
-        # Discord selects support up to 25 options
-        sorted_locations = sorted(
-            locations.items(),
-            key=lambda item: item[1].get('name', item[0].replace('_', ' ').title())
-        )[:25]
-
-        options = []
-        for location_id, location_data in sorted_locations:
-            label = location_data.get('name', location_id.replace('_', ' ').title())
-            description = location_data.get('description', '')[:100]
-            options.append(
-                discord.SelectOption(
-                    label=label[:100],
-                    value=location_id,
-                    description=description,
-                    default=(location_id == current_mapping)
-                )
-            )
-
-        select = discord.ui.Select(
-            placeholder="Choose a location for this channel...",
-            options=options
-        )
-        select.callback = self.location_selected
-        self.add_item(select)
-
-    async def location_selected(self, interaction: discord.Interaction):
-        """Handle selection of a location for this channel"""
-        location_id = interaction.data['values'][0]
-
-        # Prevent duplicate assignments
-        if location_id == self.current_mapping:
-            location_name = self.bot.location_manager.get_location_name(location_id)
-            await interaction.response.send_message(
-                f"ℹ️ {interaction.channel.mention} is already linked to **{location_name}**.",
-                ephemeral=True
-            )
-            return
-
-        # Remove existing mapping if necessary
-        existing_mapping = self.bot.location_manager.get_location_by_channel(self.channel_id)
-        if existing_mapping and existing_mapping != location_id:
-            self.bot.location_manager.remove_channel_from_location(self.channel_id)
-
-        success = self.bot.location_manager.add_channel_to_location(
-            self.channel_id,
-            location_id
-        )
-
-        if not success:
-            await interaction.response.send_message(
-                "❌ Failed to map this channel to the selected location. Please try again.",
-                ephemeral=True
-            )
-            return
-
-        location_name = self.bot.location_manager.get_location_name(location_id)
-
-        # Disable the view to prevent further edits
-        for child in self.children:
-            child.disabled = True
-
-        await interaction.response.edit_message(
-            content=(
-                f"✅ {interaction.channel.mention} is now mapped to **{location_name}**.\n"
-                "Players must use this channel for that location's encounters."
-            ),
-            embed=None,
-            view=self
-        )
-        self.stop()
-
-    # ============================================================
-    # WILD AREA MANAGEMENT
-    # ============================================================
 
     @app_commands.command(name="create_wild_area", description="[ADMIN] Create a new wild area")
     @app_commands.describe(
