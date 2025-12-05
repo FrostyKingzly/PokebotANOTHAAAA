@@ -683,14 +683,13 @@ class BattleCog(commands.Cog):
         type_emojis = " / ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
 
         embed = discord.Embed(
-            title=f"Rogue {raid_mon.species_name}",
-            description=f"**HP**\n{hp_bars}\n**{max(0, int(getattr(raid_mon, 'current_hp', 0)))}/{int(getattr(raid_mon, 'max_hp', 1))}**",
+            title=f"Rogue {raid_mon.species_name} Lv. {getattr(raid_mon, 'level', '?')}",
+            description=(
+                f"**HP** {type_emojis}\n{hp_bars}\n"
+                f"**{max(0, int(getattr(raid_mon, 'current_hp', 0)))}/{int(getattr(raid_mon, 'max_hp', 1))}**"
+            ),
             color=discord.Color.dark_red(),
         )
-
-        embed.add_field(name="Level", value=getattr(raid_mon, "level", "?"), inline=True)
-        if type_emojis:
-            embed.add_field(name="Type", value=type_emojis, inline=True)
 
         sprite_url = PokemonSpriteHelper.get_sprite(
             getattr(raid_mon, "species_name", None),
@@ -718,16 +717,20 @@ class BattleCog(commands.Cog):
 
         for entry in participants:
             trainer_name = entry.get("trainer_name") or "Trainer"
-            for mon in entry.get("party") or []:
-                entries.append((trainer_name, mon))
-                if len(entries) >= 8:
-                    break
+            party = entry.get("party") or []
+            active_mon = next((m for m in party if getattr(m, "current_hp", 0) > 0), None)
+            if not active_mon and party:
+                active_mon = party[0]
+            if active_mon:
+                entries.append((trainer_name, active_mon))
             if len(entries) >= 8:
                 break
 
         if not entries:
-            for mon in getattr(battle.trainer, "party", [])[:8]:
-                entries.append((battle.trainer.battler_name, mon))
+            trainer_party = getattr(battle.trainer, "party", [])
+            if trainer_party:
+                active_mon = next((m for m in trainer_party if getattr(m, "current_hp", 0) > 0), trainer_party[0])
+                entries.append((battle.trainer.battler_name, active_mon))
 
         for idx, (trainer_name, mon) in enumerate(entries):
             hp_value = f"HP: {self._hp_bar(mon)} ({max(0, mon.current_hp)}/{mon.max_hp})"

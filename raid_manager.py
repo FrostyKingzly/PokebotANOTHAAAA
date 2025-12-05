@@ -1,5 +1,6 @@
 """Raid encounter manager and placeholder raid boss generation."""
 
+import random
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -199,11 +200,32 @@ class RaidManager:
                 if move_id not in support_moves:
                     support_moves.append(move_id)
 
-        # Fill with attacking options first
-        selected: List[str] = attack_moves[:4]
-        selected.extend(support_moves[: max(0, 6 - len(selected))])
+        random.shuffle(attack_moves)
+        random.shuffle(support_moves)
 
-        if len(selected) < 6:
+        selected: List[str] = []
+
+        # Ensure up to four attacking options
+        selected.extend(attack_moves[:4])
+
+        # Ensure up to two support options
+        selected.extend(support_moves[:2])
+
+        # Fill remaining slots, favoring unused attack moves first
+        remaining_slots = 6 - len(selected)
+        if remaining_slots > 0:
+            remaining_attacks = [m for m in attack_moves if m not in selected]
+            random.shuffle(remaining_attacks)
+            selected.extend(remaining_attacks[:remaining_slots])
+            remaining_slots = 6 - len(selected)
+
+        if remaining_slots > 0:
+            remaining_support = [m for m in support_moves if m not in selected]
+            random.shuffle(remaining_support)
+            selected.extend(remaining_support[:remaining_slots])
+            remaining_slots = 6 - len(selected)
+
+        if remaining_slots > 0:
             fallback = self.learnset_db.get_starting_moves(species_name, level=level, max_moves=6)
             for move_id in fallback:
                 if move_id not in selected:
