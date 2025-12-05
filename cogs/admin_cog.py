@@ -1751,7 +1751,42 @@ Modest Nature
             ephemeral=True
         )
 
+    async def raid_location_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """Provide up to 25 location choices for raid spawning."""
+
+        location_manager = getattr(self.bot, "location_manager", None)
+        if not location_manager:
+            return []
+
+        locations = location_manager.get_all_locations() or {}
+        current_lower = (current or "").lower()
+
+        choices = []
+        for location_id, data in sorted(
+            locations.items(),
+            key=lambda item: item[1].get("name", item[0].replace("_", " ").title()),
+        ):
+            display_name = data.get("name") or location_id.replace("_", " ").title()
+            label = f"{display_name} ({location_id})" if display_name != location_id else display_name
+
+            if current_lower and current_lower not in label.lower():
+                continue
+
+            choices.append(
+                app_commands.Choice(name=label[:100], value=location_id)
+            )
+
+            if len(choices) >= 25:
+                break
+
+        return choices
+
     @app_commands.command(name="create_raid", description="[ADMIN] Spawn a raid encounter at a location")
+    @app_commands.autocomplete(location_id=raid_location_autocomplete)
     @app_commands.describe(
         location_id="Location/channel mapping ID where the raid appears",
         species="Pokemon species (name or dex number)",
