@@ -2,6 +2,7 @@
 Database Module - Handles loading game data and player data storage
 """
 
+import csv
 import json
 import sqlite3
 import time
@@ -268,10 +269,12 @@ class AbilitiesDatabase:
 
 class ItemsDatabase:
     """Loads and queries item data"""
-    
+
     def __init__(self, json_path: str):
         with open(json_path, 'r', encoding='utf-8') as f:
             self.data = json.load(f)
+
+        self._apply_bag_categories()
     
     def get_item(self, item_id: str) -> Optional[Dict]:
         """Get item by ID"""
@@ -280,6 +283,80 @@ class ItemsDatabase:
     def get_items_by_category(self, category: str) -> List[Dict]:
         """Get all items in a category"""
         return [item for item in self.data.values() if item.get('category') == category]
+
+    def _apply_bag_categories(self) -> None:
+        """Use the bundled PokeAPI CSV dump to map items into bag categories.
+
+        The bot's bag UI uses a simplified set of categories. We derive those from the
+        authoritative PokeAPI item tables (including Gen 9) so new items are grouped
+        correctly without hand-maintaining the JSON data.
+        """
+
+        csv_root = Path(__file__).resolve().parent / "pokeapi_csv_bot"
+        items_csv = csv_root / "items.csv"
+        categories_csv = csv_root / "item_categories.csv"
+        pockets_csv = csv_root / "item_pockets.csv"
+
+        if not (items_csv.exists() and categories_csv.exists() and pockets_csv.exists()):
+            return
+
+        categories = {}
+        with open(categories_csv, newline='') as f:
+            for row in csv.DictReader(f):
+                categories[row['id']] = {
+                    'identifier': row['identifier'],
+                    'pocket_id': row['pocket_id'],
+                }
+
+        pockets = {}
+        with open(pockets_csv, newline='') as f:
+            for row in csv.DictReader(f):
+                pockets[row['id']] = row['identifier']
+
+        def derive_bag_category(cat_identifier: str, pocket_identifier: str, item_identifier: str) -> str:
+            """Collapse PokeAPI categories into the bot's bag groupings."""
+
+            pocket_map = {
+                'medicine': 'medicine',
+                'pokeballs': 'pokeball',
+                'battle': 'battle_item',
+                'berries': 'berries',
+                'machines': 'tms',
+                'key': 'key_item',
+                'mail': 'other',
+                'misc': 'other',
+            }
+
+            omni_categories = {'mega-stones', 'tera-shard', 'z-crystals', 'dynamax-crystals'}
+            if cat_identifier in omni_categories or 'tera-' in item_identifier or 'mega-' in item_identifier:
+                return 'omni'
+
+            if cat_identifier == 'tm-materials':
+                return 'tms'
+
+            return pocket_map.get(pocket_identifier, 'other')
+
+        bag_categories = {}
+        with open(items_csv, newline='') as f:
+            for row in csv.DictReader(f):
+                cat_info = categories.get(row['category_id'])
+                if not cat_info:
+                    continue
+
+                pocket_identifier = pockets.get(cat_info['pocket_id'], 'misc')
+                bag_categories[row['identifier'].replace('-', '_')] = derive_bag_category(
+                    cat_info['identifier'], pocket_identifier, row['identifier']
+                )
+
+        for item_id, item_data in self.data.items():
+            if not isinstance(item_data, dict):
+                continue
+
+            bag_category = bag_categories.get(item_id)
+            if bag_category:
+                item_data['bag_category'] = bag_category
+            else:
+                item_data.setdefault('bag_category', item_data.get('category', 'other'))
 
 
 class NaturesDatabase:
