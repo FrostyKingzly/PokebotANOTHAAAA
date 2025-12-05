@@ -1017,13 +1017,8 @@ class BattleCog(commands.Cog):
     async def _finish_battle(self, interaction: discord.Interaction, battle):
         trainer_name = getattr(battle.trainer, 'battler_name', 'Trainer')
         opponent_name = getattr(battle.opponent, 'battler_name', 'Opponent')
-
-        def _team_has_usable(battler):
-            team = battle.get_team_battlers(battler.battler_id)
-            return any(getattr(mon, 'current_hp', 0) > 0 for member in team for mon in getattr(member, 'party', []))
-
-        trainer_has_pokemon = _team_has_usable(battle.trainer)
-        opponent_has_pokemon = _team_has_usable(battle.opponent)
+        trainer_has_pokemon = battle.trainer.has_usable_pokemon()
+        opponent_has_pokemon = battle.opponent.has_usable_pokemon()
 
         if trainer_has_pokemon and not opponent_has_pokemon:
             battle.winner = 'trainer'
