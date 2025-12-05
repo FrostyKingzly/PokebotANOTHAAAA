@@ -3379,20 +3379,25 @@ class RaidEncounterView(View):
         if await self._not_for_you(interaction):
             return
 
-        lobby_view = RaidReadyCheckView(
+        raid = self._get_raid()
+        raid_manager = getattr(self.bot, "raid_manager", None)
+        if not raid or not raid_manager:
+            await interaction.response.send_message(
+                "❌ The raid vanished before you could invite anyone. Try rolling again!",
+                ephemeral=True,
+            )
+            return
+
+        invite_view = RaidPublicInviteView(
             bot=self.bot,
             location_id=self.location_id,
             host_id=self.player_id,
         )
-
-        await interaction.response.defer(ephemeral=True)
-        invite_view = RaidInviteView(lobby_view)
-        invite_message = await interaction.followup.send(
-            content="Select trainers to invite to the raid.",
+        await interaction.response.send_message(
+            embed=build_public_raid_invite_embed(self.bot, raid, self.location_id, self.player_id),
             view=invite_view,
-            ephemeral=True,
         )
-        invite_view.parent_message = invite_message
+        invite_view.message = await interaction.original_response()
 
     @discord.ui.button(label="↩️ Back", style=discord.ButtonStyle.secondary)
     async def back_button(self, interaction: discord.Interaction, button: Button):
@@ -3413,6 +3418,7 @@ class RaidReadyCheckView(View):
         self.bot = bot
         self.location_id = location_id
         self.host_id = host_id
+        self.message: Optional[discord.Message] = None
         self.message: Optional[discord.Message] = None
 
     # ------------------------------ helpers ------------------------------
@@ -3534,12 +3540,25 @@ class RaidReadyCheckView(View):
         if not await self._ensure_participant(interaction):
             return
 
-        invite_view = RaidInviteView(self)
-        await interaction.response.send_message(
-            content="Select trainers to invite to the raid.",
-            view=invite_view,
-            ephemeral=True,
+        raid_manager, raid = self._raid_state()
+        if not raid_manager or not raid:
+            await interaction.response.send_message(
+                "❌ The raid ended before you could invite anyone.",
+                ephemeral=True,
+            )
+            return
+
+        invite_view = RaidPublicInviteView(
+            bot=self.bot,
+            location_id=self.location_id,
+            host_id=self.host_id,
         )
+
+        await interaction.response.send_message(
+            embed=build_public_raid_invite_embed(self.bot, raid, self.location_id, self.host_id),
+            view=invite_view,
+        )
+        invite_view.message = await interaction.original_response()
 
     @discord.ui.button(label="🚀 Start Raid", style=discord.ButtonStyle.danger)
     async def start_button(self, interaction: discord.Interaction, button: Button):
@@ -3652,79 +3671,99 @@ class RaidReadyCheckView(View):
         await self._refresh()
 
 
-class RaidInviteSelect(Select):
-    """Dropdown for inviting local trainers into the raid lobby."""
+def build_public_raid_invite_embed(bot, raid: RaidEncounter, location_id: str, host_id: int) -> discord.Embed:
+    """Build a public embed that advertises an open raid join."""
 
-    def __init__(self, parent_view: RaidReadyCheckView, options: List[discord.SelectOption]):
-        super().__init__(
-            placeholder="Invite teammates to this raid",
-            min_values=1,
-            max_values=len(options) if options else 1,
-            options=options or [discord.SelectOption(label="No trainers available", value="none")],
-        )
-        self.parent_view = parent_view
+    location_manager = getattr(bot, "location_manager", None)
+    location = location_manager.get_location(location_id) if location_manager else None
+    location_name = location.get("name") if isinstance(location, dict) else location_id
+    trainer = bot.player_manager.get_player(host_id)
+    host_name = getattr(trainer, "trainer_name", f"Trainer {host_id}") if trainer else f"Trainer {host_id}"
 
-    async def callback(self, interaction: discord.Interaction):
-        raid_manager, raid = await self.parent_view._require_raid(interaction)
+    description = (
+        "Click **Join Raid** to enter the lobby."
+        " You must be in the same location and have a trainer profile to participate."
+    )
+    embed = discord.Embed(
+        title="⚔️ Raid Invite",
+        description=description,
+        color=discord.Color.blurple(),
+    )
+    embed.add_field(name="Host", value=f"{host_name} (<@{host_id}>)", inline=False)
+    embed.add_field(name="Raid", value=raid.pokemon_config.pokemon.species_name, inline=True)
+    embed.add_field(name="Level", value=raid.pokemon_config.pokemon.level, inline=True)
+    if location_name:
+        embed.add_field(name="Location", value=location_name, inline=True)
+    embed.set_footer(text="Teammates already roll together — any trainer here can join.")
+    return embed
+
+
+class RaidPublicInviteView(View):
+    """Public join button that lets nearby trainers hop into the raid lobby."""
+
+    def __init__(self, bot, location_id: str, host_id: int):
+        super().__init__(timeout=600)
+        self.bot = bot
+        self.location_id = location_id
+        self.host_id = host_id
+
+    def _raid_state(self):
+        raid_manager = getattr(self.bot, "raid_manager", None)
+        raid = raid_manager.get_raid(self.location_id) if raid_manager else None
+        return raid_manager, raid
+
+    async def _require_raid(self, interaction: discord.Interaction):
+        raid_manager, raid = self._raid_state()
+        if not raid_manager or not raid:
+            await interaction.response.send_message(
+                "❌ This raid is no longer available.",
+                ephemeral=True,
+            )
+            return None, None
+        return raid_manager, raid
+
+    @discord.ui.button(label="Join Raid", style=discord.ButtonStyle.success)
+    async def join_button(self, interaction: discord.Interaction, button: Button):
+        raid_manager, raid = await self._require_raid(interaction)
         if not raid:
             return
 
-        if not getattr(interaction.user, "id", None):
-            await interaction.response.send_message("Unable to resolve user.", ephemeral=True)
+        trainer = self.bot.player_manager.get_player(interaction.user.id)
+        if not trainer:
+            await interaction.response.send_message(
+                "❌ You need a trainer profile to join raids.",
+                ephemeral=True,
+            )
             return
 
-        if "none" in self.values:
-            await interaction.response.send_message("No trainers to invite right now.", ephemeral=True)
+        if getattr(trainer, "current_location_id", None) != self.location_id:
+            await interaction.response.send_message(
+                "❌ You must be in the same location as the raid to join.",
+                ephemeral=True,
+            )
             return
 
-        invited_ids = []
-        for value in self.values:
-            user_id = int(value)
-            raid_manager.invite_participant(self.parent_view.location_id, interaction.user.id, user_id)
-            invited_ids.append(user_id)
+        raid_manager.add_participant(self.location_id, interaction.user.id)
 
-        await interaction.response.send_message(
-            f"Invited: {', '.join(f'<@{uid}>' for uid in invited_ids)}",
+        await interaction.response.defer(ephemeral=True)
+        lobby_view = RaidReadyCheckView(
+            bot=self.bot,
+            location_id=self.location_id,
+            host_id=self.host_id,
+        )
+        lobby_message = await interaction.followup.send(
+            embed=lobby_view.build_lobby_embed(),
+            view=lobby_view,
             ephemeral=True,
         )
-        await self.parent_view._refresh()
-
-
-class RaidInviteView(View):
-    """Wrapper view that hosts the invite select dropdown."""
-
-    def __init__(self, parent_view: RaidReadyCheckView):
-        super().__init__(timeout=300)
-        self.parent_view = parent_view
-        self.parent_message: Optional[discord.Message] = None
-
-        raid_manager, raid = self.parent_view._raid_state()
-        options: List[discord.SelectOption] = []
-        if raid_manager and raid:
-            trainers_here = self.parent_view.bot.player_manager.get_players_in_location(
-                self.parent_view.location_id,
-                exclude_user_id=None,
-            )
-            for trainer in trainers_here:
-                if trainer.discord_user_id in raid.participants:
-                    continue
-                label = getattr(trainer, "trainer_name", str(trainer.discord_user_id))
-                options.append(
-                    discord.SelectOption(
-                        label=label,
-                        value=str(trainer.discord_user_id),
-                        description=f"Invite {label} to the raid",
-                    )
-                )
-
-        self.add_item(RaidInviteSelect(self.parent_view, options))
+        lobby_view.message = lobby_message
 
     async def on_timeout(self):
         for child in self.children:
             child.disabled = True
-        if self.parent_message:
+        if self.message:
             try:
-                await self.parent_message.edit(view=self)
+                await self.message.edit(view=self)
             except Exception:
                 pass
 
