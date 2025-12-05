@@ -867,6 +867,17 @@ class BattleCog(commands.Cog):
 
         return action_msgs, faint_msgs
 
+    async def _safe_followup_send(self, interaction: discord.Interaction, **kwargs):
+        """Send a followup message, falling back to the channel if the webhook is gone."""
+        try:
+            await interaction.followup.send(**kwargs)
+        except discord.errors.NotFound:
+            if interaction.channel:
+                await interaction.channel.send(**kwargs)
+        except Exception:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(**kwargs)
+
     def _build_turn_embeds(self, turn_result: dict) -> list[discord.Embed]:
         events = turn_result.get("action_events") or []
         embeds: list[discord.Embed] = []
@@ -952,7 +963,7 @@ class BattleCog(commands.Cog):
     async def _send_turn_resolution(self, interaction: discord.Interaction, turn_result: dict):
         action_embeds = self._build_turn_embeds(turn_result)
         for embed in action_embeds:
-            await interaction.followup.send(embed=embed)
+            await self._safe_followup_send(interaction, embed=embed)
 
         switch_events = turn_result.get("switch_events")
         if switch_events is None:
@@ -962,7 +973,7 @@ class BattleCog(commands.Cog):
         for event in switch_events or []:
             embed = self._build_switch_embed(event.get("messages") or [], pokemon=event.get("pokemon"))
             if embed:
-                await interaction.followup.send(embed=embed)
+                await self._safe_followup_send(interaction, embed=embed)
 
     async def _prompt_forced_switch(self, interaction: discord.Interaction, battle, battler_id: int):
         if battler_id != battle.trainer.battler_id:
@@ -1023,7 +1034,8 @@ class BattleCog(commands.Cog):
             winner_name, loser_name = opponent_name, trainer_name
         else:
             desc = "🏆 Battle Over\n\nIt's a draw!"
-            await interaction.followup.send(
+            await self._safe_followup_send(
+                interaction,
                 embed=discord.Embed(title='Battle Over', description=desc, color=discord.Color.gold())
             )
             self.battle_engine.end_battle(battle.battle_id)
@@ -1057,6 +1069,7 @@ class BattleCog(commands.Cog):
                 desc = (
                     "You Lose\n\n"
                     "All trainers’ Pokémon have fainted…\n\n"
+                    "The Dreamlites shatter…\n\n"
                     f"The Rogue {raid_name} continues to rampage…"
                 )
                 title = 'Battle Over'
@@ -1066,7 +1079,8 @@ class BattleCog(commands.Cog):
             title = 'Battle Over'
             color = discord.Color.gold() if result == 'trainer' else discord.Color.red()
 
-        await interaction.followup.send(
+        await self._safe_followup_send(
+            interaction,
             embed=discord.Embed(title=title, description=desc, color=color)
         )
 
@@ -1518,54 +1532,7 @@ class MoveButton(discord.ui.Button):
                     return
                 
                 if turn.get('is_over') or battle.is_over:
-                    # Map engine winner ('trainer'|'opponent'|'draw') to names
-                    result = turn.get('winner') or battle.winner
-                    trainer_name = getattr(battle.trainer, 'battler_name', 'Trainer')
-                    opponent_name = getattr(battle.opponent, 'battler_name', 'Opponent')
-                    if result == 'trainer':
-                        winner_name, loser_name = trainer_name, opponent_name
-                    elif result == 'opponent':
-                        winner_name, loser_name = opponent_name, trainer_name
-                    else:
-                        desc = "🏆 Battle Over\n\nIt's a draw!"
-                        await interaction.followup.send(embed=discord.Embed(title='Battle Over', description=desc, color=discord.Color.gold()))
-                        
-                        # Clean up battle
-                        self.engine.end_battle(self.battle_id)
-                        if hasattr(cog, '_unregister_battle'):
-                            cog._unregister_battle(battle)
-                        return
-                    # Persist party HP to database (player side)
-                    try:
-                        from database import PlayerDatabase
-                        pdb = PlayerDatabase('data/players.db')
-                        party_rows = pdb.get_trainer_party(battle.trainer.battler_id)
-                        rows_by_pos = {row.get('party_position', i): row for i, row in enumerate(party_rows)}
-                        for i, mon in enumerate(battle.trainer.party):
-                            row = rows_by_pos.get(i) or rows_by_pos.get(getattr(mon, 'party_position', i))
-                            if row and 'pokemon_id' in row:
-                                pdb.update_pokemon(row['pokemon_id'], {'current_hp': max(0, int(getattr(mon, 'current_hp', 0))) })
-                    except Exception:
-                        pass
-                    
-                    # Send battle over message
-                    desc = f"🏆 Battle Over\n\nAll of {loser_name}'s Pokémon have fainted! {winner_name} wins!"
-                    await interaction.followup.send(embed=discord.Embed(title='Battle Over', description=desc, color=discord.Color.gold()))
-                    
-                    # Send exp gain embed if trainer won
-                    create_exp_embed = getattr(cog, "_create_exp_embed", None)
-                    if create_exp_embed:
-                        exp_embed = await create_exp_embed(battle, interaction)
-                        if exp_embed:
-                            await interaction.followup.send(embed=exp_embed)
-                    
-                    # Clean up battle
-                    self.engine.end_battle(self.battle_id)
-                    if hasattr(cog, '_unregister_battle'):
-                        cog._unregister_battle(battle)
-
-                    if getattr(battle, 'battle_type', None) == BattleType.WILD:
-                        await cog.send_return_to_encounter_prompt(interaction, interaction.user.id)
+                    await cog._finish_battle(interaction, battle)
                 else:
                     # Let BattleCog handle post-turn logic: forced switches, KO prompts, etc.
                     await cog._handle_post_turn(interaction, self.battle_id)

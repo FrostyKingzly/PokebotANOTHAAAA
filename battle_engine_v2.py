@@ -2037,9 +2037,13 @@ class BattleEngine:
     
     def _check_battle_end(self, battle: BattleState):
         """Check if battle should end"""
-        trainer_has_pokemon = battle.trainer.has_usable_pokemon()
-        opponent_has_pokemon = battle.opponent.has_usable_pokemon()
-        
+        def team_has_usable(battler: Battler) -> bool:
+            team = battle.get_team_battlers(battler.battler_id)
+            return any(getattr(mon, 'current_hp', 0) > 0 for member in team for mon in getattr(member, 'party', []))
+
+        trainer_has_pokemon = team_has_usable(battle.trainer)
+        opponent_has_pokemon = team_has_usable(battle.opponent)
+
         if not trainer_has_pokemon and not opponent_has_pokemon:
             battle.is_over = True
             battle.winner = 'draw'
