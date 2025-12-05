@@ -1236,6 +1236,7 @@ class BattleCog(commands.Cog):
             return
 
         await self._safe_followup_send(
+            interaction,
             embed=self._create_battle_embed(battle),
             view=self._create_battle_view(battle)
         )
