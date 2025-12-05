@@ -3475,7 +3475,7 @@ class RaidReadyCheckView(View):
         embed.set_footer(text="Raids use the first three healthy Pokémon from each ready trainer.")
         return embed
 
-    async def _refresh(self):
+    async def _refresh_message(self):
         if self.message:
             try:
                 await self.message.edit(embed=self.build_lobby_embed(), view=self)
@@ -3523,7 +3523,7 @@ class RaidReadyCheckView(View):
 
         raid_manager.set_ready(self.location_id, interaction.user.id, True)
         await interaction.response.send_message("You're marked as ready!", ephemeral=True)
-        await self._refresh()
+        await self._refresh_message()
 
     @discord.ui.button(label="❌ Unready", style=discord.ButtonStyle.secondary)
     async def unready_button(self, interaction: discord.Interaction, button: Button):
@@ -3533,7 +3533,7 @@ class RaidReadyCheckView(View):
 
         raid_manager.set_ready(self.location_id, interaction.user.id, False)
         await interaction.response.send_message("You are no longer ready.", ephemeral=True)
-        await self._refresh()
+        await self._refresh_message()
 
     @discord.ui.button(label="📨 Invite", style=discord.ButtonStyle.primary)
     async def invite_button(self, interaction: discord.Interaction, button: Button):
@@ -3668,7 +3668,7 @@ class RaidReadyCheckView(View):
     async def on_timeout(self):
         for child in self.children:
             child.disabled = True
-        await self._refresh()
+        await self._refresh_message()
 
 
 def build_public_raid_invite_embed(bot, raid: RaidEncounter, location_id: str, host_id: int) -> discord.Embed:
