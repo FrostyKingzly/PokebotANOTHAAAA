@@ -1051,20 +1051,12 @@ class BattleCog(commands.Cog):
                 desc = "Select another healthy Pokémon to continue the battle."
             embed = discord.Embed(title="Pokémon Fainted!", description=desc, color=discord.Color.red())
 
-        # Use ephemeral message for switch prompts so only the player can see and interact
-        try:
-            await interaction.followup.send(
-                embed=embed,
-                view=PartySelectView(battle, battler_id, self.battle_engine, forced=True),
-                ephemeral=True
-            )
-        except Exception:
-            # Fallback to non-ephemeral if followup fails
-            await self._safe_followup_send(
-                interaction,
-                embed=embed,
-                view=PartySelectView(battle, battler_id, self.battle_engine, forced=True)
-            )
+        # Send public message but buttons are restricted to the correct player
+        await self._safe_followup_send(
+            interaction,
+            embed=embed,
+            view=PartySelectView(battle, battler_id, self.battle_engine, forced=True)
+        )
 
     async def _finish_battle(self, interaction: discord.Interaction, battle):
         trainer_name = getattr(battle.trainer, 'battler_name', 'Trainer')
@@ -1658,6 +1650,15 @@ class PartySelect(discord.ui.Select):
         super().__init__(placeholder=placeholder, min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
+        # Verify that the user clicking the button is the correct player
+        battler = _get_battler_by_id(self.battle, self.battler_id)
+        if battler and battler.battler_id != interaction.user.id:
+            await interaction.response.send_message(
+                "❌ This isn't your Pokémon! Please wait for your own switch prompt.",
+                ephemeral=True
+            )
+            return
+
         await interaction.response.defer()
         idx = int(self.values[0])
         cog = interaction.client.get_cog("BattleCog")
