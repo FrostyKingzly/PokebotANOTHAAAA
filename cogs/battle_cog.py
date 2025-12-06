@@ -1557,8 +1557,10 @@ class PartySelect(discord.ui.Select):
             current_hp = getattr(mon, 'current_hp', 0)
             max_hp = getattr(mon, 'max_hp', 1)
             hp = "(Fainted)" if current_hp <= 0 else f"{current_hp}/{max_hp}"
-            disabled = (idx == active_index) or current_hp <= 0
-            options.append(discord.SelectOption(label=name, description=f"HP {hp}", value=str(idx), default=False, disabled=disabled))
+            # Skip disabled options (active or fainted Pokemon)
+            if idx == active_index or current_hp <= 0:
+                continue
+            options.append(discord.SelectOption(label=name, description=f"HP {hp}", value=str(idx), default=False))
         placeholder = "Choose a Pokémon to send out" if forced else "Choose a Pokémon to switch in"
         super().__init__(placeholder=placeholder, min_values=1, max_values=1, options=options)
 
