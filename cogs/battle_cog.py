@@ -728,10 +728,22 @@ class BattleCog(commands.Cog):
         participants = getattr(battle, "raid_participants", [])
         entries: list[tuple[str, Any]] = []
 
+        active_by_owner = {}
+        try:
+            for mon in battle.trainer.get_active_pokemon():
+                owner_id = getattr(mon, "owner_discord_id", None)
+                if owner_id is not None and owner_id not in active_by_owner:
+                    active_by_owner[owner_id] = mon
+        except Exception:
+            active_by_owner = {}
+
         for entry in participants:
             trainer_name = entry.get("trainer_name") or "Trainer"
             party = entry.get("party") or []
-            active_mon = next((m for m in party if getattr(m, "current_hp", 0) > 0), None)
+            owner_id = entry.get("user_id")
+            active_mon = active_by_owner.get(owner_id)
+            if not active_mon:
+                active_mon = next((m for m in party if getattr(m, "current_hp", 0) > 0), None)
             if not active_mon and party:
                 active_mon = party[0]
             if active_mon:
@@ -1834,6 +1846,8 @@ class RevivalTargetSelectView(discord.ui.View):
             await self._handle_single_submission(interaction, action)
 
     async def _handle_single_submission(self, interaction: discord.Interaction, action: BattleAction):
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
         res = self.engine.register_action(self.battle_id, self.battler_id, action)
         cog = interaction.client.get_cog("BattleCog")
 
@@ -1852,6 +1866,9 @@ class RevivalTargetSelectView(discord.ui.View):
     async def _handle_collector_submission(self, interaction: discord.Interaction, action: BattleAction):
         if not self.collector:
             return
+
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
         self.collector.add_action(self.pokemon_position, action)
         next_pos = self.collector.get_next_position()
