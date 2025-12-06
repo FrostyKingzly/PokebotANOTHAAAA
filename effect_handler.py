@@ -280,6 +280,15 @@ class EffectHandler:
                 params={'duration': 5}
             ))
 
+        # Follow Me (single-turn redirection)
+        if move_id == 'follow_me':
+            effects.append(MoveEffect(
+                effect_type='inflict_volatile',
+                chance=100,
+                target='self',
+                params={'status': 'follow_me', 'duration': 1}
+            ))
+
         # Taunt (prevents status moves)
         if move_id == 'taunt':
             effects.append(MoveEffect(
@@ -567,6 +576,9 @@ class EffectHandler:
             duration = 1  # These only last until end of turn
         elif status == 'taunt':
             duration = 3  # Gen 9 duration
+
+        # Allow explicit duration overrides from move data
+        duration = effect.params.get('duration', duration)
 
         success, message = target.status_manager.apply_status(status, duration=duration)
         if success:

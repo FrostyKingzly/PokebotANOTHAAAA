@@ -382,6 +382,7 @@ class BattleAction:
     # For moves
     move_id: Optional[str] = None
     target_position: Optional[int] = None  # Which opponent slot to target
+    target_battler_id: Optional[int] = None  # Explicit target battler selection (for raids/multi)
     mega_evolve: bool = False
     pokemon_position: int = 0  # Which of the battler's active Pokemon is acting (for doubles)
     revive_target_battler_id: Optional[int] = None  # For Revival Blessing targeting
@@ -997,6 +998,7 @@ class BattleEngine:
         target_type = move_data.get('target', 'single') if move_data else 'single'
 
         # Select target based on move type
+        target_battler_id = None
         if target_type in ['ally', 'all_allies']:
             # Target an ally (other Pokemon on same team)
             ally_active = battler.get_active_pokemon()
@@ -1006,30 +1008,43 @@ class BattleEngine:
                 target_pos = random.choice(other_positions) if other_positions else pokemon_position
             else:
                 target_pos = 0  # Only one Pokemon, target self
+            target_battler_id = battler_id
         elif target_type in ['self', 'user_field', 'entire_field', 'enemy_field']:
             # Moves that don't need specific targeting
             target_pos = 0
+            target_battler_id = battler_id
         else:
-            # Target opponent (default for damaging moves)
-            opponent = battle.opponent if battler_id == battle.trainer.battler_id else battle.trainer
-            opponent_active = opponent.get_active_pokemon()
-            if opponent_active and any(getattr(p, "is_raid_boss", False) for p in battler.party):
-                def bulk_score(p):
-                    return (
-                        max(0, getattr(p, "current_hp", 0))
-                        + getattr(p, "defense", 0)
-                        + getattr(p, "sp_defense", 0)
-                    )
+            # Target an opposing Pokemon (default for damaging moves)
+            opposing_battlers = battle.get_opposing_team_battlers(battler_id)
+            active_opponents = []
+            for opp in opposing_battlers:
+                for idx, mon in enumerate(opp.get_active_pokemon()):
+                    active_opponents.append((opp, idx, mon))
 
-                target_pos = max(range(len(opponent_active)), key=lambda idx: bulk_score(opponent_active[idx]))
+            def bulk_score(p):
+                return (
+                    max(0, getattr(p, "current_hp", 0))
+                    + getattr(p, "defense", 0)
+                    + getattr(p, "sp_defense", 0)
+                )
+
+            if active_opponents and target_type == 'single':
+                # Prefer the bulkiest target
+                target_battler, target_pos, _ = max(active_opponents, key=lambda tup: bulk_score(tup[2]))
+                target_battler_id = target_battler.battler_id
+            elif active_opponents:
+                # Spread moves don't need explicit targeting; just pick first for reference
+                target_battler, target_pos, _ = active_opponents[0]
+                target_battler_id = target_battler.battler_id
             else:
-                target_pos = random.randint(0, len(opponent_active) - 1) if opponent_active else 0
+                target_pos = 0
 
         return BattleAction(
             action_type='move',
             battler_id=battler_id,
             move_id=chosen_move['move_id'],
             target_position=target_pos,
+            target_battler_id=target_battler_id,
             pokemon_position=pokemon_position
         )
     
@@ -1277,48 +1292,69 @@ class BattleEngine:
         Returns:
             List of (defender_battler, defender_pokemon) tuples
         """
-        if action.battler_id == battle.trainer.battler_id:
-            attacker_battler = battle.trainer
-            defender_battler = battle.opponent
-            ally_battler = battle.trainer
-        else:
-            attacker_battler = battle.opponent
-            defender_battler = battle.trainer
-            ally_battler = battle.opponent
+        attacker_battler = self._get_battler_by_id(battle, action.battler_id)
+        # Determine ally/opponent pools dynamically to support raids/multi battles
+        ally_team = battle.get_team_battlers(attacker_battler.battler_id)
+        opposing_team = battle.get_opposing_team_battlers(attacker_battler.battler_id)
 
         target_type = move_data.get('target', 'single')
         targets = []
 
         if target_type == 'single':
-            # Single opponent target
-            target_pos = action.target_position if action.target_position is not None else 0
-            defender_active = defender_battler.get_active_pokemon()
-            if target_pos < len(defender_active):
-                targets.append((defender_battler, defender_active[target_pos]))
+            # Single target can be opponent or ally depending on target_battler_id
+            target_battler = self._get_battler_by_id(battle, action.target_battler_id) if action.target_battler_id else None
+
+            # If no explicit target battler provided, default to the primary opposing battler
+            if not target_battler:
+                target_battler = opposing_team[0] if opposing_team else battle.opponent
+
+            # Redirect to Follow Me user on the target side
+            follow_me_holder = None
+            if target_battler in opposing_team:
+                for opp_battler in opposing_team:
+                    for mon in opp_battler.get_active_pokemon():
+                        if hasattr(mon, 'status_manager') and mon.status_manager.has_status('follow_me'):
+                            follow_me_holder = (opp_battler, mon)
+                            break
+                    if follow_me_holder:
+                        break
+
+            if follow_me_holder:
+                targets.append(follow_me_holder)
+            else:
+                target_pos = action.target_position if action.target_position is not None else 0
+                defender_active = target_battler.get_active_pokemon()
+                if target_pos < len(defender_active):
+                    targets.append((target_battler, defender_active[target_pos]))
 
         elif target_type in ['all_opponents', 'all_adjacent']:
             # Hit all opponent Pokemon
-            for mon in defender_battler.get_active_pokemon():
-                targets.append((defender_battler, mon))
+            for opp in opposing_team:
+                for mon in opp.get_active_pokemon():
+                    targets.append((opp, mon))
 
         elif target_type == 'all':
             # Hit all Pokemon on the field (opponents and allies)
-            for mon in defender_battler.get_active_pokemon():
-                targets.append((defender_battler, mon))
-            for mon in ally_battler.get_active_pokemon():
-                targets.append((ally_battler, mon))
+            for opp in opposing_team:
+                for mon in opp.get_active_pokemon():
+                    targets.append((opp, mon))
+            for ally in ally_team:
+                for mon in ally.get_active_pokemon():
+                    targets.append((ally, mon))
 
         elif target_type == 'all_allies':
             # Hit all ally Pokemon (including self)
-            for mon in ally_battler.get_active_pokemon():
-                targets.append((ally_battler, mon))
+            for ally in ally_team:
+                for mon in ally.get_active_pokemon():
+                    targets.append((ally, mon))
 
         elif target_type == 'ally':
             # Single ally target (for support moves like Helping Hand)
             target_pos = action.target_position if action.target_position is not None else 0
-            ally_active = ally_battler.get_active_pokemon()
+            target_battler = self._get_battler_by_id(battle, action.target_battler_id) if action.target_battler_id else attacker_battler
+            ally_active = target_battler.get_active_pokemon()
             if target_pos < len(ally_active):
-                targets.append((ally_battler, ally_active[target_pos]))
+                targets.append((target_battler, ally_active[target_pos]))
 
         elif target_type in ['self', 'user_field']:
             # Target is the attacker itself (handled separately, return empty)
@@ -1426,12 +1462,10 @@ class BattleEngine:
     async def _execute_move(self, battle: BattleState, action: BattleAction) -> Dict:
         """Execute a move action - now supports spread moves hitting multiple targets"""
         # Get attacker and defender
-        if action.battler_id == battle.trainer.battler_id:
-            attacker_battler = battle.trainer
-            defender_battler = battle.opponent
-        else:
-            attacker_battler = battle.opponent
-            defender_battler = battle.trainer
+        attacker_battler = self._get_battler_by_id(battle, action.battler_id)
+        # Default defender is the first opposing battler; may change once targets are resolved
+        opposing_team = battle.get_opposing_team_battlers(attacker_battler.battler_id)
+        defender_battler = opposing_team[0] if opposing_team else battle.opponent
 
         # Get attacker Pokemon (the one using the move) - use pokemon_position from action
         active_pokemon_list = attacker_battler.get_active_pokemon()
@@ -1488,6 +1522,7 @@ class BattleEngine:
             # Fallback for self-targeting or field moves
             defender = attacker
             defender_battler_actual = attacker_battler
+        defender_battler = defender_battler_actual
 
         # If move hits multiple targets (spread move), handle differently
         if len(targets) > 1:

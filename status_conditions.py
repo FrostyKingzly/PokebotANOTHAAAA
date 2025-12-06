@@ -41,6 +41,7 @@ class VolatileStatus(Enum):
     ENDURE = "endure"
     # Stat stages
     FOCUS_ENERGY = "focusenergy"  # Increased crit rate
+    FOLLOW_ME = "follow_me"
     # Trapping moves
     BIND = "bind"
     WRAP = "wrap"
@@ -259,9 +260,16 @@ class StatusConditionManager:
                     status_display = status_name.replace("_", " ").title()
                     messages.append(f"{pokemon.species_name} was freed from {status_display}!")
 
+            # Generic duration handler for other volatile statuses (e.g., Follow Me)
+            elif status.duration is not None:
+                if status.tick_turn():
+                    volatiles_to_remove.append(status_name)
+
 
         # Generic duration tick for any other temporaries (e.g., endure, protect)
         for name, status in list(self.volatile_statuses.items()):
+            if name in volatiles_to_remove:
+                continue
             if name not in [VolatileStatus.CONFUSION.value, VolatileStatus.LEECH_SEED.value,
                             VolatileStatus.BIND.value, VolatileStatus.WRAP.value,
                             VolatileStatus.FIRE_SPIN.value, VolatileStatus.WHIRLPOOL.value,
@@ -341,6 +349,7 @@ class StatusConditionManager:
             VolatileStatus.PROTECT.value: "protected itself!",
             VolatileStatus.DETECT.value: "protected itself!",
             VolatileStatus.ENDURE.value: "is preparing to endure!",
+            VolatileStatus.FOLLOW_ME.value: "became the center of attention!",
         }
         return messages.get(status_type, f"was affected by {status_type}!")
     
