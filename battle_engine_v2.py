@@ -53,15 +53,16 @@ class Battler:
     can_switch: bool = True
     can_use_items: bool = True
     can_flee: bool = False
-    
+    is_eliminated: bool = False  # True when all Pokemon have fainted
+
     # For trainer battles
     trainer_class: Optional[str] = None  # "Youngster", "Ace Trainer", etc.
     prize_money: int = 0
-    
+
     def get_active_pokemon(self) -> List[Any]:
         """Get currently active Pokemon"""
         return [self.party[i] for i in self.active_positions if i < len(self.party)]
-    
+
     def has_usable_pokemon(self) -> bool:
         """Check if battler has any Pokemon that can still fight"""
         return any(p.current_hp > 0 for p in self.party)
@@ -97,6 +98,10 @@ class BattleState:
     weather_turns: int = 0
     terrain: Optional[str] = None  # 'electric', 'grassy', 'psychic', 'misty'
     terrain_turns: int = 0
+
+    # Rogue Pokemon permanent weather/terrain (returns when override expires)
+    rogue_weather: Optional[str] = None
+    rogue_terrain: Optional[str] = None
     
     # Field hazards
     trainer_hazards: Dict[str, int] = field(default_factory=dict)  # 'stealth_rock': 1, 'spikes': 3, etc.
@@ -901,9 +906,9 @@ class BattleEngine:
         if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.MULTI, BattleFormat.RAID]:
             required_action_keys = []
 
-            # Collect actions needed from all non-AI battlers
+            # Collect actions needed from all non-AI, non-eliminated battlers
             for battler in battle.get_all_battlers():
-                if not battler.is_ai:
+                if not battler.is_ai and not battler.is_eliminated:
                     num_active = len(battler.get_active_pokemon())
                     for pos in range(num_active):
                         required_action_keys.append(f"{battler.battler_id}_{pos}")
@@ -913,9 +918,9 @@ class BattleEngine:
         else:
             # Singles - simple battler_id check
             required_actions = []
-            if not battle.trainer.is_ai:
+            if not battle.trainer.is_ai and not battle.trainer.is_eliminated:
                 required_actions.append(str(battle.trainer.battler_id))
-            if not battle.opponent.is_ai:
+            if not battle.opponent.is_ai and not battle.opponent.is_eliminated:
                 required_actions.append(str(battle.opponent.battler_id))
 
             all_actions_ready = all(str(rid) in battle.pending_actions for rid in required_actions)
@@ -1138,8 +1143,12 @@ class BattleEngine:
             if battle.is_over or getattr(battle, "wild_dazed", False):
                 break
 
-            # Skip actions for fainted Pokemon
+            # Skip actions from eliminated battlers
             battler = self._get_battler_by_id(battle, action.battler_id)
+            if battler and battler.is_eliminated:
+                continue
+
+            # Skip actions for fainted Pokemon
             active_pokemon = battler.get_active_pokemon()
             acting_pokemon = None
 
@@ -1205,13 +1214,9 @@ class BattleEngine:
                 battle.turn_log.extend(messages)
                 action_events.append({"type": action.action_type, "actor": acting_pokemon, "messages": messages})
 
-            # If forced switch was triggered (Pokemon fainted), break the action loop immediately
-            # to prompt the player for their switch before continuing the turn
-            # For VOLT_SWITCH (self-switch moves like Flip Turn), continue executing remaining actions
-            # and prompt for switch after all actions are done
-            if battle.phase == 'FORCED_SWITCH' and not getattr(self._get_battler_by_id(battle, battle.forced_switch_battler_id), 'is_ai', True):
-                # Player needs to switch due to fainted Pokemon - stop processing remaining actions
-                break
+            # NOTE: We no longer break the action loop for forced switches or volt switches
+            # All remaining actions execute first, THEN players are prompted to switch
+            # This ensures every Pokemon gets their turn even when switches are needed
 
         # Check for registered actions that were not executed and add explanatory messages
         # This helps debug issues where moves don't show up in turn embeds
@@ -2178,14 +2183,15 @@ class BattleEngine:
                 messages.extend(status_msgs)
             if self.held_item_manager:
                 messages.extend(self.held_item_manager.process_end_of_turn(pokemon))
-        
-        # Weather effects - apply to ALL active Pokemon including raid allies
+
+        # Weather effects - apply to ALL active Pokemon including raid allies (except eliminated battlers)
         if battle.weather:
             all_active_pokemon = []
 
-            # Get all active Pokemon from all battlers
+            # Get all active Pokemon from all non-eliminated battlers
             for battler in battle.get_all_battlers():
-                all_active_pokemon.extend(battler.get_active_pokemon())
+                if not battler.is_eliminated:
+                    all_active_pokemon.extend(battler.get_active_pokemon())
 
             # Apply weather effects to all active Pokemon
             for pokemon in all_active_pokemon:
@@ -2200,15 +2206,29 @@ class BattleEngine:
             # Decrement weather
             battle.weather_turns -= 1
             if battle.weather_turns <= 0:
-                messages.append(f"The {battle.weather} subsided!")
-                battle.weather = None
-        
+                # If rogue weather exists and current weather is not rogue weather, restore it
+                if battle.rogue_weather and battle.weather != battle.rogue_weather:
+                    messages.append(f"The {battle.weather} subsided!")
+                    battle.weather = battle.rogue_weather
+                    battle.weather_turns = 999
+                    messages.append(f"The {battle.rogue_weather} returned!")
+                else:
+                    messages.append(f"The {battle.weather} subsided!")
+                    battle.weather = None
+
         # Terrain effects
         if battle.terrain:
             battle.terrain_turns -= 1
             if battle.terrain_turns <= 0:
-                messages.append(f"The {battle.terrain} terrain faded!")
-                battle.terrain = None
+                # If rogue terrain exists and current terrain is not rogue terrain, restore it
+                if battle.rogue_terrain and battle.terrain != battle.rogue_terrain:
+                    messages.append(f"The {battle.terrain} terrain faded!")
+                    battle.terrain = battle.rogue_terrain
+                    battle.terrain_turns = 999
+                    messages.append(f"The {battle.rogue_terrain} terrain returned!")
+                else:
+                    messages.append(f"The {battle.terrain} terrain faded!")
+                    battle.terrain = None
 
         # Trick Room duration
         if getattr(battle, 'trick_room_turns', 0) > 0:
@@ -2226,6 +2246,11 @@ class BattleEngine:
 
         trainer_has_pokemon = team_has_usable(battle.trainer)
         opponent_has_pokemon = team_has_usable(battle.opponent)
+
+        # Mark battlers as eliminated when they have no usable Pokemon
+        for battler in battle.get_all_battlers():
+            if not battler.has_usable_pokemon():
+                battler.is_eliminated = True
 
         if not trainer_has_pokemon and not opponent_has_pokemon:
             battle.is_over = True

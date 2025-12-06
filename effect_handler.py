@@ -601,32 +601,41 @@ class EffectHandler:
             'snow': "It started to snow!"
         }
 
-        # Default 5 turns, extended to 8 with weather-extending items
-        weather_turns = 5
+        is_raid_boss = getattr(attacker, "is_raid_boss", False) if attacker else False
 
-        if attacker and hasattr(attacker, 'held_item'):
-            item_id = getattr(attacker.held_item, 'item_id', None) if attacker.held_item else None
+        # If rogue Pokemon sets weather, save as permanent
+        if is_raid_boss:
+            battle_state.rogue_weather = weather
+            battle_state.weather = weather
+            battle_state.weather_turns = 999  # Effectively permanent
+        else:
+            # Non-rogue Pokemon setting weather
+            # Default 5 turns, extended to 8 with weather-extending items
+            weather_turns = 5
 
-            # Weather-extending items
-            weather_extenders = {
-                'heatrock': 'sun',
-                'damprock': 'rain',
-                'smoothrock': 'sandstorm',
-                'icyrock': ['hail', 'snow']
-            }
+            if attacker and hasattr(attacker, 'held_item'):
+                item_id = getattr(attacker.held_item, 'item_id', None) if attacker.held_item else None
 
-            for item, weather_types in weather_extenders.items():
-                if item_id == item:
-                    if isinstance(weather_types, list):
-                        if weather in weather_types:
+                # Weather-extending items
+                weather_extenders = {
+                    'heatrock': 'sun',
+                    'damprock': 'rain',
+                    'smoothrock': 'sandstorm',
+                    'icyrock': ['hail', 'snow']
+                }
+
+                for item, weather_types in weather_extenders.items():
+                    if item_id == item:
+                        if isinstance(weather_types, list):
+                            if weather in weather_types:
+                                weather_turns = 8
+                                break
+                        elif weather == weather_types:
                             weather_turns = 8
                             break
-                    elif weather == weather_types:
-                        weather_turns = 8
-                        break
 
-        battle_state.weather = weather
-        battle_state.weather_turns = weather_turns
+            battle_state.weather = weather
+            battle_state.weather_turns = weather_turns
         return weather_messages.get(weather, f"The weather changed to {weather}!")
 
     def _apply_terrain(self, effect: MoveEffect, battle_state: Any) -> Optional[str]:
