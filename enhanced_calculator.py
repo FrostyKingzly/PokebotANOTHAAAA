@@ -93,6 +93,10 @@ class EnhancedDamageCalculator:
             attacker, defender, move_data, is_blocked, weather, terrain
         )
 
+        # If the move had no effect (immunity), skip secondary effects entirely
+        if effectiveness == 0:
+            return 0, is_critical, effectiveness, []
+
         # Clamp damage to the target's remaining HP so recoil/drain scale off actual damage dealt
         damage_dealt = min(damage, defender.current_hp)
 
