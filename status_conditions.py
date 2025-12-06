@@ -311,8 +311,10 @@ class StatusConditionManager:
         Returns (can_move, reason_if_cant)
         """
         # Check flinch first (flinch prevents moving this turn)
+        # Raid bosses cannot flinch
         if VolatileStatus.FLINCH.value in self.volatile_statuses:
-            return False, f"{pokemon.species_name} flinched!"
+            if not getattr(pokemon, "is_raid_boss", False):
+                return False, f"{pokemon.species_name} flinched!"
 
         # Check major status
         if self.major_status:

@@ -1139,7 +1139,12 @@ class BattleCog(commands.Cog):
         if result == 'trainer':
             exp_embed = await self._create_exp_embed(battle, interaction)
         if exp_embed:
-            await self._safe_followup_send(interaction, embed=exp_embed)
+            # Send exp embed as ephemeral to reduce clutter
+            try:
+                await interaction.followup.send(embed=exp_embed, ephemeral=True)
+            except Exception:
+                # Fallback to channel send if ephemeral fails
+                await self._safe_followup_send(interaction, embed=exp_embed)
 
         ranked_embed = self._build_ranked_result_embed(battle)
         if ranked_embed:

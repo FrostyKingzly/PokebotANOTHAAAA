@@ -381,7 +381,7 @@ class EffectHandler:
                 messages.append(f"{attacker.species_name} will switch out!")
 
             elif effect.effect_type == 'weather':
-                result = self._apply_weather(effect, battle_state)
+                result = self._apply_weather(effect, battle_state, attacker)
                 if result:
                     messages.append(result)
 
@@ -586,7 +586,7 @@ class EffectHandler:
 
         return None
 
-    def _apply_weather(self, effect: MoveEffect, battle_state: Any) -> Optional[str]:
+    def _apply_weather(self, effect: MoveEffect, battle_state: Any, attacker: Any = None) -> Optional[str]:
         """Apply weather to the field"""
         weather = effect.params.get('weather')
 
@@ -601,8 +601,32 @@ class EffectHandler:
             'snow': "It started to snow!"
         }
 
+        # Default 5 turns, extended to 8 with weather-extending items
+        weather_turns = 5
+
+        if attacker and hasattr(attacker, 'held_item'):
+            item_id = getattr(attacker.held_item, 'item_id', None) if attacker.held_item else None
+
+            # Weather-extending items
+            weather_extenders = {
+                'heatrock': 'sun',
+                'damprock': 'rain',
+                'smoothrock': 'sandstorm',
+                'icyrock': ['hail', 'snow']
+            }
+
+            for item, weather_types in weather_extenders.items():
+                if item_id == item:
+                    if isinstance(weather_types, list):
+                        if weather in weather_types:
+                            weather_turns = 8
+                            break
+                    elif weather == weather_types:
+                        weather_turns = 8
+                        break
+
         battle_state.weather = weather
-        battle_state.weather_turns = 5  # Default 5 turns
+        battle_state.weather_turns = weather_turns
         return weather_messages.get(weather, f"The weather changed to {weather}!")
 
     def _apply_terrain(self, effect: MoveEffect, battle_state: Any) -> Optional[str]:
