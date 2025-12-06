@@ -121,8 +121,11 @@ class StatusConditionManager:
         
         # Type-based immunities
         if pokemon_types:
-            if status_type == StatusType.BURN.value and 'fire' in pokemon_types:
-                return False, "Fire types can't be burned"
+            if status_type == StatusType.BURN.value:
+                if 'fire' in pokemon_types:
+                    return False, "Fire types can't be burned"
+                if 'water' in pokemon_types:
+                    return False, "Water types can't be burned"
             if status_type == StatusType.FREEZE.value and 'ice' in pokemon_types:
                 return False, "Ice types can't be frozen"
             if status_type == StatusType.PARALYSIS.value and 'electric' in pokemon_types:

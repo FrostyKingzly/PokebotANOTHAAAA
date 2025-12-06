@@ -841,9 +841,41 @@ class BattleEngine:
             if battle.forced_switch_battler_id == battler_id:
                 if action.action_type != 'switch':
                     return {"error": "You must switch to another Pokémon!"}
+
+                # For VOLT_SWITCH, execute the switch and process end-of-turn immediately
+                is_volt_switch = battle.phase == 'VOLT_SWITCH'
+
+                # Execute the switch
+                switch_result = self._execute_switch(battle, action, forced=True)
+
                 # Clear forced switch state after valid switch action
                 battle.phase = 'WAITING_ACTIONS'
                 battle.forced_switch_battler_id = None
+
+                # If this was a volt switch, process end-of-turn effects that were skipped
+                if is_volt_switch:
+                    eot_messages = self._process_end_of_turn(battle)
+                    auto_switch_events = self.auto_switch_if_forced_ai(battle)
+
+                    battle.turn_log.extend(eot_messages)
+
+                    # Return the switch result with end-of-turn messages
+                    return {
+                        "success": True,
+                        "volt_switch_complete": True,
+                        "switch_messages": switch_result.get("messages", []),
+                        "eot_messages": eot_messages,
+                        "auto_switch_events": auto_switch_events,
+                        "ready_to_resolve": False  # Turn is already resolved
+                    }
+
+                # For regular forced switches, just return success
+                return {
+                    "success": True,
+                    "forced_switch_complete": True,
+                    "switch_messages": switch_result.get("messages", []),
+                    "ready_to_resolve": False
+                }
             # If it's not the forced switch battler, don't allow actions yet
             elif battler_id != battle.forced_switch_battler_id:
                 return {"error": "Waiting for opponent to switch..."}
@@ -1190,8 +1222,15 @@ class BattleEngine:
                     # We don't add a message here to avoid clutter, but this tracking helps identify issues
                     pass
 
-        # End of turn effects (skip if wild Pokémon is in the special 'dazed' state)
-        if getattr(battle, "wild_dazed", False):
+        # End of turn effects (skip if wild Pokémon is in the special 'dazed' state
+        # or if a player forced switch is pending)
+        player_switch_pending = (
+            battle.phase in ['VOLT_SWITCH', 'FORCED_SWITCH'] and
+            battle.forced_switch_battler_id is not None and
+            not getattr(self._get_battler_by_id(battle, battle.forced_switch_battler_id), 'is_ai', True)
+        )
+
+        if getattr(battle, "wild_dazed", False) or player_switch_pending:
             eot_messages = []
             auto_switch_events = []
         else:

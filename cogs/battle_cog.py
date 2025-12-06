@@ -762,6 +762,20 @@ class BattleCog(commands.Cog):
             if (idx + 1) % 4 == 0:
                 embed.add_field(name="\u200b", value="\u200b", inline=False)
 
+        # Add weather and terrain information
+        field_conditions = []
+        if getattr(battle, "weather", None):
+            weather_turns = getattr(battle, "weather_turns", 0)
+            turns_text = f" ({weather_turns} turns left)" if weather_turns > 0 else ""
+            field_conditions.append(f"Weather: **{battle.weather.title()}**{turns_text}")
+        if getattr(battle, "terrain", None):
+            terrain_turns = getattr(battle, "terrain_turns", 0)
+            turns_text = f" ({terrain_turns} turns left)" if terrain_turns > 0 else ""
+            field_conditions.append(f"Terrain: **{battle.terrain.title()}**{turns_text}")
+
+        if field_conditions:
+            embed.add_field(name="🌤️ Field Effects", value="\n".join(field_conditions), inline=False)
+
         return embed
 
     def _create_raid_sprite_embed(self, raid_mon) -> Optional[discord.Embed]:
@@ -873,15 +887,27 @@ class BattleCog(commands.Cog):
         return action_msgs, faint_msgs
 
     async def _safe_followup_send(self, interaction: discord.Interaction, **kwargs):
-        """Send a followup message, falling back to the channel if the webhook is gone."""
-        try:
-            await interaction.followup.send(**kwargs)
-        except discord.errors.NotFound:
-            if interaction.channel:
+        """Send a message to the channel without creating reply chains."""
+        # Send directly to channel to avoid reply chains
+        if interaction.channel:
+            try:
                 await interaction.channel.send(**kwargs)
-        except Exception:
-            if not interaction.response.is_done():
-                await interaction.response.send_message(**kwargs)
+            except Exception:
+                # Fallback to interaction response if channel send fails
+                try:
+                    if not interaction.response.is_done():
+                        await interaction.response.send_message(**kwargs)
+                    else:
+                        await interaction.followup.send(**kwargs)
+                except Exception:
+                    pass  # If all methods fail, silently ignore
+        else:
+            # No channel available, use interaction followup as fallback
+            try:
+                await interaction.followup.send(**kwargs)
+            except Exception:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(**kwargs)
 
     def _build_turn_embeds(self, turn_result: dict) -> list[discord.Embed]:
         events = turn_result.get("action_events") or []
@@ -1025,11 +1051,20 @@ class BattleCog(commands.Cog):
                 desc = "Select another healthy Pokémon to continue the battle."
             embed = discord.Embed(title="Pokémon Fainted!", description=desc, color=discord.Color.red())
 
-        await self._safe_followup_send(
-            interaction,
-            embed=embed,
-            view=PartySelectView(battle, battler_id, self.battle_engine, forced=True)
-        )
+        # Use ephemeral message for switch prompts so only the player can see and interact
+        try:
+            await interaction.followup.send(
+                embed=embed,
+                view=PartySelectView(battle, battler_id, self.battle_engine, forced=True),
+                ephemeral=True
+            )
+        except Exception:
+            # Fallback to non-ephemeral if followup fails
+            await self._safe_followup_send(
+                interaction,
+                embed=embed,
+                view=PartySelectView(battle, battler_id, self.battle_engine, forced=True)
+            )
 
     async def _finish_battle(self, interaction: discord.Interaction, battle):
         trainer_name = getattr(battle.trainer, 'battler_name', 'Trainer')
@@ -1663,9 +1698,46 @@ class PartySelect(discord.ui.Select):
 
         action = BattleAction(action_type='switch', battler_id=self.battler_id, switch_to_position=idx)
         res = parent_view.engine.register_action(parent_view.battle_id, self.battler_id, action)
-        if res.get("ready_to_resolve") and cog:
+
+        # Handle volt switch completion specially
+        if res.get("volt_switch_complete") and cog:
+            # Send switch embed
+            switch_msgs = res.get("switch_messages", [])
+            if switch_msgs:
+                switch_embed = cog._build_switch_embed(switch_msgs, pokemon=None)
+                if switch_embed:
+                    await cog._safe_followup_send(interaction, embed=switch_embed)
+
+            # Send end-of-turn embed
+            eot_msgs = res.get("eot_messages", [])
+            if eot_msgs:
+                eot_embed = discord.Embed(
+                    title="End of Turn",
+                    description="\n".join(eot_msgs),
+                    color=discord.Color.light_gray()
+                )
+                await cog._safe_followup_send(interaction, embed=eot_embed)
+
+            # Handle any auto switch events
+            auto_switch_events = res.get("auto_switch_events", [])
+            for event in auto_switch_events:
+                embed = cog._build_switch_embed(event.get("messages", []), pokemon=event.get("pokemon"))
+                if embed:
+                    await cog._safe_followup_send(interaction, embed=embed)
+
+        # Handle regular forced switch completion
+        elif res.get("forced_switch_complete") and cog:
+            switch_msgs = res.get("switch_messages", [])
+            if switch_msgs:
+                switch_embed = cog._build_switch_embed(switch_msgs, pokemon=None)
+                if switch_embed:
+                    await cog._safe_followup_send(interaction, embed=switch_embed)
+
+        # Handle normal turn resolution
+        elif res.get("ready_to_resolve") and cog:
             turn = await parent_view.engine.process_turn(parent_view.battle_id)
             await cog._send_turn_resolution(interaction, turn)
+
         if cog:
             await cog._handle_post_turn(interaction, parent_view.battle_id)
 class PartySelectView(discord.ui.View):
@@ -1998,7 +2070,12 @@ class TargetSelectView(discord.ui.View):
         return name
 
     def _format_candidate_label(self, candidate: dict, target_type: str) -> str:
-        prefix = "Target" if target_type != 'ally' else "Support"
+        # For raids with single-target moves, distinguish between ally and opponent
+        is_raid = self.battle.battle_format == BattleFormat.RAID
+        if is_raid and target_type == 'single':
+            prefix = "Ally" if candidate.get("is_ally") else "Target"
+        else:
+            prefix = "Target" if target_type != 'ally' else "Support"
         name = self._format_target_name(candidate.get("pokemon"))
         return f"{prefix}: {name} (Slot {candidate.get('position', 0) + 1})"
 
@@ -2013,31 +2090,70 @@ class TargetSelectView(discord.ui.View):
         if self.pokemon_position < len(active_pokemon):
             acting_mon = active_pokemon[self.pokemon_position]
 
-        if target_type == 'ally':
-            pools = self.battle.get_team_battlers(attacker_battler.battler_id)
-        else:
-            pools = self.battle.get_opposing_team_battlers(attacker_battler.battler_id)
+        # For raids, include both allies and opponents as targets for single-target moves
+        is_raid = self.battle.battle_format == BattleFormat.RAID
+        include_allies = target_type == 'ally'
+        include_opponents = target_type != 'ally'
 
-        for battler in pools:
-            for idx, mon in enumerate(battler.get_active_pokemon()):
-                if getattr(mon, "current_hp", 0) <= 0:
-                    continue
-                if target_type == 'ally' and mon is acting_mon:
-                    continue
-                candidates.append({
-                    "battler_id": battler.battler_id,
-                    "position": idx,
-                    "pokemon": mon,
-                    "is_rogue": getattr(mon, "is_raid_boss", False),
-                })
+        # In raids with single-target moves, allow targeting both allies and opponents
+        if is_raid and target_type == 'single':
+            include_allies = True
+            include_opponents = True
+
+        # Collect ally candidates
+        if include_allies:
+            ally_pools = self.battle.get_team_battlers(attacker_battler.battler_id)
+            for battler in ally_pools:
+                for idx, mon in enumerate(battler.get_active_pokemon()):
+                    if getattr(mon, "current_hp", 0) <= 0:
+                        continue
+                    if mon is acting_mon:
+                        continue
+                    candidates.append({
+                        "battler_id": battler.battler_id,
+                        "position": idx,
+                        "pokemon": mon,
+                        "is_rogue": getattr(mon, "is_raid_boss", False),
+                        "is_ally": True,
+                    })
+
+        # Collect opponent candidates
+        if include_opponents:
+            opponent_pools = self.battle.get_opposing_team_battlers(attacker_battler.battler_id)
+            for battler in opponent_pools:
+                for idx, mon in enumerate(battler.get_active_pokemon()):
+                    if getattr(mon, "current_hp", 0) <= 0:
+                        continue
+                    candidates.append({
+                        "battler_id": battler.battler_id,
+                        "position": idx,
+                        "pokemon": mon,
+                        "is_rogue": getattr(mon, "is_raid_boss", False),
+                        "is_ally": False,
+                    })
 
         if not candidates:
             return candidates
 
+        # In raids, prioritize raid boss for offensive moves, allies for support moves
         rogue_candidates = [c for c in candidates if c.get("is_rogue")]
-        others = [c for c in candidates if not c.get("is_rogue")]
+        ally_candidates = [c for c in candidates if not c.get("is_rogue") and c.get("is_ally")]
+        opponent_candidates = [c for c in candidates if not c.get("is_rogue") and not c.get("is_ally")]
+
         if rogue_candidates:
-            candidates = (others + rogue_candidates) if is_support else (rogue_candidates + others)
+            if is_support:
+                # Support moves: allies first, then opponents, then rogue
+                candidates = ally_candidates + opponent_candidates + rogue_candidates
+            else:
+                # Offensive moves: rogue first, then opponents, then allies
+                candidates = rogue_candidates + opponent_candidates + ally_candidates
+        else:
+            # No rogue: allies first for support, opponents first for offense
+            if is_support:
+                candidates = ally_candidates + opponent_candidates
+            else:
+                candidates = opponent_candidates + ally_candidates
+
         return candidates
 
     def _create_target_callback(self, target_idx: int):
