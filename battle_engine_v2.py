@@ -879,12 +879,31 @@ class BattleEngine:
                 pokemon_position=pokemon_position
             )
 
+        # Check for ineffective and failed moves to avoid
+        ineffective_moves = set()
+        failed_moves = {}
+        pokemon_key = f"{battler_id}_{id(active_pokemon)}"
+
+        if hasattr(battle, 'ai_ineffective_moves'):
+            ineffective_moves = battle.ai_ineffective_moves.get(pokemon_key, set())
+
+        if hasattr(battle, 'ai_failed_moves'):
+            failed_moves = battle.ai_failed_moves.get(pokemon_key, {})
+
         # Categorize moves
         offensive_moves = []
         support_moves = []
         setup_moves = []
 
         for move in usable_moves:
+            # Skip moves that have been ineffective
+            if move['move_id'] in ineffective_moves:
+                continue
+
+            # Skip moves that have failed multiple times (2+ times)
+            if failed_moves.get(move['move_id'], 0) >= 2:
+                continue
+
             move_data = self.moves_db.get_move(move['move_id'])
             if not move_data:
                 continue
@@ -1088,6 +1107,12 @@ class BattleEngine:
             else:
                 battle.turn_log.extend(messages)
                 action_events.append({"type": action.action_type, "actor": acting_pokemon, "messages": messages})
+
+            # If Volt Switch or forced switch was triggered, break the action loop immediately
+            # to prompt the player for their switch before continuing the turn
+            if battle.phase in ['VOLT_SWITCH', 'FORCED_SWITCH'] and not getattr(battle.trainer if battle.forced_switch_battler_id == battle.trainer.battler_id else battle.opponent, 'is_ai', True):
+                # Player needs to switch - stop processing remaining actions
+                break
 
         # Check for registered actions that were not executed and add explanatory messages
         # This helps debug issues where moves don't show up in turn embeds
@@ -1443,6 +1468,15 @@ class BattleEngine:
                 if random.random() > success_rate:
                     # Protect failed
                     attacker._protect_count = 0  # Reset on failure
+                    # Track failed moves for AI learning
+                    if getattr(attacker_battler, 'is_ai', False):
+                        if not hasattr(battle, 'ai_failed_moves'):
+                            battle.ai_failed_moves = {}
+                        pokemon_key = f"{attacker_battler.battler_id}_{id(attacker)}"
+                        if pokemon_key not in battle.ai_failed_moves:
+                            battle.ai_failed_moves[pokemon_key] = {}
+                        fail_count = battle.ai_failed_moves[pokemon_key].get(action.move_id, 0)
+                        battle.ai_failed_moves[pokemon_key][action.move_id] = fail_count + 1
                     return {"messages": [f"{attacker.species_name} used {move_data['name']}, but it failed!"]}
             # Increment protect count on successful use
             attacker._protect_count = protect_count + 1
@@ -1537,6 +1571,14 @@ class BattleEngine:
             messages.append(damage_msg)
         elif effectiveness == 0:
             messages.append(f"It doesn't affect {defender.species_name}...")
+            # Track ineffective moves for AI learning
+            if getattr(attacker_battler, 'is_ai', False):
+                if not hasattr(battle, 'ai_ineffective_moves'):
+                    battle.ai_ineffective_moves = {}
+                pokemon_key = f"{attacker_battler.battler_id}_{id(attacker)}"
+                if pokemon_key not in battle.ai_ineffective_moves:
+                    battle.ai_ineffective_moves[pokemon_key] = set()
+                battle.ai_ineffective_moves[pokemon_key].add(action.move_id)
 
         messages.extend(effect_msgs)
 

@@ -1071,10 +1071,9 @@ class BattleCog(commands.Cog):
                 color = discord.Color.gold()
             else:
                 desc = (
-                    "You Lose\n\n"
-                    "All trainers’ Pokémon have fainted…\n\n"
-                    "The Dreamlites shatter…\n\n"
-                    f"The Rogue {raid_name} continues to rampage…"
+                    "All trainers' Pokémon have fainted…\n\n"
+                    f"The Dreamlites surge, and the Rogue {raid_name} continues to rampage…\n\n"
+                    "You Lose."
                 )
                 title = 'Battle Over'
                 color = discord.Color.red()
@@ -1559,7 +1558,7 @@ class PartySelect(discord.ui.Select):
             max_hp = getattr(mon, 'max_hp', 1)
             hp = "(Fainted)" if current_hp <= 0 else f"{current_hp}/{max_hp}"
             disabled = (idx == active_index) or current_hp <= 0
-            options.append(discord.SelectOption(label=name, description=f"HP {hp}", value=str(idx), default=False))
+            options.append(discord.SelectOption(label=name, description=f"HP {hp}", value=str(idx), default=False, disabled=disabled))
         placeholder = "Choose a Pokémon to send out" if forced else "Choose a Pokémon to switch in"
         super().__init__(placeholder=placeholder, min_values=1, max_values=1, options=options)
 
