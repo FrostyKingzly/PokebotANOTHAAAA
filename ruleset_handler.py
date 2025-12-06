@@ -20,20 +20,14 @@ BANNED_RAID_MOVES = {
     # Self-KO moves
     "explosion", "selfdestruct", "mistyexplosion", "healingwish", "lunardance", "memento", "finalgambit",
 
-    # Forced switch moves
-    "roar", "whirlwind", "dragontail", "circleethrow", "teleport",
-
-    # Item manipulation
-    "knockoff", "trick", "switcheroo", "bestow", "magicroom", "recycle", "fling", "covet", "thief", "bugbite", "pluck",
+    # Forced switch moves (force the ROGUE to switch/leave)
+    "roar", "whirlwind", "dragontail", "circleethrow",
 
     # Ability manipulation
     "skillswap", "roleplay", "entrainment", "worryseed", "simplebeam", "gastroacid", "coreenforcer",
 
-    # Escape/flee
-    "batonpass", "teleport", "fleeturn", "uturn", "voltswitch", "partingshot",
-
     # Other problematic moves
-    "transform", "encore", "disable", "torment", "taunt", "imprison", "snatch",
+    "disable", "torment", "imprison", "snatch",
 }
 
 class RulesetHandler:
