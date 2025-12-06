@@ -1618,6 +1618,13 @@ class BattleEngine:
             if not ok:
                 return {"messages": [f"{attacker.species_name} tried to use {move_data.get('name', action.move_id)} but it's banned by rules ({reason})."]}
 
+        # Check if move is banned against raid bosses
+        if getattr(defender, "is_raid_boss", False):
+            from ruleset_handler import BANNED_RAID_MOVES
+            move_id_normalized = (action.move_id or "").replace(" ", "").replace("-", "").lower()
+            if move_id_normalized in BANNED_RAID_MOVES:
+                return {"messages": [f"{attacker.species_name} tried to use {move_data.get('name', action.move_id)}, but it doesn't affect Rogue Pokemon!"]}
+
         # Deduct PP
         for move in attacker.moves:
             if move['move_id'] == action.move_id:
@@ -2007,7 +2014,7 @@ class BattleEngine:
                     # Apply major status via status_manager if available
                     if hasattr(pokemon, 'status_manager'):
                         status = 'tox' if layers >= 2 else 'psn'
-                        can_apply, _ = pokemon.status_manager.can_apply_status(status)
+                        can_apply, _ = pokemon.status_manager.can_apply_status(status, None, pokemon)
                         if can_apply:
                             success, msg = pokemon.status_manager.apply_status(status)
                             if success and msg:

@@ -12,6 +12,30 @@ from pathlib import Path
 BANNED_OHKO_MOVES = {"sheercold","fissure","guillotine","horndrill"}
 BANNED_EVASION_MOVES = {"doubleteam","minimize"}
 
+# Moves that don't work on raid bosses (similar to Dynamax raid restrictions)
+BANNED_RAID_MOVES = {
+    # Instant defeat moves
+    "perishsong", "destinybond", "grudge", "curse",
+
+    # Self-KO moves
+    "explosion", "selfdestruct", "mistyexplosion", "healingwish", "lunardance", "memento", "finalgambit",
+
+    # Forced switch moves
+    "roar", "whirlwind", "dragontail", "circleethrow", "teleport",
+
+    # Item manipulation
+    "knockoff", "trick", "switcheroo", "bestow", "magicroom", "recycle", "fling", "covet", "thief", "bugbite", "pluck",
+
+    # Ability manipulation
+    "skillswap", "roleplay", "entrainment", "worryseed", "simplebeam", "gastroacid", "coreenforcer",
+
+    # Escape/flee
+    "batonpass", "teleport", "fleeturn", "uturn", "voltswitch", "partingshot",
+
+    # Other problematic moves
+    "transform", "encore", "disable", "torment", "taunt", "imprison", "snatch",
+}
+
 class RulesetHandler:
     def __init__(self, rulesets_file: str = 'rulesets.json'):
         # Try several paths
