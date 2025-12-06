@@ -674,7 +674,7 @@ class BattleCog(commands.Cog):
     def _format_pokemon_name(self, pokemon, include_level: bool = True) -> str:
         name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
         if getattr(pokemon, "is_raid_boss", False):
-            name = f"Rogue ({name})"
+            name = f"Rogue {name}"
         level = getattr(pokemon, "level", None)
         if include_level and level is not None:
             return f"{name} Lv{level}"
@@ -1601,8 +1601,10 @@ class MoveButton(discord.ui.Button):
 
         # If the other trainer hasn't chosen yet, just notify this user and stop.
         if not res.get("ready_to_resolve"):
+            waiting_for = res.get("waiting_for", [])
+            trainer_word = "trainers" if len(waiting_for) > 1 else "trainer"
             await interaction.followup.send(
-                "Move selected! Waiting for the other trainer to choose...",
+                f"Move selected! Waiting for the other {trainer_word} to choose...",
                 ephemeral=True,
             )
             return
@@ -1963,8 +1965,10 @@ class RevivalTargetSelectView(discord.ui.View):
         cog = interaction.client.get_cog("BattleCog")
 
         if not res.get("ready_to_resolve"):
+            waiting_for = res.get("waiting_for", [])
+            trainer_word = "trainers" if len(waiting_for) > 1 else "trainer"
             await interaction.followup.send(
-                "Move selected! Waiting for the other trainer to choose...",
+                f"Move selected! Waiting for the other {trainer_word} to choose...",
                 ephemeral=True,
             )
             return
@@ -2066,7 +2070,7 @@ class TargetSelectView(discord.ui.View):
     def _format_target_name(pokemon) -> str:
         name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
         if getattr(pokemon, "is_raid_boss", False):
-            name = f"Rogue ({name})"
+            name = f"Rogue {name}"
         return name
 
     def _format_candidate_label(self, candidate: dict, target_type: str) -> str:
@@ -2252,8 +2256,10 @@ class TargetSelectView(discord.ui.View):
             cog = interaction.client.get_cog("BattleCog")
 
             if not res.get("ready_to_resolve"):
+                waiting_for = res.get("waiting_for", [])
+                trainer_word = "trainers" if len(waiting_for) > 1 else "trainer"
                 await interaction.followup.send(
-                    "Move selected! Waiting for the other trainer...",
+                    f"Move selected! Waiting for the other {trainer_word}...",
                     ephemeral=True
                 )
                 return
