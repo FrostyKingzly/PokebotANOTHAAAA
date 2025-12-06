@@ -168,26 +168,29 @@ class BattleState:
         return team
 
     def get_opposing_team_battlers(self, battler_id: int) -> List[Battler]:
-        """Get all battlers on the opposing team"""
+        """Get all battlers on the opposing team (excluding eliminated battlers)"""
         if battler_id == self.trainer.battler_id or (self.trainer_partner and battler_id == self.trainer_partner.battler_id):
             team = [self.opponent]
             if self.opponent_partner:
                 team.append(self.opponent_partner)
-            return team
+            # Filter out eliminated battlers
+            return [b for b in team if not b.is_eliminated]
 
         for ally in self.raid_allies:
             if battler_id == ally.battler_id:
                 team = [self.opponent]
                 if self.opponent_partner:
                     team.append(self.opponent_partner)
-                return team
+                # Filter out eliminated battlers
+                return [b for b in team if not b.is_eliminated]
 
         team = [self.trainer]
         if self.trainer_partner:
             team.append(self.trainer_partner)
         if self.battle_format == BattleFormat.RAID:
             team.extend(self.raid_allies)
-        return team
+        # Filter out eliminated battlers
+        return [b for b in team if not b.is_eliminated]
 
     def is_team_defeated(self, battler_id: int) -> bool:
         """Check if a team has been completely defeated"""
