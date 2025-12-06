@@ -23,6 +23,9 @@ BANNED_RAID_MOVES = {
     # Forced switch moves (force the ROGUE to switch/leave)
     "roar", "whirlwind", "dragontail", "circleethrow",
 
+    # Item manipulation
+    "knockoff", "trick", "switcheroo", "bestow", "magicroom", "recycle", "fling", "covet", "thief", "bugbite", "pluck",
+
     # Ability manipulation
     "skillswap", "roleplay", "entrainment", "worryseed", "simplebeam", "gastroacid", "coreenforcer",
 

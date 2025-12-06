@@ -1623,7 +1623,7 @@ class BattleEngine:
             from ruleset_handler import BANNED_RAID_MOVES
             move_id_normalized = (action.move_id or "").replace(" ", "").replace("-", "").lower()
             if move_id_normalized in BANNED_RAID_MOVES:
-                return {"messages": [f"{attacker.species_name} used {move_data.get('name', action.move_id)}!", "But it failed!"]}
+                return {"messages": [f"{attacker.species_name} tried to use {move_data.get('name', action.move_id)}, but it doesn't affect Rogue Pokemon!"]}
 
         # Deduct PP
         for move in attacker.moves:
