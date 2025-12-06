@@ -3473,7 +3473,7 @@ class RaidReadyCheckView(View):
             value="\n".join(self._participant_rows(raid)),
             inline=False,
         )
-        embed.set_footer(text="Raids use the first three healthy Pokémon from each ready trainer.")
+        embed.set_footer(text="Up to 8 trainers join; raids use the first three healthy Pokémon from each ready trainer.")
         return embed
 
     async def _refresh_message(self):
@@ -3601,7 +3601,9 @@ class RaidReadyCheckView(View):
         trainer_names: List[str] = []
         errors: List[str] = []
         participant_entries: List[Dict[str, Any]] = []
-        remaining_slots = 12
+        lead_party: List = []
+        reserve_party: List = []
+        remaining_slots = 24
 
         for user_id in raid.join_order:
             if user_id not in ready_ids:
@@ -3625,11 +3627,10 @@ class RaidReadyCheckView(View):
                 break
 
             trainer_name = getattr(trainer, "trainer_name", f"Trainer {user_id}")
-            allowed_party = party[:remaining_slots]
+            allowed_party = party[: min(3, remaining_slots)]
             if not allowed_party:
                 continue
 
-            trainer_party.extend(allowed_party)
             trainer_names.append(trainer_name)
             participant_entries.append(
                 {
@@ -3639,15 +3640,20 @@ class RaidReadyCheckView(View):
                 }
             )
 
+            # Lead Pokémon (one per trainer) fight up front; the rest wait in the back.
+            lead_party.append(allowed_party[0])
+            reserve_party.extend(allowed_party[1:])
+
             remaining_slots -= len(allowed_party)
 
-            if remaining_slots <= 0:
+            if len(lead_party) >= 8 or remaining_slots <= 0:
                 break
 
         if errors:
             await interaction.response.send_message("\n".join(errors), ephemeral=True)
             return
 
+        trainer_party = lead_party + reserve_party
         if not trainer_party:
             await interaction.response.send_message(
                 "No healthy Pokémon available for the raid party.",
@@ -3656,6 +3662,7 @@ class RaidReadyCheckView(View):
             return
 
         raid_boss = raid_manager.build_raid_boss(raid)
+        raid_party_size = min(len(lead_party), 8) or 1
 
         battle_id = battle_cog.battle_engine.start_battle(
             trainer_id=self.host_id,
@@ -3668,7 +3675,7 @@ class RaidReadyCheckView(View):
             opponent_name=f"Rogue {raid_boss.species_name}",
             # Use a negative ID to avoid key collisions with trainer actions
             opponent_id=-(raid.created_by or random.randint(1000, 9999)),
-            raid_party_size=len(participant_entries) or 1,
+            raid_party_size=raid_party_size,
         )
 
         battle = battle_cog.battle_engine.get_battle(battle_id)
