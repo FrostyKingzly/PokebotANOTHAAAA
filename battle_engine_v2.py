@@ -1205,13 +1205,9 @@ class BattleEngine:
                 battle.turn_log.extend(messages)
                 action_events.append({"type": action.action_type, "actor": acting_pokemon, "messages": messages})
 
-            # If forced switch was triggered (Pokemon fainted), break the action loop immediately
-            # to prompt the player for their switch before continuing the turn
-            # For VOLT_SWITCH (self-switch moves like Flip Turn), continue executing remaining actions
-            # and prompt for switch after all actions are done
-            if battle.phase == 'FORCED_SWITCH' and not getattr(self._get_battler_by_id(battle, battle.forced_switch_battler_id), 'is_ai', True):
-                # Player needs to switch due to fainted Pokemon - stop processing remaining actions
-                break
+            # NOTE: We no longer break the action loop for forced switches or volt switches
+            # All remaining actions execute first, THEN players are prompted to switch
+            # This ensures every Pokemon gets their turn even when switches are needed
 
         # Check for registered actions that were not executed and add explanatory messages
         # This helps debug issues where moves don't show up in turn embeds

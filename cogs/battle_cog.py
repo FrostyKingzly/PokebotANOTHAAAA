@@ -2053,9 +2053,13 @@ class TargetSelectView(discord.ui.View):
             self.add_item(auto_btn)
         elif self.target_candidates:
             for idx, candidate in enumerate(self.target_candidates):
+                # Color-code buttons: green for allies, red for enemies
+                is_ally = candidate.get("is_ally", False)
+                button_style = discord.ButtonStyle.success if is_ally else discord.ButtonStyle.danger
+
                 button = discord.ui.Button(
                     label=self._format_candidate_label(candidate, target_type),
-                    style=discord.ButtonStyle.primary,
+                    style=button_style,
                     custom_id=f"target_{idx}"
                 )
                 button.callback = self._create_target_callback(idx)

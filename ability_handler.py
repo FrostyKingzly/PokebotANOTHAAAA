@@ -105,7 +105,32 @@ class AbilityHandler:
                 weather = ability.get('weather')
                 if weather and getattr(battle_state, 'weather', None) != weather:
                     battle_state.weather = weather
-                    battle_state.weather_turns = int(ability.get('duration', 5))
+
+                    # Default 5 turns, extended to 8 with weather-extending items
+                    weather_turns = int(ability.get('duration', 5))
+
+                    if hasattr(pokemon, 'held_item'):
+                        item_id = getattr(pokemon.held_item, 'item_id', None) if pokemon.held_item else None
+
+                        # Weather-extending items
+                        weather_extenders = {
+                            'heatrock': 'sun',
+                            'damprock': 'rain',
+                            'smoothrock': 'sandstorm',
+                            'icyrock': ['hail', 'snow']
+                        }
+
+                        for item, weather_types in weather_extenders.items():
+                            if item_id == item:
+                                if isinstance(weather_types, list):
+                                    if weather in weather_types:
+                                        weather_turns = 8
+                                        break
+                                elif weather == weather_types:
+                                    weather_turns = 8
+                                    break
+
+                    battle_state.weather_turns = weather_turns
 
                     # Use proper in-game messages for each weather ability
                     ability_name = ability.get('name', ability_id)
