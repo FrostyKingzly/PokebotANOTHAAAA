@@ -110,15 +110,20 @@ class StatusConditionManager:
         """Check if Pokemon has any major status"""
         return self.major_status is not None
     
-    def can_apply_status(self, status_type: str, pokemon_types: list = None) -> tuple[bool, Optional[str]]:
+    def can_apply_status(self, status_type: str, pokemon_types: list = None, pokemon: Any = None) -> tuple[bool, Optional[str]]:
         """
         Check if a status can be applied
         Returns (can_apply, failure_reason)
         """
+        # Raid boss immunities
+        if pokemon and getattr(pokemon, "is_raid_boss", False):
+            if status_type == StatusType.SLEEP.value:
+                return False, "Rogue Pokemon cannot be put to sleep!"
+
         # Check immunities
         if status_type in self.immunities:
             return False, f"Immune to {status_type}"
-        
+
         # Type-based immunities
         if pokemon_types:
             if status_type == StatusType.BURN.value:
@@ -208,20 +213,34 @@ class StatusConditionManager:
         # Major status effects
         if self.major_status:
             status = self.major_status.status_type
+            is_raid_boss = getattr(pokemon, "is_raid_boss", False)
 
             if status == StatusType.BURN.value:
                 damage = max(1, pokemon.max_hp // 16)
+                # Raid bosses take 1/5 (20%) burn damage
+                if is_raid_boss:
+                    damage = max(1, damage // 5)
                 pokemon.current_hp = max(0, pokemon.current_hp - damage)
                 messages.append(f"{pokemon.species_name} was hurt by its burn! (-{damage} HP)")
 
             elif status == StatusType.POISON.value:
                 damage = max(1, pokemon.max_hp // 8)
+                # Raid bosses take 1/5 (20%) poison damage
+                if is_raid_boss:
+                    damage = max(1, damage // 5)
                 pokemon.current_hp = max(0, pokemon.current_hp - damage)
                 messages.append(f"{pokemon.species_name} was hurt by poison! (-{damage} HP)")
 
             elif status == StatusType.BADLY_POISON.value:
-                self.major_status.counter += 1
-                damage = max(1, pokemon.max_hp * self.major_status.counter // 16)
+                # Raid bosses have counter increase at half rate (0.5 per turn)
+                if is_raid_boss:
+                    self.major_status.counter += 0.5
+                else:
+                    self.major_status.counter += 1
+                damage = max(1, int(pokemon.max_hp * self.major_status.counter // 16))
+                # Raid bosses also take 1/5 (20%) badly poison damage
+                if is_raid_boss:
+                    damage = max(1, damage // 5)
                 pokemon.current_hp = max(0, pokemon.current_hp - damage)
                 messages.append(f"{pokemon.species_name} was badly poisoned! (-{damage} HP)")
 
@@ -310,9 +329,11 @@ class StatusConditionManager:
                 return False, f"{pokemon.species_name} is fast asleep!"
 
             elif status == StatusType.PARALYSIS.value:
-                # 25% chance to be fully paralyzed
-                if random.random() < 0.25:
-                    return False, f"{pokemon.species_name} is paralyzed and can't move!"
+                # Raid bosses cannot be fully paralyzed (only slowed)
+                if not getattr(pokemon, "is_raid_boss", False):
+                    # 25% chance to be fully paralyzed
+                    if random.random() < 0.25:
+                        return False, f"{pokemon.species_name} is paralyzed and can't move!"
 
         # Check confusion
         if VolatileStatus.CONFUSION.value in self.volatile_statuses:

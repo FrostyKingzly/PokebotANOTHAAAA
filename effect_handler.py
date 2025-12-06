@@ -548,7 +548,7 @@ class EffectHandler:
         
         # Check type immunities
         pokemon_types = target.species_data.get('types', [])
-        can_apply, reason = target.status_manager.can_apply_status(status, pokemon_types)
+        can_apply, reason = target.status_manager.can_apply_status(status, pokemon_types, target)
         
         if not can_apply:
             return f"{target.species_name} is not affected! ({reason})"
