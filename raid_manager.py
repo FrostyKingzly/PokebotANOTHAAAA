@@ -205,10 +205,11 @@ class RaidManager:
 
         selected: List[str] = []
 
-        # Ensure up to four attacking options
-        selected.extend(attack_moves[:4])
+        # Guarantee at least three attacking moves when available
+        selected.extend(attack_moves[:3])
 
-        # Ensure up to two support options
+        # Add extra attacking and support variety
+        selected.extend(attack_moves[3:5])  # Prefer a couple more offense options
         selected.extend(support_moves[:2])
 
         # Fill remaining slots, favoring unused attack moves first

@@ -448,7 +448,10 @@ class BattleEngine:
         elif battle_format == BattleFormat.DOUBLES:
             active_slot_count = 2
         elif battle_format == BattleFormat.RAID:
-            active_slot_count = max(1, int(kwargs.get('raid_party_size', 1)))
+            # Raids function like a wide singles battle: one active Pokémon per trainer
+            # with up to eight trainers contributing a lead.
+            raid_size = max(1, int(kwargs.get('raid_party_size', 1)))
+            active_slot_count = min(8, raid_size)
         else:
             active_slot_count = 1
 
@@ -963,7 +966,11 @@ class BattleEngine:
             opponent_active = opponent.get_active_pokemon()
             if opponent_active and any(getattr(p, "is_raid_boss", False) for p in battler.party):
                 def bulk_score(p):
-                    return max(0, getattr(p, "current_hp", 0)) + getattr(p, "defense", 0)
+                    return (
+                        max(0, getattr(p, "current_hp", 0))
+                        + getattr(p, "defense", 0)
+                        + getattr(p, "sp_defense", 0)
+                    )
 
                 target_pos = max(range(len(opponent_active)), key=lambda idx: bulk_score(opponent_active[idx]))
             else:
@@ -1190,22 +1197,6 @@ class BattleEngine:
 
             # Flee
             return (0, 0)
-
-        # In raid battles, all player actions resolve before the raid boss acts
-        if battle.battle_format == BattleFormat.RAID:
-            raid_ids = {battle.opponent.battler_id}
-            player_actions = [a for a in actions if a.battler_id not in raid_ids]
-            raid_actions = [a for a in actions if a.battler_id in raid_ids]
-            player_actions.sort(key=get_action_priority, reverse=True)
-
-            # Priority raid actions can move earlier, non-priority actions always go last
-            priority_raid_actions = [a for a in raid_actions if get_action_priority(a)[0] > 0]
-            non_priority_raid_actions = [a for a in raid_actions if get_action_priority(a)[0] <= 0]
-
-            priority_raid_actions.sort(key=get_action_priority, reverse=True)
-            non_priority_raid_actions.sort(key=get_action_priority, reverse=True)
-
-            return player_actions + priority_raid_actions + non_priority_raid_actions
 
         actions.sort(key=get_action_priority, reverse=True)
         return actions
