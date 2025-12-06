@@ -2117,6 +2117,9 @@ class TargetSelectView(discord.ui.View):
         if include_allies:
             ally_pools = self.battle.get_team_battlers(attacker_battler.battler_id)
             for battler in ally_pools:
+                # Skip eliminated battlers
+                if getattr(battler, "is_eliminated", False):
+                    continue
                 for idx, mon in enumerate(battler.get_active_pokemon()):
                     if getattr(mon, "current_hp", 0) <= 0:
                         continue
@@ -2134,6 +2137,9 @@ class TargetSelectView(discord.ui.View):
         if include_opponents:
             opponent_pools = self.battle.get_opposing_team_battlers(attacker_battler.battler_id)
             for battler in opponent_pools:
+                # Skip eliminated battlers
+                if getattr(battler, "is_eliminated", False):
+                    continue
                 for idx, mon in enumerate(battler.get_active_pokemon()):
                     if getattr(mon, "current_hp", 0) <= 0:
                         continue
