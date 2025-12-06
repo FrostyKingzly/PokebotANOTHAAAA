@@ -81,6 +81,7 @@ class BattleState:
     # Multi battle partners (only used when battle_format == MULTI)
     trainer_partner: Optional[Battler] = None  # Partner of the initiating player
     opponent_partner: Optional[Battler] = None  # Partner of the opponent
+    raid_allies: List[Battler] = field(default_factory=list)  # Additional player-controlled battlers in raids
 
     # Battle state
     turn_number: int = 1
@@ -134,37 +135,54 @@ class BattleState:
                 battlers.append(self.trainer_partner)
             if self.opponent_partner:
                 battlers.append(self.opponent_partner)
+        if self.battle_format == BattleFormat.RAID:
+            battlers.extend(self.raid_allies)
         return battlers
 
     def get_team_battlers(self, battler_id: int) -> List[Battler]:
         """Get all battlers on the same team as the given battler_id"""
         if battler_id == self.trainer.battler_id or (self.trainer_partner and battler_id == self.trainer_partner.battler_id):
-            # Trainer's team
             team = [self.trainer]
             if self.trainer_partner:
                 team.append(self.trainer_partner)
+            if self.battle_format == BattleFormat.RAID:
+                team.extend(self.raid_allies)
             return team
-        else:
-            # Opponent's team
+
+        for ally in self.raid_allies:
+            if battler_id == ally.battler_id:
+                team = [self.trainer]
+                team.extend(self.raid_allies)
+                if self.trainer_partner:
+                    team.append(self.trainer_partner)
+                return team
+
+        team = [self.opponent]
+        if self.opponent_partner:
+            team.append(self.opponent_partner)
+        return team
+
+    def get_opposing_team_battlers(self, battler_id: int) -> List[Battler]:
+        """Get all battlers on the opposing team"""
+        if battler_id == self.trainer.battler_id or (self.trainer_partner and battler_id == self.trainer_partner.battler_id):
             team = [self.opponent]
             if self.opponent_partner:
                 team.append(self.opponent_partner)
             return team
 
-    def get_opposing_team_battlers(self, battler_id: int) -> List[Battler]:
-        """Get all battlers on the opposing team"""
-        if battler_id == self.trainer.battler_id or (self.trainer_partner and battler_id == self.trainer_partner.battler_id):
-            # Return opponent's team
-            team = [self.opponent]
-            if self.opponent_partner:
-                team.append(self.opponent_partner)
-            return team
-        else:
-            # Return trainer's team
-            team = [self.trainer]
-            if self.trainer_partner:
-                team.append(self.trainer_partner)
-            return team
+        for ally in self.raid_allies:
+            if battler_id == ally.battler_id:
+                team = [self.opponent]
+                if self.opponent_partner:
+                    team.append(self.opponent_partner)
+                return team
+
+        team = [self.trainer]
+        if self.trainer_partner:
+            team.append(self.trainer_partner)
+        if self.battle_format == BattleFormat.RAID:
+            team.extend(self.raid_allies)
+        return team
 
     def is_team_defeated(self, battler_id: int) -> bool:
         """Check if a team has been completely defeated"""
@@ -441,6 +459,8 @@ class BattleEngine:
         if not opponent_party:
             raise ValueError("Opponent must have at least one Pokémon to battle.")
 
+        raid_participants = kwargs.get('raid_participants') or []
+
         # In multi battles, each trainer sends out 1 Pokemon (2 total per team)
         # In doubles battles, each trainer sends out 2 Pokemon
         if battle_format == BattleFormat.MULTI:
@@ -448,12 +468,12 @@ class BattleEngine:
         elif battle_format == BattleFormat.DOUBLES:
             active_slot_count = 2
         elif battle_format == BattleFormat.RAID:
-            # Raids function like a wide singles battle: one active Pokémon per trainer
-            # with up to eight trainers contributing a lead.
-            raid_size = max(1, int(kwargs.get('raid_party_size', 1)))
-            active_slot_count = min(8, raid_size)
+            # For raids, each participant brings one active Pokémon
+            active_slot_count = 1
         else:
             active_slot_count = 1
+
+        raid_allies: List[Battler] = []
 
         # Select first non-fainted Pokemon for trainer
         trainer_active_positions = []
@@ -476,16 +496,49 @@ class BattleEngine:
             opponent_active_positions = [0]  # Fallback if all fainted
 
         # Create trainer battler
-        trainer = Battler(
-            battler_id=trainer_id,
-            battler_name=trainer_name,
-            party=trainer_party,
-            active_positions=trainer_active_positions,
-            is_ai=False,
-            can_switch=True,
-            can_use_items=True,
-            can_flee=(battle_type == BattleType.WILD)
-        )
+        if battle_format == BattleFormat.RAID and raid_participants:
+            raid_battlers: List[Battler] = []
+            for participant in raid_participants:
+                p_party = participant.get('party') or []
+                p_name = participant.get('trainer_name') or trainer_name
+                p_id = participant.get('user_id') or trainer_id
+                p_active = []
+                for idx, mon in enumerate(p_party):
+                    if getattr(mon, 'current_hp', 0) > 0:
+                        p_active.append(idx)
+                        break
+                if not p_active and p_party:
+                    p_active = [0]
+
+                raid_battlers.append(
+                    Battler(
+                        battler_id=p_id,
+                        battler_name=p_name,
+                        party=p_party,
+                        active_positions=p_active or [0],
+                        is_ai=False,
+                        can_switch=True,
+                        can_use_items=True,
+                        can_flee=False,
+                    )
+                )
+
+            if not raid_battlers:
+                raise ValueError("No raid participants provided for raid battle.")
+
+            trainer = raid_battlers[0]
+            raid_allies = raid_battlers[1:]
+        else:
+            trainer = Battler(
+                battler_id=trainer_id,
+                battler_name=trainer_name,
+                party=trainer_party,
+                active_positions=trainer_active_positions,
+                is_ai=False,
+                can_switch=True,
+                can_use_items=True,
+                can_flee=(battle_type == BattleType.WILD)
+            )
         
         # Create opponent battler
         if opponent_id is None:
@@ -511,6 +564,7 @@ class BattleEngine:
             battle_format=battle_format,
             trainer=trainer,
             opponent=opponent,
+            raid_allies=raid_allies,
             is_ranked=is_ranked,
             ranked_context=ranked_context or {}
         )
@@ -797,12 +851,7 @@ class BattleEngine:
             return {"error": "Battle is already over"}
         
         # Validate battler
-        valid_battler_ids = [battle.trainer.battler_id, battle.opponent.battler_id]
-        if battle.battle_format == BattleFormat.MULTI:
-            if battle.trainer_partner:
-                valid_battler_ids.append(battle.trainer_partner.battler_id)
-            if battle.opponent_partner:
-                valid_battler_ids.append(battle.opponent_partner.battler_id)
+        valid_battler_ids = [b.battler_id for b in battle.get_all_battlers()]
 
         if battler_id not in valid_battler_ids:
             return {"error": "Invalid battler ID"}
@@ -862,7 +911,7 @@ class BattleEngine:
             return None
 
         # Find the battler
-        battler = battle.trainer if battle.trainer.battler_id == battler_id else battle.opponent
+        battler = self._get_battler_by_id(battle, battler_id)
         active_pokemon_list = battler.get_active_pokemon()
 
         if pokemon_position >= len(active_pokemon_list):
@@ -1000,19 +1049,13 @@ class BattleEngine:
             return {"error": "Battle not found"}
         
         # Generate AI actions if needed (one per active Pokemon for doubles)
-        if battle.trainer.is_ai:
-            for pos in range(len(battle.trainer.get_active_pokemon())):
-                action_key = f"{battle.trainer.battler_id}_{pos}"
+        for battler in battle.get_all_battlers():
+            if not getattr(battler, "is_ai", False):
+                continue
+            for pos in range(len(battler.get_active_pokemon())):
+                action_key = f"{battler.battler_id}_{pos}"
                 if action_key not in battle.pending_actions:
-                    action = self.generate_ai_action(battle_id, battle.trainer.battler_id, pos)
-                    if action:
-                        battle.pending_actions[action_key] = action
-
-        if battle.opponent.is_ai:
-            for pos in range(len(battle.opponent.get_active_pokemon())):
-                action_key = f"{battle.opponent.battler_id}_{pos}"
-                if action_key not in battle.pending_actions:
-                    action = self.generate_ai_action(battle_id, battle.opponent.battler_id, pos)
+                    action = self.generate_ai_action(battle_id, battler.battler_id, pos)
                     if action:
                         battle.pending_actions[action_key] = action
         
@@ -1026,7 +1069,7 @@ class BattleEngine:
         # Track which actions were registered vs executed to ensure all commands show up
         registered_actions = {}
         for action in actions:
-            battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
+            battler = self._get_battler_by_id(battle, action.battler_id)
             active_pokemon = battler.get_active_pokemon()
             if active_pokemon:
                 pokemon_pos = getattr(action, 'pokemon_position', 0)
@@ -1049,7 +1092,7 @@ class BattleEngine:
                 break
 
             # Skip actions for fainted Pokemon
-            battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
+            battler = self._get_battler_by_id(battle, action.battler_id)
             active_pokemon = battler.get_active_pokemon()
             acting_pokemon = None
 
@@ -1099,7 +1142,7 @@ class BattleEngine:
             # CRITICAL: Ensure every executed action generates at least one message
             # If no messages were generated for a move action, add a fallback message
             if not messages and action.action_type == 'move':
-                battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
+                battler = self._get_battler_by_id(battle, action.battler_id)
                 active_pokemon = battler.get_active_pokemon()
                 pokemon_pos = getattr(action, 'pokemon_position', 0)
                 if pokemon_pos < len(active_pokemon):
@@ -1117,7 +1160,7 @@ class BattleEngine:
 
             # If Volt Switch or forced switch was triggered, break the action loop immediately
             # to prompt the player for their switch before continuing the turn
-            if battle.phase in ['VOLT_SWITCH', 'FORCED_SWITCH'] and not getattr(battle.trainer if battle.forced_switch_battler_id == battle.trainer.battler_id else battle.opponent, 'is_ai', True):
+            if battle.phase in ['VOLT_SWITCH', 'FORCED_SWITCH'] and not getattr(self._get_battler_by_id(battle, battle.forced_switch_battler_id), 'is_ai', True):
                 # Player needs to switch - stop processing remaining actions
                 break
 
@@ -1184,7 +1227,7 @@ class BattleEngine:
                 priority = move_data.get('priority', 0)
 
                 # Get Pokemon speed
-                battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
+                battler = self._get_battler_by_id(battle, action.battler_id)
                 active_pokemon = battler.get_active_pokemon()
                 pokemon = active_pokemon[0] if active_pokemon else None
                 speed = self._get_effective_speed(pokemon)
@@ -1580,7 +1623,7 @@ class BattleEngine:
         # Check for faint / dazed state
         if defender.current_hp <= 0:
             # Determine which battler owns the defender
-            defender_battler = battle.trainer if defender in battle.trainer.party else battle.opponent
+            defender_battler = next((b for b in battle.get_all_battlers() if defender in b.party), battle.opponent)
 
             # Special handling for wild battles: wild Pokémon do not fully faint, they become "dazed"
             if battle.battle_type == BattleType.WILD and defender_battler == battle.opponent:
@@ -1798,12 +1841,20 @@ class BattleEngine:
                         break
 
             # Only reset to WAITING_ACTIONS if player doesn't need to switch
-            if not player_needs_switch:
-                battle.phase = 'WAITING_ACTIONS'
-                battle.forced_switch_battler_id = None
-                battle.forced_switch_position = None
+        if not player_needs_switch:
+            battle.phase = 'WAITING_ACTIONS'
+            battle.forced_switch_battler_id = None
+            battle.forced_switch_position = None
 
         return [{"messages": result.get("messages", []), "pokemon": result.get("pokemon") or result.get("switched_in")}] if result else []
+
+    def _get_battler_by_id(self, battle: BattleState, battler_id: int) -> Battler:
+        """Return the Battler object matching the given ID, searching allies in raids."""
+
+        for battler in battle.get_all_battlers():
+            if battler.battler_id == battler_id:
+                return battler
+        return battle.opponent
 
     def _apply_entry_hazards(self, battle: BattleState, battler: Battler, pokemon: Any) -> List[str]:
         """Apply field hazards to a newly-entered pokemon and return narration.
@@ -1907,7 +1958,7 @@ class BattleEngine:
         return messages
     def _execute_switch(self, battle: BattleState, action: BattleAction, forced: bool = False) -> Dict:
         """Execute a Pokemon switch"""
-        battler = battle.trainer if action.battler_id == battle.trainer.battler_id else battle.opponent
+        battler = self._get_battler_by_id(battle, action.battler_id)
 
         # Determine which position to switch (for forced switches from fainting in doubles)
         switch_position = 0  # Default for singles
@@ -1956,7 +2007,7 @@ class BattleEngine:
         if battle.phase not in ['FORCED_SWITCH', 'VOLT_SWITCH'] or battle.forced_switch_battler_id != battler_id:
             return {"error": "No forced switch is pending"}
 
-        battler = battle.trainer if battler_id == battle.trainer.battler_id else battle.opponent
+        battler = self._get_battler_by_id(battle, battler_id)
         if switch_to_position < 0 or switch_to_position >= len(battler.party):
             return {"error": "Invalid party slot"}
         target = battler.party[switch_to_position]
@@ -1966,24 +2017,28 @@ class BattleEngine:
         action = BattleAction(action_type='switch', battler_id=battler_id, switch_to_position=switch_to_position)
         result = self._execute_switch(battle, action, forced=True)
 
-        # After this player switches, check if the other player also has fainted Pokemon
-        other_battler = battle.opponent if battler == battle.trainer else battle.trainer
-        other_needs_switch = False
+        # After this player switches, check if any other human battler still needs to switch
+        pending_switch_set = False
 
-        # Only check for human players (not AI)
-        if not getattr(other_battler, 'is_ai', False):
+        for other_battler in battle.get_all_battlers():
+            if other_battler.battler_id == battler_id:
+                continue
+            if getattr(other_battler, 'is_ai', False):
+                continue
+
             active_pokemon = other_battler.get_active_pokemon()
             for pos_idx, active_mon in enumerate(active_pokemon):
                 if getattr(active_mon, 'current_hp', 0) <= 0:
-                    # Other player has a fainted Pokemon that needs switching
-                    other_needs_switch = True
+                    pending_switch_set = True
                     battle.phase = 'FORCED_SWITCH'
                     battle.forced_switch_battler_id = other_battler.battler_id
                     battle.forced_switch_position = pos_idx
                     break
+            if pending_switch_set:
+                break
 
-        # Only reset to WAITING_ACTIONS if the other player doesn't need to switch
-        if not other_needs_switch:
+        # Only reset to WAITING_ACTIONS if no other battlers need to switch
+        if not pending_switch_set:
             battle.phase = 'WAITING_ACTIONS'
             battle.forced_switch_battler_id = None
             battle.forced_switch_position = None

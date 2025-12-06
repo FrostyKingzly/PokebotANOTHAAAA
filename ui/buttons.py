@@ -3676,6 +3676,7 @@ class RaidReadyCheckView(View):
             # Use a negative ID to avoid key collisions with trainer actions
             opponent_id=-(raid.created_by or random.randint(1000, 9999)),
             raid_party_size=raid_party_size,
+            raid_participants=participant_entries,
         )
 
         battle = battle_cog.battle_engine.get_battle(battle_id)

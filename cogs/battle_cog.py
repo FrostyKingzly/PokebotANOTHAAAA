@@ -74,6 +74,9 @@ class BattleCog(commands.Cog):
         self.user_battles.pop(getattr(battle.trainer, 'battler_id', None), None)
         if getattr(battle, 'battle_type', None) == BattleType.PVP:
             self.user_battles.pop(getattr(battle.opponent, 'battler_id', None), None)
+        if getattr(battle, 'battle_format', None) == BattleFormat.RAID:
+            for ally in getattr(battle, 'raid_allies', []) or []:
+                self.user_battles.pop(getattr(ally, 'battler_id', None), None)
 
     def _get_ball_inventory(self, discord_user_id: int):
         """Return a dict of {item_id: (item_data, quantity)} for Poké Balls.
@@ -727,35 +730,22 @@ class BattleCog(commands.Cog):
 
         participants = getattr(battle, "raid_participants", [])
         entries: list[tuple[str, Any]] = []
+        participant_map = {p.get("user_id"): p.get("trainer_name") for p in participants}
 
-        active_by_owner = {}
-        try:
-            for mon in battle.trainer.get_active_pokemon():
-                owner_id = getattr(mon, "owner_discord_id", None)
-                if owner_id is not None and owner_id not in active_by_owner:
-                    active_by_owner[owner_id] = mon
-        except Exception:
-            active_by_owner = {}
+        for battler in battle.get_all_battlers():
+            if getattr(battler, "is_ai", False):
+                continue
 
-        for entry in participants:
-            trainer_name = entry.get("trainer_name") or "Trainer"
-            party = entry.get("party") or []
-            owner_id = entry.get("user_id")
-            active_mon = active_by_owner.get(owner_id)
+            active_mon = next((m for m in battler.get_active_pokemon() if getattr(m, "current_hp", 0) > 0), None)
             if not active_mon:
-                active_mon = next((m for m in party if getattr(m, "current_hp", 0) > 0), None)
-            if not active_mon and party:
-                active_mon = party[0]
-            if active_mon:
-                entries.append((trainer_name, active_mon))
+                active_mon = next((m for m in battler.party if getattr(m, "current_hp", 0) > 0), None)
+            if not active_mon:
+                continue
+
+            trainer_name = participant_map.get(battler.battler_id) or getattr(battler, "battler_name", "Trainer")
+            entries.append((trainer_name, active_mon))
             if len(entries) >= 8:
                 break
-
-        if not entries:
-            trainer_party = getattr(battle.trainer, "party", [])
-            if trainer_party:
-                active_mon = next((m for m in trainer_party if getattr(m, "current_hp", 0) > 0), trainer_party[0])
-                entries.append((battle.trainer.battler_name, active_mon))
 
         for idx, (trainer_name, mon) in enumerate(entries):
             hp_value = f"HP: {self._hp_bar(mon)} ({max(0, mon.current_hp)}/{mon.max_hp})"
@@ -1289,15 +1279,14 @@ class BattleActionView(discord.ui.View):
         self.cog = battle_cog
 
     def _resolve_battler_id(self, interaction: discord.Interaction, battle) -> Optional[int]:
-        if battle.trainer.battler_id == interaction.user.id:
-            return battle.trainer.battler_id
-        if battle.opponent.battler_id == interaction.user.id:
-            return battle.opponent.battler_id
+        for battler in battle.get_all_battlers():
+            if battler.battler_id == interaction.user.id:
+                return battler.battler_id
 
         cog = self.cog or interaction.client.get_cog("BattleCog")
         if battle.battle_format == BattleFormat.RAID and cog:
             if getattr(cog, "user_battles", {}).get(interaction.user.id) == battle.battle_id:
-                return battle.trainer.battler_id
+                return interaction.user.id
         return None
 
     @discord.ui.button(label="⚔️ Fight", style=discord.ButtonStyle.danger, row=0)
@@ -1394,7 +1383,10 @@ class BattleActionView(discord.ui.View):
         if battle.is_over:
             await interaction.followup.send("The battle is already over.", ephemeral=True)
             return
-        if self.battler_id == battle.trainer.battler_id:
+        forfeiting_id = self._resolve_battler_id(interaction, battle)
+        trainer_team_ids = {b.battler_id for b in battle.get_team_battlers(battle.trainer.battler_id)}
+
+        if forfeiting_id in trainer_team_ids:
             battle.winner = 'opponent'
         else:
             battle.winner = 'trainer'
@@ -1436,6 +1428,13 @@ def _build_revival_target_options(battle, battler_id: int) -> tuple[list[discord
     return options, option_map
 
 
+def _get_battler_by_id(battle, battler_id: int):
+    for battler in battle.get_all_battlers():
+        if battler.battler_id == battler_id:
+            return battler
+    return battle.trainer
+
+
 class MoveSelectView(discord.ui.View):
     def __init__(self, battle, battler_id: int, engine: BattleEngine, controller_id: Optional[int] = None):
         super().__init__(timeout=None)
@@ -1446,7 +1445,7 @@ class MoveSelectView(discord.ui.View):
         self.controller_id = controller_id
 
         # Figure out which active Pokémon belongs to this battler
-        battler = battle.trainer if battler_id == battle.trainer.battler_id else battle.opponent
+        battler = _get_battler_by_id(battle, battler_id)
         active_pokemon = None
         active_list = battler.get_active_pokemon() if battler else []
         if battle.battle_format == BattleFormat.RAID and controller_id:
@@ -1755,7 +1754,7 @@ class DoublesActionCollector:
 
     def has_all_actions(self) -> bool:
         """Check if we have actions for all active Pokemon."""
-        battler = self.battle.trainer if self.battler_id == self.battle.trainer.battler_id else self.battle.opponent
+        battler = _get_battler_by_id(self.battle, self.battler_id)
         num_active = len(battler.get_active_pokemon())
         return len(self.actions) >= num_active
 
@@ -1765,7 +1764,7 @@ class DoublesActionCollector:
 
     def get_next_position(self) -> int | None:
         """Get the next position that needs an action."""
-        battler = self.battle.trainer if self.battler_id == self.battle.trainer.battler_id else self.battle.opponent
+        battler = _get_battler_by_id(self.battle, self.battler_id)
         for pos in range(len(battler.get_active_pokemon())):
             if pos not in self.actions:
                 return pos
@@ -1874,7 +1873,7 @@ class RevivalTargetSelectView(discord.ui.View):
         next_pos = self.collector.get_next_position()
 
         if next_pos is not None:
-            battler = self.battle.trainer if self.battler_id == self.battle.trainer.battler_id else self.battle.opponent
+            battler = _get_battler_by_id(self.battle, self.battler_id)
             next_mon = battler.get_active_pokemon()[next_pos]
             await interaction.followup.send(
                 f"Select move for **{next_mon.species_name}** (Slot {next_pos+1}):",
@@ -1998,7 +1997,7 @@ class TargetSelectView(discord.ui.View):
             # Check if we need to select for more Pokemon
             next_pos = self.collector.get_next_position()
             if next_pos is not None:
-                battler = self.battle.trainer if self.battler_id == self.battle.trainer.battler_id else self.battle.opponent
+                battler = _get_battler_by_id(self.battle, self.battler_id)
                 next_mon = battler.get_active_pokemon()[next_pos]
                 await interaction.followup.send(
                     f"Select move for **{next_mon.species_name}** (Slot {next_pos+1}):",
@@ -2140,7 +2139,7 @@ class DoublesMoveSelectView(discord.ui.View):
         if prev_pos >= 0:
             # Remove previous Pokemon's action
             self.collector.actions.pop(prev_pos, None)
-            battler = self.battle.trainer if self.battler_id == self.battle.trainer.battler_id else self.battle.opponent
+            battler = _get_battler_by_id(self.battle, self.battler_id)
             prev_mon = battler.get_active_pokemon()[prev_pos]
             await interaction.response.edit_message(
                 content=f"Select move for **{prev_mon.species_name}** (Slot {prev_pos+1}):",
