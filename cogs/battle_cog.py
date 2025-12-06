@@ -1346,6 +1346,12 @@ class BattleActionView(discord.ui.View):
             await interaction.response.send_message("You are not a participant in this battle.", ephemeral=True)
             return
 
+        # Check if this battler has been eliminated
+        battler = _get_battler_by_id(battle, battler_id)
+        if battler and battler.is_eliminated:
+            await interaction.response.send_message("❌ All your Pokémon have fainted! You can no longer battle.", ephemeral=True)
+            return
+
         # Check if this is a doubles battle
         if battle.battle_format == BattleFormat.DOUBLES:
             # Use doubles action collector
@@ -1379,6 +1385,12 @@ class BattleActionView(discord.ui.View):
             await interaction.response.send_message("You are not a participant in this battle.", ephemeral=True)
             return
 
+        # Check if this battler has been eliminated
+        battler = _get_battler_by_id(battle, battler_id)
+        if battler and battler.is_eliminated:
+            await interaction.response.send_message("❌ All your Pokémon have fainted! You can no longer battle.", ephemeral=True)
+            return
+
         await interaction.response.send_message(
             "Choose a Pokémon to switch in:",
             view=PartySelectView(battle, battler_id, self.engine, forced=False),
@@ -1395,6 +1407,12 @@ class BattleActionView(discord.ui.View):
         battler_id = self._resolve_battler_id(interaction, battle)
         if battler_id is None:
             await interaction.response.send_message("You are not a participant in this battle.", ephemeral=True)
+            return
+
+        # Check if this battler has been eliminated
+        battler = _get_battler_by_id(battle, battler_id)
+        if battler and battler.is_eliminated:
+            await interaction.response.send_message("❌ All your Pokémon have fainted! You can no longer battle.", ephemeral=True)
             return
 
         cog = self.cog or interaction.client.get_cog("BattleCog")
@@ -1414,6 +1432,12 @@ class BattleActionView(discord.ui.View):
         battler_id = self._resolve_battler_id(interaction, battle) if battle else None
         if battler_id is None:
             await interaction.response.send_message("You are not a participant in this battle.", ephemeral=True)
+            return
+
+        # Check if this battler has been eliminated
+        battler = _get_battler_by_id(battle, battler_id)
+        if battler and battler.is_eliminated:
+            await interaction.response.send_message("❌ All your Pokémon have fainted! You can no longer battle.", ephemeral=True)
             return
 
         await interaction.response.send_message(embed=embed, view=ForfeitConfirmView(self), ephemeral=True)
