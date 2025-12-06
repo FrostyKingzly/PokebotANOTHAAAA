@@ -3672,7 +3672,7 @@ class RaidReadyCheckView(View):
             opponent_is_ai=True,
             battle_type=BattleType.TRAINER if BattleType else None,
             battle_format=BattleFormat.RAID if BattleFormat else None,
-            opponent_name=f"Rogue {raid_boss.species_name}",
+            opponent_name=f"Rogue ({raid_boss.species_name})",
             # Use a negative ID to avoid key collisions with trainer actions
             opponent_id=-(raid.created_by or random.randint(1000, 9999)),
             raid_party_size=raid_party_size,
