@@ -1373,8 +1373,15 @@ class BattleEngine:
 
         return targets
 
-    async def _execute_spread_move(self, battle: BattleState, action: BattleAction,
-                                    attacker, targets: List[Tuple[Any, Any]], move_data: Dict) -> Dict:
+    async def _execute_spread_move(
+        self,
+        battle: BattleState,
+        action: BattleAction,
+        attacker,
+        targets: List[Tuple[Any, Any]],
+        move_data: Dict,
+        attacker_battler=None,
+    ) -> Dict:
         """Handle moves that hit multiple targets (spread moves)."""
         messages = []
 
@@ -1428,6 +1435,7 @@ class BattleEngine:
                 if (
                     ENHANCED_SYSTEMS_AVAILABLE
                     and move_data.get('category') in ['physical', 'special']
+                    and attacker_battler is not None
                     and attacker_battler != defender_battler
                 ):
                     defender.rage_fist_hits_taken = getattr(defender, 'rage_fist_hits_taken', 0) + 1
@@ -1526,7 +1534,14 @@ class BattleEngine:
 
         # If move hits multiple targets (spread move), handle differently
         if len(targets) > 1:
-            return await self._execute_spread_move(battle, action, attacker, targets, move_data)
+            return await self._execute_spread_move(
+                battle,
+                action,
+                attacker,
+                targets,
+                move_data,
+                attacker_battler=attacker_battler,
+            )
 
         # Handle Protect/Detect successive use failure
         if action.move_id in ['protect', 'detect']:
@@ -1743,7 +1758,6 @@ class BattleEngine:
                         # Set a flag that will be checked by the UI
                         battle.phase = 'VOLT_SWITCH'
                         battle.forced_switch_battler_id = attacker_battler.battler_id
-                        messages.append(f"Choose a Pokémon to switch in!")
 
         return {"messages": messages}
 

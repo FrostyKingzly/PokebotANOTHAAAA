@@ -673,6 +673,8 @@ class BattleCog(commands.Cog):
 
     def _format_pokemon_name(self, pokemon, include_level: bool = True) -> str:
         name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
+        if getattr(pokemon, "is_raid_boss", False):
+            name = f"Rogue ({name})"
         level = getattr(pokemon, "level", None)
         if include_level and level is not None:
             return f"{name} Lv{level}"
@@ -700,7 +702,7 @@ class BattleCog(commands.Cog):
         type_emojis = " / ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
 
         embed = discord.Embed(
-            title=f"Rogue {raid_mon.species_name} Lv. {getattr(raid_mon, 'level', '?')}",
+            title=f"{self._format_pokemon_name(raid_mon)}",
             description=(
                 f"**HP** {type_emojis}\n{hp_bars}\n"
                 f"**{max(0, int(getattr(raid_mon, 'current_hp', 0)))}/{int(getattr(raid_mon, 'max_hp', 1))}**"
@@ -767,7 +769,7 @@ class BattleCog(commands.Cog):
             return None
 
         embed = discord.Embed(
-            title=f"{raid_mon.species_name} looms large!",
+            title=f"{self._format_pokemon_name(raid_mon, include_level=False)} looms large!",
             color=discord.Color.dark_red(),
         )
         sprite_url = PokemonSpriteHelper.get_sprite(
@@ -784,12 +786,13 @@ class BattleCog(commands.Cog):
 
     async def _send_raid_intro(self, interaction: discord.Interaction, raid_mon) -> Optional[discord.Embed]:
         name = getattr(raid_mon, "species_name", "The Pokémon") if raid_mon else "The foe"
+        formatted_name = self._format_pokemon_name(raid_mon, include_level=False) if raid_mon else name
 
         lead_embeds = [
             discord.Embed(
                 description="\n".join(
                     [
-                        f"The {name} gathers and absorbs dreamlites…",
+                        f"The {formatted_name} gathers and absorbs dreamlites…",
                         ". . .",
                     ]
                 ),
@@ -799,7 +802,7 @@ class BattleCog(commands.Cog):
                 description="\n".join(
                     [
                         "***!!!***",
-                        f"The Rogue {name} erupts with power!",
+                        f"The {formatted_name} erupts with power!",
                     ]
                 ),
                 color=discord.Color.dark_red(),
@@ -981,10 +984,18 @@ class BattleCog(commands.Cog):
         # Always refresh the battle state to avoid stale active slots or parties
         fresh_battle = self.battle_engine.get_battle(getattr(battle, 'battle_id', None)) or battle
         battle = fresh_battle
-        if battler_id != battle.trainer.battler_id:
+        battler = _get_battler_by_id(battle, battler_id)
+        if not battler:
             await interaction.followup.send(
                 "Waiting for your opponent to choose their next Pokémon...",
-                ephemeral=True
+                ephemeral=True,
+            )
+            return
+
+        if getattr(battler, "is_ai", False):
+            await interaction.followup.send(
+                "Waiting for your opponent to choose their next Pokémon...",
+                ephemeral=True,
             )
             return
 
@@ -993,10 +1004,10 @@ class BattleCog(commands.Cog):
 
         if is_volt_switch:
             # U-turn/Volt Switch case
-            active_mon = battle.trainer.get_active_pokemon()[0] if battle.trainer.get_active_pokemon() else None
+            active_mon = battler.get_active_pokemon()[0] if battler.get_active_pokemon() else None
             if active_mon:
                 desc = (
-                    f"**{active_mon.species_name}** will switch out!\n\n"
+                    f"**{self._format_pokemon_name(active_mon, include_level=False)}** will switch out!\n\n"
                     "Select another Pokémon to switch in."
                 )
             else:
@@ -1004,10 +1015,10 @@ class BattleCog(commands.Cog):
             embed = discord.Embed(title="Switch Required!", description=desc, color=discord.Color.blue())
         else:
             # Fainted Pokemon case
-            fainted = battle.trainer.get_active_pokemon()[0] if battle.trainer.get_active_pokemon() else None
+            fainted = battler.get_active_pokemon()[0] if battler.get_active_pokemon() else None
             if fainted:
                 desc = (
-                    f"**{fainted.species_name}** can no longer fight!\n\n"
+                    f"**{self._format_pokemon_name(fainted, include_level=False)}** can no longer fight!\n\n"
                     "Select another healthy Pokémon to continue the battle."
                 )
             else:
@@ -1062,11 +1073,11 @@ class BattleCog(commands.Cog):
 
         if battle.battle_format == BattleFormat.RAID:
             raid_mon = (battle.opponent.get_active_pokemon() or [None])[0]
-            raid_name = getattr(raid_mon, 'species_name', opponent_name)
+            raid_name = self._format_pokemon_name(raid_mon, include_level=False) if raid_mon else opponent_name
             if result == 'trainer':
                 desc = (
                     f"The Dreamlites dissipate…\n\n"
-                    f"***The Rogue {raid_name} Fainted!!!***\n\n"
+                    f"***The {raid_name} Fainted!!!***\n\n"
                     "***Victory!!!***"
                 )
                 title = 'Raid Over'
@@ -1074,7 +1085,7 @@ class BattleCog(commands.Cog):
             else:
                 desc = (
                     "All trainers' Pokémon have fainted…\n\n"
-                    f"The Dreamlites surge, and the Rogue {raid_name} continues to rampage…\n\n"
+                    f"The Dreamlites surge, and the {raid_name} continues to rampage…\n\n"
                     "You Lose."
                 )
                 title = 'Battle Over'
@@ -1492,12 +1503,27 @@ class MoveButton(discord.ui.Button):
         self.battler_id = battler_id
         self.pokemon_position = pokemon_position
 
-
+    @staticmethod
+    def _should_prompt_target(move_data: dict) -> bool:
+        target_type = move_data.get("target", "single")
+        if target_type in [
+            "self",
+            "all",
+            "all_opponents",
+            "all_adjacent",
+            "all_allies",
+            "entire_field",
+            "user_field",
+            "enemy_field",
+        ]:
+            return False
+        return True
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
         battle = self.engine.get_battle(self.battle_id)
+        move_data = self.engine.moves_db.get_move(self.move_id) if hasattr(self.engine, "moves_db") else {}
         if self.move_id == "revival_blessing" and battle:
             options, option_map = _build_revival_target_options(battle, self.battler_id)
             if not options:
@@ -1516,6 +1542,20 @@ class MoveButton(discord.ui.Button):
                     pokemon_position=self.pokemon_position,
                     options=options,
                     option_map=option_map,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        if battle and self._should_prompt_target(move_data):
+            await interaction.followup.send(
+                "Choose a target for this move:",
+                view=TargetSelectView(
+                    battle,
+                    self.battler_id,
+                    self.move_id,
+                    self.pokemon_position,
+                    self.engine,
                 ),
                 ephemeral=True,
             )
@@ -1560,7 +1600,7 @@ class PartySelect(discord.ui.Select):
         self.battler_id = battler_id
         self.forced = forced
         options = []
-        battler = battle.trainer if battler_id == battle.trainer.battler_id else battle.opponent
+        battler = _get_battler_by_id(battle, battler_id) or battle.trainer
         party = battler.party
         active_index = battler.active_positions[0]  # Get actual active position
         for idx, mon in enumerate(party):
@@ -1920,32 +1960,29 @@ class TargetSelectView(discord.ui.View):
         self.engine = engine
         self.collector = collector
 
-        # Get move data to determine valid targets
         move_data = engine.moves_db.get_move(move_id) if hasattr(engine, 'moves_db') else {}
         target_type = move_data.get('target', 'single')
+        is_support = move_data.get('category') == 'status'
+        self.target_candidates = self._build_candidates(target_type, is_support)
 
-        # Determine which targets to show based on move target type
-        if target_type in ['all_adjacent', 'all_opponents', 'all']:
-            # No target selection needed, just submit
-            auto_btn = discord.ui.Button(label="✓ Confirm (hits all targets)", style=discord.ButtonStyle.success, custom_id="auto_target")
-            auto_btn.callback = self._create_target_callback(0)
-            self.add_item(auto_btn)
-        elif target_type in ['self', 'entire_field', 'user_field', 'enemy_field', 'ally', 'all_allies']:
-            # No target selection needed for field effects or self-targeting moves
+        auto_targets = {'all_adjacent', 'all_opponents', 'all', 'self', 'entire_field', 'user_field', 'enemy_field', 'all_allies'}
+        if target_type in auto_targets:
             auto_btn = discord.ui.Button(label="✓ Confirm", style=discord.ButtonStyle.success, custom_id="auto_target")
             auto_btn.callback = self._create_target_callback(0)
             self.add_item(auto_btn)
-        else:
-            # Single target - show opponent Pokemon
-            opponent = battle.opponent if battler_id == battle.trainer.battler_id else battle.trainer
-            for idx, mon in enumerate(opponent.get_active_pokemon()):
+        elif self.target_candidates:
+            for idx, candidate in enumerate(self.target_candidates):
                 button = discord.ui.Button(
-                    label=f"Target: {mon.species_name} (Slot {idx+1})",
+                    label=self._format_candidate_label(candidate, target_type),
                     style=discord.ButtonStyle.primary,
                     custom_id=f"target_{idx}"
                 )
                 button.callback = self._create_target_callback(idx)
                 self.add_item(button)
+        else:
+            auto_btn = discord.ui.Button(label="✓ Confirm", style=discord.ButtonStyle.success, custom_id="auto_target")
+            auto_btn.callback = self._create_target_callback(0)
+            self.add_item(auto_btn)
 
         # Add back button for doubles
         if collector:
@@ -1953,9 +1990,59 @@ class TargetSelectView(discord.ui.View):
             back_btn.callback = self._back_callback
             self.add_item(back_btn)
 
-    def _create_target_callback(self, target_pos: int):
+    @staticmethod
+    def _format_target_name(pokemon) -> str:
+        name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
+        if getattr(pokemon, "is_raid_boss", False):
+            name = f"Rogue ({name})"
+        return name
+
+    def _format_candidate_label(self, candidate: dict, target_type: str) -> str:
+        prefix = "Target" if target_type != 'ally' else "Support"
+        name = self._format_target_name(candidate.get("pokemon"))
+        return f"{prefix}: {name} (Slot {candidate.get('position', 0) + 1})"
+
+    def _build_candidates(self, target_type: str, is_support: bool) -> list[dict]:
+        candidates: list[dict] = []
+        attacker_battler = _get_battler_by_id(self.battle, self.battler_id)
+        if not attacker_battler:
+            return candidates
+
+        acting_mon = None
+        active_pokemon = attacker_battler.get_active_pokemon()
+        if self.pokemon_position < len(active_pokemon):
+            acting_mon = active_pokemon[self.pokemon_position]
+
+        if target_type == 'ally':
+            pools = self.battle.get_team_battlers(attacker_battler.battler_id)
+        else:
+            pools = self.battle.get_opposing_team_battlers(attacker_battler.battler_id)
+
+        for battler in pools:
+            for idx, mon in enumerate(battler.get_active_pokemon()):
+                if getattr(mon, "current_hp", 0) <= 0:
+                    continue
+                if target_type == 'ally' and mon is acting_mon:
+                    continue
+                candidates.append({
+                    "battler_id": battler.battler_id,
+                    "position": idx,
+                    "pokemon": mon,
+                    "is_rogue": getattr(mon, "is_raid_boss", False),
+                })
+
+        if not candidates:
+            return candidates
+
+        rogue_candidates = [c for c in candidates if c.get("is_rogue")]
+        others = [c for c in candidates if not c.get("is_rogue")]
+        if rogue_candidates:
+            candidates = (others + rogue_candidates) if is_support else (rogue_candidates + others)
+        return candidates
+
+    def _create_target_callback(self, target_idx: int):
         async def callback(interaction: discord.Interaction):
-            await self._handle_target_selection(interaction, target_pos)
+            await self._handle_target_selection(interaction, target_idx)
         return callback
 
     async def _back_callback(self, interaction: discord.Interaction):
@@ -1978,15 +2065,22 @@ class TargetSelectView(discord.ui.View):
                 embed=None
             )
 
-    async def _handle_target_selection(self, interaction: discord.Interaction, target_pos: int):
+    async def _handle_target_selection(self, interaction: discord.Interaction, target_idx: int):
         await interaction.response.defer()
+
+        candidate = None
+        if getattr(self, "target_candidates", None) and 0 <= target_idx < len(self.target_candidates):
+            candidate = self.target_candidates[target_idx]
+        target_position = candidate.get("position") if candidate else target_idx
+        target_battler_id = candidate.get("battler_id") if candidate else None
 
         # Create the action
         action = BattleAction(
             action_type='move',
             battler_id=self.battler_id,
             move_id=self.move_id,
-            target_position=target_pos,
+            target_position=target_position,
+            target_battler_id=target_battler_id,
             pokemon_position=self.pokemon_position
         )
 
