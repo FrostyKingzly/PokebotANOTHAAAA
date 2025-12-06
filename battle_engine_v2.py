@@ -1205,10 +1205,12 @@ class BattleEngine:
                 battle.turn_log.extend(messages)
                 action_events.append({"type": action.action_type, "actor": acting_pokemon, "messages": messages})
 
-            # If Volt Switch or forced switch was triggered, break the action loop immediately
+            # If forced switch was triggered (Pokemon fainted), break the action loop immediately
             # to prompt the player for their switch before continuing the turn
-            if battle.phase in ['VOLT_SWITCH', 'FORCED_SWITCH'] and not getattr(self._get_battler_by_id(battle, battle.forced_switch_battler_id), 'is_ai', True):
-                # Player needs to switch - stop processing remaining actions
+            # For VOLT_SWITCH (self-switch moves like Flip Turn), continue executing remaining actions
+            # and prompt for switch after all actions are done
+            if battle.phase == 'FORCED_SWITCH' and not getattr(self._get_battler_by_id(battle, battle.forced_switch_battler_id), 'is_ai', True):
+                # Player needs to switch due to fainted Pokemon - stop processing remaining actions
                 break
 
         # Check for registered actions that were not executed and add explanatory messages
@@ -2177,22 +2179,20 @@ class BattleEngine:
             if self.held_item_manager:
                 messages.extend(self.held_item_manager.process_end_of_turn(pokemon))
         
-        # Weather effects
+        # Weather effects - apply to ALL active Pokemon including raid allies
         if battle.weather:
-            for pokemon in battle.trainer.get_active_pokemon():
+            all_active_pokemon = []
+
+            # Get all active Pokemon from all battlers
+            for battler in battle.get_all_battlers():
+                all_active_pokemon.extend(battler.get_active_pokemon())
+
+            # Apply weather effects to all active Pokemon
+            for pokemon in all_active_pokemon:
                 weather_msg = self.ability_handler.apply_weather_damage(pokemon, battle.weather)
                 if weather_msg:
                     messages.append(weather_msg)
-                
-                heal_msg = self.ability_handler.apply_weather_healing(pokemon, battle.weather)
-                if heal_msg:
-                    messages.append(heal_msg)
-            
-            for pokemon in battle.opponent.get_active_pokemon():
-                weather_msg = self.ability_handler.apply_weather_damage(pokemon, battle.weather)
-                if weather_msg:
-                    messages.append(weather_msg)
-                
+
                 heal_msg = self.ability_handler.apply_weather_healing(pokemon, battle.weather)
                 if heal_msg:
                     messages.append(heal_msg)
