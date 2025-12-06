@@ -233,4 +233,15 @@ class RaidManager:
                 if len(selected) >= 6:
                     break
 
+        # Ensure exactly 6 moves by padding with basic fallback moves
+        basic_fallbacks = ['tackle', 'scratch', 'pound', 'growl', 'tail-whip', 'leer']
+        while len(selected) < 6:
+            for fallback_move in basic_fallbacks:
+                if fallback_move not in selected:
+                    selected.append(fallback_move)
+                    break
+            # Safety check to prevent infinite loop
+            if len(selected) >= 6 or len([m for m in basic_fallbacks if m not in selected]) == 0:
+                break
+
         return selected[:6]
