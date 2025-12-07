@@ -909,9 +909,9 @@ class BattleEngine:
         if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.MULTI, BattleFormat.RAID]:
             required_action_keys = []
 
-            # Collect actions needed from all non-AI, non-eliminated battlers
+            # Collect actions needed from all non-AI, non-eliminated battlers with usable Pokemon
             for battler in battle.get_all_battlers():
-                if not battler.is_ai and not battler.is_eliminated:
+                if not battler.is_ai and not battler.is_eliminated and battler.has_usable_pokemon():
                     num_active = len(battler.get_active_pokemon())
                     for pos in range(num_active):
                         required_action_keys.append(f"{battler.battler_id}_{pos}")
@@ -921,9 +921,9 @@ class BattleEngine:
         else:
             # Singles - simple battler_id check
             required_actions = []
-            if not battle.trainer.is_ai and not battle.trainer.is_eliminated:
+            if not battle.trainer.is_ai and not battle.trainer.is_eliminated and battle.trainer.has_usable_pokemon():
                 required_actions.append(str(battle.trainer.battler_id))
-            if not battle.opponent.is_ai and not battle.opponent.is_eliminated:
+            if not battle.opponent.is_ai and not battle.opponent.is_eliminated and battle.opponent.has_usable_pokemon():
                 required_actions.append(str(battle.opponent.battler_id))
 
             all_actions_ready = all(str(rid) in battle.pending_actions for rid in required_actions)
@@ -983,8 +983,16 @@ class BattleEngine:
         if hasattr(battle, 'ai_failed_moves'):
             failed_moves = battle.ai_failed_moves.get(pokemon_key, {})
 
-        # Categorize moves
+        # Get opposing Pokemon for type effectiveness checking
+        opposing_battlers = battle.get_opposing_team_battlers(battler_id)
+        active_opponents = []
+        for opp in opposing_battlers:
+            for idx, mon in enumerate(opp.get_active_pokemon()):
+                active_opponents.append((opp, idx, mon))
+
+        # Categorize moves with type effectiveness consideration
         offensive_moves = []
+        super_effective_moves = []
         support_moves = []
         setup_moves = []
 
@@ -1005,7 +1013,32 @@ class BattleEngine:
             target_type = move_data.get('target', 'single')
 
             if category in ['physical', 'special']:
-                offensive_moves.append(move)
+                # Check type effectiveness against opponents
+                move_type = move_data.get('type', 'normal')
+                is_usable = False
+                is_super_effective = False
+
+                for _, _, opponent_mon in active_opponents:
+                    if hasattr(opponent_mon, 'species_data') and 'types' in opponent_mon.species_data:
+                        defender_types = opponent_mon.species_data['types']
+                        effectiveness = self.damage_calculator._get_type_effectiveness(move_type, defender_types)
+
+                        # Don't use completely ineffective moves (0x damage like Normal on Ghost)
+                        if effectiveness > 0:
+                            is_usable = True
+
+                        # Track if move is super effective against any opponent
+                        if effectiveness >= 2.0:
+                            is_super_effective = True
+                    else:
+                        # If we can't determine types, assume move is usable
+                        is_usable = True
+
+                # Only add offensive moves that can hit at least one opponent
+                if is_usable:
+                    offensive_moves.append(move)
+                    if is_super_effective:
+                        super_effective_moves.append(move)
             elif target_type in ['ally', 'all_allies'] or move['move_id'] in ['helping_hand', 'protect', 'detect']:
                 support_moves.append(move)
             elif target_type in ['self', 'user_field']:
@@ -1014,22 +1047,34 @@ class BattleEngine:
                 # Other status moves (e.g., field effects)
                 setup_moves.append(move)
 
-        # Decision logic: 75% prefer offense, 20% support, 5% setup
-        # But only if there are allies for support moves
+        # Decision logic with type awareness
+        # Prefer super-effective moves highly (60% weight)
+        # Then other offensive moves (30% weight)
+        # Then support/setup (10% weight)
         ally_active = battler.get_active_pokemon()
         has_allies = len(ally_active) > 1
 
         choice_pool = []
+
+        # Heavily favor super-effective moves
+        if super_effective_moves:
+            choice_pool.extend(super_effective_moves * 6)  # 60% weight
+
+        # Add other offensive moves
         if offensive_moves:
-            choice_pool.extend(offensive_moves * 3)  # 75% weight
-        if support_moves and has_allies and battle.turn_number <= 3:  # Use support early and only with allies
-            choice_pool.extend(support_moves)  # 25% weight
-        if setup_moves and battle.turn_number == 1:  # Setup on turn 1
+            choice_pool.extend(offensive_moves * 3)  # 30% weight
+
+        # Support moves only with allies and early game
+        if support_moves and has_allies and battle.turn_number <= 3:
+            choice_pool.extend(support_moves)  # 10% weight
+
+        # Setup on turn 1 only
+        if setup_moves and battle.turn_number == 1:
             choice_pool.extend(setup_moves)
 
-        # Fallback to any usable move
+        # Fallback to any usable move (shouldn't happen often with type checking)
         if not choice_pool:
-            choice_pool = usable_moves
+            choice_pool = usable_moves if usable_moves else [m for m in active_pokemon.moves if m['pp'] > 0]
 
         chosen_move = random.choice(choice_pool)
 
