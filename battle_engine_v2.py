@@ -87,8 +87,9 @@ class BattleState:
     # Battle state
     turn_number: int = 1
     phase: str = 'START'  # START, WAITING_ACTIONS, RESOLVING, FORCED_SWITCH, END
-    forced_switch_battler_id: Optional[int] = None  # Which battler must switch
-    forced_switch_position: Optional[int] = None  # Which position (0 or 1 for doubles) to replace
+    forced_switch_battler_id: Optional[int] = None  # Which battler must switch (DEPRECATED - use pending_switches)
+    forced_switch_position: Optional[int] = None  # Which position (0 or 1 for doubles) to replace (DEPRECATED)
+    pending_switches: Dict[int, Dict] = field(default_factory=dict)  # battler_id -> {position, switch_type}
     is_over: bool = False
     winner: Optional[str] = None  # 'trainer', 'opponent', 'draw'
     fled: bool = False
@@ -1277,15 +1278,9 @@ class BattleEngine:
                     # We don't add a message here to avoid clutter, but this tracking helps identify issues
                     pass
 
-        # End of turn effects (skip if wild Pokémon is in the special 'dazed' state
-        # or if a player forced switch is pending)
-        player_switch_pending = (
-            battle.phase in ['VOLT_SWITCH', 'FORCED_SWITCH'] and
-            battle.forced_switch_battler_id is not None and
-            not getattr(self._get_battler_by_id(battle, battle.forced_switch_battler_id), 'is_ai', True)
-        )
-
-        if getattr(battle, "wild_dazed", False) or player_switch_pending:
+        # End of turn effects (skip only if wild Pokémon is in the special 'dazed' state)
+        # IMPORTANT: End-of-turn effects should ALWAYS happen before switches, even if switches are pending
+        if getattr(battle, "wild_dazed", False):
             eot_messages = []
             auto_switch_events = []
         else:
@@ -1800,10 +1795,16 @@ class BattleEngine:
                         # Count usable Pokemon (excluding the fainted one)
                         usable_count = sum(1 for p in defender_battler.party if p.current_hp > 0 and p != defender)
                         if usable_count > 0:
-
+                            # Add to pending switches
+                            battle.pending_switches[defender_battler.battler_id] = {
+                                'position': fainted_position,
+                                'switch_type': 'FORCED'
+                            }
                             battle.phase = 'FORCED_SWITCH'
-                            battle.forced_switch_battler_id = defender_battler.battler_id
-                            battle.forced_switch_position = fainted_position
+                            # Maintain backwards compatibility with old fields
+                            if not battle.forced_switch_battler_id:
+                                battle.forced_switch_battler_id = defender_battler.battler_id
+                                battle.forced_switch_position = fainted_position
                         else:
                             self._check_battle_end(battle)
 
@@ -1822,9 +1823,17 @@ class BattleEngine:
                                 replacement_index = idx
                                 break
                         if replacement_index is not None:
+                            # Add to pending switches
+                            battle.pending_switches[defender_battler.battler_id] = {
+                                'position': fainted_position,
+                                'switch_type': 'FORCED',
+                                'ai_replacement_index': replacement_index
+                            }
                             battle.phase = 'FORCED_SWITCH'
-                            battle.forced_switch_battler_id = defender_battler.battler_id
-                            battle.forced_switch_position = fainted_position
+                            # Maintain backwards compatibility
+                            if not battle.forced_switch_battler_id:
+                                battle.forced_switch_battler_id = defender_battler.battler_id
+                                battle.forced_switch_position = fainted_position
                             battle.pending_ai_switch_index = replacement_index
                     else:
                         self._check_battle_end(battle)
@@ -1856,9 +1865,23 @@ class BattleEngine:
                             messages.extend(switch_result.get('messages', []))
                     else:
                         # Player needs to choose which Pokemon to switch to
+                        # Find the position of the attacker
+                        attacker_position = None
+                        for pos_idx, party_idx in enumerate(attacker_battler.active_positions):
+                            if attacker_battler.party[party_idx] == attacker:
+                                attacker_position = pos_idx
+                                break
+
+                        # Add to pending switches
+                        battle.pending_switches[attacker_battler.battler_id] = {
+                            'position': attacker_position,
+                            'switch_type': 'VOLT'
+                        }
                         # Set a flag that will be checked by the UI
                         battle.phase = 'VOLT_SWITCH'
-                        battle.forced_switch_battler_id = attacker_battler.battler_id
+                        # Maintain backwards compatibility
+                        if not battle.forced_switch_battler_id:
+                            battle.forced_switch_battler_id = attacker_battler.battler_id
 
         return {"messages": messages}
 
@@ -1970,27 +1993,48 @@ class BattleEngine:
         # Clear the pending pointer now that the AI has moved
         battle.pending_ai_switch_index = None
 
-        # If the FORCED_SWITCH was for this AI battler, we consider it resolved
-        # BUT: before resetting the phase, check if the OTHER battler (player) also needs to switch
-        if original_phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and original_forced_id == getattr(battler, "battler_id", None):
-            # Determine the other battler (player)
-            other_battler = battle.trainer if battler == battle.opponent else battle.opponent
+        # Remove this AI battler from pending_switches if present
+        if battler.battler_id in battle.pending_switches:
+            del battle.pending_switches[battler.battler_id]
 
-            # Check if the other battler has any fainted active Pokemon
-            player_needs_switch = False
-            if not getattr(other_battler, "is_ai", False):  # Only check for human player
-                active_pokemon = other_battler.get_active_pokemon()
-                for pos_idx, active_mon in enumerate(active_pokemon):
-                    if getattr(active_mon, "current_hp", 0) <= 0:
-                        # Player has a fainted Pokemon that needs switching
-                        player_needs_switch = True
-                        # Set up forced switch for player
-                        battle.phase = 'FORCED_SWITCH'
-                        battle.forced_switch_battler_id = other_battler.battler_id
-                        battle.forced_switch_position = pos_idx
-                        break
+        # Check if any other battler needs to switch
+        player_needs_switch = False
 
-            # Only reset to WAITING_ACTIONS if player doesn't need to switch
+        # First check pending_switches for other players
+        for other_battler_id, switch_info in battle.pending_switches.items():
+            other_battler = self._get_battler_by_id(battle, other_battler_id)
+            if other_battler and not getattr(other_battler, 'is_ai', False):
+                player_needs_switch = True
+                battle.phase = 'FORCED_SWITCH' if switch_info.get('switch_type') == 'FORCED' else 'VOLT_SWITCH'
+                battle.forced_switch_battler_id = other_battler_id
+                battle.forced_switch_position = switch_info.get('position')
+                break
+
+        # If no pending switches found, also check for any fainted Pokemon that weren't tracked
+        if not player_needs_switch:
+            if original_phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and original_forced_id == getattr(battler, "battler_id", None):
+                # Determine the other battler (player)
+                other_battler = battle.trainer if battler == battle.opponent else battle.opponent
+
+                # Check if the other battler has any fainted active Pokemon
+                if not getattr(other_battler, "is_ai", False):  # Only check for human player
+                    active_pokemon = other_battler.get_active_pokemon()
+                    for pos_idx, active_mon in enumerate(active_pokemon):
+                        if getattr(active_mon, "current_hp", 0) <= 0:
+                            # Player has a fainted Pokemon that needs switching
+                            player_needs_switch = True
+                            # Add to pending switches
+                            battle.pending_switches[other_battler.battler_id] = {
+                                'position': pos_idx,
+                                'switch_type': 'FORCED'
+                            }
+                            # Set up forced switch for player
+                            battle.phase = 'FORCED_SWITCH'
+                            battle.forced_switch_battler_id = other_battler.battler_id
+                            battle.forced_switch_position = pos_idx
+                            break
+
+        # Only reset to WAITING_ACTIONS if player doesn't need to switch
         if not player_needs_switch:
             battle.phase = 'WAITING_ACTIONS'
             battle.forced_switch_battler_id = None
@@ -2154,7 +2198,12 @@ class BattleEngine:
         if not battle:
             return {"error": "Battle not found"}
 
-        if battle.phase not in ['FORCED_SWITCH', 'VOLT_SWITCH'] or battle.forced_switch_battler_id != battler_id:
+        # Check if this battler has a pending switch (new dict or old fields)
+        has_pending_switch = (
+            battler_id in battle.pending_switches or
+            (battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and battle.forced_switch_battler_id == battler_id)
+        )
+        if not has_pending_switch:
             return {"error": "No forced switch is pending"}
 
         battler = self._get_battler_by_id(battle, battler_id)
@@ -2167,28 +2216,47 @@ class BattleEngine:
         action = BattleAction(action_type='switch', battler_id=battler_id, switch_to_position=switch_to_position)
         result = self._execute_switch(battle, action, forced=True)
 
-        # After this player switches, check if any other human battler still needs to switch
-        pending_switch_set = False
+        # Remove this battler from pending switches
+        if battler_id in battle.pending_switches:
+            del battle.pending_switches[battler_id]
 
-        for other_battler in battle.get_all_battlers():
-            if other_battler.battler_id == battler_id:
-                continue
-            if getattr(other_battler, 'is_ai', False):
-                continue
-
-            active_pokemon = other_battler.get_active_pokemon()
-            for pos_idx, active_mon in enumerate(active_pokemon):
-                if getattr(active_mon, 'current_hp', 0) <= 0:
-                    pending_switch_set = True
-                    battle.phase = 'FORCED_SWITCH'
-                    battle.forced_switch_battler_id = other_battler.battler_id
-                    battle.forced_switch_position = pos_idx
-                    break
-            if pending_switch_set:
+        # Check if any other human battler still needs to switch
+        # First check the pending_switches dict
+        next_player_switch = None
+        for other_battler_id, switch_info in battle.pending_switches.items():
+            other_battler = self._get_battler_by_id(battle, other_battler_id)
+            if other_battler and not getattr(other_battler, 'is_ai', False):
+                next_player_switch = (other_battler_id, switch_info)
                 break
 
-        # Only reset to WAITING_ACTIONS if no other battlers need to switch
-        if not pending_switch_set:
+        # If no pending switches, also scan for any fainted Pokemon that weren't tracked
+        if not next_player_switch:
+            for other_battler in battle.get_all_battlers():
+                if other_battler.battler_id == battler_id:
+                    continue
+                if getattr(other_battler, 'is_ai', False):
+                    continue
+
+                active_pokemon = other_battler.get_active_pokemon()
+                for pos_idx, active_mon in enumerate(active_pokemon):
+                    if getattr(active_mon, 'current_hp', 0) <= 0:
+                        # Add to pending switches
+                        battle.pending_switches[other_battler.battler_id] = {
+                            'position': pos_idx,
+                            'switch_type': 'FORCED'
+                        }
+                        next_player_switch = (other_battler.battler_id, battle.pending_switches[other_battler.battler_id])
+                        break
+                if next_player_switch:
+                    break
+
+        # Set the next switch or reset to WAITING_ACTIONS
+        if next_player_switch:
+            battler_id_next, switch_info_next = next_player_switch
+            battle.phase = 'FORCED_SWITCH' if switch_info_next.get('switch_type') == 'FORCED' else 'VOLT_SWITCH'
+            battle.forced_switch_battler_id = battler_id_next
+            battle.forced_switch_position = switch_info_next.get('position')
+        else:
             battle.phase = 'WAITING_ACTIONS'
             battle.forced_switch_battler_id = None
             battle.forced_switch_position = None

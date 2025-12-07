@@ -1030,7 +1030,14 @@ class BattleCog(commands.Cog):
             return
 
         # Check if this is a U-turn/Volt Switch or a fainted Pokemon
-        is_volt_switch = battle.phase == 'VOLT_SWITCH'
+        # First check the new pending_switches dict
+        is_volt_switch = False
+        if battler_id in battle.pending_switches:
+            switch_info = battle.pending_switches[battler_id]
+            is_volt_switch = switch_info.get('switch_type') == 'VOLT'
+        else:
+            # Fall back to old logic
+            is_volt_switch = battle.phase == 'VOLT_SWITCH'
 
         if is_volt_switch:
             # U-turn/Volt Switch case
@@ -1055,9 +1062,10 @@ class BattleCog(commands.Cog):
                 desc = "Select another healthy Pokémon to continue the battle."
             embed = discord.Embed(title="Pokémon Fainted!", description=desc, color=discord.Color.red())
 
-        # Send public message but buttons are restricted to the correct player
+        # Send public message with player ping, buttons are restricted to the correct player
         await self._safe_followup_send(
             interaction,
+            content=f"<@{battler_id}>",
             embed=embed,
             view=PartySelectView(battle, battler_id, self.battle_engine, forced=True)
         )
@@ -1267,7 +1275,15 @@ class BattleCog(commands.Cog):
             return
 
         # Check for forced switches (either from KO or from U-turn/Volt Switch)
-        if battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and battle.forced_switch_battler_id:
+        # First check the new pending_switches dict, fall back to old fields for compatibility
+        if battle.pending_switches:
+            # Get the first player (non-AI) that needs to switch
+            for battler_id, switch_info in battle.pending_switches.items():
+                battler = _get_battler_by_id(battle, battler_id)
+                if battler and not getattr(battler, 'is_ai', False):
+                    await self._prompt_forced_switch(interaction, battle, battler_id)
+                    return
+        elif battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and battle.forced_switch_battler_id:
             await self._prompt_forced_switch(interaction, battle, battle.forced_switch_battler_id)
             return
 
