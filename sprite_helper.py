@@ -36,7 +36,7 @@ class PokemonSpriteHelper:
         "disguised", "pau", "pom-pom", "sensu", "baile", "blade", "shield",
         "crowned", "low-key", "amped", "resolute", "pirouette", "unbound",
         "eternamax", "starter", "dada", "rapid-strike", "single-strike",
-        "dawn-wings", "dusk-mane", "male", "female",
+        "dawn-wings", "dusk-mane", "male", "female", "hero", "zero",
     }
 
     @staticmethod

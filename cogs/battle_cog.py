@@ -516,7 +516,9 @@ class BattleCog(commands.Cog):
         fields = []
         if getattr(battle, "weather", None):
             wt = getattr(battle, "weather_turns", None)
-            fields.append(f"Weather: **{battle.weather.title()}**" + (f" ({wt} turns)" if wt else ""))
+            # Only show turn count for player-set weather (5-8 turns), not permanent rogue weather (99+ turns)
+            turns_text = f" ({wt} turns)" if wt and wt < 99 else ""
+            fields.append(f"Weather: **{battle.weather.title()}**{turns_text}")
         if getattr(battle, "terrain", None):
             tt = getattr(battle, "terrain_turns", None)
             fields.append(f"Terrain: **{battle.terrain.title()}**" + (f" ({tt} turns)" if tt else ""))
@@ -658,7 +660,8 @@ class BattleCog(commands.Cog):
             lines = []
             if getattr(battle, "weather", None):
                 weather_turns = getattr(battle, "weather_turns", 0)
-                turns_text = f" ({weather_turns} turns left)" if weather_turns > 0 else ""
+                # Only show turn count for player-set weather (5-8 turns), not permanent rogue weather (99+ turns)
+                turns_text = f" ({weather_turns} turns left)" if weather_turns > 0 and weather_turns < 99 else ""
                 lines.append(f"Weather: **{battle.weather.title()}**{turns_text}")
             if getattr(battle, "terrain", None):
                 terrain_turns = getattr(battle, "terrain_turns", 0)
@@ -766,7 +769,8 @@ class BattleCog(commands.Cog):
         field_conditions = []
         if getattr(battle, "weather", None):
             weather_turns = getattr(battle, "weather_turns", 0)
-            turns_text = f" ({weather_turns} turns left)" if weather_turns > 0 else ""
+            # Only show turn count for player-set weather (5-8 turns), not permanent rogue weather (99+ turns)
+            turns_text = f" ({weather_turns} turns left)" if weather_turns > 0 and weather_turns < 99 else ""
             field_conditions.append(f"Weather: **{battle.weather.title()}**{turns_text}")
         if getattr(battle, "terrain", None):
             terrain_turns = getattr(battle, "terrain_turns", 0)

@@ -624,15 +624,19 @@ class EffectHandler:
                     'icyrock': ['hail', 'snow']
                 }
 
-                for item, weather_types in weather_extenders.items():
-                    if item_id == item:
-                        if isinstance(weather_types, list):
-                            if weather in weather_types:
+                # Normalize item_id for comparison (remove spaces, hyphens, underscores, lowercase)
+                if item_id:
+                    import re
+                    normalized_item = re.sub(r'[-_\s]+', '', (item_id or '').strip().lower())
+                    for item, weather_types in weather_extenders.items():
+                        if normalized_item == item:
+                            if isinstance(weather_types, list):
+                                if weather in weather_types:
+                                    weather_turns = 8
+                                    break
+                            elif weather == weather_types:
                                 weather_turns = 8
                                 break
-                        elif weather == weather_types:
-                            weather_turns = 8
-                            break
 
             battle_state.weather = weather
             battle_state.weather_turns = weather_turns
