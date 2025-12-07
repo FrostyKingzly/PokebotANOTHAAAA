@@ -1021,7 +1021,7 @@ class BattleEngine:
                 for _, _, opponent_mon in active_opponents:
                     if hasattr(opponent_mon, 'species_data') and 'types' in opponent_mon.species_data:
                         defender_types = opponent_mon.species_data['types']
-                        effectiveness = self.damage_calculator._get_type_effectiveness(move_type, defender_types)
+                        effectiveness = self.calculator._get_type_effectiveness(move_type, defender_types)
 
                         # Don't use completely ineffective moves (0x damage like Normal on Ghost)
                         if effectiveness > 0:
