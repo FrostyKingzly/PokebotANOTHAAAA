@@ -730,6 +730,10 @@ class PlayerDatabase:
         add_column('omni_ring_gimmicks', 'TEXT')
         add_column('partner_pokemon_id', 'TEXT')
 
+        # Battle Themes
+        add_column('battle_theme_url', 'TEXT')
+        add_column('victory_theme_url', 'TEXT')
+
     def _ensure_pokemon_columns(self, cursor):
         """Add missing pokemon_instances columns when migrating older databases."""
 

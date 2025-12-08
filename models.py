@@ -400,7 +400,11 @@ class Trainer:
 
         # Partner Pokemon
         self.partner_pokemon_id = data.get('partner_pokemon_id')
-    
+
+        # Battle Themes
+        self.battle_theme_url = data.get('battle_theme_url')
+        self.victory_theme_url = data.get('victory_theme_url')
+
     def get_social_stats_dict(self) -> Dict[str, Dict[str, int]]:
         """Return social stats with rank/point data keyed by display name."""
 
