@@ -55,6 +55,16 @@ WEATHER_CONDITION_CHOICES = [
     })
 ]
 
+# Exp Candy image URLs for RP rewards
+# Replace these URLs with your hosted candy images
+EXP_CANDY_IMAGES = {
+    'exp_candy_xs': 'https://i.imgur.com/REPLACE_XS.png',  # Small pyramid candy
+    'exp_candy_s': 'https://i.imgur.com/REPLACE_S.png',    # Medium pyramid candy
+    'exp_candy_m': 'https://i.imgur.com/REPLACE_M.png',    # Cube candy
+    'exp_candy_l': 'https://i.imgur.com/REPLACE_L.png',    # Small diamond candy
+    'exp_candy_xl': 'https://i.imgur.com/REPLACE_XL.png',  # Large diamond candy
+}
+
 
 class ChannelLocationSelectView(discord.ui.View):
     """Dropdown view for mapping channels to locations"""
@@ -1398,33 +1408,21 @@ Modest Nature
 
         # Build response embed
         embed = discord.Embed(
-            title="🎭 RP Rewards Distributed",
+            title="RP Rewards!",
             description="\n\n".join(results) if results else "No rewards given.",
             color=discord.Color.purple(),
         )
 
-        # Add summary of base rewards
-        base_rewards = [f"**{SOCIAL_STAT_DEFINITIONS[k].display_name}**: {v}" for k, v in stat_rewards.items() if v > 0]
-        if base_rewards:
-            embed.add_field(
-                name="Base Stat Rewards",
-                value="\n".join(base_rewards),
-                inline=False
-            )
-
-        embed.set_footer(text="Rewards are modified by each player's boon (+1) and bane (-1)")
-
-        # Add item thumbnail - use the most common candy type from results
-        # Get the first user's candy type for the thumbnail
+        # Add candy thumbnail based on first player's rank
         if user_ids:
             first_user_id = user_ids[0]
             if manager.player_exists(first_user_id):
                 player = manager.get_player(first_user_id)
                 rank_tier = getattr(player, 'rank_tier_number', None) or 1
                 candy_type, _ = exp_candy_by_tier.get(rank_tier, ('exp_candy_xs', 5))
-                # PokeAPI item sprite URL pattern
-                item_sprite_url = f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/{candy_type.replace('_', '-')}.png"
-                embed.set_thumbnail(url=item_sprite_url)
+                # Use custom candy images
+                candy_image_url = EXP_CANDY_IMAGES.get(candy_type, EXP_CANDY_IMAGES['exp_candy_xs'])
+                embed.set_thumbnail(url=candy_image_url)
 
         await interaction.response.send_message(embed=embed)
 
