@@ -42,6 +42,7 @@ class BattleMusicManager:
         self.battle_theme_url: Optional[str] = None
         self.victory_theme_url: Optional[str] = None
         self._fade_task: Optional[asyncio.Task] = None
+        self.volume: float = 0.8  # Audio volume (0.0 to 1.0)
 
         # Check if FFmpeg is available
         if not shutil.which('ffmpeg'):
@@ -50,15 +51,15 @@ class BattleMusicManager:
         else:
             print("✅ FFmpeg found, music system ready")
 
-        # FFMPEG options for audio streaming
+        # FFMPEG options for high-quality audio streaming
         self.FFMPEG_OPTIONS = {
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-            'options': '-vn'
+            'options': '-vn -b:a 192k'  # High bitrate for better quality
         }
 
-        # yt-dlp options optimized for Discord streaming
+        # yt-dlp options optimized for high-quality Discord streaming
         self.YDL_OPTIONS = {
-            'format': 'bestaudio/best',
+            'format': 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',  # Prefer high-quality formats
             'noplaylist': True,
             'nocheckcertificate': True,
             'ignoreerrors': False,
@@ -68,6 +69,12 @@ class BattleMusicManager:
             'source_address': '0.0.0.0',
             'extract_flat': False,
             'skip_download': True,
+            'prefer_ffmpeg': True,
+            'keepvideo': False,
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'best',
+            }],
         }
 
     async def request_music(self, battle_id: str, user_id: int, username: str,
@@ -214,8 +221,8 @@ class BattleMusicManager:
             print(f"🎵 Creating FFmpeg audio source...")
             # Create audio source with PCMVolumeTransformer for volume control
             source = discord.FFmpegPCMAudio(audio_url, **self.FFMPEG_OPTIONS)
-            source = discord.PCMVolumeTransformer(source, volume=0.5)
-            print(f"✅ FFmpeg source created with volume control")
+            source = discord.PCMVolumeTransformer(source, volume=self.volume)
+            print(f"✅ FFmpeg source created with volume control (volume={self.volume})")
 
             # Define callback for when audio finishes
             def after_playing(error):
