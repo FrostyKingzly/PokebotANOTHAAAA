@@ -1228,6 +1228,194 @@ Modest Nature
             )
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    # ============================================================
+    # RP REWARDS
+    # ============================================================
+    @app_commands.command(
+        name="give_rp_rewards",
+        description="[ADMIN] Give RP rewards (stats + exp candies) to players based on their rank"
+    )
+    @app_commands.describe(
+        users="Players to reward (mention them)",
+        heart="Heart points to give (before boon/bane)",
+        insight="Insight points to give (before boon/bane)",
+        charisma="Charisma points to give (before boon/bane)",
+        fortitude="Fortitude points to give (before boon/bane)",
+        will="Will points to give (before boon/bane)"
+    )
+    @app_commands.check(is_admin)
+    async def give_rp_rewards(
+        self,
+        interaction: discord.Interaction,
+        users: str,
+        heart: int = 0,
+        insight: int = 0,
+        charisma: int = 0,
+        fortitude: int = 0,
+        will: int = 0,
+    ):
+        """Give RP rewards to one or more players with automatic boon/bane and exp candy calculation."""
+
+        # Parse user mentions from the string
+        user_ids = []
+        for mention in users.split():
+            # Extract user ID from mention format <@123456789> or <@!123456789>
+            match = re.match(r'<@!?(\d+)>', mention)
+            if match:
+                user_ids.append(int(match.group(1)))
+
+        if not user_ids:
+            await interaction.response.send_message(
+                "❌ No valid user mentions found! Mention users with @username.",
+                ephemeral=True,
+            )
+            return
+
+        # Check if any stats were specified
+        stat_rewards = {
+            'heart': heart,
+            'insight': insight,
+            'charisma': charisma,
+            'fortitude': fortitude,
+            'will': will,
+        }
+
+        if all(amount == 0 for amount in stat_rewards.values()):
+            await interaction.response.send_message(
+                "❌ You must specify at least one stat to reward!",
+                ephemeral=True,
+            )
+            return
+
+        # Exp candy mapping by rank tier
+        exp_candy_by_tier = {
+            1: ('exp_candy_xs', 5),   # Qualifier/Unranked
+            2: ('exp_candy_xs', 10),  # Challenger 1
+            3: ('exp_candy_s', 5),    # Challenger 2
+            4: ('exp_candy_s', 10),   # Great 1
+            5: ('exp_candy_m', 5),    # Great 2
+            6: ('exp_candy_m', 10),   # Ultra 1
+            7: ('exp_candy_l', 5),    # Ultra 2
+            8: ('exp_candy_l', 10),   # Master
+        }
+
+        # Process each user
+        results = []
+        manager = self.bot.player_manager
+
+        for user_id in user_ids:
+            try:
+                user = await self.bot.fetch_user(user_id)
+            except discord.NotFound:
+                results.append(f"❌ Could not find user with ID {user_id}")
+                continue
+
+            if not manager.player_exists(user_id):
+                results.append(f"❌ {user.mention} hasn't registered yet!")
+                continue
+
+            player = manager.get_player(user_id)
+            if not player:
+                results.append(f"❌ Could not load data for {user.mention}")
+                continue
+
+            # Get player's boon and bane
+            boon_stat = getattr(player, 'boon_stat', None)
+            bane_stat = getattr(player, 'bane_stat', None)
+
+            # Apply stat rewards with boon/bane modifiers
+            stat_updates = {}
+            stat_summary = []
+
+            for stat_key, base_amount in stat_rewards.items():
+                if base_amount == 0:
+                    continue
+
+                # Apply boon/bane modifier
+                actual_amount = base_amount
+                modifier_text = ""
+                if stat_key == boon_stat:
+                    actual_amount += 1
+                    modifier_text = " (+1 boon)"
+                elif stat_key == bane_stat:
+                    actual_amount -= 1
+                    modifier_text = " (-1 bane)"
+
+                # Skip if final amount is 0 or negative
+                if actual_amount <= 0:
+                    continue
+
+                # Get current stat state
+                current_points = getattr(player, f'{stat_key}_points', 0)
+                current_rank = getattr(player, f'{stat_key}_rank', 0)
+                cap = player.get_stat_cap(stat_key)
+
+                # Calculate new values
+                new_points = clamp_points(current_points + actual_amount, cap)
+                new_rank = points_to_rank(new_points, cap)
+
+                # Prepare updates
+                stat_updates[f'{stat_key}_points'] = new_points
+                stat_updates[f'{stat_key}_rank'] = new_rank
+
+                # Track for summary
+                display_name = SOCIAL_STAT_DEFINITIONS[stat_key].display_name
+                rank_change = ""
+                if new_rank > current_rank:
+                    rank_change = f" (Rank {current_rank}→{new_rank})"
+
+                stat_summary.append(f"**{display_name}**: +{actual_amount}{modifier_text}{rank_change}")
+
+                # Handle stamina updates for fortitude
+                if stat_key == 'fortitude' and new_rank != current_rank:
+                    new_max_stamina = calculate_max_stamina(new_rank)
+                    stat_updates['stamina_max'] = new_max_stamina
+                    stat_updates['stamina_current'] = min(player.stamina_current, new_max_stamina)
+
+            # Apply stat updates to database
+            if stat_updates:
+                manager.update_player(user_id, **stat_updates)
+
+            # Give exp candies based on rank tier
+            rank_tier = getattr(player, 'rank_tier_number', None) or 1
+            candy_type, candy_amount = exp_candy_by_tier.get(rank_tier, ('exp_candy_xs', 5))
+
+            # Add candies to inventory
+            manager.add_item(user_id, candy_type, candy_amount)
+
+            # Get candy display name
+            candy_item = self.bot.items_db.get_item(candy_type)
+            candy_name = candy_item.get('name', candy_type) if candy_item else candy_type
+
+            # Build result message
+            result_lines = [f"✅ **{user.mention}**"]
+            if stat_summary:
+                result_lines.extend(stat_summary)
+            result_lines.append(f"🍬 {candy_amount}x {candy_name}")
+
+            results.append("\n".join(result_lines))
+
+        # Build response embed
+        embed = discord.Embed(
+            title="🎭 RP Rewards Distributed",
+            description="\n\n".join(results) if results else "No rewards given.",
+            color=discord.Color.purple(),
+        )
+
+        # Add summary of base rewards
+        base_rewards = [f"**{SOCIAL_STAT_DEFINITIONS[k].display_name}**: {v}" for k, v in stat_rewards.items() if v > 0]
+        if base_rewards:
+            embed.add_field(
+                name="Base Stat Rewards",
+                value="\n".join(base_rewards),
+                inline=False
+            )
+
+        embed.set_footer(text="Rewards are modified by each player's boon (+1) and bane (-1)")
+
+        await interaction.response.send_message(embed=embed)
+
 # ============================================================
     # PLAYER RESET
     # ============================================================
