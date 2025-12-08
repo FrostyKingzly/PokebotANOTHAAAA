@@ -6,6 +6,13 @@ import math
 
 from battle_engine_v2 import BattleEngine, BattleType, BattleAction, BattleFormat, HeldItemManager
 from battle_exp_integration import BattleExpHandler
+from battle_music_manager import BattleMusicManager
+from battle_themes import get_random_npc_theme, get_ranked_npc_theme, get_raid_theme
+from battle_music_ui import (
+    MusicOptInView, MusicQueueView,
+    create_music_opt_in_embed, create_queue_status_embed,
+    create_music_starting_embed, create_victory_music_embed
+)
 from capture import simulate_throw, guaranteed_capture
 from learnset_database import LearnsetDatabase
 from sprite_helper import PokemonSpriteHelper
@@ -42,6 +49,10 @@ class BattleCog(commands.Cog):
         # Tracks active battle per user id (int -> str battle_id)
         self.user_battles = {}
         self.exp_handler = self._init_exp_handler()
+        # Battle music manager
+        self.music_manager = BattleMusicManager(bot)
+        # Track which battles have music enabled (battle_id -> bool)
+        self.battles_with_music = {}
 
     def _init_exp_handler(self) -> Optional[BattleExpHandler]:
         species_db = getattr(self.bot, "species_db", None)
@@ -77,6 +88,126 @@ class BattleCog(commands.Cog):
         if getattr(battle, 'battle_format', None) == BattleFormat.RAID:
             for ally in getattr(battle, 'raid_allies', []) or []:
                 self.user_battles.pop(getattr(ally, 'battler_id', None), None)
+
+    async def _prompt_for_music(
+        self,
+        interaction: discord.Interaction,
+        battle_id: str,
+        battle_type: BattleType,
+        user_voice_channel: Optional[discord.VoiceChannel] = None
+    ) -> bool:
+        """
+        Prompt user if they want music for their battle.
+        Returns True if music will be used, False otherwise.
+
+        This should be called before starting the battle UI.
+        """
+        # ONLY for NPC battles (not wild, not PvP, not raids)
+        if battle_type != BattleType.TRAINER:
+            return False
+
+        # Check if user is in a voice channel
+        if not user_voice_channel:
+            # Try to get it from interaction user
+            if hasattr(interaction.user, 'voice') and interaction.user.voice:
+                user_voice_channel = interaction.user.voice.channel
+
+        # If not in VC, can't use music
+        if not user_voice_channel:
+            return False
+
+        # Create opt-in prompt
+        opt_in_embed = create_music_opt_in_embed()
+
+        music_chosen = False
+
+        async def on_yes(button_interaction: discord.Interaction):
+            nonlocal music_chosen
+            music_chosen = True
+
+            # Request music from manager
+            username = button_interaction.user.display_name
+            battle_type_str = "npc" if battle_type == BattleType.TRAINER else \
+                             "raid" if hasattr(button_interaction, 'battle_format') else "pvp"
+
+            can_start, message, position = await self.music_manager.request_music(
+                battle_id,
+                button_interaction.user.id,
+                username,
+                user_voice_channel.id,
+                battle_type_str
+            )
+
+            if can_start:
+                self.battles_with_music[battle_id] = True
+                await button_interaction.response.send_message(
+                    f"Music will start when battle begins! Join **{user_voice_channel.name}**",
+                    ephemeral=True
+                )
+            else:
+                # Show queue status
+                queue_data = self.music_manager.get_queue_display()
+                queue_embed = create_queue_status_embed(queue_data, user_voice_channel.name)
+                await button_interaction.response.send_message(
+                    embed=queue_embed,
+                    ephemeral=True
+                )
+
+        async def on_no(button_interaction: discord.Interaction):
+            await button_interaction.response.send_message(
+                "Battle will proceed without music.",
+                ephemeral=True
+            )
+
+        view = MusicOptInView(on_yes, on_no)
+
+        # Send the prompt
+        if not interaction.response.is_done():
+            await interaction.response.send_message(embed=opt_in_embed, view=view, ephemeral=True)
+        else:
+            await interaction.followup.send(embed=opt_in_embed, view=view, ephemeral=True)
+
+        # Wait for response
+        await view.wait()
+
+        return music_chosen
+
+    async def _start_battle_music(self, battle_id: str, battle_type: BattleType, trainer_id: int):
+        """Start playing music for a battle - uses random NPC themes"""
+        if battle_id not in self.battles_with_music:
+            return
+
+        # Get random theme for NPC battles
+        battle_theme_url, victory_theme_url = get_random_npc_theme()
+
+        # Start music
+        success = await self.music_manager.start_battle_music(battle_theme_url, victory_theme_url)
+
+        if success:
+            print(f"Battle music started for battle {battle_id}")
+        else:
+            print(f"Failed to start battle music for battle {battle_id}")
+
+    async def _play_victory_music(self, battle_id: str, winner_name: str, interaction: Optional[discord.Interaction] = None):
+        """Play victory music after battle ends"""
+        if battle_id not in self.battles_with_music:
+            return
+
+        await self.music_manager.play_victory_music()
+
+        # Optionally send a victory music notification
+        if interaction:
+            victory_embed = create_victory_music_embed(winner_name)
+            try:
+                await interaction.followup.send(embed=victory_embed, ephemeral=True)
+            except:
+                pass
+
+    async def _cleanup_battle_music(self, battle_id: str):
+        """Clean up music session when battle ends or is cancelled"""
+        if battle_id in self.battles_with_music:
+            await self.music_manager.cancel_session(battle_id)
+            del self.battles_with_music[battle_id]
 
     def _get_ball_inventory(self, discord_user_id: int):
         """Return a dict of {item_id: (item_data, quantity)} for Poké Balls.
@@ -277,6 +408,22 @@ class BattleCog(commands.Cog):
         except Exception:
             pass
 
+    async def prompt_and_start_battle_ui(
+        self,
+        interaction: discord.Interaction,
+        battle_id: str,
+        battle_type: BattleType
+    ):
+        """
+        Prompt for music opt-in, then start battle UI.
+        This is the recommended method to call when starting a battle.
+        """
+        # Prompt for music (skips if wild battle or not in VC)
+        await self._prompt_for_music(interaction, battle_id, battle_type)
+
+        # Now start the battle UI
+        await self.start_battle_ui(interaction, battle_id, battle_type)
+
     async def start_battle_ui(
         self,
         interaction: discord.Interaction,
@@ -298,6 +445,11 @@ class BattleCog(commands.Cog):
                 await interaction.response.defer()
         except Exception:
             pass
+
+        # Start battle music if enabled
+        trainer_id = battle.trainer.battler_id if hasattr(battle.trainer, 'battler_id') else None
+        if trainer_id:
+            await self._start_battle_music(battle_id, battle_type, trainer_id)
 
         trainer_active = battle.trainer.get_active_pokemon()
         opponent_active = battle.opponent.get_active_pokemon()
@@ -1134,6 +1286,11 @@ class BattleCog(commands.Cog):
             title = 'Battle Over'
             color = discord.Color.gold() if result == 'trainer' else discord.Color.red()
 
+        # Play victory music if enabled
+        if result in ['trainer', 'opponent']:
+            actual_winner_name = winner_name if hasattr(battle, 'winner') else 'Winner'
+            await self._play_victory_music(battle.battle_id, actual_winner_name, interaction)
+
         await self._safe_followup_send(
             interaction,
             embed=discord.Embed(title=title, description=desc, color=color)
@@ -1169,6 +1326,7 @@ class BattleCog(commands.Cog):
 
         self.battle_engine.end_battle(battle.battle_id)
         self._unregister_battle(battle)
+        # Note: Don't cleanup music here - let it play victory theme for 1 minute
 
         if getattr(battle, 'battle_type', None) == BattleType.WILD:
             await self.send_return_to_encounter_prompt(interaction, battle.trainer.battler_id)
