@@ -56,13 +56,12 @@ WEATHER_CONDITION_CHOICES = [
 ]
 
 # Exp Candy image URLs for RP rewards
-# Replace these URLs with your hosted candy images
 EXP_CANDY_IMAGES = {
-    'exp_candy_xs': 'https://i.imgur.com/REPLACE_XS.png',  # Small pyramid candy
-    'exp_candy_s': 'https://i.imgur.com/REPLACE_S.png',    # Medium pyramid candy
-    'exp_candy_m': 'https://i.imgur.com/REPLACE_M.png',    # Cube candy
-    'exp_candy_l': 'https://i.imgur.com/REPLACE_L.png',    # Small diamond candy
-    'exp_candy_xl': 'https://i.imgur.com/REPLACE_XL.png',  # Large diamond candy
+    'exp_candy_xs': 'https://cdn.discordapp.com/attachments/1430369965642485843/1447678477263306952/Bag_Exp.png?ex=69387f25&is=69372da5&hm=56c401771d4ef6b43bed9ec54ddfdce477f83c61ef58b2523d138c02a26acf0e&',
+    'exp_candy_s': 'https://cdn.discordapp.com/attachments/1430369965642485843/1447678516509413529/Bag_Exp.png?ex=69387f2e&is=69372dae&hm=fe9f11cf62d54af65141e4865799405176738ee04dd7e54dc92cc55ed52f195f&',
+    'exp_candy_m': 'https://cdn.discordapp.com/attachments/1430369965642485843/1447678560813977600/Bag_Exp.png?ex=69387f39&is=69372db9&hm=616aa799b2d3500d7a7568e645e6af94fb4c069ded75ec1b3b0a4e48c8506909&',
+    'exp_candy_l': 'https://cdn.discordapp.com/attachments/1430369965642485843/1447678689210011850/Bag_Exp.png?ex=69387f58&is=69372dd8&hm=72c7cbcff36f82246f4360a8359be4de0cecee73ff6a88e927259468103d174d&',
+    'exp_candy_xl': 'https://cdn.discordapp.com/attachments/1430369965642485843/1447678720369492152/Bag_Exp.png?ex=69387f5f&is=69372ddf&hm=8502ce3cb0c405c843df6cb415ceee18686f794cd4b00d73129d9b306868f2a6&',
 }
 
 
