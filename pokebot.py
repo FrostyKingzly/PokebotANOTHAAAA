@@ -128,7 +128,6 @@ class PokemonBot(commands.Bot):
             'cogs.items_cog',
             'cogs.rank_cog',
             'cogs.admin_cog',
-            'cogs.profile_cog',
         ]
         
         for cog in cogs:

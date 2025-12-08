@@ -7,7 +7,7 @@ import math
 from battle_engine_v2 import BattleEngine, BattleType, BattleAction, BattleFormat, HeldItemManager
 from battle_exp_integration import BattleExpHandler
 from battle_music_manager import BattleMusicManager
-from battle_themes import BattleThemeSelector
+from battle_themes import get_random_npc_theme, get_ranked_npc_theme, get_raid_theme
 from battle_music_ui import (
     MusicOptInView, MusicQueueView,
     create_music_opt_in_embed, create_queue_status_embed,
@@ -102,8 +102,8 @@ class BattleCog(commands.Cog):
 
         This should be called before starting the battle UI.
         """
-        # Skip music for wild battles
-        if battle_type == BattleType.WILD:
+        # ONLY for NPC battles (not wild, not PvP, not raids)
+        if battle_type != BattleType.TRAINER:
             return False
 
         # Check if user is in a voice channel
@@ -173,38 +173,12 @@ class BattleCog(commands.Cog):
         return music_chosen
 
     async def _start_battle_music(self, battle_id: str, battle_type: BattleType, trainer_id: int):
-        """Start playing music for a battle"""
+        """Start playing music for a battle - uses random NPC themes"""
         if battle_id not in self.battles_with_music:
             return
 
-        # Get trainer data for custom themes
-        player_manager = getattr(self.bot, 'player_manager', None)
-        trainer = None
-        if player_manager:
-            try:
-                trainer = player_manager.get_trainer(trainer_id)
-            except:
-                pass
-
-        # Determine battle type string
-        battle_type_str = "npc"
-        is_ranked = False
-        if battle_type == BattleType.PVP:
-            battle_type_str = "pvp"
-        elif battle_type == BattleType.TRAINER:
-            battle_type_str = "npc"
-            # Check if ranked (you can add logic here based on battle context)
-
-        # Get appropriate themes
-        player_battle_theme = getattr(trainer, 'battle_theme_url', None) if trainer else None
-        player_victory_theme = getattr(trainer, 'victory_theme_url', None) if trainer else None
-
-        battle_theme_url, victory_theme_url = BattleThemeSelector.get_theme_for_battle_type(
-            battle_type_str,
-            is_ranked=is_ranked,
-            player_battle_theme=player_battle_theme,
-            player_victory_theme=player_victory_theme
-        )
+        # Get random theme for NPC battles
+        battle_theme_url, victory_theme_url = get_random_npc_theme()
 
         # Start music
         success = await self.music_manager.start_battle_music(battle_theme_url, victory_theme_url)

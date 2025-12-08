@@ -2,103 +2,67 @@
 
 ## Overview
 
-The battle music system allows players to have custom music play during their battles. When a battle starts, the bot joins a voice channel and plays themed music throughout the battle, switching to a victory theme when the battle ends.
+The battle music system plays random themed music during NPC trainer battles. When you start an NPC battle, you'll be prompted if you want music. If you say yes and join a voice channel, the bot will play a random Gen 1-9 battle theme during the fight, then switch to the victory theme when you win!
 
 ## Features
 
-### 🎵 Battle Music Flow
+### 🎵 How It Works
 
-1. **Battle Start**: When a battle begins, players are prompted if they want music
-2. **Voice Channel**: If yes, they join a voice channel and the bot plays their battle theme
-3. **Battle Theme**: Music plays throughout the battle (loops)
-4. **Victory Theme**: When battle ends, switches to victory theme
-5. **Fade Out**: Victory theme plays for 1 minute before fading out
+1. **Start NPC Battle**: Choose an NPC trainer to fight
+2. **Music Prompt**: A prompt appears asking "Would you like music?"
+3. **Join Voice Channel**: If yes, join the voice channel shown
+4. **Battle Theme Plays**: Random Gen 1-9 theme plays during battle (loops)
+5. **Victory Theme**: When you win, switches to the matching victory theme
+6. **Fade Out**: Victory music plays for 1 minute then fades out
 
-### 🎮 Battle Type Support
+### 🎯 Battle Types
 
-- ✅ **PvP Battles**: Plays challenger's custom theme
-- ✅ **NPC Battles**: Randomizes Gen 1-9 trainer themes
-- ✅ **Raid Battles**: Plays designated raid themes
-- ❌ **Wild Battles**: No music (as intended)
+- ✅ **NPC Battles (Casual)**: Random Gen 1-9 themes
+- ✅ **NPC Battles (Ranked)**: Will use ranked themes when added
+- ✅ **Raid Battles**: Will use raid themes when added
+- ❌ **Wild Battles**: No music
+- ❌ **PvP Battles**: No music (for now)
 
-### 🎯 Queue System
+### 🎮 Queue System
 
 - **One Battle at a Time**: Bot can only play music for one battle simultaneously
-- **Queue Management**: If music is in use, players can join a queue
-- **Queue Display**: Shows current active session and waiting players
-- **No Monopolization**: Can't queue if already using music
+- **Queue Display**: If music is in use, you'll see who's currently using it
+- **Join Queue**: Wait in line and music will start when it's your turn
+- **No Monopolization**: Can't join queue if you're already using music
 
-## Player Commands
+## Random Themes
 
-### `/battletheme`
-Choose your battle theme from Gen 1-9 preset themes.
-- Opens a dropdown menu with all available themes
-- Preview links for each generation
-- Default: Gen 5 - Unova Epic
+Each NPC battle randomly picks from these official Pokémon game themes:
 
-### `/setcustomtheme <battle_url> <victory_url>`
-Set custom YouTube URLs for battle and victory themes.
-- Requires valid YouTube URLs
-- Battle URL plays during combat
-- Victory URL plays after winning
+| Generation | Game | Themes |
+|-----------|------|--------|
+| Gen 1 | Red/Blue/Yellow | Kanto Classic |
+| Gen 2 | Gold/Silver/Crystal | Johto Journey |
+| Gen 3 | Ruby/Sapphire/Emerald | Hoenn Adventure |
+| Gen 4 | Diamond/Pearl/Platinum | Sinnoh Symphony |
+| Gen 5 | Black/White | Unova Epic |
+| Gen 6 | X/Y | Kalos Elegance |
+| Gen 7 | Sun/Moon | Alola Vibes |
+| Gen 8 | Sword/Shield | Galar Glory |
+| Gen 9 | Scarlet/Violet | Paldea Power |
 
-### `/viewtheme`
-View your current battle theme settings.
-- Shows current theme name
-- Provides links to listen
-- Displays if using default theme
-
-## Available Preset Themes
-
-| Generation | Theme Name | Description |
-|-----------|------------|-------------|
-| Gen 1 | Kanto Classic | The original battle theme |
-| Gen 2 | Johto Journey | Gold/Silver/Crystal vibes |
-| Gen 3 | Hoenn Adventure | Ruby/Sapphire/Emerald |
-| Gen 4 | Sinnoh Symphony | Diamond/Pearl/Platinum |
-| Gen 5 | Unova Epic | Black/White (Default) |
-| Gen 6 | Kalos Elegance | X/Y themes |
-| Gen 7 | Alola Vibes | Sun/Moon tropical |
-| Gen 8 | Galar Glory | Sword/Shield |
-| Gen 9 | Paldea Power | Scarlet/Violet |
-
-## For NPC Battles
-
-NPC battles randomly select from the casual trainer themes (Gen 1-9). Each generation has:
-- **Battle Theme**: Plays during combat
-- **Victory Theme**: Plays when you win
-
-This creates variety and nostalgia as you battle through different trainer themes!
+Each generation has a battle theme (plays during combat) and victory theme (plays when you win).
 
 ## Technical Details
 
 ### Architecture
 
 ```
-battle_music_manager.py    - Core music playback and queue management
-battle_themes.py            - Theme configuration and selection
-battle_music_ui.py          - UI components (opt-in prompts, queue display)
-cogs/battle_cog.py          - Integration with battle system
-cogs/profile_cog.py         - Theme selection commands
+battle_music_manager.py    - Music playback and queue management
+battle_themes.py            - Random theme selection from Gen 1-9
+battle_music_ui.py          - Music opt-in prompt
+cogs/battle_cog.py          - Integration with NPC battles
 ```
-
-### Database Schema
-
-Added to `trainers` table:
-- `battle_theme_url` (TEXT): YouTube URL for battle theme
-- `victory_theme_url` (TEXT): YouTube URL for victory theme
-
-### Dependencies
-
-Required packages (added to `requirements.txt`):
-- `discord.py[voice]>=2.3.0` - Voice support
-- `PyNaCl>=1.5.0` - Voice encryption
-- `yt-dlp>=2024.0.0` - YouTube audio extraction
-- `aiohttp>=3.9.0` - Async HTTP requests
 
 ### System Requirements
 
-- **FFmpeg**: Must be installed on the system for audio processing
+**Required:**
+- **FFmpeg**: Audio processing
   ```bash
   # Ubuntu/Debian
   sudo apt-get install ffmpeg
@@ -110,61 +74,74 @@ Required packages (added to `requirements.txt`):
   Download from https://ffmpeg.org/download.html
   ```
 
-## Usage Flow
+**Dependencies (auto-installed):**
+- `discord.py[voice]>=2.3.0` - Voice support
+- `PyNaCl>=1.5.0` - Voice encryption
+- `yt-dlp>=2024.0.0` - YouTube audio extraction
+- `aiohttp>=3.9.0` - Async HTTP requests
 
-### Player Perspective
+### Installation
 
-1. Player initiates a battle (NPC, PvP, or Raid)
-2. If in a voice channel, prompted: "Would you like music?"
-3. **Chooses Yes**:
-   - If bot available: "Music will start when battle begins! Join [VC Name]"
-   - If bot busy: Shows queue status with position
-4. **Battle Starts**: Music plays immediately
-5. **Battle Ends**: Switches to victory theme for 1 minute
-6. **Fade Out**: Music fades over 5 seconds, disconnects
+1. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### Developer Integration
+2. **Install FFmpeg** (see above)
 
-To add music opt-in to a new battle type:
+3. **Bot Permissions**: Ensure bot has:
+   - Connect to voice channels
+   - Speak in voice channels
 
-```python
-# In your battle initiation code
-await battle_cog.prompt_and_start_battle_ui(
-    interaction,
-    battle_id,
-    battle_type
-)
+## Usage Example
+
 ```
+Player: "I want to battle the Ace Trainer!"
+Bot: "🎵 Would you like music for your battle?"
+      [Yes, play music!] [No, battle silently]
 
-This automatically handles:
-- Music opt-in prompt
-- Queue management
-- Battle UI display
-- Music playback
+Player: *clicks Yes*
+Bot: "Music will start when battle begins! Join #battle-music"
+
+Player: *joins voice channel*
+Player: *clicks Start Battle*
+Bot: *Plays random Gen 5 Battle Theme*
+
+*Battle proceeds...*
+
+Bot: "You win!"
+Bot: *Switches to Gen 5 Victory Theme*
+     *Plays for 1 minute, then fades out*
+```
 
 ## Configuration
 
-### Adding New Themes
+### Adding Ranked Themes
 
-Edit `battle_themes.py`:
+When you're ready to add ranked battle themes, edit `battle_themes.py`:
 
 ```python
-# For NPC themes
-CASUAL_NPC_THEMES.append((
-    "https://youtu.be/BATTLE_ID",
-    "https://youtu.be/VICTORY_ID"
-))
+RANKED_NPC_THEMES = [
+    ("https://youtu.be/BATTLE_URL", "https://youtu.be/VICTORY_URL"),
+    ("https://youtu.be/BATTLE_URL_2", "https://youtu.be/VICTORY_URL_2"),
+    # Add more ranked themes...
+]
+```
 
-# For player-selectable themes
-AVAILABLE_PLAYER_THEMES["Gen 10 - Region Name"] = (
-    "https://youtu.be/BATTLE_ID",
-    "https://youtu.be/VICTORY_ID"
-)
+### Adding Raid Themes
+
+For raid-specific themes, edit `battle_themes.py`:
+
+```python
+RAID_THEMES = [
+    ("https://youtu.be/RAID_BATTLE", "https://youtu.be/RAID_VICTORY"),
+    # Add more raid themes...
+]
 ```
 
 ### Adjusting Music Volume
 
-In `battle_music_manager.py`, adjust the volume parameter:
+In `battle_music_manager.py`, line ~25:
 
 ```python
 self.FFMPEG_OPTIONS = {
@@ -172,58 +149,73 @@ self.FFMPEG_OPTIONS = {
 }
 ```
 
-### Changing Fade Duration
+### Changing Victory Duration
 
-In `battle_music_manager.py`:
+In `battle_music_manager.py`, `_fade_and_disconnect()` method:
 
 ```python
-async def _fade_and_disconnect(self):
-    await asyncio.sleep(60)  # Play duration (seconds)
-    # Fade over 5 seconds (adjust steps for different duration)
+await asyncio.sleep(60)  # Play for 60 seconds (1 minute)
 ```
 
 ## Troubleshooting
 
 ### Music Not Playing
 
-1. **Check Voice Channel**: Player must be in a voice channel
-2. **Check Permissions**: Bot needs voice permissions in that channel
-3. **Check FFmpeg**: Ensure FFmpeg is installed
+1. **Check Voice Channel**: You must be in a voice channel before saying yes
+2. **Check Permissions**: Bot needs Connect and Speak permissions
+3. **Check FFmpeg**: Run `ffmpeg -version` to verify installation
 4. **Check Dependencies**: Run `pip install -r requirements.txt`
 
 ### Queue Issues
 
-- **Can't Join Queue**: May already be in queue or have active session
-- **Queue Not Moving**: Previous battle may still be playing victory theme
-- **Queue Position Wrong**: Wait 60 seconds after previous battle ends
+- **Can't Join Queue**: You may already be in queue or using music
+- **Queue Not Moving**: Previous battle's victory theme may still be playing (wait 60 seconds)
 
 ### Audio Quality
 
-- Audio streams at YouTube's best available quality
-- Volume set to 50% by default
-- Can be adjusted in `FFMPEG_OPTIONS`
+- Streams at YouTube's best available quality
+- Default volume is 50% (adjustable)
+- No lag if good internet connection
+
+## How Music System Integrates
+
+The music system automatically integrates when you start NPC battles:
+
+1. Player selects NPC trainer from encounter list
+2. `battle_cog.prompt_and_start_battle_ui()` is called
+3. Music opt-in prompt appears (only for NPC battles)
+4. If yes:
+   - Checks if bot is available
+   - If available: Marks battle for music
+   - If busy: Shows queue, adds to queue
+5. Battle UI starts
+6. Music begins playing random Gen 1-9 theme
+7. Battle proceeds normally
+8. On victory: Switches to victory theme
+9. After 60 seconds: Fades out, disconnects
+
+## No Commands Needed!
+
+This system requires **zero commands**. Everything happens automatically:
+- Music opt-in prompts appear when starting NPC battles
+- Themes are randomly selected
+- Queue is managed automatically
+- Victory themes play automatically
+
+Just battle and enjoy the music! 🎵
 
 ## Future Enhancements
 
-Potential features for future versions:
+Possible features for later:
 
-- [ ] Ranked battle themes (separate from casual)
-- [ ] Gym leader/Elite Four specific themes
+- [ ] Ranked battle themes
+- [ ] Raid battle themes
+- [ ] PvP battle music support
 - [ ] Volume control per-player
+- [ ] Player-selectable themes
 - [ ] Spotify integration
-- [ ] Battle intensity-based themes
-- [ ] Dynamic theme switching based on HP
-- [ ] Champion-tier themes for high-rank players
 
 ## Credits
 
-All preset themes are official Pokémon battle themes from their respective games.
+All themes are official Pokémon battle themes from their respective games.
 Music system designed for educational and entertainment purposes.
-
-## Support
-
-For issues or questions about the music system:
-1. Check this documentation
-2. Verify all dependencies installed
-3. Check bot logs for errors
-4. Report issues with specific error messages
