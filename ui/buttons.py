@@ -5371,8 +5371,8 @@ class NpcTrainerSelectView(View):
         # Register battle
         battle_cog.user_battles[interaction.user.id] = battle_id
         
-        # Start battle UI
-        await battle_cog.start_battle_ui(
+        # Start battle UI with music prompt
+        await battle_cog.prompt_and_start_battle_ui(
             interaction=interaction,
             battle_id=battle_id,
             battle_type=BattleType.TRAINER
