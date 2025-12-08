@@ -42,7 +42,8 @@ class VolatileStatus(Enum):
     # Stat stages
     FOCUS_ENERGY = "focusenergy"  # Increased crit rate
     FOLLOW_ME = "follow_me"
-    # Trapping moves
+    # Trapping moves (generic status for all binding moves)
+    PARTIALLY_TRAPPED = "partiallytrapped"
     BIND = "bind"
     WRAP = "wrap"
     FIRE_SPIN = "firespin"
@@ -50,6 +51,20 @@ class VolatileStatus(Enum):
     SAND_TOMB = "sandtomb"
     CLAMP = "clamp"
     INFESTATION = "infestation"
+    # Field effects (team-wide)
+    LIGHT_SCREEN = "lightscreen"
+    REFLECT = "reflect"
+    AURORA_VEIL = "auroraveil"
+    SAFEGUARD = "safeguard"
+    MIST = "mist"
+    LUCKY_CHANT = "luckychant"
+    TAILWIND = "tailwind"
+    # Special statuses
+    YAWN = "yawn"  # Sleep next turn
+    RAPID_SPIN = "rapidspin"  # Used to clear hazards
+    SALT_CURE = "saltcure"
+    SPARKLING_ARIA = "sparklingaria"
+    SYRUP_BOMB = "syrupbomb"
     
 
 @dataclass

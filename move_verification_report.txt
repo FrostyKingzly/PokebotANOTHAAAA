@@ -1,0 +1,462 @@
+MOVE IMPLEMENTATION VERIFICATION REPORT
+================================================================================
+
+Total moves: 937
+Well-implemented moves: 433
+Implementation coverage: 46.2%
+
+Statistics:
+  total: 937
+  damaging: 660
+  status: 277
+  with_secondary: 201
+  with_boosts: 95
+  with_status_inflict: 16
+  with_volatile: 27
+  with_drain: 24
+  with_recoil: 14
+  with_heal: 13
+  multihit: 31
+  charge_moves: 16
+  priority_moves: 57
+  weather_moves: 6
+  terrain_moves: 4
+  switch_moves: 12
+  hazard_moves: 11
+  ohko_moves: 4
+
+
+Well-implemented moves (433):
+  - Double Slap
+  - Comet Punch
+  - Fire Punch
+  - Ice Punch
+  - Thunder Punch
+  - Guillotine
+  - Razor Wind
+  - Swords Dance
+  - Whirlwind
+  - Fly
+  - Bind
+  - Stomp
+  - Double Kick
+  - Jump Kick
+  - Rolling Kick
+  - Sand Attack
+  - Headbutt
+  - Fury Attack
+  - Horn Drill
+  - Body Slam
+  - Wrap
+  - Take Down
+  - Double Edge
+  - Tail Whip
+  - Poison Sting
+  - Twineedle
+  - Pin Missile
+  - Leer
+  - Bite
+  - Growl
+  - Roar
+  - Sing
+  - Supersonic
+  - Acid
+  - Ember
+  - Flamethrower
+  - Mist
+  - Ice Beam
+  - Blizzard
+  - Psybeam
+  - Bubble Beam
+  - Aurora Beam
+  - Submission
+  - Absorb
+  - Mega Drain
+  - Growth
+  - Solar Beam
+  - Poison Powder
+  - Stun Spore
+  - Sleep Powder
+  - String Shot
+  - Fire Spin
+  - Thunder Shock
+  - Thunderbolt
+  - Thunder Wave
+  - Thunder
+  - Fissure
+  - Dig
+  - Toxic
+  - Confusion
+  - Psychic
+  - Hypnosis
+  - Meditate
+  - Agility
+  - Teleport
+  - Screech
+  - Double Team
+  - Recover
+  - Harden
+  - Minimize
+  - Smokescreen
+  - Confuse Ray
+  - Withdraw
+  - Defense Curl
+  - Barrier
+  - Light Screen
+  - Reflect
+  - Focus Energy
+  - Lick
+  - Smog
+  - Sludge
+  - Bone Club
+  - Fire Blast
+  - Waterfall
+  - Clamp
+  - Skull Bash
+  - Spike Cannon
+  - Constrict
+  - Amnesia
+  - Kinesis
+  - Soft Boiled
+  - High Jump Kick
+  - Glare
+  - Dream Eater
+  - Poison Gas
+  - Barrage
+  - Leech Life
+  - Lovely Kiss
+  - Sky Attack
+  - Bubble
+  - Dizzy Punch
+  - Spore
+  - Flash
+  - Acid Armor
+  - Fury Swipes
+  - Bonemerang
+  - Rest
+  - Rock Slide
+  - Hyper Fang
+  - Sharpen
+  - Tri Attack
+  - Triple Kick
+  - Flame Wheel
+  - Snore
+  - Curse
+  - Cotton Spore
+  - Scary Face
+  - Sweet Kiss
+  - Sludge Bomb
+  - Mud Slap
+  - Octazooka
+  - Zap Cannon
+  - Icy Wind
+  - Bone Rush
+  - Sandstorm
+  - Giga Drain
+  - Charm
+  - Swagger
+  - Milk Drink
+  - Spark
+  - Steel Wing
+  - Safeguard
+  - Sacred Fire
+  - Dynamic Punch
+  - Dragon Breath
+  - Baton Pass
+  - Rapid Spin
+  - Sweet Scent
+  - Iron Tail
+  - Metal Claw
+  - Morning Sun
+  - Synthesis
+  - Moonlight
+  - Twister
+  - Rain Dance
+  - Sunny Day
+  - Crunch
+  - Ancient Power
+  - Shadow Ball
+  - Rock Smash
+  - Whirlpool
+  - Fake Out
+  - Heat Wave
+  - Hail
+  - Flatter
+  - Will O Wisp
+  - Memento
+  - Charge
+  - Wish
+  - Superpower
+  - Yawn
+  - Secret Power
+  - Dive
+  - Arm Thrust
+  - Tail Glow
+  - Luster Purge
+  - Mist Ball
+  - Feather Dance
+  - Teeter Dance
+  - Blaze Kick
+  - Needle Arm
+  - Slack Off
+  - Poison Fang
+  - Crush Claw
+  - Meteor Mash
+  - Astonish
+  - Fake Tears
+  - Overheat
+  - Rock Tomb
+  - Silver Wind
+  - Metal Sound
+  - Grass Whistle
+  - Tickle
+  - Cosmic Power
+  - Signal Beam
+  - Extrasensory
+  - Sand Tomb
+  - Sheer Cold
+  - Muddy Water
+  - Bullet Seed
+  - Icicle Spear
+  - Iron Defense
+  - Howl
+  - Bulk Up
+  - Bounce
+  - Mud Shot
+  - Poison Tail
+  - Volt Tackle
+  - Calm Mind
+  - Dragon Dance
+  - Rock Blast
+  - Water Pulse
+  - Psycho Boost
+  - Roost
+  - Hammer Arm
+  - Tailwind
+  - U Turn
+  - Close Combat
+  - Lucky Chant
+  - Flare Blitz
+  - Force Palm
+  - Rock Polish
+  - Poison Jab
+  - Dark Pulse
+  - Air Slash
+  - Bug Buzz
+  - Dragon Rush
+  - Drain Punch
+  - Focus Blast
+  - Energy Ball
+  - Brave Bird
+  - Earth Power
+  - Nasty Plot
+  - Ice Fang
+  - Mud Bomb
+  - Zen Headbutt
+  - Mirror Shot
+  - Flash Cannon
+  - Rock Climb
+  - Defog
+  - Draco Meteor
+  - Discharge
+  - Lava Plume
+  - Leaf Storm
+  - Cross Poison
+  - Gunk Shot
+  - Iron Head
+  - Captivate
+  - Chatter
+  - Charge Beam
+  - Wood Hammer
+  - Defend Order
+  - Heal Order
+  - Head Smash
+  - Double Hit
+  - Magma Storm
+  - Dark Void
+  - Seed Flare
+  - Ominous Wind
+  - Shadow Force
+  - Hone Claws
+  - Autotomize
+  - Sludge Wave
+  - Quiver Dance
+  - Flame Charge
+  - Coil
+  - Low Sweep
+  - Acid Spray
+  - Scald
+  - Shell Smash
+  - Sky Drop
+  - Shift Gear
+  - Circle Throw
+  - Inferno
+  - Volt Switch
+  - Struggle Bug
+  - Bulldoze
+  - Dragon Tail
+  - Work Up
+  - Electroweb
+  - Wild Charge
+  - Dual Chop
+  - Heart Stamp
+  - Horn Leech
+  - Razor Shell
+  - Leaf Tornado
+  - Steamroller
+  - Cotton Guard
+  - Night Daze
+  - Tail Slap
+  - Hurricane
+  - Head Charge
+  - Gear Grind
+  - Searing Shot
+  - Relic Song
+  - Glaciate
+  - Bolt Strike
+  - Blue Flare
+  - Fiery Dance
+  - Freeze Shock
+  - Ice Burn
+  - Snarl
+  - Icicle Crash
+  - V Create
+  - Phantom Force
+  - Noble Roar
+  - Parabolic Charge
+  - Freeze Dry
+  - Parting Shot
+  - Draining Kiss
+  - Grassy Terrain
+  - Misty Terrain
+  - Play Rough
+  - Moonblast
+  - Play Nice
+  - Confide
+  - Diamond Storm
+  - Steam Eruption
+  - Water Shuriken
+  - Mystical Fire
+  - Aromatic Mist
+  - Eerie Impulse
+  - Geomancy
+  - Electric Terrain
+  - Baby Doll Eyes
+  - Nuzzle
+  - Infestation
+  - Power Up Punch
+  - Oblivion Wing
+  - Light Of Ruin
+  - Dragon Ascent
+  - Hyperspace Fury
+  - Shore Up
+  - Spirit Shackle
+  - Sparkling Aria
+  - Ice Hammer
+  - Solar Blade
+  - Toxic Thread
+  - Throat Chop
+  - Anchor Shot
+  - Psychic Terrain
+  - Lunge
+  - Fire Lash
+  - Trop Kick
+  - Clanging Scales
+  - Aurora Veil
+  - Stoked Sparksurfer
+  - Extreme Evoboost
+  - Genesis Supernova
+  - Fleur Cannon
+  - Shadow Bone
+  - Liquidation
+  - Tearful Look
+  - Zing Zap
+  - Clangorous Soulblaze
+  - Zippy Zap
+  - Splishy Splash
+  - Floaty Fall
+  - Bouncy Bubble
+  - Buzzy Buzz
+  - Sizzly Slide
+  - Double Iron Bash
+  - No Retreat
+  - Tar Shot
+  - Dragon Darts
+  - Clangorous Soul
+  - Decorate
+  - Drum Beating
+  - Snap Trap
+  - Pyro Ball
+  - Aura Wheel
+  - Breaking Swipe
+  - Apple Acid
+  - Grav Apple
+  - Spirit Break
+  - Strange Steam
+  - Life Dew
+  - Scale Shot
+  - Meteor Beam
+  - Shell Side Arm
+  - Skitter Smack
+  - Burning Jealousy
+  - Coaching
+  - Flip Turn
+  - Triple Axel
+  - Dual Wingbeat
+  - Scorching Sands
+  - Surging Strikes
+  - Thunder Cage
+  - Freezing Glare
+  - Fiery Wrath
+  - Thunderous Kick
+  - Eerie Spell
+  - Dire Claw
+  - Psyshield Bash
+  - Springtide Storm
+  - Mystical Power
+  - Wave Crash
+  - Mountain Gale
+  - Victory Dance
+  - Headlong Rush
+  - Barb Barrage
+  - Esper Wing
+  - Bitter Malice
+  - Shelter
+  - Triple Arrows
+  - Infernal Parade
+  - Bleakwind Storm
+  - Wildbolt Storm
+  - Sandsear Storm
+  - Axe Kick
+  - Lumina Crash
+  - Spicy Extract
+  - Spin Out
+  - Population Bomb
+  - Salt Cure
+  - Triple Dive
+  - Mortal Spin
+  - Fillet Away
+  - Torch Song
+  - Aqua Step
+  - Make It Rain
+  - Shed Tail
+  - Chilly Reception
+  - Snowscape
+  - Pounce
+  - Trailblaze
+  - Chilling Water
+  - Twin Beam
+  - Armor Cannon
+  - Bitter Blade
+  - Blazing Torque
+  - Wicked Torque
+  - Noxious Torque
+  - Combat Torque
+  - Magical Torque
+  - Matcha Gotcha
+  - Syrup Bomb
+  - Tachyon Cutter
+  - Alluring Voice
+  - Psychic Noise
+  - Upper Hand
+  - Malignant Chain

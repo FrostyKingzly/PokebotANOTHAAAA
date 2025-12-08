@@ -566,11 +566,7 @@
       "mirror": true,
       "gravity": true,
       "metronome": true
-    },
-    "recoil": [
-      1,
-      2
-    ]
+    }
   },
   "rolling_kick": {
     "id": "rolling_kick",
@@ -1137,13 +1133,7 @@
     "target": "all_opponents",
     "crit_rate": 1,
     "description": "An attack that may lower DEFENSE.",
-    "generation": 1,
-    "secondary": {
-      "chance": 10,
-      "boosts": {
-        "spd": -1
-      }
-    }
+    "generation": 1
   },
   "ember": {
     "id": "ember",
@@ -1207,8 +1197,7 @@
     "flags": {
       "snatch": true,
       "metronome": true
-    },
-    "volatileStatus": "mist"
+    }
   },
   "water_gun": {
     "id": "water_gun",
@@ -2479,8 +2468,7 @@
     "flags": {
       "snatch": true,
       "metronome": true
-    },
-    "volatileStatus": "lightscreen"
+    }
   },
   "haze": {
     "id": "haze",
@@ -2491,7 +2479,7 @@
     "accuracy": null,
     "pp": 30,
     "priority": 0,
-    "target": "self",
+    "target": "entire_field",
     "crit_rate": 1,
     "description": "Eliminates all stat changes.",
     "generation": 1,
@@ -2516,8 +2504,7 @@
     "flags": {
       "snatch": true,
       "metronome": true
-    },
-    "volatileStatus": "reflect"
+    }
   },
   "focus_energy": {
     "id": "focus_energy",
@@ -2535,8 +2522,7 @@
     "flags": {
       "snatch": true,
       "metronome": true
-    },
-    "volatileStatus": "focusenergy"
+    }
   },
   "bide": {
     "id": "bide",
@@ -2985,11 +2971,7 @@
       "mirror": true,
       "gravity": true,
       "metronome": true
-    },
-    "recoil": [
-      1,
-      2
-    ]
+    }
   },
   "glare": {
     "id": "glare",
@@ -3165,7 +3147,7 @@
     "accuracy": null,
     "pp": 10,
     "priority": 0,
-    "target": "self",
+    "target": "single",
     "crit_rate": 1,
     "description": "The user assumes the foe's guise.",
     "generation": 1,
@@ -3829,11 +3811,6 @@
     "flags": {
       "bypasssub": true,
       "metronome": true
-    },
-    "boosts": {
-      "atk": 1,
-      "def": 1,
-      "spe": -1
     }
   },
   "flail": {
@@ -4626,10 +4603,8 @@
     "generation": 2,
     "secondary": {
       "chance": 10,
-      "self": {
-        "boosts": {
-          "def": 1
-        }
+      "boosts": {
+        "def": 1
       }
     },
     "flags": {
@@ -4797,8 +4772,7 @@
     "flags": {
       "snatch": true,
       "metronome": true
-    },
-    "volatileStatus": "safeguard"
+    }
   },
   "pain_split": {
     "id": "pain_split",
@@ -5016,8 +4990,7 @@
       "protect": true,
       "mirror": true,
       "metronome": true
-    },
-    "volatileStatus": "rapidspin"
+    }
   },
   "sweet_scent": {
     "id": "sweet_scent",
@@ -5383,14 +5356,12 @@
     "generation": 2,
     "secondary": {
       "chance": 10,
-      "self": {
-        "boosts": {
-          "atk": 1,
-          "def": 1,
-          "spa": 1,
-          "spd": 1,
-          "spe": 1
-        }
+      "boosts": {
+        "atk": 1,
+        "def": 1,
+        "spa": 1,
+        "spd": 1,
+        "spe": 1
       }
     },
     "flags": {
@@ -5533,8 +5504,7 @@
       "protect": true,
       "mirror": true,
       "metronome": true
-    },
-    "volatileStatus": "flinch"
+    }
   },
   "uproar": {
     "id": "uproar",
@@ -5969,11 +5939,7 @@
       "snatch": true,
       "heal": true,
       "metronome": true
-    },
-    "heal": [
-      1,
-      2
-    ]
+    }
   },
   "assist": {
     "id": "assist",
@@ -6503,8 +6469,7 @@
       "mirror": true,
       "dance": true,
       "metronome": true
-    },
-    "volatileStatus": "confusion"
+    }
   },
   "blaze_kick": {
     "id": "blaze_kick",
@@ -6746,10 +6711,8 @@
     "generation": 3,
     "secondary": {
       "chance": 20,
-      "self": {
-        "boosts": {
-          "atk": 1
-        }
+      "boosts": {
+        "atk": 1
       }
     },
     "flags": {
@@ -6953,14 +6916,12 @@
     "generation": 3,
     "secondary": {
       "chance": 10,
-      "self": {
-        "boosts": {
-          "atk": 1,
-          "def": 1,
-          "spa": 1,
-          "spd": 1,
-          "spe": 1
-        }
+      "boosts": {
+        "atk": 1,
+        "def": 1,
+        "spa": 1,
+        "spd": 1,
+        "spe": 1
       }
     },
     "flags": {
@@ -8017,8 +7978,7 @@
       "snatch": true,
       "metronome": true,
       "wind": true
-    },
-    "volatileStatus": "tailwind"
+    }
   },
   "acupressure": {
     "id": "acupressure",
@@ -8317,8 +8277,7 @@
     "flags": {
       "snatch": true,
       "metronome": true
-    },
-    "volatileStatus": "luckychant"
+    }
   },
   "me_first": {
     "id": "me_first",
@@ -9249,10 +9208,6 @@
       "mirror": true,
       "metronome": true,
       "bite": true
-    },
-    "secondary": {
-      "chance": 10,
-      "status": "frz"
     }
   },
   "fire_fang": {
@@ -9461,9 +9416,6 @@
       "mirror": true,
       "bypasssub": true,
       "metronome": true
-    },
-    "boosts": {
-      "evasion": -1
     }
   },
   "trick_room": {
@@ -9874,10 +9826,8 @@
     "generation": 4,
     "secondary": {
       "chance": 70,
-      "self": {
-        "boosts": {
-          "spa": 1
-        }
+      "boosts": {
+        "spa": 1
       }
     },
     "flags": {
@@ -10203,14 +10153,12 @@
     "generation": 4,
     "secondary": {
       "chance": 10,
-      "self": {
-        "boosts": {
-          "atk": 1,
-          "def": 1,
-          "spa": 1,
-          "spd": 1,
-          "spe": 1
-        }
+      "boosts": {
+        "atk": 1,
+        "def": 1,
+        "spa": 1,
+        "spd": 1,
+        "spe": 1
       }
     },
     "flags": {
@@ -12073,10 +12021,8 @@
     "generation": 5,
     "secondary": {
       "chance": 50,
-      "self": {
-        "boosts": {
-          "spa": 1
-        }
+      "boosts": {
+        "spa": 1
       }
     },
     "flags": {
@@ -13253,7 +13199,7 @@
     "accuracy": null,
     "pp": 40,
     "priority": 0,
-    "target": "self",
+    "target": "single",
     "crit_rate": 1,
     "description": "The user and an ally hold hands. This makes them very happy.",
     "generation": 6,
@@ -13312,8 +13258,7 @@
       "protect": true,
       "mirror": true,
       "metronome": true
-    },
-    "status": "par"
+    }
   },
   "hold_back": {
     "id": "hold_back",
@@ -13371,10 +13316,8 @@
     "generation": 6,
     "secondary": {
       "chance": 100,
-      "self": {
-        "boosts": {
-          "atk": 1
-        }
+      "boosts": {
+        "atk": 1
       }
     },
     "flags": {
@@ -14332,8 +14275,7 @@
       "nosleeptalk": true,
       "failinstruct": true,
       "slicing": true
-    },
-    "charge": true
+    }
   },
   "leafage": {
     "id": "leafage",
@@ -14862,8 +14804,7 @@
     "flags": {
       "snatch": true,
       "metronome": true
-    },
-    "volatileStatus": "auroraveil"
+    }
   },
   "sinister_arrow_raid": {
     "id": "sinister_arrow_raid",
@@ -16886,8 +16827,7 @@
       "protect": true,
       "mirror": true,
       "metronome": true
-    },
-    "charge": true
+    }
   },
   "shell_side_arm": {
     "id": "shell_side_arm",
