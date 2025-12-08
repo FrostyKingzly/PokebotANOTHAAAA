@@ -119,7 +119,7 @@ class AbilityHandler:
                         weather_turns = int(ability.get('duration', 5))
 
                         if hasattr(pokemon, 'held_item'):
-                            item_id = getattr(pokemon.held_item, 'item_id', None) if pokemon.held_item else None
+                            item_id = pokemon.held_item
 
                             # Weather-extending items
                             weather_extenders = {

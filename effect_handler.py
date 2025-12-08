@@ -614,7 +614,7 @@ class EffectHandler:
             weather_turns = 5
 
             if attacker and hasattr(attacker, 'held_item'):
-                item_id = getattr(attacker.held_item, 'item_id', None) if attacker.held_item else None
+                item_id = attacker.held_item
 
                 # Weather-extending items
                 weather_extenders = {

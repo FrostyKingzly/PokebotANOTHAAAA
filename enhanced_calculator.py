@@ -78,7 +78,7 @@ class EnhancedDamageCalculator:
             if not held:
                 return 0, False, 1.0, ["But it failed! (No item to fling)"]
             # Check accuracy
-        if not self._check_accuracy(move_data, attacker, defender):
+        if not self._check_accuracy(move_data, attacker, defender, weather):
             return 0, False, 1.0, ["The attack missed!"]
         
         # Status moves don't deal damage but have effects
@@ -246,36 +246,47 @@ class EnhancedDamageCalculator:
         
         return damage, is_critical, effectiveness
     
-    def _check_accuracy(self, move_data: Dict, attacker: Any, defender: Any) -> bool:
+    def _check_accuracy(self, move_data: Dict, attacker: Any, defender: Any, weather: Optional[str] = None) -> bool:
         """Check if move hits based on accuracy"""
+        move_id = move_data.get('id', '')
         base_accuracy = move_data.get('accuracy')
-        
+
+        # Weather-dependent accuracy overrides
+        if weather == 'rain':
+            # Hurricane and Thunder never miss in rain
+            if move_id in ['hurricane', 'thunder']:
+                return True
+        elif weather == 'sun':
+            # Thunder has reduced accuracy in sun
+            if move_id == 'thunder':
+                base_accuracy = 50
+
         # accuracy = true means always hits
         if base_accuracy is True or base_accuracy == 'true':
             return True
-        
+
         # Get accuracy as int
         try:
             accuracy = int(base_accuracy)
         except (ValueError, TypeError):
             accuracy = 100
-        
+
         # Apply accuracy/evasion stat stages
         accuracy_stage = attacker.stat_stages.get('accuracy', 0)
         evasion_stage = defender.stat_stages.get('evasion', 0)
-        
+
         # Combined stage
         stage = accuracy_stage - evasion_stage
         stage = max(-6, min(6, stage))
-        
+
         # Stage multipliers
         if stage >= 0:
             multiplier = (3 + stage) / 3
         else:
             multiplier = 3 / (3 - stage)
-        
+
         final_accuracy = accuracy * multiplier
-        
+
         return random.random() * 100 < final_accuracy
     
     def _get_type_effectiveness(self, attack_type: str, defender_types: List[str]) -> float:
