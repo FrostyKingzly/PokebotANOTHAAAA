@@ -1414,6 +1414,18 @@ Modest Nature
 
         embed.set_footer(text="Rewards are modified by each player's boon (+1) and bane (-1)")
 
+        # Add item thumbnail - use the most common candy type from results
+        # Get the first user's candy type for the thumbnail
+        if user_ids:
+            first_user_id = user_ids[0]
+            if manager.player_exists(first_user_id):
+                player = manager.get_player(first_user_id)
+                rank_tier = getattr(player, 'rank_tier_number', None) or 1
+                candy_type, _ = exp_candy_by_tier.get(rank_tier, ('exp_candy_xs', 5))
+                # PokeAPI item sprite URL pattern
+                item_sprite_url = f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/{candy_type.replace('_', '-')}.png"
+                embed.set_thumbnail(url=item_sprite_url)
+
         await interaction.response.send_message(embed=embed)
 
 # ============================================================
