@@ -10,6 +10,7 @@ from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass
 from enum import Enum
 import random
+import shutil
 
 
 class BattlePhase(Enum):
@@ -42,27 +43,31 @@ class BattleMusicManager:
         self.victory_theme_url: Optional[str] = None
         self._fade_task: Optional[asyncio.Task] = None
 
+        # Check if FFmpeg is available
+        if not shutil.which('ffmpeg'):
+            print("⚠️ WARNING: FFmpeg not found! Music playback will not work.")
+            print("   Install FFmpeg: https://ffmpeg.org/download.html")
+        else:
+            print("✅ FFmpeg found, music system ready")
+
         # FFMPEG options for audio streaming
         self.FFMPEG_OPTIONS = {
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-            'options': '-vn -filter:a "volume=0.5"'
+            'options': '-vn'
         }
 
-        # yt-dlp options
+        # yt-dlp options optimized for Discord streaming
         self.YDL_OPTIONS = {
             'format': 'bestaudio/best',
-            'extractaudio': True,
-            'audioformat': 'mp3',
-            'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-            'restrictfilenames': True,
             'noplaylist': True,
             'nocheckcertificate': True,
             'ignoreerrors': False,
-            'logtostderr': False,
             'quiet': True,
             'no_warnings': True,
             'default_search': 'auto',
             'source_address': '0.0.0.0',
+            'extract_flat': False,
+            'skip_download': True,
         }
 
     async def request_music(self, battle_id: str, user_id: int, username: str,
@@ -112,8 +117,15 @@ class BattleMusicManager:
         Returns:
             True if music started successfully, False otherwise
         """
+        print(f"🎵 start_battle_music called")
+        print(f"   Battle theme: {battle_theme_url}")
+        print(f"   Victory theme: {victory_theme_url}")
+
         if not self.current_session:
+            print(f"❌ No current session!")
             return False
+
+        print(f"✅ Current session found for user {self.current_session.username}")
 
         self.battle_theme_url = battle_theme_url
         self.victory_theme_url = victory_theme_url
@@ -121,22 +133,33 @@ class BattleMusicManager:
         # Get voice channel
         channel = self.bot.get_channel(self.current_session.voice_channel_id)
         if not channel or not isinstance(channel, discord.VoiceChannel):
+            print(f"❌ Voice channel not found or invalid: {self.current_session.voice_channel_id}")
             return False
+
+        print(f"✅ Voice channel found: {channel.name}")
 
         try:
             # Connect to voice channel
             if self.voice_client and self.voice_client.is_connected():
+                print(f"🔄 Moving to voice channel...")
                 await self.voice_client.move_to(channel)
             else:
+                print(f"🔌 Connecting to voice channel...")
                 self.voice_client = await channel.connect()
 
+            print(f"✅ Connected to voice channel!")
+
             # Start playing battle theme
+            print(f"▶️ Starting battle theme playback...")
             await self._play_theme(battle_theme_url, loop=True)
             self.current_phase = BattlePhase.BATTLE
+            print(f"✅ Battle music started successfully!")
             return True
 
         except Exception as e:
-            print(f"Error starting battle music: {e}")
+            print(f"❌ Error starting battle music: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     async def play_victory_music(self):
@@ -161,38 +184,67 @@ class BattleMusicManager:
     async def _play_theme(self, url: str, loop: bool = False):
         """Play a theme from YouTube URL"""
         if not self.voice_client:
+            print("❌ No voice client available")
             return
 
+        if not self.voice_client.is_connected():
+            print("❌ Voice client not connected")
+            return
+
+        # Stop any currently playing audio
+        if self.voice_client.is_playing():
+            print("⏹️ Stopping current audio...")
+            self.voice_client.stop()
+
         try:
-            # Extract audio info
+            print(f"🎵 Extracting audio from: {url}")
+
+            # Extract audio info using yt-dlp (run in executor to avoid blocking)
+            event_loop = asyncio.get_event_loop()
             with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
-                info = ydl.extract_info(url, download=False)
-                audio_url = info['url']
+                info = await event_loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
 
-            # Create audio source
+            if 'url' not in info:
+                print(f"❌ No audio URL found in video info")
+                return
+
+            audio_url = info['url']
+            print(f"✅ Audio URL extracted: {audio_url[:100]}...")
+
+            print(f"🎵 Creating FFmpeg audio source...")
+            # Create audio source with PCMVolumeTransformer for volume control
             source = discord.FFmpegPCMAudio(audio_url, **self.FFMPEG_OPTIONS)
+            source = discord.PCMVolumeTransformer(source, volume=0.5)
+            print(f"✅ FFmpeg source created with volume control")
 
-            # If looping, wrap in PCMVolumeTransformer for volume control
-            if loop:
-                source = discord.PCMVolumeTransformer(source, volume=0.5)
+            # Define callback for when audio finishes
+            def after_playing(error):
+                if error:
+                    print(f"❌ Player error: {error}")
+                else:
+                    print(f"🎵 Track finished")
 
-                def after_playing(error):
-                    if error:
-                        print(f"Player error: {error}")
-                    # Replay if still in battle phase
-                    if self.current_phase == BattlePhase.BATTLE and self.voice_client:
-                        asyncio.run_coroutine_threadsafe(
-                            self._play_theme(url, loop=True),
-                            self.bot.loop
-                        )
+                # Replay if still in battle phase and looping
+                if loop and self.current_phase == BattlePhase.BATTLE and self.voice_client:
+                    print(f"🔁 Replaying battle theme...")
+                    asyncio.run_coroutine_threadsafe(
+                        self._play_theme(url, loop=True),
+                        self.bot.loop
+                    )
 
-                self.voice_client.play(source, after=after_playing)
+            print(f"▶️ Starting playback (loop={loop})...")
+            self.voice_client.play(source, after=after_playing)
+
+            # Verify playback started
+            if self.voice_client.is_playing():
+                print(f"✅ Playback confirmed!")
             else:
-                source = discord.PCMVolumeTransformer(source, volume=0.5)
-                self.voice_client.play(source)
+                print(f"⚠️ Voice client shows not playing after play() call")
 
         except Exception as e:
-            print(f"Error playing theme: {e}")
+            print(f"❌ Error playing theme: {e}")
+            import traceback
+            traceback.print_exc()
 
     async def _fade_and_disconnect(self):
         """Fade out music over 60 seconds and disconnect"""
