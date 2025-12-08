@@ -570,12 +570,20 @@ class EffectHandler:
         duration = None
         if status in ['confusion']:
             duration = random.randint(1, 4)  # 1-4 turns
-        elif status in ['bind', 'wrap', 'firespin', 'whirlpool', 'sandtomb', 'clamp', 'infestation']:
+        elif status in ['bind', 'wrap', 'firespin', 'whirlpool', 'sandtomb', 'clamp', 'infestation', 'partiallytrapped']:
             duration = random.randint(4, 5)  # 4-5 turns
         elif status in ['flinch', 'protect', 'detect', 'endure']:
             duration = 1  # These only last until end of turn
         elif status == 'taunt':
             duration = 3  # Gen 9 duration
+        elif status in ['lightscreen', 'reflect']:
+            duration = 5  # Light Screen and Reflect last 5 turns (8 with Light Clay)
+        elif status == 'auroraveil':
+            duration = 5  # Aurora Veil lasts 5 turns (8 with Light Clay)
+        elif status in ['tailwind', 'safeguard', 'mist', 'luckychant']:
+            duration = 5  # Team-wide effects last 5 turns
+        elif status == 'yawn':
+            duration = 2  # Yawn causes sleep after 1 turn (2 turn duration)
 
         # Allow explicit duration overrides from move data
         duration = effect.params.get('duration', duration)
