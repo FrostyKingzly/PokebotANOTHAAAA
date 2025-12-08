@@ -2292,8 +2292,16 @@ class BattleEngine:
         if not ENHANCED_SYSTEMS_AVAILABLE:
             return []
         
-        # Status damage
-        for pokemon in battle.trainer.get_active_pokemon() + battle.opponent.get_active_pokemon():
+        # Status damage - apply to ALL active Pokemon including raid allies (except eliminated battlers)
+        all_active_pokemon = []
+
+        # Get all active Pokemon from all non-eliminated battlers
+        for battler in battle.get_all_battlers():
+            if not battler.is_eliminated:
+                all_active_pokemon.extend(battler.get_active_pokemon())
+
+        # Apply status effects to all active Pokemon
+        for pokemon in all_active_pokemon:
             if hasattr(pokemon, 'status_manager'):
                 status_msgs = pokemon.status_manager.apply_end_of_turn_effects(pokemon)
                 messages.extend(status_msgs)
@@ -2309,16 +2317,74 @@ class BattleEngine:
                 if not battler.is_eliminated:
                     all_active_pokemon.extend(battler.get_active_pokemon())
 
-            # Apply weather effects to all active Pokemon
+            # Apply weather effects to all active Pokemon and track faints
+            fainted_pokemon = []
             for pokemon in all_active_pokemon:
                 weather_msg = self.ability_handler.apply_weather_damage(pokemon, battle.weather)
                 if weather_msg:
                     messages.append(weather_msg)
 
+                # Check if Pokemon fainted from weather damage
+                if getattr(pokemon, 'current_hp', 0) <= 0:
+                    fainted_pokemon.append(pokemon)
+
                 heal_msg = self.ability_handler.apply_weather_healing(pokemon, battle.weather)
                 if heal_msg:
                     messages.append(heal_msg)
-            
+
+            # Handle faints from weather damage
+            for fainted_mon in fainted_pokemon:
+                messages.append(f"{getattr(fainted_mon, 'species_name', 'The Pokémon')} fainted!")
+
+                # Find which battler owns this Pokemon and set up forced switch
+                for battler in battle.get_all_battlers():
+                    if not battler.is_eliminated and fainted_mon in battler.party:
+                        # Find position of fainted Pokemon
+                        fainted_position = None
+                        for pos_idx, party_idx in enumerate(battler.active_positions):
+                            if battler.party[party_idx] == fainted_mon:
+                                fainted_position = pos_idx
+                                break
+
+                        if fainted_position is not None:
+                            # For non-AI players, queue forced switch
+                            if not battler.is_ai:
+                                if battler.has_usable_pokemon():
+                                    usable_count = sum(1 for p in battler.party if p.current_hp > 0 and p != fainted_mon)
+                                    if usable_count > 0:
+                                        battle.pending_switches[battler.battler_id] = {
+                                            'position': fainted_position,
+                                            'switch_type': 'FORCED'
+                                        }
+                                        battle.phase = 'FORCED_SWITCH'
+                                        if not battle.forced_switch_battler_id:
+                                            battle.forced_switch_battler_id = battler.battler_id
+                                            battle.forced_switch_position = fainted_position
+                            # For AI, queue replacement
+                            elif battler.is_ai and battle.battle_type in (BattleType.TRAINER, BattleType.PVP):
+                                if battler.has_usable_pokemon():
+                                    replacement_index = None
+                                    for idx, p in enumerate(battler.party):
+                                        if p is fainted_mon or idx in battler.active_positions:
+                                            continue
+                                        if getattr(p, 'current_hp', 0) > 0:
+                                            replacement_index = idx
+                                            break
+                                    if replacement_index is not None:
+                                        battle.pending_switches[battler.battler_id] = {
+                                            'position': fainted_position,
+                                            'switch_type': 'FORCED',
+                                            'ai_replacement_index': replacement_index
+                                        }
+                                        battle.phase = 'FORCED_SWITCH'
+                                        if not battle.forced_switch_battler_id:
+                                            battle.forced_switch_battler_id = battler.battler_id
+                                            battle.forced_switch_position = fainted_position
+                        break
+
+            # Check for battle end and mark eliminated battlers
+            self._check_battle_end(battle)
+
             # Decrement weather
             battle.weather_turns -= 1
             if battle.weather_turns <= 0:

@@ -3364,7 +3364,7 @@ class RaidEncounterView(View):
         lobby_view = RaidReadyCheckView(
             bot=self.bot,
             location_id=self.location_id,
-            host_id=self.player_id,
+            host_id=raid.created_by,
         )
 
         await interaction.response.defer(ephemeral=True)
@@ -3392,10 +3392,10 @@ class RaidEncounterView(View):
         invite_view = RaidPublicInviteView(
             bot=self.bot,
             location_id=self.location_id,
-            host_id=self.player_id,
+            host_id=raid.created_by,
         )
         await interaction.response.send_message(
-            embed=build_public_raid_invite_embed(self.bot, raid, self.location_id, self.player_id),
+            embed=build_public_raid_invite_embed(self.bot, raid, self.location_id, raid.created_by),
             view=invite_view,
         )
         invite_view.message = await interaction.original_response()
