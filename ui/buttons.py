@@ -353,7 +353,7 @@ class BattleThemeModal(discord.ui.Modal, title="Set Your Battle Theme"):
             return
 
         # Update trainer themes
-        self.bot.player_manager.update_trainer(
+        self.bot.player_manager.update_player(
             interaction.user.id,
             battle_theme_url=battle_url,
             victory_theme_url=victory_url
