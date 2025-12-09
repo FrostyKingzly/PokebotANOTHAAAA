@@ -103,7 +103,12 @@ class BattleCog(commands.Cog):
         This should be called before starting the battle UI.
         """
         # Support NPC and PvP battles (not wild, not raids)
-        if battle_type == BattleType.WILD or battle_type == BattleType.RAID:
+        if battle_type == BattleType.WILD:
+            return False
+
+        # Check if this is a raid battle by getting the battle format
+        battle = self.battle_engine.get_battle(battle_id)
+        if battle and battle.battle_format == BattleFormat.RAID:
             return False
 
         # Check if user is in a voice channel
