@@ -1,0 +1,82 @@
+{
+  "sand_stream": {
+    "id": "sand_stream",
+    "name": "Sand Stream",
+    "events": [
+      "Start"
+    ],
+    "effect": "weather",
+    "weather": "sandstorm",
+    "duration": 5
+  },
+  "drought": {
+    "id": "drought",
+    "name": "Drought",
+    "events": [
+      "Start"
+    ],
+    "effect": "weather",
+    "weather": "sun",
+    "duration": 5
+  },
+  "drizzle": {
+    "id": "drizzle",
+    "name": "Drizzle",
+    "events": [
+      "Start"
+    ],
+    "effect": "weather",
+    "weather": "rain",
+    "duration": 5
+  },
+  "snow_warning": {
+    "id": "snow_warning",
+    "name": "Snow Warning",
+    "events": [
+      "Start"
+    ],
+    "effect": "weather",
+    "weather": "snow",
+    "duration": 5
+  },
+  "electric_surge": {
+    "id": "electric_surge",
+    "name": "Electric Surge",
+    "events": [
+      "Start"
+    ],
+    "effect": "terrain",
+    "terrain": "electric",
+    "duration": 5
+  },
+  "grassy_surge": {
+    "id": "grassy_surge",
+    "name": "Grassy Surge",
+    "events": [
+      "Start"
+    ],
+    "effect": "terrain",
+    "terrain": "grassy",
+    "duration": 5
+  },
+  "psychic_surge": {
+    "id": "psychic_surge",
+    "name": "Psychic Surge",
+    "events": [
+      "Start"
+    ],
+    "effect": "terrain",
+    "terrain": "psychic",
+    "duration": 5
+  },
+  "misty_surge": {
+    "id": "misty_surge",
+    "name": "Misty Surge",
+    "events": [
+      "Start"
+    ],
+    "effect": "terrain",
+    "terrain": "misty",
+    "duration": 5
+  }
+}

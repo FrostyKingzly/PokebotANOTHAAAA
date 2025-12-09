@@ -62,12 +62,13 @@ class BattleMusicManager:
         # FFMPEG options for high-quality audio streaming
         self.FFMPEG_OPTIONS = {
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-            'options': '-vn -b:a 192k'  # High bitrate for better quality
+            # Force 48k stereo PCM out of FFmpeg to keep Discord voice quality high
+            'options': '-vn -ac 2 -ar 48000 -b:a 320k'
         }
 
         # yt-dlp options optimized for high-quality Discord streaming
         self.YDL_OPTIONS = {
-            'format': 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',  # Prefer high-quality formats
+            'format': 'bestaudio[asr=48000]/bestaudio/best',  # Prefer 48k streams when available
             'noplaylist': True,
             'nocheckcertificate': True,
             'ignoreerrors': False,
@@ -369,6 +370,76 @@ class BattleMusicManager:
     # ============================================================
     # SOUND EFFECTS INTEGRATION
     # ============================================================
+
+    async def _create_mixed_audio(self, music_url: str, sound_file: str, duration: float) -> Optional[str]:
+        """
+        Create a temporary audio file that mixes music with sound effect using FFmpeg.
+
+        Args:
+            music_url: URL of the music stream
+            sound_file: Path to sound effect file
+            duration: Duration of sound effect in seconds
+
+        Returns:
+            Path to temporary mixed audio file or None on error
+        """
+        import tempfile
+        import os
+
+        try:
+            # Create temporary output file
+            temp_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+            output_path = temp_file.name
+            temp_file.close()
+
+            # FFmpeg command to mix sound effect over music
+            # We'll take a chunk of music (duration + buffer) and overlay the sound effect
+            buffer_time = duration + 2  # Extra time for smooth transition
+
+            ffmpeg_cmd = [
+                'ffmpeg',
+                '-y',  # Overwrite output file
+                '-ss', '0',  # Start from beginning
+                '-t', str(buffer_time),  # Duration to extract
+                '-i', music_url,  # Input 1: Music stream
+                '-i', sound_file,  # Input 2: Sound effect
+                '-filter_complex',
+                '[0:a]volume=0.3[music];[1:a]volume=1.0[sfx];[music][sfx]amix=inputs=2:duration=first:dropout_transition=0[out]',
+                '-map', '[out]',
+                # Keep everything in raw PCM to avoid lossy re-encoding artifacts on the mix
+                '-acodec', 'pcm_s16le',
+                '-ac', '2',
+                '-ar', '48000',
+                output_path
+            ]
+
+            print(f"🎛️ Mixing sound effect with music using FFmpeg...")
+
+            # Run FFmpeg
+            process = await asyncio.create_subprocess_exec(
+                *ffmpeg_cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+
+            stdout, stderr = await process.communicate()
+
+            if process.returncode != 0:
+                print(f"❌ FFmpeg mixing failed: {stderr.decode()}")
+                try:
+                    os.unlink(output_path)
+                except:
+                    pass
+                return None
+
+            print(f"✅ Mixed audio created: {output_path}")
+            return output_path
+
+        except Exception as e:
+            print(f"❌ Error creating mixed audio: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
 
     async def _play_sound_effect(self, sound_file_path: str, duration: float) -> float:
         """

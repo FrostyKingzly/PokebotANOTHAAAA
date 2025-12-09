@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord.ext import commands
 from pathlib import Path
@@ -613,7 +614,15 @@ class BattleCog(commands.Cog):
             )
             send_embed.set_thumbnail(url=sprite_url)
 
+            sound_task = None
+            if self.music_manager.current_session:
+                sound_task = asyncio.create_task(
+                    self.music_manager.play_send_out_sound(mon.species_dex_number)
+                )
+
             await interaction.followup.send(embed=send_embed)
+            if sound_task:
+                await sound_task
 
         # For multi battles, also send out partner's Pokemon
         if battle.battle_format == BattleFormat.MULTI and battle.trainer_partner:
@@ -639,7 +648,15 @@ class BattleCog(commands.Cog):
                 )
                 send_embed.set_thumbnail(url=sprite_url)
 
+                sound_task = None
+                if self.music_manager.current_session:
+                    sound_task = asyncio.create_task(
+                        self.music_manager.play_send_out_sound(mon.species_dex_number)
+                    )
+
                 await interaction.followup.send(embed=send_embed)
+                if sound_task:
+                    await sound_task
 
         # For trainer battles, also send out opponent's Pokemon (one embed per Pokemon)
         if battle_mode != BattleType.WILD:
@@ -664,7 +681,15 @@ class BattleCog(commands.Cog):
                 )
                 send_embed.set_thumbnail(url=sprite_url)
 
+                sound_task = None
+                if self.music_manager.current_session:
+                    sound_task = asyncio.create_task(
+                        self.music_manager.play_send_out_sound(mon.species_dex_number)
+                    )
+
                 await interaction.followup.send(embed=send_embed)
+                if sound_task:
+                    await sound_task
 
             # For multi battles, also send out opponent partner's Pokemon
             if battle.battle_format == BattleFormat.MULTI and battle.opponent_partner:
@@ -690,7 +715,15 @@ class BattleCog(commands.Cog):
                     )
                     send_embed.set_thumbnail(url=sprite_url)
 
+                    sound_task = None
+                    if self.music_manager.current_session:
+                        sound_task = asyncio.create_task(
+                            self.music_manager.play_send_out_sound(mon.species_dex_number)
+                        )
+
                     await interaction.followup.send(embed=send_embed)
+                    if sound_task:
+                        await sound_task
 
         # If there are entry messages or field effects, send them in a final embed
         field_embed = self._create_field_effects_embed(battle, entry_messages)
@@ -1117,6 +1150,30 @@ class BattleCog(commands.Cog):
 
         return action_msgs, faint_msgs
 
+    def _get_species_dex(self, name: str) -> Optional[int]:
+        species_db = getattr(self.bot, "species_db", None)
+        if not species_db or not name:
+            return None
+
+        species = species_db.get_species(name)
+        if not species:
+            return None
+
+        return species.get("dex_number")
+
+    async def _play_faint_sounds(self, messages: list[str]):
+        for msg in messages:
+            msg_clean = msg.replace("The wild", "").replace("wild", "").strip()
+            msg_clean = msg_clean.replace("!", "")
+            if " fainted" not in msg_clean.lower():
+                continue
+
+            # Extract name before the word 'fainted'
+            name_part = msg_clean.split("fainted")[0].strip()
+            dex_number = self._get_species_dex(name_part)
+            if dex_number and self.music_manager.current_session:
+                await self.music_manager.play_faint_sound(dex_number)
+
     async def _safe_followup_send(self, interaction: discord.Interaction, **kwargs):
         """Send a message to the channel without creating reply chains."""
         # Send directly to channel to avoid reply chains
@@ -1225,7 +1282,17 @@ class BattleCog(commands.Cog):
     async def _send_turn_resolution(self, interaction: discord.Interaction, turn_result: dict):
         action_embeds = self._build_turn_embeds(turn_result)
         for embed in action_embeds:
+            faint_sound_task = None
+            if embed.title == "Pokémon Fainted":
+                faint_msgs = [line for line in (embed.description or "").split("\n") if line.strip()]
+                if faint_msgs:
+                    faint_sound_task = asyncio.create_task(
+                        self._play_faint_sounds(faint_msgs)
+                    )
+
             await self._safe_followup_send(interaction, embed=embed)
+            if faint_sound_task:
+                await faint_sound_task
 
         switch_events = turn_result.get("switch_events")
         if switch_events is None:
@@ -1234,8 +1301,18 @@ class BattleCog(commands.Cog):
 
         for event in switch_events or []:
             embed = self._build_switch_embed(event.get("messages") or [], pokemon=event.get("pokemon"))
+            sound_task = None
+            pokemon = event.get("pokemon")
+            if pokemon and hasattr(pokemon, "species_dex_number") and self.music_manager.current_session:
+                sound_task = asyncio.create_task(
+                    self.music_manager.play_switch_sound(pokemon.species_dex_number)
+                )
+
             if embed:
                 await self._safe_followup_send(interaction, embed=embed)
+
+            if sound_task:
+                await sound_task
 
     async def _prompt_forced_switch(self, interaction: discord.Interaction, battle, battler_id: int):
         # Always refresh the battle state to avoid stale active slots or parties

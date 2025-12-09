@@ -45,7 +45,11 @@ For each Pokemon, you need two cry files. The system supports multiple naming pa
    - Primary: `PLAY_PV_#### [SAD].wav` (e.g., `PLAY_PV_0001 [SAD].wav`)
    - Alternate: `SAD_###.wav` or `SAD_####.wav`
 
-**Note:** Files are numbered by National Pokedex number with leading zeros (0001-1025+). The system will automatically detect which naming format your files use.
+If you downloaded a cry pack that uses names like `PLAY_PV_0001 [PV=INDEX].wav`
+or `PLAY_PV_0001 [PV=SAD].wav`, the bot will now automatically detect those
+files—no manual renaming needed.
+
+**Note:** Files are numbered by National Pokedex number with leading zeros (001-1025+).
 
 Supported audio formats: `.wav`, `.mp3`, `.ogg`, `.mpeg`
 

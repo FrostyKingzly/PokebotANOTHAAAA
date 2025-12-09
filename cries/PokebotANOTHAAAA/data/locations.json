@@ -1,0 +1,2351 @@
+{
+  "lights_district_moonwake_port": {
+    "name": "Lights District - Moonwake Port",
+    "description": "Both air and sea come and leave from here, all expertly designed into one section to minimize space taken up. This is where your journey in Reverie City probably began!",
+    "channel_ids": [],
+    "amenities": [],
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "lights_district_central_plaza": {
+    "name": "Lights District - Central Plaza",
+    "description": "The heart of the Lights District. Electronic billboards stretch across the skyscrapers lining the streets, with announcements and footage of official Pokemon battles occurring in the arena playing on the center big screen.",
+    "channel_ids": [],
+    "amenities": [
+      "pokemon_center"
+    ],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 52,
+        "species_name": "Meowth Alolan",
+        "min_level": 1,
+        "max_level": 10,
+        "weight": 12,
+        "form": "alolan"
+      },
+      {
+        "species_dex_number": 519,
+        "species_name": "Pidove",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 21,
+        "species_name": "Spearow",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 396,
+        "species_name": "Starly",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 276,
+        "species_name": "Taillow",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 877,
+        "species_name": "Morpeko",
+        "min_level": 5,
+        "max_level": 18,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 446,
+        "species_name": "Munchlax",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 52,
+        "species_name": "Meowth",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 7
+      },
+      {
+        "species_dex_number": 396,
+        "species_name": "Starly",
+        "min_level": 10,
+        "max_level": 18,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 519,
+        "species_name": "Pidove",
+        "min_level": 10,
+        "max_level": 18,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 446,
+        "species_name": "Munchlax",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 877,
+        "species_name": "Morpeko",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 2
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Poké Maniac Lochs",
+        "class": "Poké Maniac",
+        "prize_money": 6000,
+        "party": [
+          {
+            "species_dex_number": 417,
+            "level": 45,
+            "moves": [
+              "thunderbolt",
+              "nuzzle",
+              "super_fang",
+              "u_turn"
+            ]
+          },
+          {
+            "species_dex_number": 197,
+            "level": 50,
+            "moves": [
+              "foul_play",
+              "moonlight",
+              "snarl",
+              "protect"
+            ]
+          },
+          {
+            "species_dex_number": 635,
+            "level": 55,
+            "moves": [
+              "dark_pulse",
+              "dragon_pulse",
+              "flamethrower",
+              "flash_cannon"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Freddy",
+        "class": "Plaza Emcee",
+        "prize_money": 2200,
+        "party": [
+          {
+            "species_dex_number": 133,
+            "level": 13
+          },
+          {
+            "species_dex_number": 404,
+            "level": 16
+          },
+          {
+            "species_dex_number": 633,
+            "level": 18
+          }
+        ]
+      },
+      {
+        "name": "Rain Maestro Kairo",
+        "class": "Rain Specialist",
+        "prize_money": 9000,
+        "party": [
+          {
+            "species_dex_number": 279,
+            "level": 50,
+            "moves": [
+              "scald",
+              "hurricane",
+              "roost",
+              "protect"
+            ]
+          },
+          {
+            "species_dex_number": 272,
+            "level": 50,
+            "moves": [
+              "fake_out",
+              "scald",
+              "giga_drain",
+              "ice_beam"
+            ]
+          },
+          {
+            "species_dex_number": 26,
+            "level": 50,
+            "moves": [
+              "fake_out",
+              "thunderbolt",
+              "volt_switch",
+              "grass_knot"
+            ]
+          },
+          {
+            "species_dex_number": 230,
+            "level": 50,
+            "moves": [
+              "muddy_water",
+              "dragon_pulse",
+              "ice_beam",
+              "protect"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Sand Captain Lyra",
+        "class": "Tactician",
+        "prize_money": 9000,
+        "party": [
+          {
+            "species_dex_number": 248,
+            "level": 50,
+            "moves": [
+              "rock_slide",
+              "crunch",
+              "protect",
+              "earthquake"
+            ]
+          },
+          {
+            "species_dex_number": 530,
+            "level": 50,
+            "moves": [
+              "iron_head",
+              "earthquake",
+              "rock_slide",
+              "swords_dance"
+            ]
+          },
+          {
+            "species_dex_number": 423,
+            "level": 50,
+            "moves": [
+              "muddy_water",
+              "earth_power",
+              "ice_beam",
+              "recover"
+            ]
+          },
+          {
+            "species_dex_number": 468,
+            "level": 50,
+            "moves": [
+              "air_slash",
+              "follow_me",
+              "aura_sphere",
+              "roost"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Trick Room Master Trent",
+        "class": "Ace Trainer",
+        "prize_money": 5000,
+        "battle_format": "doubles",
+        "party": [
+          {
+            "species_dex_number": 356,
+            "level": 50,
+            "nature": "relaxed",
+            "ability": "pressure",
+            "moves": [
+              "trick_room",
+              "helping_hand",
+              "pain_split",
+              "night_shade"
+            ]
+          },
+          {
+            "species_dex_number": 464,
+            "level": 50,
+            "nature": "brave",
+            "ability": "solid_rock",
+            "moves": [
+              "earthquake",
+              "rock_slide",
+              "stone_edge",
+              "megahorn"
+            ]
+          },
+          {
+            "species_dex_number": 534,
+            "level": 50,
+            "nature": "brave",
+            "ability": "guts",
+            "moves": [
+              "drain_punch",
+              "mach_punch",
+              "ice_punch",
+              "knock_off"
+            ]
+          },
+          {
+            "species_dex_number": 324,
+            "level": 50,
+            "nature": "quiet",
+            "ability": "drought",
+            "moves": [
+              "eruption",
+              "heat_wave",
+              "earth_power",
+              "protect"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Multi Battle Partner Alex",
+        "class": "Multi Battle Duo",
+        "prize_money": 6000,
+        "battle_format": "multi",
+        "party": [
+          {
+            "species_dex_number": 380,
+            "level": 50,
+            "nature": "timid",
+            "ability": "levitate",
+            "moves": [
+              "dragon_pulse",
+              "psychic",
+              "thunderbolt",
+              "protect"
+            ]
+          },
+          {
+            "species_dex_number": 257,
+            "level": 50,
+            "nature": "jolly",
+            "ability": "blaze",
+            "moves": [
+              "close_combat",
+              "flare_blitz",
+              "stone_edge",
+              "protect"
+            ]
+          },
+          {
+            "species_dex_number": 445,
+            "level": 50,
+            "nature": "jolly",
+            "ability": "rough_skin",
+            "moves": [
+              "earthquake",
+              "dragon_claw",
+              "rock_slide",
+              "swords_dance"
+            ]
+          },
+          {
+            "species_dex_number": 376,
+            "level": 50,
+            "nature": "adamant",
+            "ability": "clear_body",
+            "moves": [
+              "meteor_mash",
+              "earthquake",
+              "zen_headbutt",
+              "bullet_punch"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Multi Battle Partner Riley",
+        "class": "Multi Battle Duo",
+        "prize_money": 6000,
+        "battle_format": "multi",
+        "party": [
+          {
+            "species_dex_number": 658,
+            "level": 50,
+            "nature": "jolly",
+            "ability": "protean",
+            "moves": [
+              "ice_beam",
+              "water_shuriken",
+              "u_turn",
+              "dark_pulse"
+            ]
+          },
+          {
+            "species_dex_number": 637,
+            "level": 50,
+            "nature": "timid",
+            "ability": "flame_body",
+            "moves": [
+              "bug_buzz",
+              "fire_blast",
+              "quiver_dance",
+              "giga_drain"
+            ]
+          },
+          {
+            "species_dex_number": 450,
+            "level": 50,
+            "nature": "adamant",
+            "ability": "sand_stream",
+            "moves": [
+              "earthquake",
+              "stone_edge",
+              "crunch",
+              "ice_fang"
+            ]
+          },
+          {
+            "species_dex_number": 212,
+            "level": 50,
+            "nature": "adamant",
+            "ability": "technician",
+            "moves": [
+              "bullet_punch",
+              "u_turn",
+              "swords_dance",
+              "superpower"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Street Kid Riko",
+        "class": "Street Kid",
+        "prize_money": 500,
+        "party": [
+          {
+            "species_dex_number": 519,
+            "level": 5,
+            "moves": [
+              "gust",
+              "growl",
+              "leer"
+            ]
+          },
+          {
+            "species_dex_number": 396,
+            "level": 5,
+            "moves": [
+              "tackle",
+              "growl",
+              "quick_attack"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": [
+      {
+        "name": "League Scout Avery",
+        "class": "League Scout",
+        "rank_tier_number": 1,
+        "prize_money": 4500,
+        "party": [
+          {
+            "species_dex_number": 310,
+            "level": 28,
+            "moves": [
+              "thunder_punch",
+              "shock_wave",
+              "quick_attack",
+              "howl"
+            ]
+          },
+          {
+            "species_dex_number": 135,
+            "level": 30,
+            "moves": [
+              "thunderbolt",
+              "volt_switch",
+              "shadow_ball",
+              "wish"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Circuit Ace Rina",
+        "class": "Ace Trainer",
+        "rank_tier_number": 2,
+        "prize_money": 7000,
+        "party": [
+          {
+            "species_dex_number": 405,
+            "level": 45,
+            "moves": [
+              "wild_charge",
+              "iron_tail",
+              "volt_switch",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 596,
+            "level": 47,
+            "moves": [
+              "bug_buzz",
+              "discharge",
+              "sticky_web",
+              "energy_ball"
+            ]
+          },
+          {
+            "species_dex_number": 448,
+            "level": 48,
+            "moves": [
+              "close_combat",
+              "meteor_mash",
+              "bullet_punch",
+              "nasty_plot"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "lights_district_art_studio": {
+    "name": "Lights District - Art Studio",
+    "description": "A creative loft covered in neon graffiti, rotating murals, and augmented-reality projections. Trainers collaborate with artists while sketching ideas for their next battle strategies.",
+    "channel_ids": [],
+    "amenities": [
+      "pokemon_center"
+    ],
+    "encounters": [
+      {
+        "species_dex_number": 235,
+        "species_name": "Smeargle",
+        "min_level": 10,
+        "max_level": 18,
+        "weight": 30
+      },
+      {
+        "species_dex_number": 281,
+        "species_name": "Kirlia",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 20
+      },
+      {
+        "species_dex_number": 876,
+        "species_name": "Indeedee",
+        "min_level": 15,
+        "max_level": 22,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 856,
+        "species_name": "Hatenna",
+        "min_level": 8,
+        "max_level": 16,
+        "weight": 20
+      },
+      {
+        "species_dex_number": 302,
+        "species_name": "Sableye",
+        "min_level": 14,
+        "max_level": 21,
+        "weight": 15
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Art Master Monkaé",
+        "class": "Art Master",
+        "prize_money": 6200,
+        "party": [
+          {
+            "species_dex_number": 3,
+            "level": 45,
+            "moves": [
+              "giga_drain",
+              "sludge_bomb",
+              "sleep_powder",
+              "earth_power"
+            ]
+          },
+          {
+            "species_dex_number": 700,
+            "level": 50,
+            "moves": [
+              "moonblast",
+              "mystical_fire",
+              "calm_mind",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 94,
+            "level": 55,
+            "moves": [
+              "shadow_ball",
+              "sludge_wave",
+              "thunderbolt",
+              "focus_blast"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": [
+      {
+        "name": "Curator Selene",
+        "class": "League Curator",
+        "rank_tier_number": 1,
+        "prize_money": 5000,
+        "party": [
+          {
+            "species_dex_number": 281,
+            "level": 30,
+            "moves": [
+              "psyshock",
+              "dazzling_gleam",
+              "calm_mind",
+              "teleport"
+            ]
+          },
+          {
+            "species_dex_number": 765,
+            "level": 33,
+            "moves": [
+              "psychic",
+              "focus_blast",
+              "trick_room",
+              "thunder_wave"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Master Painter Jules",
+        "class": "League Proctor",
+        "rank_tier_number": 3,
+        "prize_money": 8500,
+        "party": [
+          {
+            "species_dex_number": 700,
+            "level": 48,
+            "moves": [
+              "moonblast",
+              "calm_mind",
+              "psychic",
+              "draining_kiss"
+            ]
+          },
+          {
+            "species_dex_number": 282,
+            "level": 50,
+            "moves": [
+              "psychic",
+              "shadow_ball",
+              "focus_blast",
+              "calm_mind"
+            ]
+          },
+          {
+            "species_dex_number": 350,
+            "level": 50,
+            "moves": [
+              "surf",
+              "ice_beam",
+              "recover",
+              "toxic"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "wild_area_forest_meadow_path": {
+    "name": "Wild Area α - Forest: Meadow Path",
+    "description": "A peaceful meadow at the edge of the forest, filled with wildflowers and gentle Pokémon. The perfect starting point for new trainers to begin their wild area adventures.",
+    "channel_ids": [],
+    "amenities": [],
+    "encounters": [
+      {
+        "species_dex_number": 396,
+        "species_name": "Starly",
+        "min_level": 2,
+        "max_level": 6,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 399,
+        "species_name": "Bidoof",
+        "min_level": 2,
+        "max_level": 6,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 819,
+        "species_name": "Skwovet",
+        "min_level": 2,
+        "max_level": 6,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 187,
+        "species_name": "Hoppip",
+        "min_level": 2,
+        "max_level": 6,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 415,
+        "species_name": "Combee",
+        "min_level": 2,
+        "max_level": 5,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 824,
+        "species_name": "Blipbug",
+        "min_level": 2,
+        "max_level": 4,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 427,
+        "species_name": "Buneary",
+        "min_level": 3,
+        "max_level": 7,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 179,
+        "species_name": "Mareep",
+        "min_level": 3,
+        "max_level": 7,
+        "weight": 6
+      },
+      {
+        "species_dex_number": 161,
+        "species_name": "Sentret",
+        "min_level": 3,
+        "max_level": 7,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 261,
+        "species_name": "Poochyena",
+        "min_level": 3,
+        "max_level": 7,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 585,
+        "species_name": "Deerling",
+        "min_level": 4,
+        "max_level": 8,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 32,
+        "species_name": "Nidoran♂",
+        "min_level": 4,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 29,
+        "species_name": "Nidoran♀",
+        "min_level": 4,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 595,
+        "species_name": "Joltik",
+        "min_level": 5,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 403,
+        "species_name": "Shinx",
+        "min_level": 5,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 133,
+        "species_name": "Eevee",
+        "min_level": 5,
+        "max_level": 9,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 856,
+        "species_name": "Hatenna",
+        "min_level": 6,
+        "max_level": 9,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 921,
+        "species_name": "Pawmi",
+        "min_level": 5,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 667,
+        "species_name": "Litleo",
+        "min_level": 5,
+        "max_level": 8,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 548,
+        "species_name": "Petilil",
+        "min_level": 4,
+        "max_level": 7,
+        "weight": 1
+      },
+      {
+        "species_dex_number": 447,
+        "species_name": "Riolu",
+        "min_level": 8,
+        "max_level": 10,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 214,
+        "species_name": "Heracross",
+        "min_level": 7,
+        "max_level": 10,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 216,
+        "species_name": "Teddiursa",
+        "min_level": 6,
+        "max_level": 9,
+        "weight": 1
+      }
+    ],
+    "npc_trainers": []
+  },
+  "wild_area_canyon_redstone_canyon": {
+    "name": "Wild Area β - Canyon: Redstone Canyon",
+    "description": "A rugged canyon carved by ancient rivers, with red stone cliffs and rocky outcrops. Rock and Ground-type Pokémon make their homes in the caves and ledges throughout the area.",
+    "channel_ids": [],
+    "amenities": [],
+    "encounters": [
+      {
+        "species_dex_number": 74,
+        "species_name": "Geodude",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 27,
+        "species_name": "Sandshrew",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 66,
+        "species_name": "Machop",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 228,
+        "species_name": "Houndour",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 331,
+        "species_name": "Cacnea",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 524,
+        "species_name": "Roggenrola",
+        "min_level": 9,
+        "max_level": 13,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 557,
+        "species_name": "Dwebble",
+        "min_level": 9,
+        "max_level": 13,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 451,
+        "species_name": "Skorupi",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 213,
+        "species_name": "Shuckle",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 322,
+        "species_name": "Numel",
+        "min_level": 9,
+        "max_level": 13,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 111,
+        "species_name": "Rhyhorn",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 231,
+        "species_name": "Phanpy",
+        "min_level": 9,
+        "max_level": 13,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 744,
+        "species_name": "Rockruff",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 527,
+        "species_name": "Woobat",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 562,
+        "species_name": "Yamask",
+        "min_level": 11,
+        "max_level": 15,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 610,
+        "species_name": "Axew",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 551,
+        "species_name": "Sandile",
+        "min_level": 11,
+        "max_level": 15,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 113,
+        "species_name": "Chansey",
+        "min_level": 13,
+        "max_level": 16,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 303,
+        "species_name": "Mawile",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 95,
+        "species_name": "Onix",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 1
+      }
+    ],
+    "npc_trainers": []
+  },
+  "wild_area_desert_sunbaked_path": {
+    "name": "Wild Area γ - Desert: Sandy Crossing",
+    "description": "The outskirts of a vast desert, where the ground begins to turn sandy under the scorching sun. Hardy Pokémon adapted to heat and arid conditions can be found here.",
+    "channel_ids": [],
+    "amenities": [],
+    "encounters": [
+      {
+        "species_dex_number": 27,
+        "species_name": "Sandshrew",
+        "min_level": 8,
+        "max_level": 14,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 551,
+        "species_name": "Sandile",
+        "min_level": 9,
+        "max_level": 15,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 328,
+        "species_name": "Trapinch",
+        "min_level": 9,
+        "max_level": 15,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 694,
+        "species_name": "Helioptile",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 331,
+        "species_name": "Cacnea",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 451,
+        "species_name": "Skorupi",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 449,
+        "species_name": "Hippopotas",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 343,
+        "species_name": "Baltoy",
+        "min_level": 10,
+        "max_level": 15,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 322,
+        "species_name": "Numel",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 231,
+        "species_name": "Phanpy",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 744,
+        "species_name": "Rockruff",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 557,
+        "species_name": "Dwebble",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 636,
+        "species_name": "Larvesta",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 757,
+        "species_name": "Salandit",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 443,
+        "species_name": "Gible",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 556,
+        "species_name": "Maractus",
+        "min_level": 10,
+        "max_level": 15,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 562,
+        "species_name": "Yamask",
+        "min_level": 11,
+        "max_level": 15,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 58,
+        "species_name": "Growlithe",
+        "form": "hisui",
+        "min_level": 10,
+        "max_level": 15,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 228,
+        "species_name": "Houndour",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 1
+      },
+      {
+        "species_dex_number": 610,
+        "species_name": "Axew",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 27,
+        "species_name": "Sandshrew",
+        "form": "alola",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 1
+      },
+      {
+        "species_dex_number": 561,
+        "species_name": "Sigilyph",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 1
+      }
+    ],
+    "npc_trainers": []
+  },
+  "wild_area_tundra_snowdust_crossing": {
+    "name": "Wild Area δ - Tundra: Snowdust Crossing",
+    "description": "A frozen path through the tundra where snow falls year-round. Ice and hardy Pokémon brave the cold winds and bitter temperatures of this unforgiving landscape.",
+    "channel_ids": [],
+    "amenities": [],
+    "encounters": [
+      {
+        "species_dex_number": 220,
+        "species_name": "Swinub",
+        "min_level": 8,
+        "max_level": 14,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 459,
+        "species_name": "Snover",
+        "min_level": 8,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 613,
+        "species_name": "Cubchoo",
+        "min_level": 8,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 225,
+        "species_name": "Delibird",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 216,
+        "species_name": "Teddiursa",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 585,
+        "species_name": "Deerling",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 6
+      },
+      {
+        "species_dex_number": 582,
+        "species_name": "Vanillite",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 6
+      },
+      {
+        "species_dex_number": 215,
+        "species_name": "Sneasel",
+        "min_level": 10,
+        "max_level": 15,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 627,
+        "species_name": "Rufflet",
+        "min_level": 9,
+        "max_level": 15,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 231,
+        "species_name": "Phanpy",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 712,
+        "species_name": "Bergmite",
+        "min_level": 9,
+        "max_level": 14,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 872,
+        "species_name": "Snom",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 37,
+        "species_name": "Vulpix",
+        "form": "alola",
+        "min_level": 8,
+        "max_level": 13,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 261,
+        "species_name": "Poochyena",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 698,
+        "species_name": "Amaura",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 4
+      },
+      {
+        "species_dex_number": 200,
+        "species_name": "Misdreavus",
+        "min_level": 10,
+        "max_level": 15,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 309,
+        "species_name": "Electrike",
+        "min_level": 9,
+        "max_level": 13,
+        "weight": 1
+      },
+      {
+        "species_dex_number": 447,
+        "species_name": "Riolu",
+        "min_level": 12,
+        "max_level": 16,
+        "weight": 2
+      },
+      {
+        "species_dex_number": 234,
+        "species_name": "Stantler",
+        "min_level": 10,
+        "max_level": 14,
+        "weight": 1
+      },
+      {
+        "species_dex_number": 133,
+        "species_name": "Eevee",
+        "min_level": 8,
+        "max_level": 12,
+        "weight": 1
+      }
+    ],
+    "npc_trainers": []
+  },
+  "lights_district_crossings": {
+    "name": "Lights District - Crossings",
+    "description": "One of the various crossings in the Lights district. With all the heavy foot traffic, there's lots of little bits of food that can be found on the floor. For a little bit, anyway, before it's found by one of the various Pokemon that can be found here.",
+    "channel_ids": [],
+    "amenities": [
+      "pokemon_center"
+    ],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 52,
+        "species_name": "Meowth",
+        "min_level": 2,
+        "max_level": 11,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 519,
+        "species_name": "Pidove",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 19,
+        "species_name": "Rattata",
+        "min_level": 2,
+        "max_level": 14,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 300,
+        "species_name": "Skitty",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 940,
+        "species_name": "Wattrel",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 311,
+        "species_name": "Plusle",
+        "min_level": 5,
+        "max_level": 16,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 312,
+        "species_name": "Minun",
+        "min_level": 5,
+        "max_level": 16,
+        "weight": 8
+      },
+      {
+        "species_dex_number": 940,
+        "species_name": "Wattrel",
+        "min_level": 10,
+        "max_level": 20,
+        "weight": 9
+      },
+      {
+        "species_dex_number": 52,
+        "species_name": "Meowth",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 19,
+        "species_name": "Rattata",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 311,
+        "species_name": "Plusle",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 3
+      },
+      {
+        "species_dex_number": 312,
+        "species_name": "Minun",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 2
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Commuter Nina",
+        "class": "Commuter",
+        "prize_money": 500,
+        "party": [
+          {
+            "species_dex_number": 300,
+            "level": 5,
+            "moves": [
+              "tackle",
+              "growl",
+              "tail_whip"
+            ]
+          },
+          {
+            "species_dex_number": 940,
+            "level": 5,
+            "moves": [
+              "peck",
+              "thunder_shock",
+              "growl"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "lights_district_streets": {
+    "name": "Lights District - Streets",
+    "description": "One of the various streets in the Lights District. Electricity flows through the city. Every building, every sign, every street. Electric Pokemon are drawn to it, but only the smallest tend to be able to thrive in the busy streets alongside a few birds and rodents.",
+    "channel_ids": [],
+    "amenities": [
+      "pokemon_center"
+    ],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 519,
+        "species_name": "Pidove",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 300,
+        "species_name": "Skitty",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 940,
+        "species_name": "Wattrel",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 513,
+        "species_name": "Pansear",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 417,
+        "species_name": "Pachirisu",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 12
+      },
+      {
+        "species_dex_number": 587,
+        "species_name": "Emolga",
+        "min_level": 6,
+        "max_level": 16,
+        "weight": 13
+      },
+      {
+        "species_dex_number": 513,
+        "species_name": "Pansear",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 940,
+        "species_name": "Wattrel",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 587,
+        "species_name": "Emolga",
+        "min_level": 14,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Courier Jett",
+        "class": "Courier",
+        "prize_money": 900,
+        "party": [
+          {
+            "species_dex_number": 519,
+            "level": 8,
+            "moves": [
+              "gust",
+              "growl",
+              "leer",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 940,
+            "level": 9,
+            "moves": [
+              "peck",
+              "water_gun",
+              "thunder_shock",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 587,
+            "level": 10,
+            "moves": [
+              "nuzzle",
+              "quick_attack",
+              "thunder_shock",
+              "tail_whip"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "lights_district_alleyways": {
+    "name": "Lights District - Alleyways",
+    "description": "While the absolute majority of the city lights up there are a few nooks and crevices that are dark. Damp and dark alleyways creating shortcuts between buildings, where trash bins can be found. A few Pokemon tend to thrive here, though.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 19,
+        "species_name": "Rattata Alolan",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10,
+        "form": "alolan"
+      },
+      {
+        "species_dex_number": 263,
+        "species_name": "Zigzagoon Galar",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10,
+        "form": "galar"
+      },
+      {
+        "species_dex_number": 261,
+        "species_name": "Poochyena",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 568,
+        "species_name": "Trubbish",
+        "min_level": 3,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 109,
+        "species_name": "Koffing",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 88,
+        "species_name": "Grimer Alolan",
+        "min_level": 5,
+        "max_level": 16,
+        "weight": 10,
+        "form": "alolan"
+      },
+      {
+        "species_dex_number": 559,
+        "species_name": "Scraggy",
+        "min_level": 6,
+        "max_level": 16,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 198,
+        "species_name": "Murkrow",
+        "min_level": 6,
+        "max_level": 16,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 559,
+        "species_name": "Scraggy",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 198,
+        "species_name": "Murkrow",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 109,
+        "species_name": "Koffing",
+        "min_level": 14,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Punk Rocco",
+        "class": "Punk",
+        "prize_money": 1100,
+        "party": [
+          {
+            "species_dex_number": 263,
+            "level": 10,
+            "moves": [
+              "tackle",
+              "lick",
+              "snarl",
+              "sand_attack"
+            ]
+          },
+          {
+            "species_dex_number": 261,
+            "level": 11,
+            "moves": [
+              "tackle",
+              "howl",
+              "bite",
+              "sand_attack"
+            ]
+          },
+          {
+            "species_dex_number": 198,
+            "level": 12,
+            "moves": [
+              "peck",
+              "astonish",
+              "wing_attack",
+              "haze"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "lights_district_wild_zone_1": {
+    "name": "Lights District - Wild Zone 1",
+    "description": "The Lights District Gardens. A little life existing amongst the glass, concrete and metal towers, vibrant green grass with an assortment of flowers from across the world accompanied by a few trees. With the abundance of Pokemon coming into the city, a few wild were bound to find and make this place there home. To ensure their safety, the City took inspiration from another project in Kalos. Thus, the first Wild Area was formed.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "wild_zone",
+    "encounters": [
+      {
+        "species_dex_number": 406,
+        "species_name": "Budew",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 420,
+        "species_name": "Cherubi",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 546,
+        "species_name": "Cottonee",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 511,
+        "species_name": "Pansage",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 540,
+        "species_name": "Sewaddle",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 548,
+        "species_name": "Petilil",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 669,
+        "species_name": "Flabebe",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 406,
+        "species_name": "Budew",
+        "min_level": 10,
+        "max_level": 18,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 133,
+        "species_name": "Eevee",
+        "min_level": 8,
+        "max_level": 16,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 669,
+        "species_name": "Flabebe",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Gardener Lila",
+        "class": "Gardener",
+        "prize_money": 1300,
+        "party": [
+          {
+            "species_dex_number": 540,
+            "level": 12,
+            "moves": [
+              "tackle",
+              "bug_bite",
+              "razor_leaf",
+              "string_shot"
+            ]
+          },
+          {
+            "species_dex_number": 406,
+            "level": 13,
+            "moves": [
+              "absorb",
+              "growth",
+              "stun_spore",
+              "poison_sting"
+            ]
+          },
+          {
+            "species_dex_number": 133,
+            "level": 14,
+            "moves": [
+              "quick_attack",
+              "swift",
+              "bite",
+              "sand_attack"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "lights_district_wild_zone_2": {
+    "name": "Lights District - Wild Zone 2",
+    "description": "A large fountain that became a frequent spot for Wild Pokemon. It was quickly turned into a Wild Area after the first to prevent heavy foot-traffic and reduce littering into the water.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "wild_zone",
+    "encounters": [
+      {
+        "species_dex_number": 751,
+        "species_name": "Dewpider",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 60,
+        "species_name": "Poliwag",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 283,
+        "species_name": "Surskit",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 278,
+        "species_name": "Wingull",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 515,
+        "species_name": "Panpour",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 580,
+        "species_name": "Ducklett",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 656,
+        "species_name": "Froakie",
+        "min_level": 5,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 535,
+        "species_name": "Tympole",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 938,
+        "species_name": "Tadbulb",
+        "min_level": 6,
+        "max_level": 18,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 656,
+        "species_name": "Froakie",
+        "min_level": 10,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Fisher Roan",
+        "class": "Fisher",
+        "prize_money": 1400,
+        "party": [
+          {
+            "species_dex_number": 60,
+            "level": 13,
+            "moves": [
+              "bubble",
+              "water_gun",
+              "hypnosis",
+              "mud_shot"
+            ]
+          },
+          {
+            "species_dex_number": 580,
+            "level": 14,
+            "moves": [
+              "water_gun",
+              "wing_attack",
+              "feather_dance",
+              "water_pulse"
+            ]
+          },
+          {
+            "species_dex_number": 656,
+            "level": 15,
+            "moves": [
+              "water_pulse",
+              "quick_attack",
+              "bubble",
+              "lick"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "residential_district_beach": {
+    "name": "Residential District - Beach",
+    "description": "A long, stretching beach across the edge of the Residential district. During the day it serves a purpose to sun-tanners and surfers for families all day, while the night provides a cool, romantic atmosphere guided by the relaxing sound of waves crashing- and thankfully only the very distant hum of the Lights district.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 98,
+        "species_name": "Krabby",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 370,
+        "species_name": "Luvdisc",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 963,
+        "species_name": "Finizen",
+        "min_level": 3,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 960,
+        "species_name": "Wiglett",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 769,
+        "species_name": "Sandygast",
+        "min_level": 3,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 592,
+        "species_name": "Frillish",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 222,
+        "species_name": "Corsola",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 592,
+        "species_name": "Frillish",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 222,
+        "species_name": "Corsola",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Beachgoer Kai",
+        "class": "Beachgoer",
+        "prize_money": 500,
+        "party": [
+          {
+            "species_dex_number": 98,
+            "level": 5,
+            "moves": [
+              "bubble",
+              "vice_grip"
+            ]
+          },
+          {
+            "species_dex_number": 963,
+            "level": 5,
+            "moves": [
+              "water_gun",
+              "astonish",
+              "aqua_jet"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "residential_district_dreamyard": {
+    "name": "Residential District - Dreamyard",
+    "description": "A run down area that used to be a place lots of scientists and researchers visited. It's hardly ever visited now, though. Pokemon drawn to a certain kind of energy seem to have taken up residence here, along with a strange individual locals have noticed.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [
+      {
+        "species_dex_number": 63,
+        "species_name": "Abra",
+        "min_level": 3,
+        "max_level": 10,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 677,
+        "species_name": "Espurr",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 39,
+        "species_name": "Jigglypuff",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 517,
+        "species_name": "Munna",
+        "min_level": 3,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 96,
+        "species_name": "Drowzee",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 177,
+        "species_name": "Natu",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 280,
+        "species_name": "Ralts",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 775,
+        "species_name": "Komala",
+        "min_level": 6,
+        "max_level": 16,
+        "weight": 5
+      },
+      {
+        "species_dex_number": 577,
+        "species_name": "Solosis",
+        "min_level": 6,
+        "max_level": 18,
+        "weight": 20
+      },
+      {
+        "species_dex_number": 63,
+        "species_name": "Abra",
+        "min_level": 10,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Dream Researcher Emi",
+        "class": "Dream Researcher",
+        "prize_money": 1600,
+        "party": [
+          {
+            "species_dex_number": 517,
+            "level": 15,
+            "moves": [
+              "psybeam",
+              "defense_curl",
+              "yawn",
+              "hypnosis"
+            ]
+          },
+          {
+            "species_dex_number": 280,
+            "level": 16,
+            "moves": [
+              "confusion",
+              "double_team",
+              "disarming_voice",
+              "lucky_chant"
+            ]
+          },
+          {
+            "species_dex_number": 577,
+            "level": 17,
+            "moves": [
+              "psybeam",
+              "reflect",
+              "light_screen",
+              "recover"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "residential_district_wild_zone_3": {
+    "name": "Residential District - Wild Zone 3",
+    "description": "A large section next to the beach formed entirely out of tidepools. Lots of Pokemon make the gaps and crevasses their home, which also makes it the perfect hunting ground for some birds hunting for an easy catch on some aquatic Pokemon.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "wild_zone",
+    "encounters": [
+      {
+        "species_dex_number": 98,
+        "species_name": "Krabby",
+        "min_level": 2,
+        "max_level": 10,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 278,
+        "species_name": "Wingull",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 751,
+        "species_name": "Dewpider",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 341,
+        "species_name": "Corphish",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 688,
+        "species_name": "Binacle",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 366,
+        "species_name": "Clamperl",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 222,
+        "species_name": "Corsola Galar",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 10,
+        "form": "galar"
+      },
+      {
+        "species_dex_number": 771,
+        "species_name": "Pyukumuku",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 871,
+        "species_name": "Pincurchin",
+        "min_level": 6,
+        "max_level": 18,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 845,
+        "species_name": "Cramorant",
+        "min_level": 10,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [
+      {
+        "name": "Tidewatcher Glen",
+        "class": "Tidewatcher",
+        "prize_money": 1800,
+        "party": [
+          {
+            "species_dex_number": 278,
+            "level": 17,
+            "moves": [
+              "air_cutter",
+              "water_pulse",
+              "supersonic",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 222,
+            "level": 18,
+            "moves": [
+              "ancient_power",
+              "hex",
+              "confuse_ray",
+              "recover"
+            ]
+          },
+          {
+            "species_dex_number": 871,
+            "level": 19,
+            "moves": [
+              "spark",
+              "water_gun",
+              "curse",
+              "recover"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "residential_district_wild_zone_4": {
+    "name": "Residential District - Wild Zone 4",
+    "description": "A large abandoned building. It's actually a very nice place, that should've been really easy for a wealthy family to live in. Unfortunately, it became infested with ghost types that wanted to make it their home instead. Rather than trying to convince them to leave, the past owners just opted to let them have it. Since then, it's been turned into an official wild area for its protection.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "wild_zone",
+    "encounters": [
+      {
+        "species_dex_number": 355,
+        "species_name": "Duskull",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 92,
+        "species_name": "Gastly",
+        "min_level": 2,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 353,
+        "species_name": "Shuppet",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 854,
+        "species_name": "Sinistea",
+        "min_level": 3,
+        "max_level": 12,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 607,
+        "species_name": "Litwick",
+        "min_level": 3,
+        "max_level": 14,
+        "weight": 10
+      },
+      {
+        "species_dex_number": 200,
+        "species_name": "Misdreavus",
+        "min_level": 5,
+        "max_level": 15,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 355,
+        "species_name": "Duskull",
+        "min_level": 10,
+        "max_level": 18,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 479,
+        "species_name": "Rotom",
+        "min_level": 10,
+        "max_level": 20,
+        "weight": 15
+      },
+      {
+        "species_dex_number": 92,
+        "species_name": "Gastly",
+        "min_level": 12,
+        "max_level": 20,
+        "weight": 5
+      }
+    ],
+    "npc_trainers": [],
+    "ranked_npc_trainers": [
+      {
+        "name": "Occultist Mira",
+        "class": "Occultist",
+        "prize_money": 2000,
+        "party": [
+          {
+            "species_dex_number": 479,
+            "level": 20,
+            "moves": [
+              "thunderbolt",
+              "shadow_ball",
+              "confuse_ray",
+              "charge"
+            ]
+          },
+          {
+            "species_dex_number": 200,
+            "level": 20,
+            "moves": [
+              "hex",
+              "shadow_ball",
+              "confuse_ray",
+              "power_gem"
+            ]
+          },
+          {
+            "species_dex_number": 607,
+            "level": 20,
+            "moves": [
+              "flame_burst",
+              "hex",
+              "will-o-wisp",
+              "confuse_ray"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

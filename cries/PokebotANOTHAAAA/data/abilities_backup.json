@@ -1,0 +1,3503 @@
+{
+  "noability": {
+    "id": "noability",
+    "name": "Noability",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": "Past",
+    "gen": null
+  },
+  "adaptability": {
+    "id": "adaptability",
+    "name": "Adaptability",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "STAB bonus is 2x instead of 1.5x.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "stab_boost",
+    "multiplier": 2.0
+  },
+  "aerilate": {
+    "id": "aerilate",
+    "name": "Aerilate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "aftermath": {
+    "id": "aftermath",
+    "name": "Aftermath",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "airlock": {
+    "id": "airlock",
+    "name": "Airlock",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "analytic": {
+    "id": "analytic",
+    "name": "Analytic",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "angerpoint": {
+    "id": "angerpoint",
+    "name": "Angerpoint",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "angershell": {
+    "id": "angershell",
+    "name": "Angershell",
+    "num": null,
+    "rating": null,
+    "shortDesc": "At half HP, the Pokémon lowers its Def and Sp. Def but sharply boosts its Atk, Sp. Atk, and Speed.",
+    "desc": "At half HP, the Pokémon lowers its Def and Sp. Def but sharply boosts its Atk, Sp. Atk, and Speed.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "anticipation": {
+    "id": "anticipation",
+    "name": "Anticipation",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "arenatrap": {
+    "id": "arenatrap",
+    "name": "Arenatrap",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "armortail": {
+    "id": "armortail",
+    "name": "Armortail",
+    "num": null,
+    "rating": null,
+    "shortDesc": "The curious tail protects allies from opposing priority moves.",
+    "desc": "The curious tail protects allies from opposing priority moves.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "flags": {
+    "id": "flags",
+    "name": "Flags",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "aromaveil": {
+    "id": "aromaveil",
+    "name": "Aromaveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "asoneglastrier": {
+    "id": "asoneglastrier",
+    "name": "Asoneglastrier",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "asonespectrier": {
+    "id": "asonespectrier",
+    "name": "Asonespectrier",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "aurabreak": {
+    "id": "aurabreak",
+    "name": "Aurabreak",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "baddreams": {
+    "id": "baddreams",
+    "name": "Baddreams",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "ballfetch": {
+    "id": "ballfetch",
+    "name": "Ballfetch",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "battery": {
+    "id": "battery",
+    "name": "Battery",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "battlearmor": {
+    "id": "battlearmor",
+    "name": "Battlearmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Protects the Pokemon from critical hits.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "crit_immunity"
+  },
+  "battlebond": {
+    "id": "battlebond",
+    "name": "Battlebond",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "beadsofruin": {
+    "id": "beadsofruin",
+    "name": "Beadsofruin",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Lowers the Sp. Def of all opposing Pokémon.",
+    "desc": "Lowers the Sp. Def of all opposing Pokémon.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "beastboost": {
+    "id": "beastboost",
+    "name": "Beastboost",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "berserk": {
+    "id": "berserk",
+    "name": "Berserk",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "bigpecks": {
+    "id": "bigpecks",
+    "name": "Bigpecks",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "blaze": {
+    "id": "blaze",
+    "name": "Blaze",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "When HP is below 1/3, Fire-type moves have 1.5x power.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "type_boost",
+    "type": "fire",
+    "multiplier": 1.5,
+    "condition": "hp_below_third"
+  },
+  "bulletproof": {
+    "id": "bulletproof",
+    "name": "Bulletproof",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cheekpouch": {
+    "id": "cheekpouch",
+    "name": "Cheekpouch",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "chillingneigh": {
+    "id": "chillingneigh",
+    "name": "Chillingneigh",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "chlorophyll": {
+    "id": "chlorophyll",
+    "name": "Chlorophyll",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Doubles Speed in harsh sunlight.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "weather_boost",
+    "weather": "sun",
+    "stat": "spe",
+    "multiplier": 2.0
+  },
+  "clearbody": {
+    "id": "clearbody",
+    "name": "Clearbody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Prevents other Pokemon from lowering this Pokemon's stats.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "prevent_stat_loss"
+  },
+  "cloudnine": {
+    "id": "cloudnine",
+    "name": "Cloudnine",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "colorchange": {
+    "id": "colorchange",
+    "name": "Colorchange",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "comatose": {
+    "id": "comatose",
+    "name": "Comatose",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "commander": {
+    "id": "commander",
+    "name": "Commander",
+    "num": null,
+    "rating": null,
+    "shortDesc": "If this Pokémon's ally is Dondozo, it enters Dondozo's mouth to command it, boosting Dondozo instead of acting.",
+    "desc": "If this Pokémon's ally is Dondozo, it enters Dondozo's mouth to command it, boosting Dondozo instead of acting.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "competitive": {
+    "id": "competitive",
+    "name": "Competitive",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "When a stat is lowered by an opponent, raises Sp. Attack by 2 stages.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "StatDown"
+    ],
+    "effect": "stat_mod",
+    "target": "self",
+    "boosts": {
+      "spa": 2
+    }
+  },
+  "compoundeyes": {
+    "id": "compoundeyes",
+    "name": "Compoundeyes",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Increases move accuracy by 30%.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "accuracy_boost",
+    "multiplier": 1.3
+  },
+  "contrary": {
+    "id": "contrary",
+    "name": "Contrary",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "corrosion": {
+    "id": "corrosion",
+    "name": "Corrosion",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "costar": {
+    "id": "costar",
+    "name": "Costar",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Copies an ally's stat changes when the Pokémon enters battle.",
+    "desc": "Copies an ally's stat changes when the Pokémon enters battle.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cottondown": {
+    "id": "cottondown",
+    "name": "Cottondown",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cudchew": {
+    "id": "cudchew",
+    "name": "Cudchew",
+    "num": null,
+    "rating": null,
+    "shortDesc": "After eating a Berry, the Pokémon will eat it again at the end of the next turn.",
+    "desc": "After eating a Berry, the Pokémon will eat it again at the end of the next turn.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "curiousmedicine": {
+    "id": "curiousmedicine",
+    "name": "Curiousmedicine",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cursedbody": {
+    "id": "cursedbody",
+    "name": "Cursedbody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "cutecharm": {
+    "id": "cutecharm",
+    "name": "Cutecharm",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "damp": {
+    "id": "damp",
+    "name": "Damp",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "dancer": {
+    "id": "dancer",
+    "name": "Dancer",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "darkaura": {
+    "id": "darkaura",
+    "name": "Darkaura",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "dauntlessshield": {
+    "id": "dauntlessshield",
+    "name": "Dauntlessshield",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "dazzling": {
+    "id": "dazzling",
+    "name": "Dazzling",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "defeatist": {
+    "id": "defeatist",
+    "name": "Defeatist",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "defiant": {
+    "id": "defiant",
+    "name": "Defiant",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "When a stat is lowered by an opponent, raises Attack by 2 stages.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "StatDown"
+    ],
+    "effect": "stat_mod",
+    "target": "self",
+    "boosts": {
+      "atk": 2
+    }
+  },
+  "deltastream": {
+    "id": "deltastream",
+    "name": "Deltastream",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "desolateland": {
+    "id": "desolateland",
+    "name": "Desolateland",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "disguise": {
+    "id": "disguise",
+    "name": "Disguise",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Blocks the first damaging move, taking 1/8 max HP as damage instead.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "block_first_hit",
+    "damage": 0.125
+  },
+  "download": {
+    "id": "download",
+    "name": "Download",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "On switch-in, raises Attack or Sp. Attack by 1 stage based on opponent's lower defense.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "stat_mod",
+    "target": "self",
+    "conditional": "compare_defense",
+    "boosts": {
+      "atk": 1,
+      "spa": 1
+    }
+  },
+  "dragonsmaw": {
+    "id": "dragonsmaw",
+    "name": "Dragonsmaw",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "drizzle": {
+    "id": "drizzle",
+    "name": "Drizzle",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "On switch-in, the weather becomes rainy for 5 turns.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "weather",
+    "weather": "rain",
+    "duration": 5
+  },
+  "drought": {
+    "id": "drought",
+    "name": "Drought",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "On switch-in, the weather becomes sunny for 5 turns.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "weather",
+    "weather": "sun",
+    "duration": 5
+  },
+  "dryskin": {
+    "id": "dryskin",
+    "name": "Dryskin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Heals 1/8 HP in rain, loses 1/8 HP in sun.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "weather_heal",
+    "weather": "rain",
+    "heal": 0.125,
+    "damage_weather": {
+      "sun": 0.125
+    }
+  },
+  "earlybird": {
+    "id": "earlybird",
+    "name": "Earlybird",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "eartheater": {
+    "id": "eartheater",
+    "name": "Eartheater",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Restores HP if hit by a Ground-type move, instead of taking damage.",
+    "desc": "Restores HP if hit by a Ground-type move, instead of taking damage.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "effectspore": {
+    "id": "effectspore",
+    "name": "Effectspore",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "30% chance to poison, paralyze, or sleep attackers that make contact.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "contact",
+    "status": [
+      "psn",
+      "par",
+      "slp"
+    ],
+    "chance": 30
+  },
+  "electricsurge": {
+    "id": "electricsurge",
+    "name": "Electricsurge",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "On switch-in, the terrain becomes Electric Terrain for 5 turns.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "terrain",
+    "terrain": "electric",
+    "duration": 5
+  },
+  "electromorphosis": {
+    "id": "electromorphosis",
+    "name": "Electromorphosis",
+    "num": null,
+    "rating": null,
+    "shortDesc": "The Pokémon becomes charged when hit by an attack, boosting the power of its next Electric move.",
+    "desc": "The Pokémon becomes charged when hit by an attack, boosting the power of its next Electric move.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "embodyaspectcornerstone": {
+    "id": "embodyaspectcornerstone",
+    "name": "Embodyaspectcornerstone",
+    "num": null,
+    "rating": null,
+    "shortDesc": "When the Pokémon enters battle, it terastallizes and its Defense is boosted.",
+    "desc": "When the Pokémon enters battle, it terastallizes and its Defense is boosted.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "embodyaspecthearthflame": {
+    "id": "embodyaspecthearthflame",
+    "name": "Embodyaspecthearthflame",
+    "num": null,
+    "rating": null,
+    "shortDesc": "When the Pokémon enters battle, it terastallizes and its Attack is boosted.",
+    "desc": "When the Pokémon enters battle, it terastallizes and its Attack is boosted.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "embodyaspectteal": {
+    "id": "embodyaspectteal",
+    "name": "Embodyaspectteal",
+    "num": null,
+    "rating": null,
+    "shortDesc": "When the Pokémon enters battle, it terastallizes and its Speed is boosted.",
+    "desc": "When the Pokémon enters battle, it terastallizes and its Speed is boosted.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "embodyaspectwellspring": {
+    "id": "embodyaspectwellspring",
+    "name": "Embodyaspectwellspring",
+    "num": null,
+    "rating": null,
+    "shortDesc": "When the Pokémon enters battle, it terastallizes and its Sp. Def is boosted.",
+    "desc": "When the Pokémon enters battle, it terastallizes and its Sp. Def is boosted.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "emergencyexit": {
+    "id": "emergencyexit",
+    "name": "Emergencyexit",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "fairyaura": {
+    "id": "fairyaura",
+    "name": "Fairyaura",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "filter": {
+    "id": "filter",
+    "name": "Filter",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Reduces damage from super-effective moves by 25%.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "damage_reduction",
+    "condition": "super_effective",
+    "multiplier": 0.75
+  },
+  "flamebody": {
+    "id": "flamebody",
+    "name": "Flamebody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "30% chance to burn attackers that make contact.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "contact",
+    "status": "brn",
+    "chance": 30
+  },
+  "flareboost": {
+    "id": "flareboost",
+    "name": "Flareboost",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "flashfire": {
+    "id": "flashfire",
+    "name": "Flashfire",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Grants immunity to Fire-type moves. When hit by Fire moves, boosts Fire-type move power by 50%.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "immunity",
+    "immune_to": [
+      "fire"
+    ],
+    "boost_on_hit": {
+      "spa": 1.5
+    }
+  },
+  "condition": {
+    "id": "condition",
+    "name": "Condition",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "flowergift": {
+    "id": "flowergift",
+    "name": "Flowergift",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "flowerveil": {
+    "id": "flowerveil",
+    "name": "Flowerveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "fluffy": {
+    "id": "fluffy",
+    "name": "Fluffy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "forecast": {
+    "id": "forecast",
+    "name": "Forecast",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "forewarn": {
+    "id": "forewarn",
+    "name": "Forewarn",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "friendguard": {
+    "id": "friendguard",
+    "name": "Friendguard",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "frisk": {
+    "id": "frisk",
+    "name": "Frisk",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "fullmetalbody": {
+    "id": "fullmetalbody",
+    "name": "Fullmetalbody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "furcoat": {
+    "id": "furcoat",
+    "name": "Furcoat",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "galewings": {
+    "id": "galewings",
+    "name": "Galewings",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "At full HP, Flying-type moves have +1 priority.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "priority_boost",
+    "type": "flying",
+    "priority": 1,
+    "condition": "full_hp"
+  },
+  "galvanize": {
+    "id": "galvanize",
+    "name": "Galvanize",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "gluttony": {
+    "id": "gluttony",
+    "name": "Gluttony",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "goodasgold": {
+    "id": "goodasgold",
+    "name": "Goodasgold",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Prevents opposing Pokémon from using status moves on the Pokémon.",
+    "desc": "Prevents opposing Pokémon from using status moves on the Pokémon.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "gooey": {
+    "id": "gooey",
+    "name": "Gooey",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "gorillatactics": {
+    "id": "gorillatactics",
+    "name": "Gorillatactics",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "grasspelt": {
+    "id": "grasspelt",
+    "name": "Grasspelt",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Defense is 1.5x on Grassy Terrain.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "terrain_boost",
+    "terrain": "grassy",
+    "stat": "def",
+    "multiplier": 1.5
+  },
+  "grassysurge": {
+    "id": "grassysurge",
+    "name": "Grassysurge",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "On switch-in, the terrain becomes Grassy Terrain for 5 turns.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "terrain",
+    "terrain": "grassy",
+    "duration": 5
+  },
+  "grimneigh": {
+    "id": "grimneigh",
+    "name": "Grimneigh",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "guarddog": {
+    "id": "guarddog",
+    "name": "Guarddog",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Prevents being forced out, and its Attack is boosted if intimidated.",
+    "desc": "Prevents being forced out, and its Attack is boosted if intimidated.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "gulpmissile": {
+    "id": "gulpmissile",
+    "name": "Gulpmissile",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "guts": {
+    "id": "guts",
+    "name": "Guts",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Attack is 1.5x when Pokemon has a major status condition.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "stat_boost",
+    "stat": "atk",
+    "multiplier": 1.5,
+    "condition": "has_status"
+  },
+  "hadronengine": {
+    "id": "hadronengine",
+    "name": "Hadronengine",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Creates Electric Terrain on entry and boosts Sp. Atk while the terrain is active.",
+    "desc": "Creates Electric Terrain on entry and boosts Sp. Atk while the terrain is active.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "harvest": {
+    "id": "harvest",
+    "name": "Harvest",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "healer": {
+    "id": "healer",
+    "name": "Healer",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "heatproof": {
+    "id": "heatproof",
+    "name": "Heatproof",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "heavymetal": {
+    "id": "heavymetal",
+    "name": "Heavymetal",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "honeygather": {
+    "id": "honeygather",
+    "name": "Honeygather",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hospitality": {
+    "id": "hospitality",
+    "name": "Hospitality",
+    "num": null,
+    "rating": null,
+    "shortDesc": "When the Pokémon enters a battle, it showers its ally with hospitality, restoring a small amount of the ally's HP.",
+    "desc": "When the Pokémon enters a battle, it showers its ally with hospitality, restoring a small amount of the ally's HP.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hugepower": {
+    "id": "hugepower",
+    "name": "Hugepower",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hungerswitch": {
+    "id": "hungerswitch",
+    "name": "Hungerswitch",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hustle": {
+    "id": "hustle",
+    "name": "Hustle",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Increases Attack by 50% but lowers accuracy of physical moves to 80%.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "stat_mod",
+    "stat": "atk",
+    "multiplier": 1.5,
+    "accuracy_penalty": 0.8
+  },
+  "hydration": {
+    "id": "hydration",
+    "name": "Hydration",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "hypercutter": {
+    "id": "hypercutter",
+    "name": "Hypercutter",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Prevents other Pokemon from lowering this Pokemon's Attack stat.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "prevent_stat_loss",
+    "stats": [
+      "atk"
+    ]
+  },
+  "icebody": {
+    "id": "icebody",
+    "name": "Icebody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Heals 1/16 HP each turn in snow.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "weather_heal",
+    "weather": "snow",
+    "heal": 0.0625
+  },
+  "iceface": {
+    "id": "iceface",
+    "name": "Iceface",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "icescales": {
+    "id": "icescales",
+    "name": "Icescales",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "illuminate": {
+    "id": "illuminate",
+    "name": "Illuminate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "illusion": {
+    "id": "illusion",
+    "name": "Illusion",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "immunity": {
+    "id": "immunity",
+    "name": "Immunity",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Cannot be poisoned.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "status_immunity",
+    "immune_status": [
+      "psn",
+      "tox"
+    ]
+  },
+  "imposter": {
+    "id": "imposter",
+    "name": "Imposter",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Transforms into the opponent Pokemon on switch-in.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "transform"
+  },
+  "infiltrator": {
+    "id": "infiltrator",
+    "name": "Infiltrator",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "innardsout": {
+    "id": "innardsout",
+    "name": "Innardsout",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "innerfocus": {
+    "id": "innerfocus",
+    "name": "Innerfocus",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "insomnia": {
+    "id": "insomnia",
+    "name": "Insomnia",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Cannot be put to sleep.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "status_immunity",
+    "immune_status": [
+      "slp"
+    ]
+  },
+  "intimidate": {
+    "id": "intimidate",
+    "name": "Intimidate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "On switch-in, lowers the opponent's Attack by 1 stage.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "stat_mod",
+    "target": "opponents",
+    "boosts": {
+      "atk": -1
+    }
+  },
+  "intrepidsword": {
+    "id": "intrepidsword",
+    "name": "Intrepidsword",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "ironbarbs": {
+    "id": "ironbarbs",
+    "name": "Ironbarbs",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Attackers that make contact lose 1/8 of their max HP.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "contact",
+    "damage": 0.125
+  },
+  "ironfist": {
+    "id": "ironfist",
+    "name": "Ironfist",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "justified": {
+    "id": "justified",
+    "name": "Justified",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "keeneye": {
+    "id": "keeneye",
+    "name": "Keeneye",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Prevents other Pokemon from lowering this Pokemon's accuracy.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "prevent_stat_loss",
+    "stats": [
+      "accuracy"
+    ]
+  },
+  "klutz": {
+    "id": "klutz",
+    "name": "Klutz",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "leafguard": {
+    "id": "leafguard",
+    "name": "Leafguard",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "levitate": {
+    "id": "levitate",
+    "name": "Levitate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Grants immunity to Ground-type moves.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "immunity",
+    "immune_to": [
+      "ground"
+    ]
+  },
+  "libero": {
+    "id": "libero",
+    "name": "Libero",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "lightmetal": {
+    "id": "lightmetal",
+    "name": "Lightmetal",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "lightningrod": {
+    "id": "lightningrod",
+    "name": "Lightningrod",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Draws Electric-type moves to this Pokemon and grants immunity. Raises Sp. Attack by 1 stage when hit.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "immunity",
+    "immune_to": [
+      "electric"
+    ],
+    "boost_on_hit": {
+      "spa": 1
+    },
+    "redirect": "electric"
+  },
+  "limber": {
+    "id": "limber",
+    "name": "Limber",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Cannot be paralyzed.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "status_immunity",
+    "immune_status": [
+      "par"
+    ]
+  },
+  "lingeringaroma": {
+    "id": "lingeringaroma",
+    "name": "Lingeringaroma",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Contact with the Pokémon changes the attacker's Ability to Lingering Aroma.",
+    "desc": "Contact with the Pokémon changes the attacker's Ability to Lingering Aroma.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "liquidooze": {
+    "id": "liquidooze",
+    "name": "Liquidooze",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "liquidvoice": {
+    "id": "liquidvoice",
+    "name": "Liquidvoice",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "longreach": {
+    "id": "longreach",
+    "name": "Longreach",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "magicbounce": {
+    "id": "magicbounce",
+    "name": "Magicbounce",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Reflects status moves and entry hazards back at the user.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "reflect_status"
+  },
+  "magicguard": {
+    "id": "magicguard",
+    "name": "Magicguard",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "magician": {
+    "id": "magician",
+    "name": "Magician",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Steals the target's held item when hitting with an attack.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "item_steal"
+  },
+  "magmaarmor": {
+    "id": "magmaarmor",
+    "name": "Magmaarmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Cannot be frozen.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "status_immunity",
+    "immune_status": [
+      "frz"
+    ]
+  },
+  "magnetpull": {
+    "id": "magnetpull",
+    "name": "Magnetpull",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "marvelscale": {
+    "id": "marvelscale",
+    "name": "Marvelscale",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Defense is 1.5x when Pokemon has a major status condition.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "stat_boost",
+    "stat": "def",
+    "multiplier": 1.5,
+    "condition": "has_status"
+  },
+  "megalauncher": {
+    "id": "megalauncher",
+    "name": "Megalauncher",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "merciless": {
+    "id": "merciless",
+    "name": "Merciless",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mimicry": {
+    "id": "mimicry",
+    "name": "Mimicry",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mindseye": {
+    "id": "mindseye",
+    "name": "Mindseye",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Accuracy cannot be lowered, the Pokémon ignores target evasiveness, and its Normal- and Fighting-type moves hit Ghosts.",
+    "desc": "Accuracy cannot be lowered, the Pokémon ignores target evasiveness, and its Normal- and Fighting-type moves hit Ghosts.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "minus": {
+    "id": "minus",
+    "name": "Minus",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mirrorarmor": {
+    "id": "mirrorarmor",
+    "name": "Mirrorarmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mistysurge": {
+    "id": "mistysurge",
+    "name": "Mistysurge",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "On switch-in, the terrain becomes Misty Terrain for 5 turns.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "terrain",
+    "terrain": "misty",
+    "duration": 5
+  },
+  "moldbreaker": {
+    "id": "moldbreaker",
+    "name": "Moldbreaker",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "moody": {
+    "id": "moody",
+    "name": "Moody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "motordrive": {
+    "id": "motordrive",
+    "name": "Motordrive",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Grants immunity to Electric-type moves. When hit by Electric moves, raises Speed by 1 stage.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "immunity",
+    "immune_to": [
+      "electric"
+    ],
+    "boost_on_hit": {
+      "spe": 1
+    }
+  },
+  "moxie": {
+    "id": "moxie",
+    "name": "Moxie",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "multiscale": {
+    "id": "multiscale",
+    "name": "Multiscale",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Reduces damage by 50% when at full HP.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "damage_reduction",
+    "condition": "full_hp",
+    "multiplier": 0.5
+  },
+  "multitype": {
+    "id": "multitype",
+    "name": "Multitype",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mummy": {
+    "id": "mummy",
+    "name": "Mummy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "myceliummight": {
+    "id": "myceliummight",
+    "name": "Myceliummight",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Status moves go last but ignore the target's Ability.",
+    "desc": "Status moves go last but ignore the target's Ability.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "naturalcure": {
+    "id": "naturalcure",
+    "name": "Naturalcure",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "neuroforce": {
+    "id": "neuroforce",
+    "name": "Neuroforce",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "neutralizinggas": {
+    "id": "neutralizinggas",
+    "name": "Neutralizinggas",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "noguard": {
+    "id": "noguard",
+    "name": "Noguard",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "All moves used by or against this Pokemon always hit.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "accuracy_override",
+    "accuracy": "always"
+  },
+  "normalize": {
+    "id": "normalize",
+    "name": "Normalize",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "oblivious": {
+    "id": "oblivious",
+    "name": "Oblivious",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Cannot be infatuated or taunted.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "status_immunity",
+    "immune_status": [
+      "infatuation",
+      "taunt"
+    ]
+  },
+  "opportunist": {
+    "id": "opportunist",
+    "name": "Opportunist",
+    "num": null,
+    "rating": null,
+    "shortDesc": "When an opposing Pokémon's stat is raised, the Pokémon copies the stat increase.",
+    "desc": "When an opposing Pokémon's stat is raised, the Pokémon copies the stat increase.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "orichalcumpulse": {
+    "id": "orichalcumpulse",
+    "name": "Orichalcumpulse",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Summons harsh sunlight on entry and boosts the Pokémon's Attack in sunlight.",
+    "desc": "Summons harsh sunlight on entry and boosts the Pokémon's Attack in sunlight.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "overcoat": {
+    "id": "overcoat",
+    "name": "Overcoat",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "overgrow": {
+    "id": "overgrow",
+    "name": "Overgrow",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "When HP is below 1/3, Grass-type moves have 1.5x power.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "type_boost",
+    "type": "grass",
+    "multiplier": 1.5,
+    "condition": "hp_below_third"
+  },
+  "owntempo": {
+    "id": "owntempo",
+    "name": "Owntempo",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Cannot be confused.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "status_immunity",
+    "immune_status": [
+      "confusion"
+    ]
+  },
+  "parentalbond": {
+    "id": "parentalbond",
+    "name": "Parentalbond",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "pastelveil": {
+    "id": "pastelveil",
+    "name": "Pastelveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "perishbody": {
+    "id": "perishbody",
+    "name": "Perishbody",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "pickpocket": {
+    "id": "pickpocket",
+    "name": "Pickpocket",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "pickup": {
+    "id": "pickup",
+    "name": "Pickup",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "pixilate": {
+    "id": "pixilate",
+    "name": "Pixilate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "plus": {
+    "id": "plus",
+    "name": "Plus",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "poisonheal": {
+    "id": "poisonheal",
+    "name": "Poisonheal",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "poisonpoint": {
+    "id": "poisonpoint",
+    "name": "Poisonpoint",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "30% chance to poison attackers that make contact.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "contact",
+    "status": "psn",
+    "chance": 30
+  },
+  "poisonpuppeteer": {
+    "id": "poisonpuppeteer",
+    "name": "Poisonpuppeteer",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Pokémon poisoned by the Pokémon's status moves will also become confused.",
+    "desc": "Pokémon poisoned by the Pokémon's status moves will also become confused.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "poisontouch": {
+    "id": "poisontouch",
+    "name": "Poisontouch",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "powerconstruct": {
+    "id": "powerconstruct",
+    "name": "Powerconstruct",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "powerofalchemy": {
+    "id": "powerofalchemy",
+    "name": "Powerofalchemy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "powerspot": {
+    "id": "powerspot",
+    "name": "Powerspot",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "prankster": {
+    "id": "prankster",
+    "name": "Prankster",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Status moves have +1 priority.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "priority_boost",
+    "category": "status",
+    "priority": 1
+  },
+  "pressure": {
+    "id": "pressure",
+    "name": "Pressure",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "primordialsea": {
+    "id": "primordialsea",
+    "name": "Primordialsea",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "prismarmor": {
+    "id": "prismarmor",
+    "name": "Prismarmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "propellertail": {
+    "id": "propellertail",
+    "name": "Propellertail",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "protean": {
+    "id": "protean",
+    "name": "Protean",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "protosynthesis": {
+    "id": "protosynthesis",
+    "name": "Protosynthesis",
+    "num": null,
+    "rating": null,
+    "shortDesc": "In harsh sunlight or with Booster Energy, the Pokémon's highest stat is boosted.",
+    "desc": "In harsh sunlight or with Booster Energy, the Pokémon's highest stat is boosted.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "psychicsurge": {
+    "id": "psychicsurge",
+    "name": "Psychicsurge",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "On switch-in, the terrain becomes Psychic Terrain for 5 turns.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "terrain",
+    "terrain": "psychic",
+    "duration": 5
+  },
+  "punkrock": {
+    "id": "punkrock",
+    "name": "Punkrock",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "purepower": {
+    "id": "purepower",
+    "name": "Purepower",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "purifyingsalt": {
+    "id": "purifyingsalt",
+    "name": "Purifyingsalt",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Halves damage from Ghost-type moves and protects the Pokémon from status conditions.",
+    "desc": "Halves damage from Ghost-type moves and protects the Pokémon from status conditions.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "quarkdrive": {
+    "id": "quarkdrive",
+    "name": "Quarkdrive",
+    "num": null,
+    "rating": null,
+    "shortDesc": "In Electric Terrain or with Booster Energy, the Pokémon's highest stat is boosted.",
+    "desc": "In Electric Terrain or with Booster Energy, the Pokémon's highest stat is boosted.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "queenlymajesty": {
+    "id": "queenlymajesty",
+    "name": "Queenlymajesty",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "quickdraw": {
+    "id": "quickdraw",
+    "name": "Quickdraw",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "quickfeet": {
+    "id": "quickfeet",
+    "name": "Quickfeet",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "raindish": {
+    "id": "raindish",
+    "name": "Raindish",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Heals 1/16 HP each turn in rain.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "weather_heal",
+    "weather": "rain",
+    "heal": 0.0625
+  },
+  "rattled": {
+    "id": "rattled",
+    "name": "Rattled",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "receiver": {
+    "id": "receiver",
+    "name": "Receiver",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "reckless": {
+    "id": "reckless",
+    "name": "Reckless",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "refrigerate": {
+    "id": "refrigerate",
+    "name": "Refrigerate",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "regenerator": {
+    "id": "regenerator",
+    "name": "Regenerator",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Heals 1/3 HP when switching out.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "SwitchOut"
+    ],
+    "effect": "heal",
+    "heal": 0.33
+  },
+  "ripen": {
+    "id": "ripen",
+    "name": "Ripen",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rivalry": {
+    "id": "rivalry",
+    "name": "Rivalry",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rkssystem": {
+    "id": "rkssystem",
+    "name": "Rkssystem",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rockhead": {
+    "id": "rockhead",
+    "name": "Rockhead",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rockypayload": {
+    "id": "rockypayload",
+    "name": "Rockypayload",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Powers up Rock-type moves.",
+    "desc": "Powers up Rock-type moves.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "roughskin": {
+    "id": "roughskin",
+    "name": "Roughskin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Attackers that make contact lose 1/8 of their max HP.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "contact",
+    "damage": 0.125
+  },
+  "runaway": {
+    "id": "runaway",
+    "name": "Runaway",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sandforce": {
+    "id": "sandforce",
+    "name": "Sandforce",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "In sandstorm, Rock/Ground/Steel moves have 1.3x power and immune to sandstorm damage.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "weather_boost",
+    "weather": "sandstorm",
+    "types": [
+      "rock",
+      "ground",
+      "steel"
+    ],
+    "multiplier": 1.3
+  },
+  "sandrush": {
+    "id": "sandrush",
+    "name": "Sandrush",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Doubles Speed in sandstorm.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "weather_boost",
+    "weather": "sandstorm",
+    "stat": "spe",
+    "multiplier": 2.0
+  },
+  "sandspit": {
+    "id": "sandspit",
+    "name": "Sandspit",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sandstream": {
+    "id": "sandstream",
+    "name": "Sandstream",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "On switch-in, the weather becomes sandstorm for 5 turns.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "weather",
+    "weather": "sandstorm",
+    "duration": 5
+  },
+  "sandveil": {
+    "id": "sandveil",
+    "name": "Sandveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sapsipper": {
+    "id": "sapsipper",
+    "name": "Sapsipper",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Grants immunity to Grass-type moves. When hit by Grass moves, raises Attack by 1 stage.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "immunity",
+    "immune_to": [
+      "grass"
+    ],
+    "boost_on_hit": {
+      "atk": 1
+    }
+  },
+  "schooling": {
+    "id": "schooling",
+    "name": "Schooling",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "scrappy": {
+    "id": "scrappy",
+    "name": "Scrappy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "screencleaner": {
+    "id": "screencleaner",
+    "name": "Screencleaner",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "seedsower": {
+    "id": "seedsower",
+    "name": "Seedsower",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Turns the ground into Grassy Terrain when the Pokémon is hit by an attack.",
+    "desc": "Turns the ground into Grassy Terrain when the Pokémon is hit by an attack.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "serenegrace": {
+    "id": "serenegrace",
+    "name": "Serenegrace",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Doubles the chance of moves' secondary effects occurring.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "secondary_boost",
+    "multiplier": 2.0
+  },
+  "shadowshield": {
+    "id": "shadowshield",
+    "name": "Shadowshield",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "shadowtag": {
+    "id": "shadowtag",
+    "name": "Shadowtag",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sharpness": {
+    "id": "sharpness",
+    "name": "Sharpness",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Powers up slicing moves.",
+    "desc": "Powers up slicing moves.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "shedskin": {
+    "id": "shedskin",
+    "name": "Shedskin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sheerforce": {
+    "id": "sheerforce",
+    "name": "Sheerforce",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Removes secondary effects from moves but increases their power by 30%.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "remove_secondary",
+    "power_boost": 1.3
+  },
+  "shellarmor": {
+    "id": "shellarmor",
+    "name": "Shellarmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Protects the Pokemon from critical hits.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "crit_immunity"
+  },
+  "shielddust": {
+    "id": "shielddust",
+    "name": "Shielddust",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "shieldsdown": {
+    "id": "shieldsdown",
+    "name": "Shieldsdown",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "simple": {
+    "id": "simple",
+    "name": "Simple",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "skilllink": {
+    "id": "skilllink",
+    "name": "Skilllink",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Multi-hit moves always hit the maximum number of times.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "multihit_max"
+  },
+  "slowstart": {
+    "id": "slowstart",
+    "name": "Slowstart",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "slushrush": {
+    "id": "slushrush",
+    "name": "Slushrush",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Doubles Speed in snow.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "weather_boost",
+    "weather": "snow",
+    "stat": "spe",
+    "multiplier": 2.0
+  },
+  "sniper": {
+    "id": "sniper",
+    "name": "Sniper",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Critical hits deal 2.25x damage instead of 1.5x.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "crit_power",
+    "multiplier": 2.25
+  },
+  "snowcloak": {
+    "id": "snowcloak",
+    "name": "Snowcloak",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "snowwarning": {
+    "id": "snowwarning",
+    "name": "Snowwarning",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "On switch-in, the weather becomes snow for 5 turns.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "weather",
+    "weather": "snow",
+    "duration": 5
+  },
+  "solarpower": {
+    "id": "solarpower",
+    "name": "Solarpower",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "In harsh sunlight, Sp. Attack is 1.5x but takes 1/8 HP damage per turn.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "weather_boost",
+    "weather": "sun",
+    "stat": "spa",
+    "multiplier": 1.5,
+    "damage": 0.125
+  },
+  "solidrock": {
+    "id": "solidrock",
+    "name": "Solidrock",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Reduces damage from super-effective moves by 25%.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "damage_reduction",
+    "condition": "super_effective",
+    "multiplier": 0.75
+  },
+  "soulheart": {
+    "id": "soulheart",
+    "name": "Soulheart",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "soundproof": {
+    "id": "soundproof",
+    "name": "Soundproof",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "speedboost": {
+    "id": "speedboost",
+    "name": "Speedboost",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stakeout": {
+    "id": "stakeout",
+    "name": "Stakeout",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stall": {
+    "id": "stall",
+    "name": "Stall",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stalwart": {
+    "id": "stalwart",
+    "name": "Stalwart",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stamina": {
+    "id": "stamina",
+    "name": "Stamina",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stancechange": {
+    "id": "stancechange",
+    "name": "Stancechange",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "static": {
+    "id": "static",
+    "name": "Static",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "30% chance to paralyze attackers that make contact.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "contact",
+    "status": "par",
+    "chance": 30
+  },
+  "steadfast": {
+    "id": "steadfast",
+    "name": "Steadfast",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "steamengine": {
+    "id": "steamengine",
+    "name": "Steamengine",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "steelworker": {
+    "id": "steelworker",
+    "name": "Steelworker",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "steelyspirit": {
+    "id": "steelyspirit",
+    "name": "Steelyspirit",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stench": {
+    "id": "stench",
+    "name": "Stench",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "stickyhold": {
+    "id": "stickyhold",
+    "name": "Stickyhold",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Prevents the Pokemon's item from being removed by other Pokemon.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "item_protection"
+  },
+  "stormdrain": {
+    "id": "stormdrain",
+    "name": "Stormdrain",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Draws Water-type moves to this Pokemon and grants immunity. Raises Sp. Attack by 1 stage when hit.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "immunity",
+    "immune_to": [
+      "water"
+    ],
+    "boost_on_hit": {
+      "spa": 1
+    },
+    "redirect": "water"
+  },
+  "strongjaw": {
+    "id": "strongjaw",
+    "name": "Strongjaw",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "sturdy": {
+    "id": "sturdy",
+    "name": "Sturdy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Cannot be KO'd in one hit from full HP. Immune to OHKO moves.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "survive_ohko"
+  },
+  "suctioncups": {
+    "id": "suctioncups",
+    "name": "Suctioncups",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "superluck": {
+    "id": "superluck",
+    "name": "Superluck",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Increases critical hit ratio by 1 stage.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "crit_boost",
+    "stages": 1
+  },
+  "supersweetsyrup": {
+    "id": "supersweetsyrup",
+    "name": "Supersweetsyrup",
+    "num": null,
+    "rating": null,
+    "shortDesc": "When the Pokémon enters a battle, it showers foes with syrup that lowers their evasiveness.",
+    "desc": "When the Pokémon enters a battle, it showers foes with syrup that lowers their evasiveness.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "supremeoverlord": {
+    "id": "supremeoverlord",
+    "name": "Supremeoverlord",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Powers up the Pokémon's moves for each ally that has fainted.",
+    "desc": "Powers up the Pokémon's moves for each ally that has fainted.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "surgesurfer": {
+    "id": "surgesurfer",
+    "name": "Surgesurfer",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Doubles Speed on Electric Terrain.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "terrain_boost",
+    "terrain": "electric",
+    "stat": "spe",
+    "multiplier": 2.0
+  },
+  "swarm": {
+    "id": "swarm",
+    "name": "Swarm",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "When HP is below 1/3, Bug-type moves have 1.5x power.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "type_boost",
+    "type": "bug",
+    "multiplier": 1.5,
+    "condition": "hp_below_third"
+  },
+  "sweetveil": {
+    "id": "sweetveil",
+    "name": "Sweetveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "swiftswim": {
+    "id": "swiftswim",
+    "name": "Swiftswim",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Doubles Speed in rain.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "weather_boost",
+    "weather": "rain",
+    "stat": "spe",
+    "multiplier": 2.0
+  },
+  "symbiosis": {
+    "id": "symbiosis",
+    "name": "Symbiosis",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "synchronize": {
+    "id": "synchronize",
+    "name": "Synchronize",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "swordofruin": {
+    "id": "swordofruin",
+    "name": "Swordofruin",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Lowers the Defense of all opposing Pokémon.",
+    "desc": "Lowers the Defense of all opposing Pokémon.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "tabletsofruin": {
+    "id": "tabletsofruin",
+    "name": "Tabletsofruin",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Lowers the Attack of all opposing Pokémon.",
+    "desc": "Lowers the Attack of all opposing Pokémon.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "tangledfeet": {
+    "id": "tangledfeet",
+    "name": "Tangledfeet",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "tanglinghair": {
+    "id": "tanglinghair",
+    "name": "Tanglinghair",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "technician": {
+    "id": "technician",
+    "name": "Technician",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Moves with 60 power or less have 1.5x power.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "power_boost",
+    "condition": "power_60_or_less",
+    "multiplier": 1.5
+  },
+  "telepathy": {
+    "id": "telepathy",
+    "name": "Telepathy",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "teraformzero": {
+    "id": "teraformzero",
+    "name": "Teraformzero",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "terashell": {
+    "id": "terashell",
+    "name": "Terashell",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "terashift": {
+    "id": "terashift",
+    "name": "Terashift",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "teravolt": {
+    "id": "teravolt",
+    "name": "Teravolt",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "thermalexchange": {
+    "id": "thermalexchange",
+    "name": "Thermalexchange",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Attack is boosted when hit by a Fire move, and the Pokémon cannot be burned.",
+    "desc": "Attack is boosted when hit by a Fire move, and the Pokémon cannot be burned.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "thickfat": {
+    "id": "thickfat",
+    "name": "Thickfat",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Halves damage from Fire and Ice-type moves.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "damage_reduction",
+    "types": [
+      "fire",
+      "ice"
+    ],
+    "multiplier": 0.5
+  },
+  "tintedlens": {
+    "id": "tintedlens",
+    "name": "Tintedlens",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "torrent": {
+    "id": "torrent",
+    "name": "Torrent",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "When HP is below 1/3, Water-type moves have 1.5x power.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "type_boost",
+    "type": "water",
+    "multiplier": 1.5,
+    "condition": "hp_below_third"
+  },
+  "toughclaws": {
+    "id": "toughclaws",
+    "name": "Toughclaws",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "toxicboost": {
+    "id": "toxicboost",
+    "name": "Toxicboost",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "toxicchain": {
+    "id": "toxicchain",
+    "name": "Toxicchain",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Damaging moves have a chance to badly poison the target.",
+    "desc": "Damaging moves have a chance to badly poison the target.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "toxicdebris": {
+    "id": "toxicdebris",
+    "name": "Toxicdebris",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Sets Toxic Spikes on the opposing field when the Pokémon is hit by a physical move.",
+    "desc": "Sets Toxic Spikes on the opposing field when the Pokémon is hit by a physical move.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "trace": {
+    "id": "trace",
+    "name": "Trace",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Copies the ability of an opponent.",
+    "isNonstandard": null,
+    "gen": null,
+    "events": [
+      "Start"
+    ],
+    "effect": "copy_ability"
+  },
+  "transistor": {
+    "id": "transistor",
+    "name": "Transistor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "triage": {
+    "id": "triage",
+    "name": "Triage",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "truant": {
+    "id": "truant",
+    "name": "Truant",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "turboblaze": {
+    "id": "turboblaze",
+    "name": "Turboblaze",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "unaware": {
+    "id": "unaware",
+    "name": "Unaware",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "unburden": {
+    "id": "unburden",
+    "name": "Unburden",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Speed doubles after consuming a held item.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "stat_boost",
+    "stat": "spe",
+    "multiplier": 2.0,
+    "condition": "consumed_item"
+  },
+  "unnerve": {
+    "id": "unnerve",
+    "name": "Unnerve",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "unseenfist": {
+    "id": "unseenfist",
+    "name": "Unseenfist",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "vesselofruin": {
+    "id": "vesselofruin",
+    "name": "Vesselofruin",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Lowers the Sp. Atk of all opposing Pokémon.",
+    "desc": "Lowers the Sp. Atk of all opposing Pokémon.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "victorystar": {
+    "id": "victorystar",
+    "name": "Victorystar",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "vitalspirit": {
+    "id": "vitalspirit",
+    "name": "Vitalspirit",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Cannot be put to sleep.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "status_immunity",
+    "immune_status": [
+      "slp"
+    ]
+  },
+  "voltabsorb": {
+    "id": "voltabsorb",
+    "name": "Voltabsorb",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Grants immunity to Electric-type moves. Heals 25% HP when hit by Electric moves.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "immunity",
+    "immune_to": [
+      "electric"
+    ],
+    "heal_on_hit": 0.25
+  },
+  "wanderingspirit": {
+    "id": "wanderingspirit",
+    "name": "Wanderingspirit",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "waterabsorb": {
+    "id": "waterabsorb",
+    "name": "Waterabsorb",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Grants immunity to Water-type moves. Heals 25% HP when hit by Water moves.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "immunity",
+    "immune_to": [
+      "water"
+    ],
+    "heal_on_hit": 0.25
+  },
+  "waterbubble": {
+    "id": "waterbubble",
+    "name": "Waterbubble",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "watercompaction": {
+    "id": "watercompaction",
+    "name": "Watercompaction",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "waterveil": {
+    "id": "waterveil",
+    "name": "Waterveil",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Cannot be burned.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "status_immunity",
+    "immune_status": [
+      "brn"
+    ]
+  },
+  "weakarmor": {
+    "id": "weakarmor",
+    "name": "Weakarmor",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "wellbakedbody": {
+    "id": "wellbakedbody",
+    "name": "Wellbakedbody",
+    "num": null,
+    "rating": null,
+    "shortDesc": "The Pokémon takes no damage from Fire-type moves and sharply boosts its Defense if hit by one.",
+    "desc": "The Pokémon takes no damage from Fire-type moves and sharply boosts its Defense if hit by one.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "whitesmoke": {
+    "id": "whitesmoke",
+    "name": "Whitesmoke",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Prevents other Pokemon from lowering this Pokemon's stats.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "prevent_stat_loss"
+  },
+  "wimpout": {
+    "id": "wimpout",
+    "name": "Wimpout",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "windpower": {
+    "id": "windpower",
+    "name": "Windpower",
+    "num": null,
+    "rating": null,
+    "shortDesc": "If hit by a wind move or if Tailwind begins, the Pokémon becomes charged to boost its next Electric attack.",
+    "desc": "If hit by a wind move or if Tailwind begins, the Pokémon becomes charged to boost its next Electric attack.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "windrider": {
+    "id": "windrider",
+    "name": "Windrider",
+    "num": null,
+    "rating": null,
+    "shortDesc": "The Pokémon takes no damage from wind moves, and its Attack is boosted if hit by one or if Tailwind begins.",
+    "desc": "The Pokémon takes no damage from wind moves, and its Attack is boosted if hit by one or if Tailwind begins.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "wonderguard": {
+    "id": "wonderguard",
+    "name": "Wonderguard",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": "Only super-effective moves can hit this Pokemon.",
+    "isNonstandard": null,
+    "gen": null,
+    "effect": "immunity",
+    "immune_to": "not_super_effective"
+  },
+  "wonderskin": {
+    "id": "wonderskin",
+    "name": "Wonderskin",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "zenmode": {
+    "id": "zenmode",
+    "name": "Zenmode",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "zerotohero": {
+    "id": "zerotohero",
+    "name": "Zerotohero",
+    "num": null,
+    "rating": null,
+    "shortDesc": "Switching out transforms the Pokémon into its Hero Form.",
+    "desc": "Switching out transforms the Pokémon into its Hero Form.",
+    "isNonstandard": null,
+    "gen": null
+  },
+  "mountaineer": {
+    "id": "mountaineer",
+    "name": "Mountaineer",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": null,
+    "gen": null
+  },
+  "rebound": {
+    "id": "rebound",
+    "name": "Rebound",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": "CAP",
+    "gen": null
+  },
+  "persistent": {
+    "id": "persistent",
+    "name": "Persistent",
+    "num": null,
+    "rating": null,
+    "shortDesc": null,
+    "desc": null,
+    "isNonstandard": "CAP",
+    "gen": null
+  }
+}

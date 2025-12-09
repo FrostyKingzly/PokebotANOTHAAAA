@@ -1,0 +1,58 @@
+{
+  "city": {
+    "mode": "manual",
+    "current_weather": "gentle_skies",
+    "expires_at": 0,
+    "random_pool": [
+      "cloudy",
+      "sunshine",
+      "rain",
+      "snowing",
+      "thunder_storm",
+      "gentle_skies"
+    ]
+  },
+  "wild_area_alpha": {
+    "mode": "random",
+    "current_weather": null,
+    "expires_at": 0,
+    "random_pool": [
+      "cloudy",
+      "rain",
+      "thunder_storm",
+      "gentle_skies"
+    ]
+  },
+  "wild_area_beta": {
+    "mode": "random",
+    "current_weather": null,
+    "expires_at": 0,
+    "random_pool": [
+      "cloudy",
+      "sunshine",
+      "rain",
+      "thunder_storm",
+      "gentle_skies"
+    ]
+  },
+  "wild_area_charlie": {
+    "mode": "random",
+    "current_weather": null,
+    "expires_at": 0,
+    "random_pool": [
+      "sunshine",
+      "heatwave",
+      "sandstorm"
+    ]
+  },
+  "wild_area_delta": {
+    "mode": "random",
+    "current_weather": null,
+    "expires_at": 0,
+    "random_pool": [
+      "cloudy",
+      "snowing",
+      "blizzard"
+    ]
+  }
+}
