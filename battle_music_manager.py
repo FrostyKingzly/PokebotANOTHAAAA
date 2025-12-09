@@ -63,7 +63,7 @@ class BattleMusicManager:
         self.FFMPEG_OPTIONS = {
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
             # Force 48k stereo PCM out of FFmpeg to keep Discord voice quality high
-            'options': '-vn -ac 2 -ar 48000 -b:a 256k'
+            'options': '-vn -ac 2 -ar 48000 -b:a 320k'
         }
 
         # yt-dlp options optimized for high-quality Discord streaming
