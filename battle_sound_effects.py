@@ -65,17 +65,42 @@ class BattleSoundEffects:
         Returns:
             Path to cry file or None if not found
         """
-        # Try different file extensions
+        # Try different file extensions and naming patterns
         extensions = [".wav", ".mp3", ".ogg", ".mpeg"]
 
-        for ext in extensions:
-            # Format: PV-INDEX or SAD prefix, then dex number
-            if cry_type == "INDEX":
-                cry_file = self.CRIES_DIR / f"PV-INDEX_{dex_number:03d}{ext}"
-            else:  # SAD
-                cry_file = self.CRIES_DIR / f"SAD_{dex_number:03d}{ext}"
+        # Different naming patterns to try
+        if cry_type == "INDEX":
+            patterns = [
+                f"PLAY_PV_{dex_number:04d} [PV-INDEX]",  # PLAY_PV_0001 [PV-INDEX].wav
+                f"PLAY_PV_{dex_number:04d}",              # PLAY_PV_0001.wav
+                f"PV-INDEX_{dex_number:03d}",             # PV-INDEX_001.wav
+                f"PV-INDEX_{dex_number:04d}",             # PV-INDEX_0001.wav
+            ]
+        else:  # SAD
+            patterns = [
+                f"PLAY_PV_{dex_number:04d} [SAD]",       # PLAY_PV_0001 [SAD].wav
+                f"SAD_{dex_number:03d}",                  # SAD_001.wav
+                f"SAD_{dex_number:04d}",                  # SAD_0001.wav
+            ]
 
-            if cry_file.exists():
+        for pattern in patterns:
+            for ext in extensions:
+                cry_file = self.CRIES_DIR / f"{pattern}{ext}"
+                if cry_file.exists():
+                    print(f"✅ Found cry: {cry_file.name}")
+                    return cry_file
+
+        # Try glob pattern as last resort
+        if cry_type == "INDEX":
+            glob_patterns = [f"*{dex_number:04d}*INDEX*", f"*{dex_number:03d}*INDEX*"]
+        else:
+            glob_patterns = [f"*{dex_number:04d}*SAD*", f"*{dex_number:03d}*SAD*"]
+
+        for glob_pattern in glob_patterns:
+            matches = list(self.CRIES_DIR.glob(glob_pattern))
+            if matches:
+                cry_file = matches[0]
+                print(f"✅ Found cry via glob: {cry_file.name}")
                 return cry_file
 
         print(f"⚠️ Cry not found for Pokemon #{dex_number:03d} (type: {cry_type})")
