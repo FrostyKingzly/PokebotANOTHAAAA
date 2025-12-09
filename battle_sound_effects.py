@@ -65,7 +65,7 @@ class BattleSoundEffects:
         Returns:
             Path to cry file or None if not found
         """
-        # Try different file extensions
+        # Try different file extensions and naming patterns
         extensions = [".wav", ".mp3", ".ogg", ".mpeg"]
 
         # 1) Preferred official naming from the setup guide

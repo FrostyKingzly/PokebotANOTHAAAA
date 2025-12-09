@@ -35,17 +35,15 @@ Create a `cries` folder in your project root directory with the following files:
 
 #### Pokemon Cries
 
-For each Pokemon, you need two cry files:
+For each Pokemon, you need two cry files. The system supports multiple naming patterns:
 
 1. **Normal cry** (used when sent out or switching):
-   - Format: `PV-INDEX_###.wav`
-   - Example: `PV-INDEX_001.wav` for Bulbasaur (#001)
-   - Example: `PV-INDEX_025.wav` for Pikachu (#025)
+   - Primary: `PLAY_PV_####` [PV-INDEX].wav (e.g., `PLAY_PV_0001 [PV-INDEX].wav`)
+   - Alternate: `PV-INDEX_###.wav` or `PV-INDEX_####.wav`
 
 2. **Sad cry** (used when fainting):
-   - Format: `SAD_###.wav`
-   - Example: `SAD_001.wav` for Bulbasaur (#001)
-   - Example: `SAD_025.wav` for Pikachu (#025)
+   - Primary: `PLAY_PV_#### [SAD].wav` (e.g., `PLAY_PV_0001 [SAD].wav`)
+   - Alternate: `SAD_###.wav` or `SAD_####.wav`
 
 If you downloaded a cry pack that uses names like `PLAY_PV_0001 [PV=INDEX].wav`
 or `PLAY_PV_0001 [PV=SAD].wav`, the bot will now automatically detect those
@@ -154,13 +152,13 @@ if self.music_manager.current_session:
 
 1. **Sound Effect Creation:** When a sound is needed, the system combines individual audio files into a single sequence using pydub.
 
-2. **Audio Mixing:** FFmpeg mixes the sound effect with the music stream:
-   - Music volume is lowered to 30% during sound effect
-   - Sound effect plays at 100% volume
-   - Both audio sources play simultaneously
-   - Music automatically returns to normal after sound finishes
+2. **Playback Sequence:**
+   - Music is temporarily paused
+   - Sound effect plays at high quality (192k bitrate)
+   - Music automatically resumes after sound finishes
+   - This ensures both music and sound effects maintain full quality
 
-3. **Temporary Files:** Combined sequences and mixed audio are exported to temporary MP3 files.
+3. **Temporary Files:** Combined sound sequences are exported to temporary MP3 files.
 
 4. **Cleanup:** Temporary files are cleaned up when the battle ends.
 
@@ -181,10 +179,11 @@ if self.music_manager.current_session:
 - Check console for warnings about missing files
 - Verify dex numbers match Pokemon species
 
-### Music volume during sound effects
-- Music is automatically lowered to 30% when sound effects play
-- This makes sound effects clearly audible
-- Music returns to normal volume after sound finishes
+### Music pausing during sound effects
+- Music temporarily pauses when sound effects play
+- This ensures maximum quality for both music and sound effects
+- Music automatically resumes after the sound finishes
+- Brief pause is intentional for audio clarity
 
 ## Performance Notes
 
