@@ -102,8 +102,8 @@ class BattleCog(commands.Cog):
 
         This should be called before starting the battle UI.
         """
-        # ONLY for NPC battles (not wild, not PvP, not raids)
-        if battle_type != BattleType.TRAINER:
+        # Support NPC and PvP battles (not wild, not raids)
+        if battle_type == BattleType.WILD or battle_type == BattleType.RAID:
             return False
 
         # Check if user is in a voice channel
@@ -120,15 +120,16 @@ class BattleCog(commands.Cog):
         opt_in_embed = create_music_opt_in_embed()
 
         music_chosen = False
+        use_custom = False
 
         async def on_yes(button_interaction: discord.Interaction):
-            nonlocal music_chosen
+            nonlocal music_chosen, use_custom
             music_chosen = True
+            use_custom = False
 
             # Request music from manager
             username = button_interaction.user.display_name
-            battle_type_str = "npc" if battle_type == BattleType.TRAINER else \
-                             "raid" if hasattr(button_interaction, 'battle_format') else "pvp"
+            battle_type_str = "npc" if battle_type == BattleType.TRAINER else "pvp"
 
             can_start, message, position = await self.music_manager.request_music(
                 battle_id,
@@ -139,9 +140,41 @@ class BattleCog(commands.Cog):
             )
 
             if can_start:
-                self.battles_with_music[battle_id] = True
+                self.battles_with_music[battle_id] = False  # False = random NPC theme
                 await button_interaction.response.send_message(
                     f"Music will start when battle begins! Join **{user_voice_channel.name}**",
+                    ephemeral=True
+                )
+            else:
+                # Show queue status
+                queue_data = self.music_manager.get_queue_display()
+                queue_embed = create_queue_status_embed(queue_data, user_voice_channel.name)
+                await button_interaction.response.send_message(
+                    embed=queue_embed,
+                    ephemeral=True
+                )
+
+        async def on_my_theme(button_interaction: discord.Interaction):
+            nonlocal music_chosen, use_custom
+            music_chosen = True
+            use_custom = True
+
+            # Request music from manager
+            username = button_interaction.user.display_name
+            battle_type_str = "npc" if battle_type == BattleType.TRAINER else "pvp"
+
+            can_start, message, position = await self.music_manager.request_music(
+                battle_id,
+                button_interaction.user.id,
+                username,
+                user_voice_channel.id,
+                battle_type_str
+            )
+
+            if can_start:
+                self.battles_with_music[battle_id] = True  # True = custom theme
+                await button_interaction.response.send_message(
+                    f"Your custom theme will play! Join **{user_voice_channel.name}**",
                     ephemeral=True
                 )
             else:
@@ -159,7 +192,7 @@ class BattleCog(commands.Cog):
                 ephemeral=True
             )
 
-        view = MusicOptInView(on_yes, on_no)
+        view = MusicOptInView(on_yes, on_no, on_my_theme)
 
         # Send the prompt
         if not interaction.response.is_done():
@@ -173,20 +206,43 @@ class BattleCog(commands.Cog):
         return music_chosen
 
     async def _start_battle_music(self, battle_id: str, battle_type: BattleType, trainer_id: int):
-        """Start playing music for a battle - uses random NPC themes"""
+        """Start playing music for a battle - uses custom or random themes"""
         if battle_id not in self.battles_with_music:
             return
 
-        # Get random theme for NPC battles
-        battle_theme_url, victory_theme_url = get_random_npc_theme()
+        use_custom_theme = self.battles_with_music[battle_id]
+
+        # Get themes
+        if use_custom_theme:
+            # Use player's custom theme
+            player_manager = getattr(self.bot, 'player_manager', None)
+            if player_manager:
+                try:
+                    trainer = player_manager.get_trainer(trainer_id)
+                    battle_theme_url = getattr(trainer, 'battle_theme_url', None)
+                    victory_theme_url = getattr(trainer, 'victory_theme_url', None)
+
+                    # Fall back to random if no custom theme set
+                    if not battle_theme_url or not victory_theme_url:
+                        print(f"⚠️ No custom theme set, using random NPC theme")
+                        battle_theme_url, victory_theme_url = get_random_npc_theme()
+                except:
+                    print(f"⚠️ Failed to get trainer data, using random NPC theme")
+                    battle_theme_url, victory_theme_url = get_random_npc_theme()
+            else:
+                battle_theme_url, victory_theme_url = get_random_npc_theme()
+        else:
+            # Use random NPC theme
+            battle_theme_url, victory_theme_url = get_random_npc_theme()
 
         # Start music
         success = await self.music_manager.start_battle_music(battle_theme_url, victory_theme_url)
 
         if success:
-            print(f"Battle music started for battle {battle_id}")
+            theme_type = "custom" if use_custom_theme else "random NPC"
+            print(f"✅ Battle music started for battle {battle_id} ({theme_type} theme)")
         else:
-            print(f"Failed to start battle music for battle {battle_id}")
+            print(f"❌ Failed to start battle music for battle {battle_id}")
 
     async def _play_victory_music(self, battle_id: str, winner_name: str, interaction: Optional[discord.Interaction] = None):
         """Play victory music after battle ends"""

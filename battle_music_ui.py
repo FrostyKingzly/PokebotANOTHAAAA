@@ -12,18 +12,35 @@ class MusicOptInView(discord.ui.View):
     View presented when a battle starts, asking if player wants music.
     """
 
-    def __init__(self, on_yes: Callable, on_no: Callable, timeout: float = 30.0):
+    def __init__(self, on_yes: Callable, on_no: Callable, on_my_theme: Optional[Callable] = None, timeout: float = 30.0):
         super().__init__(timeout=timeout)
         self.on_yes = on_yes
         self.on_no = on_no
+        self.on_my_theme = on_my_theme
         self.choice = None
+        self.use_custom_theme = False
 
     @discord.ui.button(label="Yes, play music!", style=discord.ButtonStyle.green, emoji="🎵")
     async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """User wants music for their battle"""
+        """User wants music for their battle (random NPC theme)"""
         self.choice = True
+        self.use_custom_theme = False
         await self.on_yes(interaction)
         self.stop()
+
+    @discord.ui.button(label="Use my battle theme", style=discord.ButtonStyle.blurple, emoji="🎼")
+    async def my_theme_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """User wants to use their custom theme"""
+        if self.on_my_theme:
+            self.choice = True
+            self.use_custom_theme = True
+            await self.on_my_theme(interaction)
+            self.stop()
+        else:
+            await interaction.response.send_message(
+                "❌ Custom themes not available for this battle type!",
+                ephemeral=True
+            )
 
     @discord.ui.button(label="No, battle silently", style=discord.ButtonStyle.gray, emoji="🔇")
     async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):

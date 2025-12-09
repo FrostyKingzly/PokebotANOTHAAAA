@@ -180,15 +180,10 @@ class BattleMusicManager:
         if self.voice_client and self.voice_client.is_playing():
             self.voice_client.stop()
 
-        # Play victory theme (no loop, will fade out after 1 minute)
-        await self._play_theme(self.victory_theme_url, loop=False)
+        # Play victory theme (no loop, will disconnect when song ends)
+        await self._play_theme(self.victory_theme_url, loop=False, disconnect_after=True)
 
-        # Schedule fade out after 1 minute
-        if self._fade_task:
-            self._fade_task.cancel()
-        self._fade_task = asyncio.create_task(self._fade_and_disconnect())
-
-    async def _play_theme(self, url: str, loop: bool = False):
+    async def _play_theme(self, url: str, loop: bool = False, disconnect_after: bool = False):
         """Play a theme from YouTube URL"""
         if not self.voice_client:
             print("❌ No voice client available")
@@ -238,8 +233,15 @@ class BattleMusicManager:
                         self._play_theme(url, loop=True),
                         self.bot.loop
                     )
+                # Disconnect after victory theme ends
+                elif disconnect_after:
+                    print(f"🎵 Victory theme ended, disconnecting...")
+                    asyncio.run_coroutine_threadsafe(
+                        self._end_session(),
+                        self.bot.loop
+                    )
 
-            print(f"▶️ Starting playback (loop={loop})...")
+            print(f"▶️ Starting playback (loop={loop}, disconnect_after={disconnect_after})...")
             self.voice_client.play(source, after=after_playing)
 
             # Verify playback started
