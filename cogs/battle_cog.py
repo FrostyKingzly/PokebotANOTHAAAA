@@ -223,7 +223,7 @@ class BattleCog(commands.Cog):
             player_manager = getattr(self.bot, 'player_manager', None)
             if player_manager:
                 try:
-                    trainer = player_manager.get_trainer(trainer_id)
+                    trainer = player_manager.get_player(trainer_id)
                     battle_theme_url = getattr(trainer, 'battle_theme_url', None)
                     victory_theme_url = getattr(trainer, 'victory_theme_url', None)
 
