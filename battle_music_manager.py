@@ -373,6 +373,7 @@ class BattleMusicManager:
     async def _create_mixed_audio(self, music_url: str, sound_file: str, duration: float) -> Optional[str]:
         """
         Create a temporary audio file that mixes music with sound effect using FFmpeg.
+        Uses high-quality settings and proper overlay mixing.
 
         Args:
             music_url: URL of the music stream
@@ -387,30 +388,33 @@ class BattleMusicManager:
 
         try:
             # Create temporary output file
-            temp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+            temp_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
             output_path = temp_file.name
             temp_file.close()
 
-            # FFmpeg command to mix sound effect over music
-            # We'll take a chunk of music (duration + buffer) and overlay the sound effect
-            buffer_time = duration + 2  # Extra time for smooth transition
+            # FFmpeg command to mix sound effect over music with high quality
+            # Extract a chunk of music and overlay the sound effect
+            buffer_time = duration + 1.0  # Small buffer for smooth playback
 
             ffmpeg_cmd = [
                 'ffmpeg',
                 '-y',  # Overwrite output file
-                '-ss', '0',  # Start from beginning
                 '-t', str(buffer_time),  # Duration to extract
                 '-i', music_url,  # Input 1: Music stream
                 '-i', sound_file,  # Input 2: Sound effect
                 '-filter_complex',
-                '[0:a]volume=0.3[music];[1:a]volume=1.0[sfx];[music][sfx]amix=inputs=2:duration=first:dropout_transition=0[out]',
+                # High quality mixing with proper volume levels
+                f'[0:a]volume=0.25,aformat=sample_fmts=s16:sample_rates=48000:channel_layouts=stereo[music];'
+                f'[1:a]volume=1.2,aformat=sample_fmts=s16:sample_rates=48000:channel_layouts=stereo[sfx];'
+                f'[music][sfx]amerge=inputs=2,pan=stereo|c0<c0+c2|c1<c1+c3[out]',
                 '-map', '[out]',
-                '-b:a', '192k',
-                '-ar', '48000',
+                '-ar', '48000',  # 48kHz sample rate
+                '-ac', '2',  # Stereo
+                '-acodec', 'pcm_s16le',  # Uncompressed for quality
                 output_path
             ]
 
-            print(f"🎛️ Mixing sound effect with music using FFmpeg...")
+            print(f"🎛️ Mixing sound effect with music (high quality)...")
 
             # Run FFmpeg
             process = await asyncio.create_subprocess_exec(
@@ -422,14 +426,24 @@ class BattleMusicManager:
             stdout, stderr = await process.communicate()
 
             if process.returncode != 0:
-                print(f"❌ FFmpeg mixing failed: {stderr.decode()}")
+                stderr_text = stderr.decode()
+                print(f"❌ FFmpeg mixing failed: {stderr_text}")
                 try:
                     os.unlink(output_path)
                 except:
                     pass
                 return None
 
-            print(f"✅ Mixed audio created: {output_path}")
+            # Check if file was created and has content
+            if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+                print(f"❌ Mixed audio file is empty or missing")
+                try:
+                    os.unlink(output_path)
+                except:
+                    pass
+                return None
+
+            print(f"✅ Mixed audio created: {output_path} ({os.path.getsize(output_path)} bytes)")
             return output_path
 
         except Exception as e:
@@ -489,11 +503,16 @@ class BattleMusicManager:
             audio_url = info['url']
 
             # Create mixed audio (sound effect over music)
+            print(f"📊 Creating mixed audio: music={audio_url[:50]}..., sound={sound_file_path}")
             mixed_file = await self._create_mixed_audio(audio_url, sound_file_path, duration)
 
             if not mixed_file:
                 print(f"⚠️ Mixing failed, playing sound without mixing")
-                # Fallback: just play the sound effect
+                # Fallback: just play the sound effect alone
+                if self.voice_client.is_playing():
+                    self.voice_client.stop()
+                    await asyncio.sleep(0.1)
+
                 source = discord.FFmpegPCMAudio(sound_file_path)
                 source = discord.PCMVolumeTransformer(source, volume=1.0)
                 self.voice_client.play(source)
@@ -501,33 +520,52 @@ class BattleMusicManager:
                 while self.voice_client.is_playing():
                     await asyncio.sleep(0.1)
 
+                # Resume music
+                if self.current_phase == BattlePhase.BATTLE:
+                    asyncio.create_task(self._play_theme(music_url, loop=True))
+
                 return duration
 
             # Stop current playback
             if self.voice_client.is_playing():
                 self.voice_client.stop()
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.2)
 
-            # Play the mixed audio
-            source = discord.FFmpegPCMAudio(mixed_file)
+            # Play the mixed audio (WAV file - use FFmpegPCMAudio)
+            print(f"🔊 Playing mixed audio file: {mixed_file}")
+            source = discord.FFmpegPCMAudio(
+                mixed_file,
+                options='-vn'  # No video
+            )
             source = discord.PCMVolumeTransformer(source, volume=self.volume)
 
             self.voice_client.play(source)
-            print(f"🔊 Playing mixed audio (music + sound effect)...")
+            print(f"✅ Started playback of mixed audio...")
 
             # Wait for mixed audio to finish
+            start_time = asyncio.get_event_loop().time()
             while self.voice_client.is_playing():
                 await asyncio.sleep(0.1)
+                # Safety timeout
+                if asyncio.get_event_loop().time() - start_time > duration + 5:
+                    print(f"⚠️ Playback timeout, stopping...")
+                    self.voice_client.stop()
+                    break
+
+            elapsed = asyncio.get_event_loop().time() - start_time
+            print(f"⏱️ Mixed audio played for {elapsed:.2f}s (expected {duration:.2f}s)")
 
             # Clean up mixed file
             try:
                 os.unlink(mixed_file)
-            except:
-                pass
+                print(f"🗑️ Cleaned up mixed file")
+            except Exception as e:
+                print(f"⚠️ Failed to clean up {mixed_file}: {e}")
 
             # Resume normal music playback
             if self.current_phase == BattlePhase.BATTLE:
                 print(f"🔁 Resuming normal music playback...")
+                await asyncio.sleep(0.3)  # Small delay before resuming
                 asyncio.create_task(self._play_theme(music_url, loop=True))
 
             print(f"✅ Sound effect finished")
