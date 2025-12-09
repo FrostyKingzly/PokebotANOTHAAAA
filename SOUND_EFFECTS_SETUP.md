@@ -47,6 +47,10 @@ For each Pokemon, you need two cry files:
    - Example: `SAD_001.wav` for Bulbasaur (#001)
    - Example: `SAD_025.wav` for Pikachu (#025)
 
+If you downloaded a cry pack that uses names like `PLAY_PV_0001 [PV=INDEX].wav`
+or `PLAY_PV_0001 [PV=SAD].wav`, the bot will now automatically detect those
+files—no manual renaming needed.
+
 **Note:** Files are numbered by National Pokedex number with leading zeros (001-1025+).
 
 Supported audio formats: `.wav`, `.mp3`, `.ogg`, `.mpeg`
