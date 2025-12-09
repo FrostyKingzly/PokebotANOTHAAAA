@@ -1,0 +1,99 @@
+COMPREHENSIVE MOVE FIX REPORT
+================================================================================
+Total moves in database: 937
+Moves checked: 312
+Moves fixed: 90
+Total fixes applied: 91
+================================================================================
+
+Fixed moves:
+  - Nuzzle
+  - Dark Void
+  - Confuse Ray
+  - Supersonic
+  - Sweet Kiss
+  - Teeter Dance
+  - Swagger
+  - Flatter
+  - Fake Out
+  - Sky Attack
+  - Bind
+  - Clamp
+  - Fire Spin
+  - Infestation
+  - Magma Storm
+  - Sand Tomb
+  - Snap Trap
+  - Thunder Cage
+  - Whirlpool
+  - Wrap
+  - Fissure
+  - Guillotine
+  - Horn Drill
+  - Sheer Cold
+  - Population Bomb
+  - Sunny Day
+  - Rain Dance
+  - Sandstorm
+  - Snowscape
+  - Roar
+  - Whirlwind
+  - Circle Throw
+  - Dragon Tail
+  - Volt Switch
+  - U Turn
+  - Flip Turn
+  - Baton Pass
+  - Parting Shot
+  - Teleport
+  - Chilly Reception
+  - Shed Tail
+  - Aqua Step
+  - High Jump Kick
+  - Jump Kick
+  - Absorb
+  - Moonlight
+  - Morning Sun
+  - Synthesis
+  - Rest
+  - Shore Up
+  - Wish
+  - Razor Wind
+  - Solar Beam
+  - Skull Bash
+  - Freeze Shock
+  - Ice Burn
+  - Geomancy
+  - Fly
+  - Bounce
+  - Dig
+  - Dive
+  - Phantom Force
+  - Shadow Force
+  - Sky Drop
+  - Solar Blade
+  - Meteor Beam
+  - Curse
+  - Focus Energy
+  - Ice Fang
+  - Acid
+  - Charge Beam
+  - Silver Wind
+  - Ancient Power
+  - Ominous Wind
+  - Power Up Punch
+  - Meteor Mash
+  - Steel Wing
+  - Fiery Dance
+  - Light Screen
+  - Reflect
+  - Aurora Veil
+  - Safeguard
+  - Mist
+  - Lucky Chant
+  - Tailwind
+  - Rapid Spin
+  - Defog
+  - Haze
+  - Transform
+  - Hold Hands

@@ -1,0 +1,126 @@
+================================================================================
+MOVE AUDIT REPORT
+================================================================================
+
+Total moves audited: 937
+Issues found: 136
+Fixes applied: 59
+
+
+WARNINGS (77):
+--------------------------------------------------------------------------------
+  Guillotine (guillotine): Damaging move missing power value
+  Horn Drill (horn_drill): Damaging move missing power value
+  Sonic Boom (sonic_boom): Damaging move missing power value
+  Low Kick (low_kick): Damaging move missing power value
+  Counter (counter): Damaging move missing power value
+  Seismic Toss (seismic_toss): Damaging move missing power value
+  Dragon Rage (dragon_rage): Damaging move missing power value
+  Fissure (fissure): Damaging move missing power value
+  Night Shade (night_shade): Damaging move missing power value
+  Bide (bide): Damaging move missing power value
+  Psywave (psywave): Damaging move missing power value
+  Super Fang (super_fang): Damaging move missing power value
+  Flail (flail): Damaging move missing power value
+  Reversal (reversal): Damaging move missing power value
+  Return (return): Damaging move missing power value
+  Present (present): Damaging move missing power value
+  Frustration (frustration): Damaging move missing power value
+  Magnitude (magnitude): Damaging move missing power value
+  Mirror Coat (mirror_coat): Damaging move missing power value
+  Beat Up (beat_up): Damaging move missing power value
+  Spit Up (spit_up): Damaging move missing power value
+  Endeavor (endeavor): Damaging move missing power value
+  Sheer Cold (sheer_cold): Damaging move missing power value
+  Gyro Ball (gyro_ball): Damaging move missing power value
+  Natural Gift (natural_gift): Damaging move missing power value
+  Metal Burst (metal_burst): Damaging move missing power value
+  Fling (fling): Damaging move missing power value
+  Trump Card (trump_card): Damaging move missing power value
+  Wring Out (wring_out): Damaging move missing power value
+  Punishment (punishment): Damaging move missing power value
+  Grass Knot (grass_knot): Damaging move missing power value
+  Crush Grip (crush_grip): Damaging move missing power value
+  Heavy Slam (heavy_slam): Damaging move missing power value
+  Electro Ball (electro_ball): Damaging move missing power value
+  Final Gambit (final_gambit): Damaging move missing power value
+  Heat Crash (heat_crash): Damaging move missing power value
+  Breakneck Blitz  Physical (breakneck_blitz__physical): Damaging move missing power value
+  Breakneck Blitz  Special (breakneck_blitz__special): Damaging move missing power value
+  All Out Pummeling  Physical (all_out_pummeling__physical): Damaging move missing power value
+  All Out Pummeling  Special (all_out_pummeling__special): Damaging move missing power value
+  Supersonic Skystrike  Physical (supersonic_skystrike__physical): Damaging move missing power value
+  Supersonic Skystrike  Special (supersonic_skystrike__special): Damaging move missing power value
+  Acid Downpour  Physical (acid_downpour__physical): Damaging move missing power value
+  Acid Downpour  Special (acid_downpour__special): Damaging move missing power value
+  Tectonic Rage  Physical (tectonic_rage__physical): Damaging move missing power value
+  Tectonic Rage  Special (tectonic_rage__special): Damaging move missing power value
+  Continental Crush  Physical (continental_crush__physical): Damaging move missing power value
+  Continental Crush  Special (continental_crush__special): Damaging move missing power value
+  Savage Spin Out  Physical (savage_spin_out__physical): Damaging move missing power value
+  Savage Spin Out  Special (savage_spin_out__special): Damaging move missing power value
+
+
+FIXES NEEDED (59):
+--------------------------------------------------------------------------------
+  Guillotine (guillotine): Missing or incorrect ohko: expected True, got None
+  Razor Wind (razor_wind): Missing or incorrect charge: expected True, got None
+  Whirlwind (whirlwind): Missing or incorrect forceSwitch: expected True, got None
+  Fly (fly): Missing or incorrect charge: expected True, got None
+  Bind (bind): Missing or incorrect volatileStatus: expected partiallytrapped, got None
+  Horn Drill (horn_drill): Missing or incorrect ohko: expected True, got None
+  Wrap (wrap): Missing or incorrect volatileStatus: expected partiallytrapped, got None
+  Roar (roar): Missing or incorrect forceSwitch: expected True, got None
+  Supersonic (supersonic): Missing or incorrect volatileStatus: expected confusion, got None
+  Absorb (absorb): Missing or incorrect drain: expected [1, 2], got 50
+  Solar Beam (solar_beam): Missing or incorrect charge: expected True, got None
+  Fire Spin (fire_spin): Missing or incorrect volatileStatus: expected partiallytrapped, got None
+  Fissure (fissure): Missing or incorrect ohko: expected True, got None
+  Dig (dig): Missing or incorrect charge: expected True, got None
+  Teleport (teleport): Missing or incorrect selfSwitch: expected True, got None
+  Confuse Ray (confuse_ray): Missing or incorrect volatileStatus: expected confusion, got None
+  Clamp (clamp): Missing or incorrect volatileStatus: expected partiallytrapped, got None
+  Skull Bash (skull_bash): Missing or incorrect charge: expected True, got None
+  Sky Attack (sky_attack): Missing or incorrect charge: expected True, got None
+  Rest (rest): Missing or incorrect heal: expected [1, 1], got None
+  Rest (rest): Missing or incorrect status: expected slp, got None
+  Sweet Kiss (sweet_kiss): Missing or incorrect volatileStatus: expected confusion, got None
+  Sandstorm (sandstorm): Missing or incorrect weather: expected sandstorm, got Sandstorm
+  Swagger (swagger): Missing or incorrect volatileStatus: expected confusion, got None
+  Baton Pass (baton_pass): Missing or incorrect selfSwitch: expected True, got None
+  Morning Sun (morning_sun): Missing or incorrect heal: expected [1, 2], got None
+  Synthesis (synthesis): Missing or incorrect heal: expected [1, 2], got None
+  Moonlight (moonlight): Missing or incorrect heal: expected [1, 2], got None
+  Rain Dance (rain_dance): Missing or incorrect weather: expected rain, got RainDance
+  Sunny Day (sunny_day): Missing or incorrect weather: expected sun, got sunnyday
+  Whirlpool (whirlpool): Missing or incorrect volatileStatus: expected partiallytrapped, got None
+  Flatter (flatter): Missing or incorrect volatileStatus: expected confusion, got None
+  Dive (dive): Missing or incorrect charge: expected True, got None
+  Sand Tomb (sand_tomb): Missing or incorrect volatileStatus: expected partiallytrapped, got None
+  Sheer Cold (sheer_cold): Missing or incorrect ohko: expected True, got None
+  Bounce (bounce): Missing or incorrect charge: expected True, got None
+  U Turn (u_turn): Missing or incorrect selfSwitch: expected True, got None
+  Magma Storm (magma_storm): Missing or incorrect volatileStatus: expected partiallytrapped, got None
+  Dark Void (dark_void): Missing or incorrect status: expected slp, got None
+  Shadow Force (shadow_force): Missing or incorrect charge: expected True, got None
+  Sky Drop (sky_drop): Missing or incorrect charge: expected True, got None
+  Circle Throw (circle_throw): Missing or incorrect forceSwitch: expected True, got None
+  Volt Switch (volt_switch): Missing or incorrect selfSwitch: expected True, got None
+  Dragon Tail (dragon_tail): Missing or incorrect forceSwitch: expected True, got None
+  Freeze Shock (freeze_shock): Missing or incorrect charge: expected True, got None
+  Ice Burn (ice_burn): Missing or incorrect charge: expected True, got None
+  Phantom Force (phantom_force): Missing or incorrect charge: expected True, got None
+  Parting Shot (parting_shot): Missing or incorrect selfSwitch: expected True, got None
+  Geomancy (geomancy): Missing or incorrect charge: expected True, got None
+  Infestation (infestation): Missing or incorrect volatileStatus: expected partiallytrapped, got None
+  Shore Up (shore_up): Missing or incorrect heal: expected [1, 2], got None
+  Snap Trap (snap_trap): Missing or incorrect volatileStatus: expected partiallytrapped, got None
+  Flip Turn (flip_turn): Missing or incorrect selfSwitch: expected True, got None
+  Thunder Cage (thunder_cage): Missing or incorrect volatileStatus: expected partiallytrapped, got None
+  Population Bomb (population_bomb): Missing or incorrect multihit: expected [1, 10], got 10
+  Aqua Step (aqua_step): Missing or incorrect priority: expected 1, got 0
+  Shed Tail (shed_tail): Missing or incorrect selfSwitch: expected True, got None
+  Chilly Reception (chilly_reception): Missing or incorrect selfSwitch: expected True, got None
+  Snowscape (snowscape): Missing or incorrect weather: expected snow, got snowscape
+
+================================================================================

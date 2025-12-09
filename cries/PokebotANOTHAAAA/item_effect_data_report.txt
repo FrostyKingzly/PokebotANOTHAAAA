@@ -1,0 +1,86 @@
+COMPREHENSIVE ITEM EFFECT DATA REPORT
+================================================================================
+
+Total items: 1986
+Items with effect_data: 78
+Coverage: 3.9%
+
+Updated items:
+  - Silk Scarf
+  - Muscle Band
+  - Wise Glasses
+  - Expert Belt
+  - Rocky Helmet
+  - Weakness Policy
+  - Eviolite
+  - Safety Goggles
+  - Protective Pads
+  - Metronome
+  - Zoom Lens
+  - Wide Lens
+  - Scope Lens
+  - Razor Claw
+  - Shell Bell
+  - Absorb Bulb
+  - Cell Battery
+  - Luminous Moss
+  - Snowball
+  - Cheri Berry
+  - Chesto Berry
+  - Pecha Berry
+  - Rawst Berry
+  - Aspear Berry
+  - Persim Berry
+  - Lum Berry
+  - Liechi Berry
+  - Ganlon Berry
+  - Salac Berry
+  - Petaya Berry
+  - Apicot Berry
+  - Lansat Berry
+  - Starf Berry
+  - Micle Berry
+  - Occa Berry
+  - Passho Berry
+  - Wacan Berry
+  - Rindo Berry
+  - Yache Berry
+  - Chople Berry
+  - Kebia Berry
+  - Shuca Berry
+  - Coba Berry
+  - Payapa Berry
+  - Tanga Berry
+  - Charti Berry
+  - Kasib Berry
+  - Haban Berry
+  - Colbur Berry
+  - Babiri Berry
+  - Chilan Berry
+  - Roseli Berry
+  - Oran Berry
+  - Sitrus Berry
+  - Figy Berry
+  - Wiki Berry
+  - Mago Berry
+  - Aguav Berry
+  - Iapapa Berry
+  - Air Balloon
+  - Iron Ball
+  - Lagging Tail
+  - Quick Claw
+  - Bright Powder
+  - Lax Incense
+  - Red Card
+  - Eject Button
+  - Eject Pack
+  - White Herb
+  - Mental Herb
+  - Power Herb
+  - Flame Orb
+  - Toxic Orb
+  - Black Sludge
+  - Sticky Barb
+  - Ring Target
+  - Binding Band
+  - Grip Claw

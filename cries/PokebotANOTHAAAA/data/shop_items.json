@@ -1,0 +1,30 @@
+{
+  "poke_ball": {
+    "price": 200,
+    "min_tier": 1
+  },
+  "potion": {
+    "price": 300,
+    "min_tier": 1
+  },
+  "antidote": {
+    "price": 100,
+    "min_tier": 1
+  },
+  "paralyze_heal": {
+    "price": 200,
+    "min_tier": 1
+  },
+  "awakening": {
+    "price": 250,
+    "min_tier": 1
+  },
+  "burn_heal": {
+    "price": 250,
+    "min_tier": 1
+  },
+  "ice_heal": {
+    "price": 250,
+    "min_tier": 1
+  }
+}
