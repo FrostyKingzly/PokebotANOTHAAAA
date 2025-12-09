@@ -1,6 +1,7 @@
 """
 Battle Music Manager
 Handles voice channel music playback for battles with queue management.
+Supports Pokemon cries and battle sound effects.
 """
 
 import asyncio
@@ -11,6 +12,8 @@ from dataclasses import dataclass
 from enum import Enum
 import random
 import shutil
+
+from battle_sound_effects import BattleSoundEffects
 
 
 class BattlePhase(Enum):
@@ -43,6 +46,11 @@ class BattleMusicManager:
         self.victory_theme_url: Optional[str] = None
         self._fade_task: Optional[asyncio.Task] = None
         self.volume: float = 0.8  # Audio volume (0.0 to 1.0)
+
+        # Sound effects manager
+        self.sound_effects = BattleSoundEffects()
+        self._music_paused_for_sound = False
+        self._current_music_url: Optional[str] = None
 
         # Check if FFmpeg is available
         if not shutil.which('ffmpeg'):
@@ -192,6 +200,9 @@ class BattleMusicManager:
         if not self.voice_client.is_connected():
             print("❌ Voice client not connected")
             return
+
+        # Save current music URL for resuming after sound effects
+        self._current_music_url = url
 
         # Stop any currently playing audio
         if self.voice_client.is_playing():
@@ -354,3 +365,240 @@ class BattleMusicManager:
                 return i
 
         return None
+
+    # ============================================================
+    # SOUND EFFECTS INTEGRATION
+    # ============================================================
+
+    async def _create_mixed_audio(self, music_url: str, sound_file: str, duration: float) -> Optional[str]:
+        """
+        Create a temporary audio file that mixes music with sound effect using FFmpeg.
+
+        Args:
+            music_url: URL of the music stream
+            sound_file: Path to sound effect file
+            duration: Duration of sound effect in seconds
+
+        Returns:
+            Path to temporary mixed audio file or None on error
+        """
+        import tempfile
+        import os
+
+        try:
+            # Create temporary output file
+            temp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+            output_path = temp_file.name
+            temp_file.close()
+
+            # FFmpeg command to mix sound effect over music
+            # We'll take a chunk of music (duration + buffer) and overlay the sound effect
+            buffer_time = duration + 2  # Extra time for smooth transition
+
+            ffmpeg_cmd = [
+                'ffmpeg',
+                '-y',  # Overwrite output file
+                '-ss', '0',  # Start from beginning
+                '-t', str(buffer_time),  # Duration to extract
+                '-i', music_url,  # Input 1: Music stream
+                '-i', sound_file,  # Input 2: Sound effect
+                '-filter_complex',
+                '[0:a]volume=0.3[music];[1:a]volume=1.0[sfx];[music][sfx]amix=inputs=2:duration=first:dropout_transition=0[out]',
+                '-map', '[out]',
+                '-b:a', '192k',
+                '-ar', '48000',
+                output_path
+            ]
+
+            print(f"🎛️ Mixing sound effect with music using FFmpeg...")
+
+            # Run FFmpeg
+            process = await asyncio.create_subprocess_exec(
+                *ffmpeg_cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+
+            stdout, stderr = await process.communicate()
+
+            if process.returncode != 0:
+                print(f"❌ FFmpeg mixing failed: {stderr.decode()}")
+                try:
+                    os.unlink(output_path)
+                except:
+                    pass
+                return None
+
+            print(f"✅ Mixed audio created: {output_path}")
+            return output_path
+
+        except Exception as e:
+            print(f"❌ Error creating mixed audio: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+
+    async def _play_sound_effect(self, sound_file_path: str, duration: float) -> float:
+        """
+        Play a sound effect OVER the music (both play simultaneously).
+
+        Args:
+            sound_file_path: Path to the sound effect file
+            duration: Expected duration of the sound in seconds
+
+        Returns:
+            Actual time waited for sound to finish
+        """
+        if not self.voice_client or not self.voice_client.is_connected():
+            return 0.0
+
+        print(f"🎵 Playing sound effect over music: {sound_file_path}")
+
+        try:
+            import os
+
+            # Get current music URL
+            music_url = self._current_music_url
+            is_playing_music = self.voice_client.is_playing() and self.current_phase == BattlePhase.BATTLE
+
+            if not is_playing_music or not music_url:
+                # No music playing, just play sound effect normally
+                print(f"🔊 No music playing, playing sound effect alone...")
+                source = discord.FFmpegPCMAudio(sound_file_path)
+                source = discord.PCMVolumeTransformer(source, volume=1.0)
+                self.voice_client.play(source)
+
+                # Wait for sound to finish
+                while self.voice_client.is_playing():
+                    await asyncio.sleep(0.1)
+
+                return duration
+
+            # Music is playing - we need to mix sound over it
+            print(f"🎛️ Music is playing, mixing sound effect...")
+
+            # Get the current audio URL from yt-dlp
+            event_loop = asyncio.get_event_loop()
+            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
+                info = await event_loop.run_in_executor(None, lambda: ydl.extract_info(music_url, download=False))
+
+            if 'url' not in info:
+                print(f"❌ Couldn't get music URL for mixing")
+                return 0.0
+
+            audio_url = info['url']
+
+            # Create mixed audio (sound effect over music)
+            mixed_file = await self._create_mixed_audio(audio_url, sound_file_path, duration)
+
+            if not mixed_file:
+                print(f"⚠️ Mixing failed, playing sound without mixing")
+                # Fallback: just play the sound effect
+                source = discord.FFmpegPCMAudio(sound_file_path)
+                source = discord.PCMVolumeTransformer(source, volume=1.0)
+                self.voice_client.play(source)
+
+                while self.voice_client.is_playing():
+                    await asyncio.sleep(0.1)
+
+                return duration
+
+            # Stop current playback
+            if self.voice_client.is_playing():
+                self.voice_client.stop()
+                await asyncio.sleep(0.1)
+
+            # Play the mixed audio
+            source = discord.FFmpegPCMAudio(mixed_file)
+            source = discord.PCMVolumeTransformer(source, volume=self.volume)
+
+            self.voice_client.play(source)
+            print(f"🔊 Playing mixed audio (music + sound effect)...")
+
+            # Wait for mixed audio to finish
+            while self.voice_client.is_playing():
+                await asyncio.sleep(0.1)
+
+            # Clean up mixed file
+            try:
+                os.unlink(mixed_file)
+            except:
+                pass
+
+            # Resume normal music playback
+            if self.current_phase == BattlePhase.BATTLE:
+                print(f"🔁 Resuming normal music playback...")
+                asyncio.create_task(self._play_theme(music_url, loop=True))
+
+            print(f"✅ Sound effect finished")
+            return duration
+
+        except Exception as e:
+            print(f"❌ Error playing sound effect: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0.0
+
+    async def play_send_out_sound(self, dex_number: int) -> float:
+        """
+        Play send out sound sequence: throw → switch → pokemon cry
+
+        Args:
+            dex_number: Pokemon's national dex number
+
+        Returns:
+            Duration in seconds
+        """
+        if not self.sound_effects.is_available():
+            return 0.0
+
+        result = self.sound_effects.create_send_out_sequence(dex_number)
+        if not result:
+            return 0.0
+
+        sound_path, duration = result
+        return await self._play_sound_effect(sound_path, duration)
+
+    async def play_switch_sound(self, dex_number: int) -> float:
+        """
+        Play switch sound sequence: switch → pause → throw → switch → pokemon cry
+
+        Args:
+            dex_number: Pokemon's national dex number
+
+        Returns:
+            Duration in seconds
+        """
+        if not self.sound_effects.is_available():
+            return 0.0
+
+        result = self.sound_effects.create_switch_sequence(dex_number)
+        if not result:
+            return 0.0
+
+        sound_path, duration = result
+        return await self._play_sound_effect(sound_path, duration)
+
+    async def play_faint_sound(self, dex_number: int) -> float:
+        """
+        Play faint sound sequence: sad cry → faint noise
+
+        Args:
+            dex_number: Pokemon's national dex number
+
+        Returns:
+            Duration in seconds
+        """
+        if not self.sound_effects.is_available():
+            return 0.0
+
+        result = self.sound_effects.create_faint_sequence(dex_number)
+        if not result:
+            return 0.0
+
+        sound_path, duration = result
+        return await self._play_sound_effect(sound_path, duration)
+
+    def cleanup_sound_effects(self):
+        """Clean up temporary sound effect files"""
+        self.sound_effects.cleanup_temp_files()
