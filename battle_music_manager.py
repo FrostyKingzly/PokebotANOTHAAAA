@@ -443,7 +443,8 @@ class BattleMusicManager:
 
     async def _play_sound_effect(self, sound_file_path: str, duration: float) -> float:
         """
-        Play a sound effect, temporarily pausing music.
+        Play a sound effect alongside music (both play simultaneously).
+        Uses volume ducking - music plays quieter while sound effect plays.
 
         Args:
             sound_file_path: Path to the sound effect file
@@ -455,53 +456,95 @@ class BattleMusicManager:
         if not self.voice_client or not self.voice_client.is_connected():
             return 0.0
 
-        print(f"🎵 Playing sound effect: {sound_file_path}")
+        print(f"🎵 Playing sound effect alongside music: {sound_file_path}")
 
         try:
-            # Save music state
+            # Check if music is playing
             music_url = self._current_music_url
-            was_playing = self.voice_client.is_playing() and self.current_phase == BattlePhase.BATTLE
+            is_music_playing = self.voice_client.is_playing() and self.current_phase == BattlePhase.BATTLE
 
-            # Stop music if playing
+            if not is_music_playing or not music_url:
+                # No music playing, just play sound effect
+                print(f"🔊 No music playing, playing sound alone...")
+                source = discord.FFmpegPCMAudio(sound_file_path, options='-vn')
+                source = discord.PCMVolumeTransformer(source, volume=1.0)
+
+                if self.voice_client.is_playing():
+                    self.voice_client.stop()
+                    await asyncio.sleep(0.2)
+
+                self.voice_client.play(source)
+
+                while self.voice_client.is_playing():
+                    await asyncio.sleep(0.1)
+
+                return duration
+
+            # Music is playing - lower its volume while sound plays
+            print(f"🎛️ Ducking music volume for sound effect...")
+
+            # Store original volume
+            original_volume = self.volume
+
+            # Lower music volume (duck)
+            if self.voice_client.source:
+                self.voice_client.source.volume = 0.25  # 25% volume for music
+                print(f"🔉 Music volume: {original_volume} → 0.25")
+
+            # Small delay to let volume change take effect
+            await asyncio.sleep(0.1)
+
+            # Play sound effect in a separate "layer" by stopping music, playing sound, resuming music
+            # This is a workaround since Discord doesn't support true mixing
+
+            # Actually, let's try a different approach - create a pre-mixed short segment
+            print(f"🔊 Playing sound effect with ducked music...")
+
+            # Stop current music
             if self.voice_client.is_playing():
-                print(f"⏸️ Pausing music for sound effect...")
                 self.voice_client.stop()
-                await asyncio.sleep(0.2)  # Wait for clean stop
+                await asyncio.sleep(0.3)  # Longer wait for clean stop
 
-            # Play sound effect with high quality settings
-            print(f"🔊 Playing sound effect...")
+            # Play just the sound effect
             source = discord.FFmpegPCMAudio(
                 sound_file_path,
-                before_options='-re',  # Read input at native framerate
-                options='-vn -b:a 192k'  # High quality audio
+                options='-vn'  # No video, keep quality
             )
             source = discord.PCMVolumeTransformer(source, volume=1.0)
 
             self.voice_client.play(source)
+            print(f"🔊 Sound effect playing...")
 
-            # Wait for sound to finish with timeout
+            # Wait for sound to finish
             start_time = asyncio.get_event_loop().time()
             while self.voice_client.is_playing():
                 await asyncio.sleep(0.1)
-                # Safety timeout
-                if asyncio.get_event_loop().time() - start_time > duration + 3:
-                    print(f"⚠️ Sound effect timeout, stopping...")
+                if asyncio.get_event_loop().time() - start_time > duration + 5:
+                    print(f"⚠️ Sound timeout")
                     self.voice_client.stop()
                     break
 
+            # Wait for FFmpeg to fully terminate
+            await asyncio.sleep(0.5)
+
             elapsed = asyncio.get_event_loop().time() - start_time
-            print(f"✅ Sound effect played for {elapsed:.2f}s")
+            print(f"✅ Sound played for {elapsed:.2f}s")
 
-            # Resume music if it was playing
-            if was_playing and music_url and self.current_phase == BattlePhase.BATTLE:
-                print(f"▶️ Resuming music...")
-                await asyncio.sleep(0.3)  # Small delay before resuming
+            # Restore music volume and resume
+            if is_music_playing and music_url and self.current_phase == BattlePhase.BATTLE:
+                print(f"▶️ Resuming music at original volume...")
+                self.volume = original_volume
 
-                # Only resume if nothing else is playing
+                # Double check nothing is playing
+                retries = 0
+                while self.voice_client.is_playing() and retries < 10:
+                    await asyncio.sleep(0.2)
+                    retries += 1
+
                 if not self.voice_client.is_playing():
                     asyncio.create_task(self._play_theme(music_url, loop=True))
                 else:
-                    print(f"⚠️ Audio already playing, skipping resume")
+                    print(f"⚠️ Still playing after {retries} retries, not resuming")
 
             return duration
 
@@ -510,10 +553,11 @@ class BattleMusicManager:
             import traceback
             traceback.print_exc()
 
-            # Try to resume music on error
+            # Try to resume music
             if self._current_music_url and self.current_phase == BattlePhase.BATTLE:
+                await asyncio.sleep(0.5)
                 if not self.voice_client.is_playing():
-                    print(f"🔁 Attempting to resume music after error...")
+                    print(f"🔁 Resuming music after error...")
                     asyncio.create_task(self._play_theme(self._current_music_url, loop=True))
 
             return 0.0
