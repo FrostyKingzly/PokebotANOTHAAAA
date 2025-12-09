@@ -62,12 +62,13 @@ class BattleMusicManager:
         # FFMPEG options for high-quality audio streaming
         self.FFMPEG_OPTIONS = {
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-            'options': '-vn -b:a 192k'  # High bitrate for better quality
+            # Force 48k stereo PCM out of FFmpeg to keep Discord voice quality high
+            'options': '-vn -ac 2 -ar 48000 -b:a 256k'
         }
 
         # yt-dlp options optimized for high-quality Discord streaming
         self.YDL_OPTIONS = {
-            'format': 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',  # Prefer high-quality formats
+            'format': 'bestaudio[asr=48000]/bestaudio/best',  # Prefer 48k streams when available
             'noplaylist': True,
             'nocheckcertificate': True,
             'ignoreerrors': False,
@@ -387,7 +388,7 @@ class BattleMusicManager:
 
         try:
             # Create temporary output file
-            temp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+            temp_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
             output_path = temp_file.name
             temp_file.close()
 
@@ -405,7 +406,9 @@ class BattleMusicManager:
                 '-filter_complex',
                 '[0:a]volume=0.3[music];[1:a]volume=1.0[sfx];[music][sfx]amix=inputs=2:duration=first:dropout_transition=0[out]',
                 '-map', '[out]',
-                '-b:a', '192k',
+                # Keep everything in raw PCM to avoid lossy re-encoding artifacts on the mix
+                '-acodec', 'pcm_s16le',
+                '-ac', '2',
                 '-ar', '48000',
                 output_path
             ]

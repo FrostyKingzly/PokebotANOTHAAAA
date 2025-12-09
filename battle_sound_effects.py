@@ -68,8 +68,8 @@ class BattleSoundEffects:
         # Try different file extensions
         extensions = [".wav", ".mp3", ".ogg", ".mpeg"]
 
+        # 1) Preferred official naming from the setup guide
         for ext in extensions:
-            # Format: PV-INDEX or SAD prefix, then dex number
             if cry_type == "INDEX":
                 cry_file = self.CRIES_DIR / f"PV-INDEX_{dex_number:03d}{ext}"
             else:  # SAD
@@ -77,6 +77,38 @@ class BattleSoundEffects:
 
             if cry_file.exists():
                 return cry_file
+
+        # 2) Fallback to common downloaded pack naming (e.g. "PLAY_PV_0001 [PV=INDEX].wav")
+        # Some asset packs use a PLAY_PV prefix and include the cry type in brackets.
+        # We scan the cries directory for files that contain the dex number and the
+        # appropriate cry type keyword to ensure compatibility without renaming assets.
+        target_number = f"{dex_number:03d}"
+        alt_matches: list[Path] = []
+
+        for file_path in self.CRIES_DIR.iterdir():
+            if not file_path.is_file():
+                continue
+
+            lower_name = file_path.name.lower()
+            if target_number not in lower_name:
+                # Some packs use four digit numbering; check that as well.
+                if f"{dex_number:04d}" not in lower_name:
+                    continue
+
+            if cry_type == "INDEX":
+                # Look for any indicator that this is the standard cry
+                if "index" in lower_name or "play_pv" in lower_name:
+                    alt_matches.append(file_path)
+            else:
+                # Look for sad/alternate cry variants
+                if "sad" in lower_name:
+                    alt_matches.append(file_path)
+
+        if alt_matches:
+            # Use the first deterministic match sorted alphabetically for stability
+            chosen = sorted(alt_matches)[0]
+            print(f"ℹ️ Using alternate cry file for #{dex_number:03d}: {chosen.name}")
+            return chosen
 
         print(f"⚠️ Cry not found for Pokemon #{dex_number:03d} (type: {cry_type})")
         return None
@@ -182,11 +214,12 @@ class BattleSoundEffects:
 
         # Export to temp file
         try:
-            temp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+            temp_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
             temp_path = temp_file.name
             temp_file.close()
 
-            sequence.export(temp_path, format="mp3")
+            # Export losslessly to keep sound effects crisp when they are mixed with music
+            sequence.export(temp_path, format="wav")
             self._temp_files.append(temp_path)
 
             duration = len(sequence) / 1000.0
@@ -247,11 +280,11 @@ class BattleSoundEffects:
 
         # Export to temp file
         try:
-            temp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+            temp_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
             temp_path = temp_file.name
             temp_file.close()
 
-            sequence.export(temp_path, format="mp3")
+            sequence.export(temp_path, format="wav")
             self._temp_files.append(temp_path)
 
             duration = len(sequence) / 1000.0
@@ -299,11 +332,11 @@ class BattleSoundEffects:
 
         # Export to temp file
         try:
-            temp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+            temp_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
             temp_path = temp_file.name
             temp_file.close()
 
-            sequence.export(temp_path, format="mp3")
+            sequence.export(temp_path, format="wav")
             self._temp_files.append(temp_path)
 
             duration = len(sequence) / 1000.0
