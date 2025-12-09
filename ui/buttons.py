@@ -290,6 +290,86 @@ class AlertDetailView(View):
             self.add_item(signup_button)
 
 
+class TrainerCardView(View):
+    """Trainer card view with battle theme customization"""
+
+    def __init__(self, bot, user_id: int):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+
+    @discord.ui.button(label="🎵 Set Battle Theme", style=discord.ButtonStyle.primary, row=0)
+    async def set_theme_button(self, interaction: discord.Interaction, button: Button):
+        """Set custom battle and victory themes"""
+        modal = BattleThemeModal(self.bot)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="◀️ Back", style=discord.ButtonStyle.gray, row=0)
+    async def back_button(self, interaction: discord.Interaction, button: Button):
+        """Return to main menu"""
+        await _show_main_menu(interaction, self.bot, self.user_id)
+
+
+class BattleThemeModal(discord.ui.Modal, title="Set Your Battle Theme"):
+    """Modal for setting battle and victory theme URLs"""
+
+    battle_theme = discord.ui.TextInput(
+        label="Battle Theme URL",
+        placeholder="https://youtu.be/... (plays during battle)",
+        required=False,
+        style=discord.TextStyle.short,
+        max_length=200
+    )
+
+    victory_theme = discord.ui.TextInput(
+        label="Victory Theme URL",
+        placeholder="https://youtu.be/... (plays when you win)",
+        required=False,
+        style=discord.TextStyle.short,
+        max_length=200
+    )
+
+    def __init__(self, bot):
+        super().__init__()
+        self.bot = bot
+
+    async def on_submit(self, interaction: discord.Interaction):
+        battle_url = self.battle_theme.value.strip() if self.battle_theme.value else None
+        victory_url = self.victory_theme.value.strip() if self.victory_theme.value else None
+
+        # Validate URLs
+        if battle_url and not (battle_url.startswith("http://") or battle_url.startswith("https://")):
+            await interaction.response.send_message(
+                "❌ Battle theme URL must start with http:// or https://",
+                ephemeral=True
+            )
+            return
+
+        if victory_url and not (victory_url.startswith("http://") or victory_url.startswith("https://")):
+            await interaction.response.send_message(
+                "❌ Victory theme URL must start with http:// or https://",
+                ephemeral=True
+            )
+            return
+
+        # Update trainer themes
+        self.bot.player_manager.update_trainer(
+            interaction.user.id,
+            battle_theme_url=battle_url,
+            victory_theme_url=victory_url
+        )
+
+        response = "✅ Battle themes updated!\n\n"
+        if battle_url:
+            response += f"🎵 Battle: {battle_url}\n"
+        if victory_url:
+            response += f"🏆 Victory: {victory_url}\n"
+        if not battle_url and not victory_url:
+            response = "✅ Battle themes cleared! Random NPC themes will be used."
+
+        await interaction.response.send_message(response, ephemeral=True)
+
+
 class MainMenuView(View):
     """Main menu button interface"""
 
@@ -519,7 +599,7 @@ class MainMenuView(View):
         if await self._deny_if_in_battle(interaction):
             return
         from ui.embeds import EmbedBuilder
-        
+
         trainer = self.bot.player_manager.get_player(interaction.user.id)
         party = self.bot.player_manager.get_party(interaction.user.id)
         total_pokemon = len(self.bot.player_manager.get_all_pokemon(interaction.user.id))
@@ -534,7 +614,9 @@ class MainMenuView(View):
             location_manager=location_manager,
         )
 
-        await interaction.response.edit_message(embed=embed, view=None)
+        # Create view with battle theme button
+        view = TrainerCardView(self.bot, interaction.user.id)
+        await interaction.response.edit_message(embed=embed, view=view)
 
     @discord.ui.button(label="🛎️ Alerts", style=discord.ButtonStyle.secondary, row=3)
     async def alerts_button(self, interaction: discord.Interaction, button: Button):

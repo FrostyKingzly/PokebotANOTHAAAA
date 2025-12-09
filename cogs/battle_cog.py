@@ -102,8 +102,8 @@ class BattleCog(commands.Cog):
 
         This should be called before starting the battle UI.
         """
-        # ONLY for NPC battles (not wild, not PvP, not raids)
-        if battle_type != BattleType.TRAINER:
+        # Support NPC and PvP battles (not wild, not raids)
+        if battle_type == BattleType.WILD or battle_type == BattleType.RAID:
             return False
 
         # Check if user is in a voice channel
@@ -120,15 +120,16 @@ class BattleCog(commands.Cog):
         opt_in_embed = create_music_opt_in_embed()
 
         music_chosen = False
+        use_custom = False
 
         async def on_yes(button_interaction: discord.Interaction):
-            nonlocal music_chosen
+            nonlocal music_chosen, use_custom
             music_chosen = True
+            use_custom = False
 
             # Request music from manager
             username = button_interaction.user.display_name
-            battle_type_str = "npc" if battle_type == BattleType.TRAINER else \
-                             "raid" if hasattr(button_interaction, 'battle_format') else "pvp"
+            battle_type_str = "npc" if battle_type == BattleType.TRAINER else "pvp"
 
             can_start, message, position = await self.music_manager.request_music(
                 battle_id,
@@ -139,9 +140,41 @@ class BattleCog(commands.Cog):
             )
 
             if can_start:
-                self.battles_with_music[battle_id] = True
+                self.battles_with_music[battle_id] = False  # False = random NPC theme
                 await button_interaction.response.send_message(
                     f"Music will start when battle begins! Join **{user_voice_channel.name}**",
+                    ephemeral=True
+                )
+            else:
+                # Show queue status
+                queue_data = self.music_manager.get_queue_display()
+                queue_embed = create_queue_status_embed(queue_data, user_voice_channel.name)
+                await button_interaction.response.send_message(
+                    embed=queue_embed,
+                    ephemeral=True
+                )
+
+        async def on_my_theme(button_interaction: discord.Interaction):
+            nonlocal music_chosen, use_custom
+            music_chosen = True
+            use_custom = True
+
+            # Request music from manager
+            username = button_interaction.user.display_name
+            battle_type_str = "npc" if battle_type == BattleType.TRAINER else "pvp"
+
+            can_start, message, position = await self.music_manager.request_music(
+                battle_id,
+                button_interaction.user.id,
+                username,
+                user_voice_channel.id,
+                battle_type_str
+            )
+
+            if can_start:
+                self.battles_with_music[battle_id] = True  # True = custom theme
+                await button_interaction.response.send_message(
+                    f"Your custom theme will play! Join **{user_voice_channel.name}**",
                     ephemeral=True
                 )
             else:
@@ -159,7 +192,7 @@ class BattleCog(commands.Cog):
                 ephemeral=True
             )
 
-        view = MusicOptInView(on_yes, on_no)
+        view = MusicOptInView(on_yes, on_no, on_my_theme)
 
         # Send the prompt
         if not interaction.response.is_done():
@@ -173,20 +206,43 @@ class BattleCog(commands.Cog):
         return music_chosen
 
     async def _start_battle_music(self, battle_id: str, battle_type: BattleType, trainer_id: int):
-        """Start playing music for a battle - uses random NPC themes"""
+        """Start playing music for a battle - uses custom or random themes"""
         if battle_id not in self.battles_with_music:
             return
 
-        # Get random theme for NPC battles
-        battle_theme_url, victory_theme_url = get_random_npc_theme()
+        use_custom_theme = self.battles_with_music[battle_id]
+
+        # Get themes
+        if use_custom_theme:
+            # Use player's custom theme
+            player_manager = getattr(self.bot, 'player_manager', None)
+            if player_manager:
+                try:
+                    trainer = player_manager.get_trainer(trainer_id)
+                    battle_theme_url = getattr(trainer, 'battle_theme_url', None)
+                    victory_theme_url = getattr(trainer, 'victory_theme_url', None)
+
+                    # Fall back to random if no custom theme set
+                    if not battle_theme_url or not victory_theme_url:
+                        print(f"⚠️ No custom theme set, using random NPC theme")
+                        battle_theme_url, victory_theme_url = get_random_npc_theme()
+                except:
+                    print(f"⚠️ Failed to get trainer data, using random NPC theme")
+                    battle_theme_url, victory_theme_url = get_random_npc_theme()
+            else:
+                battle_theme_url, victory_theme_url = get_random_npc_theme()
+        else:
+            # Use random NPC theme
+            battle_theme_url, victory_theme_url = get_random_npc_theme()
 
         # Start music
         success = await self.music_manager.start_battle_music(battle_theme_url, victory_theme_url)
 
         if success:
-            print(f"Battle music started for battle {battle_id}")
+            theme_type = "custom" if use_custom_theme else "random NPC"
+            print(f"✅ Battle music started for battle {battle_id} ({theme_type} theme)")
         else:
-            print(f"Failed to start battle music for battle {battle_id}")
+            print(f"❌ Failed to start battle music for battle {battle_id}")
 
     async def _play_victory_music(self, battle_id: str, winner_name: str, interaction: Optional[discord.Interaction] = None):
         """Play victory music after battle ends"""
@@ -725,8 +781,10 @@ class BattleCog(commands.Cog):
 
         # For multi battles, show both opponents
         if is_multi:
-            # Show opponent team leader's Pokemon
+            # Show opponent team leader's Pokemon (exclude fainted)
             for idx, opp_mon in enumerate(opponent_active):
+                if opp_mon.current_hp <= 0:
+                    continue
                 opp_value = f"HP: {self._hp_bar(opp_mon)} ({max(0, opp_mon.current_hp)}/{opp_mon.max_hp})"
                 foe_name = self._format_pokemon_name(opp_mon)
                 foe_ball = self._get_pokeball_emoji(opp_mon)
@@ -736,10 +794,12 @@ class BattleCog(commands.Cog):
                     inline=True
                 )
 
-            # Show opponent partner's Pokemon
+            # Show opponent partner's Pokemon (exclude fainted)
             if battle.opponent_partner:
                 partner_active = battle.opponent_partner.get_active_pokemon()
                 for idx, partner_mon in enumerate(partner_active):
+                    if partner_mon.current_hp <= 0:
+                        continue
                     partner_value = f"HP: {self._hp_bar(partner_mon)} ({max(0, partner_mon.current_hp)}/{partner_mon.max_hp})"
                     partner_name = self._format_pokemon_name(partner_mon)
                     partner_ball = self._get_pokeball_emoji(partner_mon)
@@ -752,8 +812,10 @@ class BattleCog(commands.Cog):
             # Add separator
             e.add_field(name="\u200b", value="\u200b", inline=False)
 
-            # Show player team leader's Pokemon
+            # Show player team leader's Pokemon (exclude fainted)
             for idx, trainer_mon in enumerate(trainer_active):
+                if trainer_mon.current_hp <= 0:
+                    continue
                 trainer_value = f"HP: {self._hp_bar(trainer_mon)} ({max(0, trainer_mon.current_hp)}/{trainer_mon.max_hp})"
                 trainer_name = self._format_pokemon_name(trainer_mon)
                 trainer_ball = self._get_pokeball_emoji(trainer_mon)
@@ -763,10 +825,12 @@ class BattleCog(commands.Cog):
                     inline=True
                 )
 
-            # Show player partner's Pokemon
+            # Show player partner's Pokemon (exclude fainted)
             if battle.trainer_partner:
                 partner_active = battle.trainer_partner.get_active_pokemon()
                 for idx, partner_mon in enumerate(partner_active):
+                    if partner_mon.current_hp <= 0:
+                        continue
                     partner_value = f"HP: {self._hp_bar(partner_mon)} ({max(0, partner_mon.current_hp)}/{partner_mon.max_hp})"
                     partner_name = self._format_pokemon_name(partner_mon)
                     partner_ball = self._get_pokeball_emoji(partner_mon)
@@ -777,8 +841,11 @@ class BattleCog(commands.Cog):
                     )
         else:
             # Standard singles/doubles display
-            # Show all active opponent Pokemon
+            # Show all active opponent Pokemon (exclude fainted)
+            active_opponent_count = 0
             for idx, opp_mon in enumerate(opponent_active):
+                if opp_mon.current_hp <= 0:
+                    continue
                 opp_value = f"HP: {self._hp_bar(opp_mon)} ({max(0, opp_mon.current_hp)}/{opp_mon.max_hp})"
 
                 position_label = f" (Slot {idx+1})" if is_doubles else ""
@@ -789,13 +856,16 @@ class BattleCog(commands.Cog):
                     value=opp_value,
                     inline=is_doubles
                 )
+                active_opponent_count += 1
 
             # Add blank separator for doubles to force player Pokemon to new row
-            if is_doubles and len(opponent_active) > 0:
+            if is_doubles and active_opponent_count > 0:
                 e.add_field(name="\u200b", value="\u200b", inline=False)
 
-            # Show all active trainer Pokemon
+            # Show all active trainer Pokemon (exclude fainted)
             for idx, trainer_mon in enumerate(trainer_active):
+                if trainer_mon.current_hp <= 0:
+                    continue
                 trainer_value = f"HP: {self._hp_bar(trainer_mon)} ({max(0, trainer_mon.current_hp)}/{trainer_mon.max_hp})"
 
                 position_label = f" (Slot {idx+1})" if is_doubles else ""
@@ -2064,6 +2134,202 @@ class DazedCatchView(discord.ui.View):
 # DOUBLES BATTLE UI COMPONENTS
 # ============================================
 
+class DoublesActionMenuView(discord.ui.View):
+    """Action menu for individual Pokemon in doubles battles."""
+    def __init__(self, battle, battler_id: int, engine: BattleEngine,
+                 pokemon_position: int, collector: DoublesActionCollector):
+        super().__init__(timeout=None)
+        self.battle = battle
+        self.battle_id = battle.battle_id
+        self.battler_id = battler_id
+        self.engine = engine
+        self.pokemon_position = pokemon_position
+        self.collector = collector
+
+    @discord.ui.button(label="⚔️ Fight", style=discord.ButtonStyle.primary, row=0)
+    async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Select a move for this Pokemon."""
+        battler = _get_battler_by_id(self.battle, self.battler_id)
+        pokemon = battler.get_active_pokemon()[self.pokemon_position]
+        await interaction.response.edit_message(
+            content=f"Select move for **{pokemon.species_name}** (Slot {self.pokemon_position + 1}):",
+            view=DoublesMoveSelectView(
+                self.battle, self.battler_id, self.engine,
+                self.pokemon_position, self.collector
+            )
+        )
+
+    @discord.ui.button(label="🔄 Switch", style=discord.ButtonStyle.primary, row=0)
+    async def switch_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Switch this Pokemon."""
+        await interaction.response.edit_message(
+            content=f"Choose a Pokémon to switch into Slot {self.pokemon_position + 1}:",
+            view=DoublesPartySelectView(
+                self.battle, self.battler_id, self.engine,
+                self.pokemon_position, self.collector, forced=False
+            )
+        )
+
+    @discord.ui.button(label="🎒 Bag", style=discord.ButtonStyle.secondary, row=0)
+    async def bag_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Use an item (not implemented for doubles yet)."""
+        await interaction.response.send_message(
+            "⚠️ Items in doubles battles are not yet supported. Please select a different action.",
+            ephemeral=True
+        )
+
+    @discord.ui.button(label="🏃 Run", style=discord.ButtonStyle.danger, row=0)
+    async def run_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Run from battle (forfeits for both Pokemon)."""
+        # For doubles, running should forfeit the entire battle
+        cog = interaction.client.get_cog("BattleCog")
+        if cog:
+            await cog._handle_forfeit(interaction, self.battle_id, self.battler_id)
+
+class DoublesPartySelectView(discord.ui.View):
+    """Party selection for switching in doubles battles."""
+    def __init__(self, battle, battler_id: int, engine: BattleEngine,
+                 pokemon_position: int, collector: DoublesActionCollector, forced: bool = False):
+        super().__init__(timeout=None)
+        self.battle = battle
+        self.battle_id = battle.battle_id
+        self.battler_id = battler_id
+        self.engine = engine
+        self.pokemon_position = pokemon_position
+        self.collector = collector
+        self.forced = forced
+
+        # Get party
+        battler = _get_battler_by_id(battle, battler_id)
+        party = battler.party if battler else []
+
+        # Create options for non-fainted, non-active Pokemon
+        active_pokemon = battler.get_active_pokemon() if battler else []
+        active_ids = {id(p) for p in active_pokemon}
+
+        options = []
+        for idx, mon in enumerate(party):
+            if id(mon) in active_ids:
+                continue  # Skip active Pokemon
+            if mon.current_hp <= 0:
+                continue  # Skip fainted Pokemon
+
+            species_name = getattr(mon, 'species_name', 'Unknown')
+            nickname = getattr(mon, 'nickname', None)
+            level = getattr(mon, 'level', '?')
+            hp = getattr(mon, 'current_hp', 0)
+            max_hp = getattr(mon, 'max_hp', 1)
+
+            display_name = nickname if nickname else species_name
+            options.append(discord.SelectOption(
+                label=f"{display_name} Lv{level} (HP: {hp}/{max_hp})",
+                value=str(idx)
+            ))
+
+        if not options:
+            # No valid Pokemon to switch to
+            button = discord.ui.Button(
+                label="(No Pokemon available to switch)",
+                style=discord.ButtonStyle.secondary,
+                disabled=True
+            )
+            self.add_item(button)
+            return
+
+        # Add select menu
+        select = discord.ui.Select(
+            placeholder="Choose a Pokemon to switch in",
+            options=options[:25]  # Discord limit
+        )
+        select.callback = self._on_select
+        self.add_item(select)
+
+        # Add back button if not forced
+        if not forced:
+            back_btn = discord.ui.Button(label="← Back", style=discord.ButtonStyle.secondary)
+            back_btn.callback = self._back_callback
+            self.add_item(back_btn)
+
+    async def _on_select(self, interaction: discord.Interaction):
+        """Handle Pokemon selection."""
+        value = None
+        for child in self.children:
+            if isinstance(child, discord.ui.Select) and child.values:
+                value = child.values[0]
+                break
+
+        if value is None:
+            await interaction.response.send_message("Invalid selection.", ephemeral=True)
+            return
+
+        party_index = int(value)
+
+        # Create switch action
+        action = BattleAction(
+            action_type='switch',
+            battler_id=self.battler_id,
+            party_index=party_index,
+            pokemon_position=self.pokemon_position
+        )
+
+        # Add to collector
+        self.collector.add_action(self.pokemon_position, action)
+
+        # Check if we need more actions
+        next_pos = self.collector.get_next_position()
+        if next_pos is not None:
+            battler = _get_battler_by_id(self.battle, self.battler_id)
+            next_mon = battler.get_active_pokemon()[next_pos]
+            await interaction.response.send_message(
+                f"Choose action for **{next_mon.species_name}** (Slot {next_pos + 1}):",
+                view=DoublesActionMenuView(
+                    self.battle, self.battler_id, self.engine,
+                    next_pos, self.collector
+                ),
+                ephemeral=True
+            )
+            return
+
+        # All actions collected, submit them
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
+
+        for pos, act in self.collector.actions.items():
+            self.engine.register_action(self.battle_id, self.battler_id, act)
+
+        battle = self.engine.get_battle(self.battle_id)
+        if not battle:
+            await interaction.followup.send("Battle not found.", ephemeral=True)
+            return
+
+        # Check if ready to resolve
+        if not battle.opponent.is_ai:
+            if len(battle.pending_actions) < len(battle.trainer.get_active_pokemon()) + len(battle.opponent.get_active_pokemon()):
+                await interaction.followup.send(
+                    "Actions submitted! Waiting for opponent...",
+                    ephemeral=True
+                )
+                return
+
+        # Process turn
+        cog = interaction.client.get_cog("BattleCog")
+        if cog:
+            turn = await self.engine.process_turn(self.battle_id)
+            await cog._send_turn_resolution(interaction, turn)
+            await cog._handle_post_turn(interaction, self.battle_id)
+
+    async def _back_callback(self, interaction: discord.Interaction):
+        """Go back to action menu."""
+        battler = _get_battler_by_id(self.battle, self.battler_id)
+        pokemon = battler.get_active_pokemon()[self.pokemon_position]
+        await interaction.response.edit_message(
+            content=f"Choose action for **{pokemon.species_name}** (Slot {self.pokemon_position + 1}):",
+            view=DoublesActionMenuView(
+                self.battle, self.battler_id, self.engine,
+                self.pokemon_position, self.collector
+            )
+        )
+
 class DoublesActionCollector:
     """Collects actions for both Pokemon in a doubles battle."""
     def __init__(self, battle, battler_id: int, engine: BattleEngine):
@@ -2200,8 +2466,8 @@ class RevivalTargetSelectView(discord.ui.View):
             battler = _get_battler_by_id(self.battle, self.battler_id)
             next_mon = battler.get_active_pokemon()[next_pos]
             await interaction.followup.send(
-                f"Select move for **{next_mon.species_name}** (Slot {next_pos+1}):",
-                view=DoublesMoveSelectView(
+                f"Choose action for **{next_mon.species_name}** (Slot {next_pos+1}):",
+                view=DoublesActionMenuView(
                     self.battle, self.battler_id, self.engine,
                     next_pos, self.collector
                 ),
@@ -2432,8 +2698,8 @@ class TargetSelectView(discord.ui.View):
                 battler = _get_battler_by_id(self.battle, self.battler_id)
                 next_mon = battler.get_active_pokemon()[next_pos]
                 await interaction.followup.send(
-                    f"Select move for **{next_mon.species_name}** (Slot {next_pos+1}):",
-                    view=DoublesMoveSelectView(
+                    f"Choose action for **{next_mon.species_name}** (Slot {next_pos+1}):",
+                    view=DoublesActionMenuView(
                         self.battle, self.battler_id, self.engine,
                         next_pos, self.collector
                     ),
