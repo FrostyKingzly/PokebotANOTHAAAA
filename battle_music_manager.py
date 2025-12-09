@@ -1,6 +1,7 @@
 """
 Battle Music Manager
 Handles voice channel music playback for battles with queue management.
+Supports Pokemon cries and battle sound effects.
 """
 
 import asyncio
@@ -11,6 +12,8 @@ from dataclasses import dataclass
 from enum import Enum
 import random
 import shutil
+
+from battle_sound_effects import BattleSoundEffects
 
 
 class BattlePhase(Enum):
@@ -43,6 +46,11 @@ class BattleMusicManager:
         self.victory_theme_url: Optional[str] = None
         self._fade_task: Optional[asyncio.Task] = None
         self.volume: float = 0.8  # Audio volume (0.0 to 1.0)
+
+        # Sound effects manager
+        self.sound_effects = BattleSoundEffects()
+        self._music_paused_for_sound = False
+        self._current_music_url: Optional[str] = None
 
         # Check if FFmpeg is available
         if not shutil.which('ffmpeg'):
@@ -192,6 +200,9 @@ class BattleMusicManager:
         if not self.voice_client.is_connected():
             print("❌ Voice client not connected")
             return
+
+        # Save current music URL for resuming after sound effects
+        self._current_music_url = url
 
         # Stop any currently playing audio
         if self.voice_client.is_playing():
@@ -354,3 +365,131 @@ class BattleMusicManager:
                 return i
 
         return None
+
+    # ============================================================
+    # SOUND EFFECTS INTEGRATION
+    # ============================================================
+
+    async def _play_sound_effect(self, sound_file_path: str, duration: float) -> float:
+        """
+        Play a sound effect, pausing music if playing.
+
+        Args:
+            sound_file_path: Path to the sound effect file
+            duration: Expected duration of the sound in seconds
+
+        Returns:
+            Actual time waited for sound to finish
+        """
+        if not self.voice_client or not self.voice_client.is_connected():
+            return 0.0
+
+        print(f"🎵 Playing sound effect: {sound_file_path}")
+
+        try:
+            # Save current music state
+            music_url = self._current_music_url
+            was_playing_music = self.voice_client.is_playing() and self.current_phase == BattlePhase.BATTLE
+
+            # Stop music temporarily
+            if self.voice_client.is_playing():
+                print(f"⏸️ Pausing music for sound effect...")
+                self.voice_client.stop()
+                self._music_paused_for_sound = True
+
+            # Wait a moment for music to stop
+            await asyncio.sleep(0.1)
+
+            # Play sound effect
+            source = discord.FFmpegPCMAudio(sound_file_path)
+            source = discord.PCMVolumeTransformer(source, volume=1.0)  # Full volume for sound effects
+
+            self.voice_client.play(source)
+            print(f"🔊 Sound effect started, will wait {duration:.2f}s...")
+
+            # Wait for sound to finish
+            while self.voice_client.is_playing():
+                await asyncio.sleep(0.1)
+
+            # Add a small buffer
+            await asyncio.sleep(0.2)
+
+            # Resume music if it was playing
+            if was_playing_music and music_url and self.current_phase == BattlePhase.BATTLE:
+                print(f"▶️ Resuming music after sound effect...")
+                self._music_paused_for_sound = False
+                # Restart the battle theme
+                asyncio.create_task(self._play_theme(music_url, loop=True))
+
+            print(f"✅ Sound effect finished")
+            return duration
+
+        except Exception as e:
+            print(f"❌ Error playing sound effect: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0.0
+
+    async def play_send_out_sound(self, dex_number: int) -> float:
+        """
+        Play send out sound sequence: throw → switch → pokemon cry
+
+        Args:
+            dex_number: Pokemon's national dex number
+
+        Returns:
+            Duration in seconds
+        """
+        if not self.sound_effects.is_available():
+            return 0.0
+
+        result = self.sound_effects.create_send_out_sequence(dex_number)
+        if not result:
+            return 0.0
+
+        sound_path, duration = result
+        return await self._play_sound_effect(sound_path, duration)
+
+    async def play_switch_sound(self, dex_number: int) -> float:
+        """
+        Play switch sound sequence: switch → pause → throw → switch → pokemon cry
+
+        Args:
+            dex_number: Pokemon's national dex number
+
+        Returns:
+            Duration in seconds
+        """
+        if not self.sound_effects.is_available():
+            return 0.0
+
+        result = self.sound_effects.create_switch_sequence(dex_number)
+        if not result:
+            return 0.0
+
+        sound_path, duration = result
+        return await self._play_sound_effect(sound_path, duration)
+
+    async def play_faint_sound(self, dex_number: int) -> float:
+        """
+        Play faint sound sequence: sad cry → faint noise
+
+        Args:
+            dex_number: Pokemon's national dex number
+
+        Returns:
+            Duration in seconds
+        """
+        if not self.sound_effects.is_available():
+            return 0.0
+
+        result = self.sound_effects.create_faint_sequence(dex_number)
+        if not result:
+            return 0.0
+
+        sound_path, duration = result
+        return await self._play_sound_effect(sound_path, duration)
+
+    def cleanup_sound_effects(self):
+        """Clean up temporary sound effect files"""
+        self.sound_effects.cleanup_temp_files()
