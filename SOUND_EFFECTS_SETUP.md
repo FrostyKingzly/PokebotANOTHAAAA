@@ -150,12 +150,13 @@ if self.music_manager.current_session:
 
 1. **Sound Effect Creation:** When a sound is needed, the system combines individual audio files into a single sequence using pydub.
 
-2. **Temporary Files:** Combined sequences are exported to temporary MP3 files.
+2. **Audio Mixing:** FFmpeg mixes the sound effect with the music stream:
+   - Music volume is lowered to 30% during sound effect
+   - Sound effect plays at 100% volume
+   - Both audio sources play simultaneously
+   - Music automatically returns to normal after sound finishes
 
-3. **Playback:** The sound effect is played through Discord's voice client:
-   - Music is temporarily paused
-   - Sound effect plays at full volume
-   - Music resumes after sound finishes
+3. **Temporary Files:** Combined sequences and mixed audio are exported to temporary MP3 files.
 
 4. **Cleanup:** Temporary files are cleaned up when the battle ends.
 
@@ -176,9 +177,10 @@ if self.music_manager.current_session:
 - Check console for warnings about missing files
 - Verify dex numbers match Pokemon species
 
-### Sound cuts off music
-- This is intentional! Music pauses for sound clarity
-- Music automatically resumes after sound finishes
+### Music volume during sound effects
+- Music is automatically lowered to 30% when sound effects play
+- This makes sound effects clearly audible
+- Music returns to normal volume after sound finishes
 
 ## Performance Notes
 
