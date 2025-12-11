@@ -265,7 +265,7 @@ class EmbedBuilder:
         # Money
         embed.add_field(
             name="💰 Money",
-            value=f"${trainer.money:,}",
+            value=f"₱{trainer.money:,}",
             inline=True
         )
 
@@ -474,7 +474,7 @@ class EmbedBuilder:
         )
         info_text += f"**Rank:** {trainer.get_rank_display()}\n"
         info_text += EmbedBuilder.format_rank_progress(trainer) + "\n"
-        info_text += f"**Money:** ${trainer.money:,}"
+        info_text += f"**Money:** ₱{trainer.money:,}"
 
         embed.add_field(
             name="👤 Profile",
