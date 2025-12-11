@@ -530,6 +530,7 @@ class BattleCog(commands.Cog):
 
             if sprite_embed:
                 await interaction.followup.send(embed=sprite_embed)
+                await asyncio.sleep(1)
 
             await self._send_raid_sendouts(interaction, battle)
 
@@ -537,11 +538,14 @@ class BattleCog(commands.Cog):
 
             if battle_begin_embed:
                 await interaction.followup.send(embed=battle_begin_embed)
+                await asyncio.sleep(1)
 
             if field_embed:
                 await interaction.followup.send(embed=field_embed)
+                await asyncio.sleep(1)
 
             await interaction.followup.send(embed=status_embed)
+            await asyncio.sleep(1)
             await interaction.followup.send(embed=party_embed, view=view)
             return
 
@@ -621,6 +625,7 @@ class BattleCog(commands.Cog):
                 )
 
             await interaction.followup.send(embed=send_embed)
+            await asyncio.sleep(1)
             if sound_task:
                 await sound_task
 
@@ -655,6 +660,7 @@ class BattleCog(commands.Cog):
                     )
 
                 await interaction.followup.send(embed=send_embed)
+                await asyncio.sleep(1)
                 if sound_task:
                     await sound_task
 
@@ -688,6 +694,7 @@ class BattleCog(commands.Cog):
                     )
 
                 await interaction.followup.send(embed=send_embed)
+                await asyncio.sleep(1)
                 if sound_task:
                     await sound_task
 
@@ -722,6 +729,7 @@ class BattleCog(commands.Cog):
                         )
 
                     await interaction.followup.send(embed=send_embed)
+                    await asyncio.sleep(1)
                     if sound_task:
                         await sound_task
 
@@ -729,6 +737,7 @@ class BattleCog(commands.Cog):
         field_embed = self._create_field_effects_embed(battle, entry_messages)
         if field_embed:
             await interaction.followup.send(embed=field_embed)
+            await asyncio.sleep(1)
 
         # 3) Main action embed + view
         main_embed = self._create_battle_embed(battle)
@@ -1089,6 +1098,7 @@ class BattleCog(commands.Cog):
 
         for embed in lead_embeds:
             await interaction.followup.send(embed=embed)
+            await asyncio.sleep(1)
 
         return discord.Embed(
             description="***RAID BATTLE - BEGIN!!!***",
@@ -1133,6 +1143,7 @@ class BattleCog(commands.Cog):
                 send_embed.set_thumbnail(url=sprite_url)
 
             await interaction.followup.send(embed=send_embed)
+            await asyncio.sleep(1)
 
     @staticmethod
     def _split_faint_messages(messages: list[str]) -> tuple[list[str], list[str]]:
@@ -1291,6 +1302,7 @@ class BattleCog(commands.Cog):
                     )
 
             await self._safe_followup_send(interaction, embed=embed)
+            await asyncio.sleep(1)
             if faint_sound_task:
                 await faint_sound_task
 
@@ -1310,6 +1322,7 @@ class BattleCog(commands.Cog):
 
             if embed:
                 await self._safe_followup_send(interaction, embed=embed)
+                await asyncio.sleep(1)
 
             if sound_task:
                 await sound_task
@@ -2350,7 +2363,7 @@ class DoublesPartySelectView(discord.ui.View):
         action = BattleAction(
             action_type='switch',
             battler_id=self.battler_id,
-            party_index=party_index,
+            switch_to_position=party_index,
             pokemon_position=self.pokemon_position
         )
 

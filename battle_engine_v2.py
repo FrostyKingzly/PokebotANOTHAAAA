@@ -1480,8 +1480,15 @@ class BattleEngine:
                 move['pp'] = max(0, move['pp'] - 1)
                 break
 
+        # Filter out fainted targets before attacking
+        valid_targets = [(b, p) for b, p in targets if p.current_hp > 0]
+
+        # If no valid targets, move fails
+        if not valid_targets:
+            return {"messages": [f"{attacker.species_name} used {move_data['name']}, but there was no target!"]}
+
         # Build list of target names for the move message
-        target_names = [defender.species_name for _, defender in targets]
+        target_names = [defender.species_name for _, defender in valid_targets]
         if len(target_names) == 1:
             target_text = target_names[0]
         elif len(target_names) == 2:
@@ -1492,10 +1499,10 @@ class BattleEngine:
         messages.append(f"{attacker.species_name} used {move_data['name']} on {target_text}!")
 
         # In doubles/raids, spread moves have 0.75x power
-        spread_modifier = 0.75 if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.RAID] and len(targets) > 1 else 1.0
+        spread_modifier = 0.75 if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.RAID] and len(valid_targets) > 1 else 1.0
 
         # Hit each target
-        for defender_battler, defender in targets:
+        for defender_battler, defender in valid_targets:
             # Check if defender is protected
             if ENHANCED_SYSTEMS_AVAILABLE and hasattr(defender, 'status_manager'):
                 if 'protect' in getattr(defender.status_manager, 'volatile_statuses', {}):
@@ -1611,6 +1618,34 @@ class BattleEngine:
         # Determine all targets based on move target type
         target_type = move_data.get('target', 'single')
         targets = self._determine_move_targets(battle, action, move_data)
+
+        # Filter out fainted targets and redirect to valid targets if needed
+        valid_targets = [(b, p) for b, p in targets if p.current_hp > 0]
+
+        # If original target(s) fainted, try to find a new target for single-target moves
+        if not valid_targets and target_type == 'single':
+            # Get opposing team to find alternative target
+            opposing_team = battle.get_opposing_team_battlers(attacker_battler.battler_id)
+            for opp_battler in opposing_team:
+                for mon in opp_battler.get_active_pokemon():
+                    if mon.current_hp > 0:
+                        valid_targets = [(opp_battler, mon)]
+                        messages.append(f"{attacker.species_name}'s target fainted! Attack redirected to {mon.species_name}!")
+                        break
+                if valid_targets:
+                    break
+
+        # If no valid targets exist, move fails
+        if not valid_targets and target_type in ['single', 'all_opponents', 'all_adjacent', 'all']:
+            # Deduct PP since the move was attempted
+            for move in attacker.moves:
+                if move['move_id'] == action.move_id:
+                    move['pp'] = max(0, move['pp'] - 1)
+                    break
+            return {"messages": [f"{attacker.species_name} used {move_data['name']}, but there was no target!"]}
+
+        # Use the filtered valid targets
+        targets = valid_targets
 
         # Get the actual defender from targets (handles ally-targeting moves correctly)
         if targets:
