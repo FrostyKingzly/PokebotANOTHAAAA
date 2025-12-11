@@ -2971,5 +2971,7 @@ async def setup(bot):
     else:
         if getattr(engine, 'held_item_manager', None) is None and getattr(bot, 'items_db', None):
             engine.items_db = bot.items_db
-            engine.held_item_manager = HeldItemManager(bot.items_db)
+            engine.held_item_manager = HeldItemManager(
+                bot.items_db, getattr(engine, 'type_chart', None)
+            )
     await bot.add_cog(BattleCog(bot, engine))
