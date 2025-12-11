@@ -249,11 +249,19 @@ def _apply_social_points(bot, trainer, stat_key: str, amount: int) -> Dict[str, 
     }
 
 
+def _get_pokemon_value(pokemon, key: str, default=None):
+    """Safely retrieve either an attribute or dict key from a Pokémon object."""
+
+    if isinstance(pokemon, dict):
+        return pokemon.get(key, default)
+    return getattr(pokemon, key, default)
+
+
 def _format_pokemon_name(pokemon) -> str:
     """Return the nickname or species name for display."""
 
-    nickname = getattr(pokemon, "nickname", None)
-    species_name = getattr(pokemon, "species_name", "Pokemon")
+    nickname = _get_pokemon_value(pokemon, "nickname", None)
+    species_name = _get_pokemon_value(pokemon, "species_name", "Pokemon")
     return nickname or species_name
 
 
@@ -1516,12 +1524,15 @@ class DojoPokemonSelectView(View):
         options: List[discord.SelectOption] = []
 
         for idx, pokemon in enumerate(party):
-            pokemon_id = getattr(pokemon, "pokemon_id", str(idx))
+            pokemon_id = _get_pokemon_value(pokemon, "pokemon_id", str(idx))
+            level = _get_pokemon_value(pokemon, "level", "?")
+            species_name = _get_pokemon_value(pokemon, "species_name", "Pokemon")
+
             self.pokemon_map[str(pokemon_id)] = pokemon
             options.append(
                 discord.SelectOption(
-                    label=f"{_format_pokemon_name(pokemon)} (Lv. {pokemon.level})",
-                    description=f"{pokemon.species_name}",
+                    label=f"{_format_pokemon_name(pokemon)} (Lv. {level})",
+                    description=f"{species_name}",
                     value=str(pokemon_id),
                 )
             )
