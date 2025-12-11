@@ -121,15 +121,8 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
     return pokemon
 
 
-LOCATION_ID_ALIASES = {
-    "lights_district_library": "residential_district_library",
-    "lights_district_gym": "residential_district_gym",
-    "lights_district_dojo": "residential_district_dojo",
-}
-
-
 LOCATION_ACTIVITY_DEFINITIONS = {
-    "residential_district_library": {
+    "lights_district_library": {
         "id": "study",
         "label": "Study",
         "emoji": "📚",
@@ -139,7 +132,7 @@ LOCATION_ACTIVITY_DEFINITIONS = {
         "social_reward": {"stat_key": "insight", "points": 2},
         "type": "passive",
     },
-    "residential_district_gym": {
+    "lights_district_gym": {
         "id": "gym_train",
         "label": "Train",
         "emoji": "🏋️",
@@ -150,7 +143,7 @@ LOCATION_ACTIVITY_DEFINITIONS = {
         "exp_percent": 5,
         "type": "party_training",
     },
-    "residential_district_dojo": {
+    "lights_district_dojo": {
         "id": "dojo_train",
         "label": "Train",
         "emoji": "🥋",
@@ -176,70 +169,12 @@ POKEMON_STAT_LABELS = {
 }
 
 
-def _normalize_location_token(value: str) -> str:
-    """Normalize a location identifier or name for fuzzy matching."""
-
-    return "".join(ch for ch in str(value).lower() if ch.isalnum())
-
-
-def _resolve_activity_location_id(
-    location_ref: Optional[str],
-    location_manager=None,
-) -> Optional[str]:
-    """Resolve a stored location reference to a canonical activity key."""
-
-    if not location_ref:
-        return None
-
-    # Direct ID or known alias
-    normalized_id = LOCATION_ID_ALIASES.get(location_ref, location_ref)
-    if normalized_id in LOCATION_ACTIVITY_DEFINITIONS:
-        return normalized_id
-
-    if not location_manager:
-        return None
-
-    try:
-        # Exact lookup (ID-style reference)
-        if location_manager.get_location(normalized_id):
-            return LOCATION_ID_ALIASES.get(normalized_id, normalized_id)
-    except Exception:
-        pass
-
-    # Fuzzy match against location names/IDs (covers stored display names or shortened labels)
-    try:
-        target = _normalize_location_token(location_ref)
-        for loc_id, loc_data in getattr(location_manager, "locations", {}).items():
-            candidate_id = LOCATION_ID_ALIASES.get(loc_id, loc_id)
-            candidate_name = loc_data.get("name", loc_id)
-            normalized_candidate_id = _normalize_location_token(candidate_id)
-            normalized_candidate_name = _normalize_location_token(candidate_name)
-
-            if not target:
-                continue
-
-            if target in (normalized_candidate_id, normalized_candidate_name):
-                if candidate_id in LOCATION_ACTIVITY_DEFINITIONS:
-                    return candidate_id
-
-            # Also handle shortened inputs like "Reverie Library" without district prefix
-            if target in normalized_candidate_name or normalized_candidate_name in target:
-                if candidate_id in LOCATION_ACTIVITY_DEFINITIONS:
-                    return candidate_id
-    except Exception:
-        return None
-
-    return None
-
-
-def _get_location_activity(
-    location_id: Optional[str],
-    location_manager=None,
-) -> Optional[Dict[str, Any]]:
+def _get_location_activity(location_id: Optional[str]) -> Optional[Dict[str, Any]]:
     """Return the configured activity for a location, if any."""
 
-    resolved_id = _resolve_activity_location_id(location_id, location_manager=location_manager)
-    return LOCATION_ACTIVITY_DEFINITIONS.get(resolved_id) if resolved_id else None
+    if not location_id:
+        return None
+    return LOCATION_ACTIVITY_DEFINITIONS.get(location_id)
 
 
 def _apply_social_points(bot, trainer, stat_key: str, amount: int) -> Dict[str, Any]:
@@ -675,15 +610,7 @@ class MainMenuView(View):
             except Exception:
                 trainer = None
 
-            location_manager = getattr(self.bot, "location_manager", None)
-            activity = (
-                _get_location_activity(
-                    getattr(trainer, "current_location_id", None),
-                    location_manager=location_manager,
-                )
-                if trainer
-                else None
-            )
+            activity = _get_location_activity(getattr(trainer, "current_location_id", None)) if trainer else None
             if activity:
                 self._add_location_activity_button(activity)
 
@@ -694,6 +621,17 @@ class MainMenuView(View):
             if wild_area_manager.is_in_wild_area(user_id):
                 # Add exit button dynamically
                 self._add_exit_button()
+
+        # Location-based activities
+        if user_id:
+            try:
+                trainer = self.bot.player_manager.get_player(user_id)
+            except Exception:
+                trainer = None
+
+            activity = _get_location_activity(getattr(trainer, "current_location_id", None)) if trainer else None
+            if activity:
+                self._add_location_activity_button(activity)
 
     async def _deny_if_in_battle(self, interaction: discord.Interaction) -> bool:
         battle_cog = self.bot.get_cog("BattleCog")
