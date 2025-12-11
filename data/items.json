@@ -801,9 +801,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow BELUE.",
     "generation": 1,
+    "held_item": true,
     "id": "belue_berry",
     "name": "Belue Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "bergmite_ice": {
     "buy_price": 80,
@@ -1172,9 +1177,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow BLUK.",
     "generation": 1,
+    "held_item": true,
     "id": "bluk_berry",
     "name": "Bluk Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "blunder_policy": {
     "buy_price": 4000,
@@ -2201,9 +2211,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow CORNN.",
     "generation": 1,
+    "held_item": true,
     "id": "cornn_berry",
     "name": "Cornn Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "coupon_1": {
     "buy_price": 0,
@@ -2397,7 +2412,15 @@
     "held_item": true,
     "id": "custap_berry",
     "name": "Custap Berry",
-    "sell_price": 40
+    "sell_price": 40,
+    "usable_in_battle": true,
+    "effect_data": {
+      "trigger": "hp_threshold",
+      "hp_threshold": 0.25,
+      "priority_boost": 1,
+      "priority_message": "{pokemon}'s Custap Berry let it move first!",
+      "one_time_use": true
+    }
   },
   "cyber_ball": {
     "buy_price": 2000,
@@ -3309,9 +3332,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow DURIN.",
     "generation": 1,
+    "held_item": true,
     "id": "durin_berry",
     "name": "Durin Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "dusk_ball": {
     "buy_price": 1000,
@@ -6318,9 +6346,16 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow a mystery.",
     "generation": 7,
+    "held_item": true,
     "id": "enigma_berry",
     "name": "Enigma Berry",
-    "sell_price": 40
+    "sell_price": 40,
+    "usable_in_battle": true,
+    "effect_data": {
+      "trigger": "super_effective_hit",
+      "heal_percent": 25,
+      "one_time_use": true
+    }
   },
   "enigma_stone": {
     "buy_price": 0,
@@ -7559,27 +7594,42 @@
     "category": "berries",
     "description": "A Berry that calms wild Pok\u00e9mon you\u00e2\u20ac\u2122re trying to catch drastically when given to them.",
     "generation": 1,
+    "held_item": true,
     "id": "golden_nanab_berry",
     "name": "Golden Nanab Berry",
-    "sell_price": 2500
+    "sell_price": 2500,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "golden_pinap_berry": {
     "buy_price": 5000,
     "category": "berries",
     "description": "A Berry that makes you drastically more likely to get an item when given to Pok\u00e9mon you\u00e2\u20ac\u2122re trying to catch.",
     "generation": 1,
+    "held_item": true,
     "id": "golden_pinap_berry",
     "name": "Golden Pinap Berry",
-    "sell_price": 2500
+    "sell_price": 2500,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "golden_razz_berry": {
     "buy_price": 5000,
     "category": "berries",
     "description": "A Berry that makes it drastically easier to catch Pok\u00e9mon when given to them.",
     "generation": 1,
+    "held_item": true,
     "id": "golden_razz_berry",
     "name": "Golden Razz Berry",
-    "sell_price": 2500
+    "sell_price": 2500,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "good_rod": {
     "buy_price": 0,
@@ -8791,9 +8841,17 @@
     "category": "berries",
     "description": "A Poffin ingredient. If held by a Pok\u00e9mon, and if a foe\u00e2\u20ac\u2122s physical attack lands, the foe also takes damage.",
     "generation": 7,
+    "held_item": true,
     "id": "jaboca_berry",
     "name": "Jaboca Berry",
-    "sell_price": 40
+    "sell_price": 40,
+    "usable_in_battle": true,
+    "effect_data": {
+      "trigger": "on_hit",
+      "requires_category": "physical",
+      "attacker_damage_percent": 12.5,
+      "one_time_use": true
+    }
   },
   "jade_orb": {
     "buy_price": 0,
@@ -8934,9 +8992,17 @@
     "category": "berries",
     "description": "If held by a Pok\u00e9mon, this Berry will increase the holder\u00e2\u20ac\u2122s Defense if it\u00e2\u20ac\u2122s hit with a physical move.",
     "generation": 1,
+    "held_item": true,
     "id": "kee_berry",
     "name": "Kee Berry",
-    "sell_price": 40
+    "sell_price": 40,
+    "usable_in_battle": true,
+    "effect_data": {
+      "trigger": "on_hit",
+      "requires_category": "physical",
+      "stat_stage_boosts": {"defense": 1},
+      "one_time_use": true
+    }
   },
   "kelpsy_berry": {
     "buy_price": 80,
@@ -9391,7 +9457,14 @@
     "id": "leppa_berry",
     "name": "Leppa Berry",
     "sell_price": 40,
-    "usable_in_battle": true
+    "usable_in_battle": true,
+    "effect_data": {
+      "trigger": "pp_threshold",
+      "pp_threshold": 10,
+      "restore_pp": 10,
+      "one_time_use": true,
+      "desc": "Restores 10 PP to the move with the lowest PP at or below 10"
+    }
   },
   "letter": {
     "buy_price": 0,
@@ -10018,9 +10091,14 @@
     "category": "berries",
     "description": "A Berry which is very rare in the Unova region. A maniac will buy it for a high price.",
     "generation": 1,
+    "held_item": true,
     "id": "magost_berry",
     "name": "Magost Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "makeup_bag": {
     "buy_price": 0,
@@ -10087,9 +10165,17 @@
     "category": "berries",
     "description": "If held by a Pok\u00e9mon, this Berry will increase the holder\u00e2\u20ac\u2122s Sp. Def if it\u00e2\u20ac\u2122s hit with a special move.",
     "generation": 1,
+    "held_item": true,
     "id": "maranga_berry",
     "name": "Maranga Berry",
-    "sell_price": 40
+    "sell_price": 40,
+    "usable_in_battle": true,
+    "effect_data": {
+      "trigger": "on_hit",
+      "requires_category": "special",
+      "stat_stage_boosts": {"sp_defense": 1},
+      "one_time_use": true
+    }
   },
   "marble": {
     "buy_price": 300,
@@ -11058,9 +11144,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow NANAB.",
     "generation": 1,
+    "held_item": true,
     "id": "nanab_berry",
     "name": "Nanab Berry",
-    "sell_price": 100
+    "sell_price": 100,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "naughty_mint": {
     "buy_price": 20,
@@ -11148,9 +11239,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow NOMEL.",
     "generation": 1,
+    "held_item": true,
     "id": "nomel_berry",
     "name": "Nomel Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "noodles": {
     "buy_price": 280,
@@ -11525,9 +11621,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow PAMTRE.",
     "generation": 1,
+    "held_item": true,
     "id": "pamtre_berry",
     "name": "Pamtre Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "paralyze_heal": {
     "buy_price": 200,
@@ -11920,9 +12021,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow PINAP.",
     "generation": 1,
+    "held_item": true,
     "id": "pinap_berry",
     "name": "Pinap Berry",
-    "sell_price": 100
+    "sell_price": 100,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "pincurchin_spines": {
     "buy_price": 100,
@@ -12857,9 +12963,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow RABUTA.",
     "generation": 1,
+    "held_item": true,
     "id": "rabuta_berry",
     "name": "Rabuta Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "radiant_petal": {
     "buy_price": 0,
@@ -13006,9 +13117,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow RAZZ.",
     "generation": 1,
+    "held_item": true,
     "id": "razz_berry",
     "name": "Razz Berry",
-    "sell_price": 100
+    "sell_price": 100,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "reaper_cloth": {
     "buy_price": 2000,
@@ -13802,9 +13918,17 @@
     "category": "berries",
     "description": "A Poffin ingredient. If held by a Pok\u00e9mon, and if a foe\u00e2\u20ac\u2122s special attack lands, the foe also takes damage.",
     "generation": 7,
+    "held_item": true,
     "id": "rowap_berry",
     "name": "Rowap Berry",
-    "sell_price": 40
+    "sell_price": 40,
+    "usable_in_battle": true,
+    "effect_data": {
+      "trigger": "on_hit",
+      "requires_category": "special",
+      "attacker_damage_percent": 12.5,
+      "one_time_use": true
+    }
   },
   "rsvp_mail": {
     "buy_price": 50,
@@ -14522,9 +14646,14 @@
     "category": "berries",
     "description": "A Berry that calms wild Pok\u00e9mon you\u00e2\u20ac\u2122re trying to catch when given to them.",
     "generation": 1,
+    "held_item": true,
     "id": "silver_nanab_berry",
     "name": "Silver Nanab Berry",
-    "sell_price": 500
+    "sell_price": 500,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "silver_pick": {
     "buy_price": 40,
@@ -14540,9 +14669,14 @@
     "category": "berries",
     "description": "A Berry that makes you more likely to get an item when given to Pok\u00e9mon you\u00e2\u20ac\u2122re trying to catch.",
     "generation": 1,
+    "held_item": true,
     "id": "silver_pinap_berry",
     "name": "Silver Pinap Berry",
-    "sell_price": 500
+    "sell_price": 500,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "silver_powder": {
     "buy_price": 1000,
@@ -14564,9 +14698,14 @@
     "category": "berries",
     "description": "A Berry that makes it easier to catch Pok\u00e9mon when given to them.",
     "generation": 1,
+    "held_item": true,
     "id": "silver_razz_berry",
     "name": "Silver Razz Berry",
-    "sell_price": 500
+    "sell_price": 500,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "silver_wing": {
     "buy_price": 0,
@@ -15039,9 +15178,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow SPELON.",
     "generation": 1,
+    "held_item": true,
     "id": "spelon_berry",
     "name": "Spelon Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "spice_mix": {
     "buy_price": 400,
@@ -18952,9 +19096,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow WATMEL.",
     "generation": 1,
+    "held_item": true,
     "id": "watmel_berry",
     "name": "Watmel Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "wattrel_feather": {
     "buy_price": 120,
@@ -19022,9 +19171,14 @@
     "category": "berries",
     "description": "POK\u00c3\u00a9BLOCK ingredient. Plant in loamy soil to grow WEPEAR.",
     "generation": 1,
+    "held_item": true,
     "id": "wepear_berry",
     "name": "Wepear Berry",
-    "sell_price": 10
+    "sell_price": 10,
+    "usable_in_battle": false,
+    "effect_data": {
+      "no_battle_effect": true
+    }
   },
   "whimsical_tablecloth": {
     "buy_price": 2000,

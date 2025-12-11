@@ -215,6 +215,14 @@ class HeldItemManager:
         consumed.add(item_id)
         pokemon._consumed_items = consumed
 
+    def consume_item(self, pokemon, item_id: Optional[str] = None):
+        """Public wrapper to mark an item as consumed for the given Pokémon."""
+        if not item_id:
+            item_id = getattr(pokemon, 'held_item', None)
+        if not item_id:
+            return
+        self._consume(pokemon, item_id)
+
     def _get_item(self, pokemon):
         if not self.items_db:
             return None
@@ -553,6 +561,9 @@ class BattleAction:
     # Priority for turn order
     priority: int = 0
     speed: int = 0
+    priority_message: Optional[str] = None
+    priority_item_id: Optional[str] = None
+    priority_consumes_item: bool = False
 
 
 class BattleEngine:
@@ -1463,37 +1474,47 @@ class BattleEngine:
     
     def _sort_actions(self, battle: BattleState, actions: List[BattleAction]) -> List[BattleAction]:
         """Sort actions by priority, then speed"""
-        # Get move priority and speed for each action
-        def get_action_priority(action: BattleAction) -> Tuple[int, int]:
+        for action in actions:
             # Switching always goes first
             if action.action_type == 'switch':
-                return (100, 999)
-            
+                action.priority = 100
+                action.speed = 999
+                continue
+
             # Items are high priority
             if action.action_type == 'item':
-                return (90, 999)
-            
-            # Moves
+                action.priority = 90
+                action.speed = 999
+                continue
+
             if action.action_type == 'move':
                 move_data = self.moves_db.get_move(action.move_id)
                 priority = move_data.get('priority', 0)
 
-                # Get Pokemon speed
                 battler = self._get_battler_by_id(battle, action.battler_id)
                 active_pokemon = battler.get_active_pokemon()
                 pokemon = active_pokemon[0] if active_pokemon else None
                 speed = self._get_effective_speed(pokemon)
 
-                # Trick Room reverses speed order for same priority moves
+                if self.held_item_manager and pokemon:
+                    priority_effect = self.held_item_manager.get_priority_effect(pokemon, move_data)
+                    if priority_effect:
+                        priority += priority_effect.get('priority_boost', 0)
+                        action.priority_message = priority_effect.get('message')
+                        action.priority_consumes_item = priority_effect.get('consume', False)
+                        action.priority_item_id = priority_effect.get('item_id')
+
                 if battle.trick_room_turns > 0:
                     speed = -speed
 
-                return (priority, speed)
+                action.priority = priority
+                action.speed = speed
+                continue
 
-            # Flee
-            return (0, 0)
+            action.priority = 0
+            action.speed = 0
 
-        actions.sort(key=get_action_priority, reverse=True)
+        actions.sort(key=lambda a: (a.priority, a.speed), reverse=True)
         return actions
 
     def _get_effective_speed(self, pokemon) -> int:
@@ -1725,6 +1746,11 @@ class BattleEngine:
         attacker = active_pokemon_list[pokemon_pos]
 
         messages: List[str] = []
+
+        if action.priority_message:
+            messages.append(action.priority_message)
+            if action.priority_consumes_item and self.held_item_manager:
+                self.held_item_manager.consume_item(attacker, action.priority_item_id)
 
         # Check if attacker can move (status conditions, flinch, etc.)
         if ENHANCED_SYSTEMS_AVAILABLE and hasattr(attacker, 'status_manager'):
