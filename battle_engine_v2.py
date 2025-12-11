@@ -202,8 +202,10 @@ class BattleState:
 class HeldItemManager:
     """Utility helper for held item effects."""
 
-    def __init__(self, items_db):
+    def __init__(self, items_db, type_chart=None, moves_db=None):
         self.items_db = items_db
+        self.type_chart = type_chart
+        self.moves_db = moves_db
 
     def _is_consumed(self, pokemon, item_id: str) -> bool:
         consumed = getattr(pokemon, '_consumed_items', set())
@@ -214,6 +216,14 @@ class HeldItemManager:
         consumed.add(item_id)
         pokemon._consumed_items = consumed
 
+    def consume_item(self, pokemon, item_id: Optional[str] = None):
+        """Public wrapper to mark an item as consumed for the given Pokémon."""
+        if not item_id:
+            item_id = getattr(pokemon, 'held_item', None)
+        if not item_id:
+            return
+        self._consume(pokemon, item_id)
+
     def _get_item(self, pokemon):
         if not self.items_db:
             return None
@@ -223,6 +233,184 @@ class HeldItemManager:
         if self._is_consumed(pokemon, item_id):
             return None
         return self.items_db.get_item(item_id)
+
+    def _calculate_effectiveness(self, move_type: str, defender) -> float:
+        if not move_type or not self.type_chart:
+            return 1.0
+        defending_types = []
+        if hasattr(defender, 'species_data'):
+            defending_types = defender.species_data.get('types', [])
+        move_type = move_type.lower()
+        if hasattr(self.type_chart, 'get_dual_effectiveness'):
+            return self.type_chart.get_dual_effectiveness(move_type, defending_types)
+
+        multiplier = 1.0
+        for def_type in defending_types:
+            multiplier *= self.type_chart.get_effectiveness(move_type, def_type)
+        return multiplier
+
+    def _apply_damage_reduction(self, defender, move_data, damage: int) -> tuple[int, Optional[str]]:
+        item = self._get_item(defender)
+        if not item:
+            return damage, None
+
+        effect = dict(item.get('effect_data') or {})
+        reduction = effect.get('damage_reduction')
+        move_type = (move_data.get('type') or '').lower()
+        reduction_type = (effect.get('type') or '').lower()
+        if not reduction or not move_type or move_type != reduction_type:
+            return damage, None
+
+        requires_super_effective = effect.get('requires_super_effective', True)
+        if requires_super_effective:
+            effectiveness = self._calculate_effectiveness(move_type, defender)
+            if effectiveness <= 1.0:
+                return damage, None
+
+        reduced_damage = max(1, int(math.ceil(damage * reduction)))
+        if effect.get('one_time_use'):
+            self._consume(defender, item['id'])
+
+        item_name = item.get('name', item['id'])
+        return reduced_damage, f"{defender.species_name}'s {item_name} weakened the attack!"
+
+    def _maybe_cure_status(self, pokemon, effect: Dict[str, Any]) -> Optional[str]:
+        cures = effect.get('cures')
+        trigger = effect.get('trigger')
+        if not cures or trigger not in (None, 'end_of_turn'):
+            return None
+
+        normalized = {str(s).lower() for s in cures}
+        status_manager = getattr(pokemon, 'status_manager', None)
+        cured_status = None
+
+        if status_manager and getattr(status_manager, 'major_status', None):
+            major = status_manager.major_status
+            if major and major.status_type in normalized:
+                cured_status = major.status_type
+                status_manager.major_status = None
+
+        if not cured_status and status_manager:
+            to_remove = [name for name in status_manager.volatile_statuses if name in normalized]
+            if to_remove:
+                status_manager.remove_status(to_remove[0])
+                cured_status = to_remove[0]
+
+        if not cured_status:
+            raw_status = getattr(pokemon, 'status_condition', None)
+            if raw_status and str(raw_status).lower() in normalized:
+                cured_status = raw_status
+                pokemon.status_condition = None
+
+        if not cured_status:
+            return None
+
+        readable = cured_status.upper()
+        return f"{pokemon.species_name}'s {effect.get('item_name', 'item')} cured {readable}!"
+
+    def _apply_healing(
+        self, pokemon, effect: Dict[str, Any], item_name: Optional[str] = None
+    ) -> tuple[int, Optional[str]]:
+        heal_amount = 0
+        if 'heal_amount' in effect:
+            heal_amount = int(effect.get('heal_amount', 0))
+        elif 'heal_percent' in effect:
+            heal_amount = int(round(pokemon.max_hp * (effect.get('heal_percent', 0) / 100.0)))
+
+        if heal_amount <= 0 or getattr(pokemon, 'current_hp', 0) <= 0:
+            return 0, None
+
+        old_hp = pokemon.current_hp
+        pokemon.current_hp = min(pokemon.max_hp, pokemon.current_hp + heal_amount)
+        healed = pokemon.current_hp - old_hp
+        if healed <= 0:
+            return 0, None
+
+        name = item_name or effect.get('item_name', 'item')
+        return healed, f"{pokemon.species_name} restored health with its {name}! (+{healed} HP)"
+
+    def _apply_stat_boosts(self, pokemon, boosts: Dict[str, int], item_name: str) -> List[str]:
+        if not boosts:
+            return []
+
+        if not hasattr(pokemon, 'stat_stages'):
+            pokemon.stat_stages = {
+                'attack': 0,
+                'defense': 0,
+                'sp_attack': 0,
+                'sp_defense': 0,
+                'speed': 0,
+                'evasion': 0,
+                'accuracy': 0,
+            }
+
+        stat_names = {
+            'attack': 'Attack',
+            'defense': 'Defense',
+            'sp_attack': 'Sp. Atk',
+            'sp_defense': 'Sp. Def',
+            'speed': 'Speed',
+            'evasion': 'Evasion',
+            'accuracy': 'Accuracy',
+        }
+
+        messages: List[str] = []
+        for stat, change in boosts.items():
+            before = pokemon.stat_stages.get(stat, 0)
+            after = max(-6, min(6, before + int(change)))
+            pokemon.stat_stages[stat] = after
+            delta = after - before
+            if delta == 0:
+                continue
+            direction = 'rose' if delta > 0 else 'fell'
+            stat_label = stat_names.get(stat, stat.title())
+            messages.append(
+                f"{pokemon.species_name}'s {stat_label} {direction}! ({'+' if delta > 0 else ''}{delta})"
+            )
+
+        if messages:
+            messages[0] = f"{pokemon.species_name} used its {item_name}! " + messages[0]
+        return messages
+
+    def _maybe_restore_pp(self, pokemon, effect: Dict[str, Any]) -> Optional[str]:
+        restore_pp = effect.get('restore_pp')
+        threshold = effect.get('pp_threshold')
+        if restore_pp is None or threshold is None:
+            return None
+
+        if not hasattr(pokemon, 'moves'):
+            return None
+
+        target_move = None
+        for move in pokemon.moves:
+            current_pp = move.get('pp', 0)
+            max_pp = move.get('max_pp', 0)
+            if max_pp <= 0 or current_pp >= max_pp:
+                continue
+            if current_pp > threshold:
+                continue
+
+            if target_move is None or current_pp < target_move.get('pp', 0):
+                target_move = move
+            elif current_pp == target_move.get('pp', 0) and max_pp > target_move.get('max_pp', 0):
+                target_move = move
+
+        if not target_move:
+            return None
+
+        restored = min(int(restore_pp), target_move['max_pp'] - target_move['pp'])
+        if restored <= 0:
+            return None
+
+        target_move['pp'] += restored
+        move_id = target_move.get('move_id') or 'move'
+        move_name = move_id
+        if self.moves_db:
+            move_data = self.moves_db.get_move(move_id)
+            move_name = move_data.get('name', move_id) if move_data else move_id
+
+        item_name = effect.get('item_name', 'item')
+        return f"{pokemon.species_name}'s {item_name} restored PP to {move_name}! (+{restored} PP)"
 
     # -------- Restrictions / tracking --------
     def check_move_restrictions(self, pokemon, move_data) -> Optional[str]:
@@ -301,6 +489,10 @@ class HeldItemManager:
         if defense_mult > 1:
             damage = max(1, int(math.ceil(damage / defense_mult)))
 
+        damage, reduction_msg = self._apply_damage_reduction(defender, move_data, damage)
+        if reduction_msg:
+            messages.append(reduction_msg)
+
         damage, survival_msg = self._try_focus_items(defender, damage)
         if survival_msg:
             messages.append(survival_msg)
@@ -361,17 +553,137 @@ class HeldItemManager:
 
         return messages
 
+    def process_reactive_effects(self, pokemon, move_data, damage_taken: int, attacker=None) -> List[str]:
+        item = self._get_item(pokemon)
+        if not item:
+            return []
+
+        effect = dict(item.get('effect_data') or {})
+        effect['item_name'] = item.get('name', item['id'])
+        messages: List[str] = []
+        consumed = False
+
+        trigger = effect.get('trigger')
+        if trigger == 'hp_threshold':
+            threshold = effect.get('hp_threshold')
+            if threshold is not None:
+                try:
+                    threshold_value = float(threshold)
+                except Exception:
+                    threshold_value = None
+                if (
+                    threshold_value is not None
+                    and getattr(pokemon, 'current_hp', 0) > 0
+                    and pokemon.current_hp <= pokemon.max_hp * threshold_value
+                ):
+                    healed, heal_msg = self._apply_healing(pokemon, effect, effect['item_name'])
+                    if heal_msg:
+                        messages.append(heal_msg)
+                        consumed = consumed or effect.get('one_time_use')
+
+        hit_triggers = {'on_hit', 'super_effective_hit'}
+        if trigger in hit_triggers:
+            if not move_data or damage_taken <= 0:
+                pass
+            else:
+                category_req = effect.get('requires_category')
+                if category_req and move_data.get('category') != category_req:
+                    pass
+                else:
+                    if trigger == 'super_effective_hit':
+                        effectiveness = self._calculate_effectiveness(move_data.get('type'), pokemon)
+                        if effectiveness <= 1.0:
+                            pass
+                        else:
+                            healed, heal_msg = self._apply_healing(pokemon, effect, effect['item_name'])
+                            if heal_msg:
+                                messages.append(heal_msg)
+                    boosts = effect.get('stat_stage_boosts') or {}
+                    if boosts:
+                        messages.extend(self._apply_stat_boosts(pokemon, boosts, effect['item_name']))
+
+                    attacker_damage = effect.get('attacker_damage_percent')
+                    if attacker_damage and attacker is not None and getattr(attacker, 'current_hp', 0) > 0:
+                        damage = max(1, int(round(attacker.max_hp * (attacker_damage / 100.0))))
+                        attacker.current_hp = max(0, attacker.current_hp - damage)
+                        messages.append(
+                            f"{attacker.species_name} was hurt by {pokemon.species_name}'s {effect['item_name']}! (-{damage} HP)"
+                        )
+                    if trigger in hit_triggers:
+                        consumed = consumed or effect.get('one_time_use')
+
+        if consumed and effect.get('one_time_use'):
+            self._consume(pokemon, item['id'])
+
+        return messages
+
+    def get_priority_effect(self, pokemon, move_data) -> Optional[Dict[str, Any]]:
+        """Check for priority-boosting held items such as Quick Claw or Custap Berry."""
+        item = self._get_item(pokemon)
+        if not item:
+            return None
+
+        effect = item.get('effect_data') or {}
+        if 'priority_boost' not in effect:
+            return None
+
+        threshold = effect.get('hp_threshold')
+        if threshold is not None:
+            try:
+                threshold_value = float(threshold)
+            except Exception:
+                threshold_value = None
+            if threshold_value is None or pokemon.current_hp > pokemon.max_hp * threshold_value:
+                return None
+
+        chance = effect.get('priority_chance')
+        if chance is not None and random.random() > chance:
+            return None
+
+        item_name = item.get('name', item['id'])
+        message = effect.get('priority_message') or f"{pokemon.species_name}'s {item_name} let it move first!"
+        if '{pokemon}' in message:
+            try:
+                message = message.format(pokemon=pokemon.species_name)
+            except Exception:
+                pass
+
+        return {
+            'priority_boost': effect.get('priority_boost', 0),
+            'message': message,
+            'consume': bool(effect.get('one_time_use')),
+            'item_id': item['id'],
+        }
+
     def process_end_of_turn(self, pokemon) -> List[str]:
         item = self._get_item(pokemon)
         if not item:
             return []
-        effect = item.get('effect_data') or {}
-        heal_percent = effect.get('heal_percent')
-        if not heal_percent or getattr(pokemon, 'current_hp', 0) <= 0 or pokemon.current_hp >= pokemon.max_hp:
-            return []
-        heal = max(1, int(round(pokemon.max_hp * (heal_percent / 100.0))))
-        pokemon.current_hp = min(pokemon.max_hp, pokemon.current_hp + heal)
-        return [f"{pokemon.species_name} restored health with its {item.get('name', item['id'])}! (+{heal} HP)"]
+        effect = dict(item.get('effect_data') or {})
+        effect['item_name'] = item.get('name', item['id'])
+
+        messages: List[str] = []
+        consumed = False
+
+        cure_msg = self._maybe_cure_status(pokemon, effect)
+        if cure_msg:
+            messages.append(cure_msg)
+            consumed = consumed or effect.get('one_time_use')
+
+        healed, heal_msg = self._apply_healing(pokemon, effect, effect['item_name'])
+        if heal_msg:
+            messages.append(heal_msg)
+            consumed = consumed or effect.get('one_time_use')
+
+        pp_msg = self._maybe_restore_pp(pokemon, effect)
+        if pp_msg:
+            messages.append(pp_msg)
+            consumed = consumed or effect.get('one_time_use')
+
+        if consumed and effect.get('one_time_use'):
+            self._consume(pokemon, item['id'])
+
+        return messages
 
     def get_speed_multiplier(self, pokemon) -> float:
         item = self._get_item(pokemon)
@@ -407,6 +719,9 @@ class BattleAction:
     # Priority for turn order
     priority: int = 0
     speed: int = 0
+    priority_message: Optional[str] = None
+    priority_item_id: Optional[str] = None
+    priority_consumes_item: bool = False
 
 
 class BattleEngine:
@@ -427,7 +742,9 @@ class BattleEngine:
         self.type_chart = type_chart
         self.species_db = species_db
         self.items_db = items_db
-        self.held_item_manager = HeldItemManager(items_db) if items_db else None
+        self.held_item_manager = (
+            HeldItemManager(items_db, type_chart, moves_db) if items_db else None
+        )
         
         # Initialize enhanced systems
         # Ruleset handler
@@ -1315,37 +1632,47 @@ class BattleEngine:
     
     def _sort_actions(self, battle: BattleState, actions: List[BattleAction]) -> List[BattleAction]:
         """Sort actions by priority, then speed"""
-        # Get move priority and speed for each action
-        def get_action_priority(action: BattleAction) -> Tuple[int, int]:
+        for action in actions:
             # Switching always goes first
             if action.action_type == 'switch':
-                return (100, 999)
-            
+                action.priority = 100
+                action.speed = 999
+                continue
+
             # Items are high priority
             if action.action_type == 'item':
-                return (90, 999)
-            
-            # Moves
+                action.priority = 90
+                action.speed = 999
+                continue
+
             if action.action_type == 'move':
                 move_data = self.moves_db.get_move(action.move_id)
                 priority = move_data.get('priority', 0)
 
-                # Get Pokemon speed
                 battler = self._get_battler_by_id(battle, action.battler_id)
                 active_pokemon = battler.get_active_pokemon()
                 pokemon = active_pokemon[0] if active_pokemon else None
                 speed = self._get_effective_speed(pokemon)
 
-                # Trick Room reverses speed order for same priority moves
+                if self.held_item_manager and pokemon:
+                    priority_effect = self.held_item_manager.get_priority_effect(pokemon, move_data)
+                    if priority_effect:
+                        priority += priority_effect.get('priority_boost', 0)
+                        action.priority_message = priority_effect.get('message')
+                        action.priority_consumes_item = priority_effect.get('consume', False)
+                        action.priority_item_id = priority_effect.get('item_id')
+
                 if battle.trick_room_turns > 0:
                     speed = -speed
 
-                return (priority, speed)
+                action.priority = priority
+                action.speed = speed
+                continue
 
-            # Flee
-            return (0, 0)
+            action.priority = 0
+            action.speed = 0
 
-        actions.sort(key=get_action_priority, reverse=True)
+        actions.sort(key=lambda a: (a.priority, a.speed), reverse=True)
         return actions
 
     def _get_effective_speed(self, pokemon) -> int:
@@ -1578,6 +1905,11 @@ class BattleEngine:
 
         messages: List[str] = []
 
+        if action.priority_message:
+            messages.append(action.priority_message)
+            if action.priority_consumes_item and self.held_item_manager:
+                self.held_item_manager.consume_item(attacker, action.priority_item_id)
+
         # Check if attacker can move (status conditions, flinch, etc.)
         if ENHANCED_SYSTEMS_AVAILABLE and hasattr(attacker, 'status_manager'):
             can_move, prevention_msg = attacker.status_manager.can_move(attacker)
@@ -1800,7 +2132,13 @@ class BattleEngine:
         if self.held_item_manager:
             post_msgs = self.held_item_manager.apply_after_damage(attacker, move_data, damage)
             messages.extend(post_msgs)
-        
+
+        if self.held_item_manager:
+            reactive_msgs = self.held_item_manager.process_reactive_effects(
+                defender, move_data, damage, attacker
+            )
+            messages.extend(reactive_msgs)
+
         # Check for faint / dazed state
         if defender.current_hp <= 0:
             # Determine which battler owns the defender
