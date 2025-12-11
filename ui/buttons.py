@@ -121,6 +121,23 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
     return pokemon
 
 
+def _ensure_pokemon_instance(bot, pokemon_data):
+    """Return a Pokemon instance for dojo/gym flows, reconstructing if needed."""
+
+    if not isinstance(pokemon_data, dict):
+        return pokemon_data
+
+    species_id = pokemon_data.get("species_dex_number")
+    if species_id is None:
+        return None
+
+    species_data = bot.species_db.get_species(species_id)
+    if not species_data:
+        return None
+
+    return reconstruct_pokemon_from_data(pokemon_data, species_data)
+
+
 LOCATION_ACTIVITY_DEFINITIONS = {
     "lights_district_library": {
         "id": "study",
@@ -288,7 +305,12 @@ def _apply_iv_allocations(bot, pokemon, allocations: Dict[str, int]) -> Dict[str
 def _apply_party_exp_boost(bot, trainer, percent: int) -> List[Dict[str, Any]]:
     """Give each party Pokemon a percentage of their current EXP."""
 
-    party = bot.player_manager.get_party(trainer.discord_user_id)
+    party_data = bot.player_manager.get_party(trainer.discord_user_id)
+    party = [
+        _ensure_pokemon_instance(bot, poke_data)
+        for poke_data in party_data
+    ]
+    party = [p for p in party if p is not None]
     if not party:
         return []
 
@@ -1292,12 +1314,18 @@ class MainMenuView(View):
     async def _start_dojo_training(self, interaction, trainer, activity: Dict[str, Any]):
         """Begin the multi-step dojo training flow."""
 
-        party = self.bot.player_manager.get_party(trainer.discord_user_id)
+        party_data = self.bot.player_manager.get_party(trainer.discord_user_id)
+        party = [
+            _ensure_pokemon_instance(self.bot, poke_data)
+            for poke_data in party_data
+        ]
+        party = [p for p in party if p is not None]
+
         if not party:
             await interaction.response.send_message(
                 "❌ You need at least one party Pokémon in your team to train at the dojo.",
                 ephemeral=True,
-            )
+                )
             return
 
         choose_embed = discord.Embed(
