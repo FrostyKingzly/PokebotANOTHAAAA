@@ -1,5 +1,7 @@
 """Button Views - Interactive Discord UI components"""
 
+import asyncio
+import json
 import logging
 import random
 
@@ -8,7 +10,13 @@ from discord.ui import Button, View, Select
 from typing import Optional, List, Dict, Any, Callable, Awaitable, Tuple
 
 from exp_system import ExpSystem
-from social_stats import SOCIAL_STAT_DEFINITIONS
+from social_stats import (
+    SOCIAL_STAT_DEFINITIONS,
+    clamp_points,
+    get_stat_cap,
+    points_to_rank,
+    calculate_max_stamina,
+)
 from raid_manager import RaidEncounter
 
 
@@ -111,6 +119,209 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
         pokemon.tera_type = poke_data['tera_type']
 
     return pokemon
+
+
+LOCATION_ACTIVITY_DEFINITIONS = {
+    "lights_district_library": {
+        "id": "study",
+        "label": "Study",
+        "emoji": "📚",
+        "stamina_cost": 1,
+        "description": "Hit the books and sharpen your mind.",
+        "reward_lines": ["+2 Insight"],
+        "social_reward": {"stat_key": "insight", "points": 2},
+        "type": "passive",
+    },
+    "lights_district_gym": {
+        "id": "gym_train",
+        "label": "Train",
+        "emoji": "🏋️",
+        "stamina_cost": 1,
+        "description": "Put in reps to toughen up yourself and your team.",
+        "reward_lines": ["+2 Fortitude", "+5% current EXP to all party Pokémon"],
+        "social_reward": {"stat_key": "fortitude", "points": 2},
+        "exp_percent": 5,
+        "type": "party_training",
+    },
+    "lights_district_dojo": {
+        "id": "dojo_train",
+        "label": "Train",
+        "emoji": "🥋",
+        "stamina_cost": 1,
+        "description": "Focus your spirit and channel it into your partners.",
+        "reward_lines": [
+            "+2 Clarity",
+            "+3 IV points for a party Pokémon (distributed to your chosen stats)",
+        ],
+        "social_reward": {"stat_key": "will", "points": 2},
+        "iv_points": 3,
+        "type": "dojo",
+    },
+}
+
+POKEMON_STAT_LABELS = {
+    "hp": "HP",
+    "attack": "Attack",
+    "defense": "Defense",
+    "sp_attack": "Sp. Atk",
+    "sp_defense": "Sp. Def",
+    "speed": "Speed",
+}
+
+
+def _get_location_activity(location_id: Optional[str]) -> Optional[Dict[str, Any]]:
+    """Return the configured activity for a location, if any."""
+
+    if not location_id:
+        return None
+    return LOCATION_ACTIVITY_DEFINITIONS.get(location_id)
+
+
+def _apply_social_points(bot, trainer, stat_key: str, amount: int) -> Dict[str, Any]:
+    """Add social stat points while respecting boon/bane caps."""
+
+    stat_state = trainer.social_stats.get(
+        stat_key,
+        {
+            "rank": 0,
+            "points": 0,
+            "cap": get_stat_cap(stat_key, trainer.boon_stat, trainer.bane_stat),
+        },
+    )
+
+    cap = stat_state.get("cap") or get_stat_cap(stat_key, trainer.boon_stat, trainer.bane_stat)
+    old_points = stat_state.get("points", 0)
+    old_rank = stat_state.get("rank", 0)
+    new_points = clamp_points(old_points + amount, cap)
+    new_rank = points_to_rank(new_points, cap)
+
+    updates: Dict[str, Any] = {
+        f"{stat_key}_points": new_points,
+        f"{stat_key}_rank": new_rank,
+    }
+
+    if stat_key == "fortitude":
+        new_max = calculate_max_stamina(new_rank)
+        updates["stamina_max"] = new_max
+        updates["stamina_current"] = min(getattr(trainer, "stamina_current", 0), new_max)
+        trainer.stamina_max = updates["stamina_max"]
+        trainer.stamina_current = updates["stamina_current"]
+
+    bot.player_manager.update_player(trainer.discord_user_id, **updates)
+
+    stat_state["points"] = new_points
+    stat_state["rank"] = new_rank
+    trainer.social_stats[stat_key] = stat_state
+    setattr(trainer, f"{stat_key}_points", new_points)
+    setattr(trainer, f"{stat_key}_rank", new_rank)
+
+    return {
+        "old_rank": old_rank,
+        "new_rank": new_rank,
+        "new_points": new_points,
+        "cap": cap,
+    }
+
+
+def _format_pokemon_name(pokemon) -> str:
+    """Return the nickname or species name for display."""
+
+    nickname = getattr(pokemon, "nickname", None)
+    species_name = getattr(pokemon, "species_name", "Pokemon")
+    return nickname or species_name
+
+
+def _apply_iv_allocations(bot, pokemon, allocations: Dict[str, int]) -> Dict[str, int]:
+    """Apply IV gains to a Pokemon and persist them."""
+
+    applied: Dict[str, int] = {}
+    pokemon_id = getattr(pokemon, "pokemon_id", None)
+    if not pokemon_id:
+        return applied
+
+    for stat, amount in allocations.items():
+        if amount <= 0 or stat not in pokemon.ivs:
+            continue
+        current_value = pokemon.ivs.get(stat, 0)
+        new_value = min(31, current_value + amount)
+        gain = new_value - current_value
+        if gain <= 0:
+            continue
+        pokemon.ivs[stat] = new_value
+        applied[stat] = gain
+
+    if not applied:
+        return applied
+
+    old_max_hp = getattr(pokemon, "max_hp", 1) or 1
+    current_hp = getattr(pokemon, "current_hp", old_max_hp)
+    pokemon._calculate_stats()
+
+    # Preserve HP ratio with new stats
+    ratio = current_hp / max(1, old_max_hp)
+    pokemon.current_hp = min(pokemon.max_hp, max(1, int(round(pokemon.max_hp * ratio))))
+
+    updates = {
+        "iv_hp": pokemon.ivs.get("hp", 0),
+        "iv_attack": pokemon.ivs.get("attack", 0),
+        "iv_defense": pokemon.ivs.get("defense", 0),
+        "iv_sp_attack": pokemon.ivs.get("sp_attack", 0),
+        "iv_sp_defense": pokemon.ivs.get("sp_defense", 0),
+        "iv_speed": pokemon.ivs.get("speed", 0),
+        "max_hp": pokemon.max_hp,
+        "current_hp": pokemon.current_hp,
+    }
+
+    bot.player_manager.db.update_pokemon(pokemon_id, updates)
+    return applied
+
+
+def _apply_party_exp_boost(bot, trainer, percent: int) -> List[Dict[str, Any]]:
+    """Give each party Pokemon a percentage of their current EXP."""
+
+    party = bot.player_manager.get_party(trainer.discord_user_id)
+    if not party:
+        return []
+
+    level_cap = bot.player_manager.get_level_cap_for_trainer(trainer)
+    results: List[Dict[str, Any]] = []
+
+    for pokemon in party:
+        pokemon_id = getattr(pokemon, "pokemon_id", None)
+        if not pokemon_id:
+            continue
+
+        current_exp = max(0, getattr(pokemon, "exp", 0))
+        gain = max(1, int(current_exp * (percent / 100)))
+        level_up_result = ExpSystem.apply_exp_and_check_levelup(
+            pokemon,
+            gain,
+            bot.species_db,
+            getattr(bot, "moves_db", None),
+            level_cap=level_cap,
+        )
+
+        updates = {
+            "exp": pokemon.exp,
+            "level": pokemon.level,
+            "current_hp": getattr(pokemon, "current_hp", pokemon.max_hp),
+            "max_hp": getattr(pokemon, "max_hp", pokemon.max_hp),
+            "moves": json.dumps(pokemon.moves),
+            "stored_exp": getattr(pokemon, "stored_exp", 0),
+        }
+        bot.player_manager.db.update_pokemon(pokemon_id, updates)
+
+        results.append(
+            {
+                "name": _format_pokemon_name(pokemon),
+                "gain": gain,
+                "new_level": pokemon.level,
+                "leveled_up": level_up_result is not None,
+                "new_moves": getattr(level_up_result, "new_moves_learned", []),
+            }
+        )
+
+    return results
 
 
 async def _show_main_menu(interaction: discord.Interaction, bot, user_id: int):
@@ -399,6 +610,17 @@ class MainMenuView(View):
             if wild_area_manager.is_in_wild_area(user_id):
                 # Add exit button dynamically
                 self._add_exit_button()
+
+        # Location-based activities
+        if user_id:
+            try:
+                trainer = self.bot.player_manager.get_player(user_id)
+            except Exception:
+                trainer = None
+
+            activity = _get_location_activity(getattr(trainer, "current_location_id", None)) if trainer else None
+            if activity:
+                self._add_location_activity_button(activity)
 
     async def _deny_if_in_battle(self, interaction: discord.Interaction) -> bool:
         battle_cog = self.bot.get_cog("BattleCog")
@@ -833,6 +1055,348 @@ class MainMenuView(View):
             view=view,
         )
 
+    def _add_location_activity_button(self, activity: Dict[str, Any]):
+        """Add a context-sensitive activity button based on the player's location."""
+
+        label = f"{activity.get('emoji', '')} {activity.get('label', 'Activity')}".strip()
+        activity_button = Button(
+            label=label,
+            style=discord.ButtonStyle.primary,
+            row=3,
+        )
+
+        async def _callback(interaction: discord.Interaction):
+            if await self._deny_if_in_battle(interaction):
+                return
+
+            trainer = self.bot.player_manager.get_player(interaction.user.id)
+            if not trainer:
+                await interaction.response.send_message(
+                    "❌ You need to register first! Use `/register` to get started.",
+                    ephemeral=True,
+                )
+                return
+
+            await self._show_location_activity_menu(interaction, trainer, activity)
+
+        activity_button.callback = _callback
+        self.add_item(activity_button)
+
+    async def _show_location_activity_menu(
+        self,
+        interaction: discord.Interaction,
+        trainer,
+        activity: Dict[str, Any],
+    ):
+        """Show the confirmation prompt for a location activity."""
+
+        embed = self._build_activity_embed(trainer, activity)
+        view = View(timeout=180)
+
+        confirm_button = Button(label="Yes", style=discord.ButtonStyle.success)
+        cancel_button = Button(label="⬅️ Back", style=discord.ButtonStyle.secondary)
+
+        async def _confirm(i: discord.Interaction):
+            await self._handle_activity_confirm(i, trainer, activity)
+
+        async def _cancel(i: discord.Interaction):
+            await _show_main_menu(i, self.bot, trainer.discord_user_id)
+
+        confirm_button.callback = _confirm
+        cancel_button.callback = _cancel
+
+        view.add_item(confirm_button)
+        view.add_item(cancel_button)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    def _build_activity_embed(self, trainer, activity: Dict[str, Any]) -> discord.Embed:
+        """Create a consistent preview embed for stamina activities."""
+
+        activity_title = f"{activity.get('emoji', '')} {activity.get('label', 'Activity')}".strip()
+        embed = discord.Embed(
+            title=activity_title,
+            description=activity.get("description", ""),
+            color=discord.Color.blurple(),
+        )
+
+        embed.add_field(
+            name="⚡️ Stamina Cost",
+            value=(
+                f"-{activity.get('stamina_cost', 0)} Stamina\n"
+                f"Current: {trainer.get_stamina_display()}"
+            ),
+            inline=False,
+        )
+
+        reward_lines = activity.get("reward_lines") or []
+        embed.add_field(
+            name="🎁 Rewards",
+            value="\n".join(reward_lines) if reward_lines else "Rewards will be revealed soon!",
+            inline=False,
+        )
+
+        embed.set_footer(text="Start this activity?")
+        return embed
+
+    async def _handle_activity_confirm(
+        self,
+        interaction: discord.Interaction,
+        trainer,
+        activity: Dict[str, Any],
+    ):
+        """Route to the appropriate activity handler after checking stamina."""
+
+        cost = int(activity.get("stamina_cost", 0))
+        success, remaining = self.bot.player_manager.consume_stamina(trainer.discord_user_id, cost)
+        if not success:
+            await interaction.response.send_message(
+                "❌ You don't have enough stamina for that activity!",
+                ephemeral=True,
+            )
+            return
+
+        trainer.stamina_current = remaining
+        activity_type = activity.get("type")
+
+        if activity_type == "party_training":
+            await self._start_party_training(interaction, trainer, activity)
+        elif activity_type == "dojo":
+            await self._start_dojo_training(interaction, trainer, activity)
+        else:
+            await self._start_passive_activity(interaction, trainer, activity)
+
+    async def _start_passive_activity(self, interaction, trainer, activity: Dict[str, Any]):
+        """Handle simple activities like studying that immediately grant rewards."""
+
+        start_embed = discord.Embed(
+            title=f"{activity.get('emoji', '')} {activity.get('label', 'Activity')} in progress...",
+            description="You get to work...",
+            color=discord.Color.orange(),
+        )
+        await interaction.response.edit_message(embed=start_embed, view=None)
+
+        await asyncio.sleep(5)
+
+        reward_lines = []
+        social_reward = activity.get("social_reward")
+        if social_reward:
+            result = _apply_social_points(
+                self.bot,
+                trainer,
+                social_reward.get("stat_key"),
+                int(social_reward.get("points", 0)),
+            )
+            stat_display = get_stat_display_name(social_reward.get("stat_key", ""))
+            rank_change = result["new_rank"] - result["old_rank"]
+            rank_note = f" (Rank up! {result['old_rank']} → {result['new_rank']})" if rank_change > 0 else f" (Rank {result['new_rank']})"
+            reward_lines.append(
+                f"+{social_reward.get('points', 0)} {stat_display}{rank_note}"
+            )
+
+        complete_embed = discord.Embed(
+            title=f"✅ {activity.get('label', 'Activity')} Complete!",
+            description="You wrap up the session and feel the gains settle in.",
+            color=discord.Color.green(),
+        )
+
+        if reward_lines:
+            complete_embed.add_field(name="Rewards", value="\n".join(reward_lines), inline=False)
+
+        complete_embed.add_field(
+            name="⚡️ Stamina",
+            value=trainer.get_stamina_display(),
+            inline=False,
+        )
+
+        await interaction.followup.edit_message(
+            interaction.message.id,
+            embed=complete_embed,
+            view=MainMenuView(self.bot, user_id=trainer.discord_user_id),
+        )
+
+    async def _start_party_training(self, interaction, trainer, activity: Dict[str, Any]):
+        """Run the gym training flow (passive rewards + party EXP)."""
+
+        start_embed = discord.Embed(
+            title="🏋️ Training...",
+            description="You start pushing through reps at the gym.",
+            color=discord.Color.orange(),
+        )
+        await interaction.response.edit_message(embed=start_embed, view=None)
+
+        await asyncio.sleep(5)
+
+        reward_lines = []
+        social_reward = activity.get("social_reward")
+        if social_reward:
+            result = _apply_social_points(
+                self.bot,
+                trainer,
+                social_reward.get("stat_key"),
+                int(social_reward.get("points", 0)),
+            )
+            stat_display = get_stat_display_name(social_reward.get("stat_key", ""))
+            rank_change = result["new_rank"] - result["old_rank"]
+            rank_note = f" (Rank up! {result['old_rank']} → {result['new_rank']})" if rank_change > 0 else f" (Rank {result['new_rank']})"
+            reward_lines.append(
+                f"+{social_reward.get('points', 0)} {stat_display}{rank_note}"
+            )
+
+        exp_results = _apply_party_exp_boost(
+            self.bot,
+            trainer,
+            int(activity.get("exp_percent", 0)),
+        )
+
+        exp_lines = []
+        for result in exp_results:
+            level_note = " (Level up!)" if result.get("leveled_up") else f" (Level {result.get('new_level')})"
+            exp_lines.append(
+                f"{result.get('name')}: +{result.get('gain')} EXP{level_note}"
+            )
+
+        complete_embed = discord.Embed(
+            title="✅ Training Complete!",
+            description="You cool down and check on your gains.",
+            color=discord.Color.green(),
+        )
+
+        if reward_lines:
+            complete_embed.add_field(name="Trainer Rewards", value="\n".join(reward_lines), inline=False)
+
+        if exp_lines:
+            complete_embed.add_field(name="Party Rewards", value="\n".join(exp_lines), inline=False)
+
+        complete_embed.add_field(
+            name="⚡️ Stamina",
+            value=trainer.get_stamina_display(),
+            inline=False,
+        )
+
+        await interaction.followup.edit_message(
+            interaction.message.id,
+            embed=complete_embed,
+            view=MainMenuView(self.bot, user_id=trainer.discord_user_id),
+        )
+
+    async def _start_dojo_training(self, interaction, trainer, activity: Dict[str, Any]):
+        """Begin the multi-step dojo training flow."""
+
+        party = self.bot.player_manager.get_party(trainer.discord_user_id)
+        if not party:
+            await interaction.response.send_message(
+                "❌ You need at least one party Pokémon in your team to train at the dojo.",
+                ephemeral=True,
+            )
+            return
+
+        choose_embed = discord.Embed(
+            title="🥋 Choose a Pokémon",
+            description="Pick a party Pokémon to focus your training on.",
+            color=discord.Color.orange(),
+        )
+
+        view = DojoPokemonSelectView(
+            self.bot,
+            trainer,
+            activity,
+            on_select=lambda i, pokemon: self._begin_dojo_allocation(i, trainer, activity, pokemon),
+            back_callback=lambda i: _show_main_menu(i, self.bot, trainer.discord_user_id),
+        )
+
+        await interaction.response.edit_message(embed=choose_embed, view=view)
+
+    async def _begin_dojo_allocation(
+        self,
+        interaction: discord.Interaction,
+        trainer,
+        activity: Dict[str, Any],
+        pokemon,
+    ):
+        """Show IV allocation controls for the selected Pokémon."""
+
+        total_points = int(activity.get("iv_points", 0))
+        allocation_view = DojoIVAllocationView(
+            trainer,
+            pokemon,
+            total_points,
+            confirm_callback=lambda i, allocations: self._finalize_dojo_training(
+                i, trainer, activity, pokemon, allocations
+            ),
+            cancel_callback=lambda i: _show_main_menu(i, self.bot, trainer.discord_user_id),
+        )
+
+        embed = allocation_view.build_embed()
+        await interaction.response.edit_message(embed=embed, view=allocation_view)
+
+    async def _finalize_dojo_training(
+        self,
+        interaction: discord.Interaction,
+        trainer,
+        activity: Dict[str, Any],
+        pokemon,
+        allocations: Dict[str, int],
+    ):
+        """Complete dojo training with a delay and apply rewards."""
+
+        training_embed = discord.Embed(
+            title="🥋 Training...",
+            description=f"{_format_pokemon_name(pokemon)} hones their technique...",
+            color=discord.Color.orange(),
+        )
+        await interaction.response.edit_message(embed=training_embed, view=None)
+
+        await asyncio.sleep(5)
+
+        applied_iv_gains = _apply_iv_allocations(self.bot, pokemon, allocations)
+        social_reward = activity.get("social_reward")
+        reward_lines = []
+
+        if social_reward:
+            result = _apply_social_points(
+                self.bot,
+                trainer,
+                social_reward.get("stat_key"),
+                int(social_reward.get("points", 0)),
+            )
+            stat_display = get_stat_display_name(social_reward.get("stat_key", ""))
+            rank_change = result["new_rank"] - result["old_rank"]
+            rank_note = f" (Rank up! {result['old_rank']} → {result['new_rank']})" if rank_change > 0 else f" (Rank {result['new_rank']})"
+            reward_lines.append(
+                f"+{social_reward.get('points', 0)} {stat_display}{rank_note}"
+            )
+
+        if applied_iv_gains:
+            iv_lines = [
+                f"{POKEMON_STAT_LABELS.get(stat, stat.title())}: +{gain}"
+                for stat, gain in applied_iv_gains.items()
+            ]
+            reward_lines.append(
+                f"{_format_pokemon_name(pokemon)} gained:\n" + "\n".join(iv_lines)
+            )
+
+        complete_embed = discord.Embed(
+            title="✅ Training Complete!",
+            description=f"{_format_pokemon_name(pokemon)} finishes their drills.",
+            color=discord.Color.green(),
+        )
+
+        if reward_lines:
+            complete_embed.add_field(name="Rewards", value="\n".join(reward_lines), inline=False)
+
+        complete_embed.add_field(
+            name="⚡️ Stamina",
+            value=trainer.get_stamina_display(),
+            inline=False,
+        )
+
+        await interaction.followup.edit_message(
+            interaction.message.id,
+            embed=complete_embed,
+            view=MainMenuView(self.bot, user_id=trainer.discord_user_id),
+        )
+
     def _add_exit_button(self):
         """Add exit wild area button dynamically"""
         exit_button = Button(
@@ -889,6 +1453,169 @@ class MainMenuView(View):
             view=view,
             ephemeral=True
         )
+
+
+class DojoPokemonSelectView(View):
+    """Select which Pokémon will receive dojo training."""
+
+    def __init__(
+        self,
+        bot,
+        trainer,
+        activity: Dict[str, Any],
+        *,
+        on_select: Callable[[discord.Interaction, Any], Awaitable[None]],
+        back_callback: Callable[[discord.Interaction], Awaitable[None]],
+    ):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.trainer = trainer
+        self.activity = activity
+        self.on_select = on_select
+        self.back_callback = back_callback
+
+        party = self.bot.player_manager.get_party(trainer.discord_user_id)
+        self.pokemon_map: Dict[str, Any] = {}
+        options: List[discord.SelectOption] = []
+
+        for idx, pokemon in enumerate(party):
+            pokemon_id = getattr(pokemon, "pokemon_id", str(idx))
+            self.pokemon_map[str(pokemon_id)] = pokemon
+            options.append(
+                discord.SelectOption(
+                    label=f"{_format_pokemon_name(pokemon)} (Lv. {pokemon.level})",
+                    description=f"{pokemon.species_name}",
+                    value=str(pokemon_id),
+                )
+            )
+
+        if options:
+            select = Select(
+                placeholder="Choose a party Pokémon to train...",
+                options=options,
+                min_values=1,
+                max_values=1,
+            )
+
+            async def _select(interaction: discord.Interaction):
+                selected = select.values[0]
+                pokemon_choice = self.pokemon_map.get(selected)
+                if not pokemon_choice:
+                    await interaction.response.send_message(
+                        "❌ That Pokémon is no longer available.",
+                        ephemeral=True,
+                    )
+                    return
+
+                await self.on_select(interaction, pokemon_choice)
+
+            select.callback = _select
+            self.add_item(select)
+        else:
+            async def _no_options(interaction: discord.Interaction):
+                await interaction.response.send_message(
+                    "❌ You don't have any party Pokémon available to train.",
+                    ephemeral=True,
+                )
+
+            placeholder = Button(label="No party Pokémon", style=discord.ButtonStyle.secondary, disabled=True)
+            placeholder.callback = _no_options
+            self.add_item(placeholder)
+
+        _add_back_button(self, self.back_callback)
+
+
+class DojoIVAllocationView(View):
+    """Allow players to distribute IV points for dojo training."""
+
+    def __init__(
+        self,
+        trainer,
+        pokemon,
+        total_points: int,
+        *,
+        confirm_callback: Callable[[discord.Interaction, Dict[str, int]], Awaitable[None]],
+        cancel_callback: Callable[[discord.Interaction], Awaitable[None]],
+    ):
+        super().__init__(timeout=300)
+        self.trainer = trainer
+        self.pokemon = pokemon
+        self.total_points = total_points
+        self.remaining = total_points
+        self.allocations: Dict[str, int] = {stat: 0 for stat in POKEMON_STAT_LABELS}
+        self.confirm_callback = confirm_callback
+        self.cancel_callback = cancel_callback
+
+        stat_options = [
+            discord.SelectOption(
+                label=f"{POKEMON_STAT_LABELS[stat]} (IV {pokemon.ivs.get(stat, 0)})",
+                value=stat,
+            )
+            for stat in POKEMON_STAT_LABELS
+        ]
+
+        self.select = Select(
+            placeholder="Choose a stat to add +1 IV (1 point)",
+            options=stat_options,
+        )
+        self.select.callback = self._handle_select
+        self.add_item(self.select)
+
+        self.confirm_button = Button(label="Confirm", style=discord.ButtonStyle.success, disabled=True)
+        self.confirm_button.callback = self._handle_confirm
+        self.add_item(self.confirm_button)
+
+        back_button = Button(label="⬅️ Back", style=discord.ButtonStyle.secondary)
+        back_button.callback = self.cancel_callback
+        self.add_item(back_button)
+
+    def build_embed(self) -> discord.Embed:
+        allocation_lines = [
+            f"{POKEMON_STAT_LABELS.get(stat, stat.title())}: +{amount}"
+            for stat, amount in self.allocations.items()
+            if amount > 0
+        ]
+
+        allocation_text = "\n".join(allocation_lines) if allocation_lines else "No points assigned yet."
+
+        embed = discord.Embed(
+            title="Allocate IV Points",
+            description=(
+                f"Distribute **{self.total_points}** IV points to {_format_pokemon_name(self.pokemon)}.\n"
+                f"Remaining points: **{self.remaining}**."
+            ),
+            color=discord.Color.orange(),
+        )
+        embed.add_field(name="Current Plan", value=allocation_text, inline=False)
+        return embed
+
+    async def _handle_select(self, interaction: discord.Interaction):
+        if self.remaining <= 0:
+            await interaction.response.send_message(
+                "All IV points are already assigned. Use Confirm or go back to adjust.",
+                ephemeral=True,
+            )
+            return
+
+        chosen_stat = self.select.values[0]
+        self.allocations[chosen_stat] += 1
+        self.remaining -= 1
+
+        if self.remaining <= 0:
+            self.select.disabled = True
+
+        self.confirm_button.disabled = self.remaining > 0
+        await interaction.response.edit_message(embed=self.build_embed(), view=self)
+
+    async def _handle_confirm(self, interaction: discord.Interaction):
+        if self.remaining > 0:
+            await interaction.response.send_message(
+                "Please assign all IV points before confirming.",
+                ephemeral=True,
+            )
+            return
+
+        await self.confirm_callback(interaction, self.allocations)
 
 
 class RegistrationView(View):
