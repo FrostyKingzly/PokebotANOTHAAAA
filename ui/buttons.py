@@ -603,6 +603,17 @@ class MainMenuView(View):
             else:
                 self.alerts_button.label = base_label
 
+        # Location-based activities
+        if user_id:
+            try:
+                trainer = self.bot.player_manager.get_player(user_id)
+            except Exception:
+                trainer = None
+
+            activity = _get_location_activity(getattr(trainer, "current_location_id", None)) if trainer else None
+            if activity:
+                self._add_location_activity_button(activity)
+
         # Check if player is in a wild area and add exit button if so
         if user_id:
             from wild_area_manager import WildAreaManager
