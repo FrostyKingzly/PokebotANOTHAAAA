@@ -95,10 +95,6 @@
         "price": 200,
         "min_tier": 1
       },
-      "leppa_berry": {
-        "price": 80,
-        "min_tier": 1
-      },
       "lum_berry": {
         "price": 600,
         "min_tier": 1
