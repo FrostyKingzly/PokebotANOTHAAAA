@@ -3640,7 +3640,10 @@ class PaginatedTravelView(View):
                 "title": "Reverie City - Residential District",
                 "locations": [
                     'residential_district_beach',
-                    'residential_district_dreamyard'
+                    'residential_district_dreamyard',
+                    'residential_district_library',
+                    'residential_district_gym',
+                    'residential_district_dojo'
                 ]
             },
             {
