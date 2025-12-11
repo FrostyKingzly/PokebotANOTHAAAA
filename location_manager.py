@@ -26,6 +26,33 @@ class LocationManager:
             with open(self.json_path, 'r', encoding='utf-8') as f:
                 self.locations = json.load(f)
 
+            # Migrate legacy location IDs for newly relocated amenities
+            legacy_to_residential = {
+                "lights_district_library": (
+                    "residential_district_library",
+                    "Residential District - Reverie Library",
+                ),
+                "lights_district_gym": (
+                    "residential_district_gym",
+                    "Residential District - Ironcore Gym",
+                ),
+                "lights_district_dojo": (
+                    "residential_district_dojo",
+                    "Residential District - Dawnrise Dojo",
+                ),
+            }
+
+            for legacy_id, (res_id, res_name) in legacy_to_residential.items():
+                if legacy_id in self.locations and res_id not in self.locations:
+                    # Copy over the legacy entry but update its district labeling
+                    migrated = dict(self.locations[legacy_id])
+                    migrated["name"] = res_name
+                    self.locations[res_id] = migrated
+
+                if res_id in self.locations:
+                    # Ensure the new entry always carries the Residential naming
+                    self.locations[res_id]["name"] = res_name
+
             # Build channel mapping from any legacy channel_id entries
             self.channel_to_location = {}
             for location_id, location_data in self.locations.items():
