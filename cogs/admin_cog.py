@@ -26,6 +26,7 @@ from social_stats import (
     clamp_points,
     calculate_max_stamina,
 )
+from ui.emoji import DEFAULT_POKEBALL_ID, POKEBALL_EMOJIS
 
 
 def is_admin(interaction: discord.Interaction) -> bool:
@@ -332,7 +333,7 @@ class AdminCog(commands.Cog):
             'nickname': None,
             'gender': None,
             'held_item': None,
-            'pokeball': 'poke_ball',
+            'pokeball': DEFAULT_POKEBALL_ID,
             'ability': None,
             'level': 5,
             'shiny': False,
@@ -397,7 +398,7 @@ class AdminCog(commands.Cog):
             # Poké Ball
             elif line.lower().startswith('pokeball:') or line.lower().startswith('ball:'):
                 ball_text = line.split(':', 1)[1].strip()
-                result['pokeball'] = self._normalize_identifier(ball_text)
+                result['pokeball'] = self._normalize_pokeball(ball_text)
             
             # Shiny
             elif line.lower().startswith('shiny:'):
@@ -439,6 +440,9 @@ class AdminCog(commands.Cog):
         if not result['moves']:
             result['moves'] = ['tackle']  # Default move
         
+        # Ensure we always store a valid Poké Ball id
+        result['pokeball'] = self._normalize_pokeball(result.get('pokeball'))
+
         return result
 
     def _normalize_showdown_text(self, text: str) -> str:
@@ -532,6 +536,55 @@ class AdminCog(commands.Cog):
         normalized = re.sub(r'\s+', '_', normalized).strip('_')
 
         return normalized if normalized else None
+
+    def _normalize_pokeball(self, ball_text: Optional[str]) -> str:
+        """Resolve Showdown "Ball:" text into a valid Poké Ball item id."""
+
+        normalized = self._normalize_identifier(ball_text) if ball_text else None
+
+        if not normalized:
+            return DEFAULT_POKEBALL_ID
+
+        # Common aliases for the standard Poké Ball
+        poke_aliases = {
+            'pokeball',
+            'poke_ball',
+            'pok_ball',
+            'poke',
+            'ball',
+        }
+        if normalized in poke_aliases:
+            return DEFAULT_POKEBALL_ID
+
+        # Build candidate ids, preferring the canonical *_ball suffix
+        candidates = []
+        if normalized.endswith('_ball'):
+            candidates.append(normalized)
+        else:
+            candidates.append(f"{normalized}_ball")
+            candidates.append(normalized)
+
+        # Validate against known Poké Ball ids from the item database if available
+        valid_balls = set()
+        items_db = getattr(self.bot, 'items_db', None)
+        if items_db:
+            try:
+                valid_balls = {
+                    item.get('id')
+                    for item in items_db.get_items_by_category('pokeball')
+                    if item.get('id')
+                }
+            except Exception:
+                valid_balls = set()
+
+        if not valid_balls:
+            valid_balls = set(POKEBALL_EMOJIS.keys())
+
+        for candidate in candidates:
+            if candidate in valid_balls:
+                return candidate
+
+        return DEFAULT_POKEBALL_ID
     
     # ============================================================
     # SHOWDOWN FORMAT HELP

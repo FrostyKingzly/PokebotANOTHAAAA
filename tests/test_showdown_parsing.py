@@ -2,7 +2,8 @@ import unittest
 from types import SimpleNamespace
 
 from cogs.admin_cog import AdminCog
-from database import SpeciesDatabase
+from database import ItemsDatabase, SpeciesDatabase
+from ui.emoji import DEFAULT_POKEBALL_ID
 
 
 class DummyBot(SimpleNamespace):
@@ -76,6 +77,44 @@ Timid Nature
         self.assertEqual(len(parsed), 2)
         self.assertEqual(parsed[0]['species'], 'Pikachu')
         self.assertEqual(parsed[1]['species'], 'Charizard')
+
+    def test_ball_identifier_defaults_and_normalizes(self):
+        showdown_text = """
+Pikachu @ Light Ball
+Ability: Static
+Level: 50
+Ball: Ultra
+- Thunderbolt
+"""
+
+        parsed = self.cog.parse_showdown_format(showdown_text)
+
+        self.assertEqual(parsed['pokeball'], 'ultra_ball')
+
+    def test_missing_ball_field_falls_back_to_default(self):
+        showdown_text = """
+Pikachu @ Light Ball
+Ability: Static
+Level: 50
+- Thunderbolt
+"""
+
+        parsed = self.cog.parse_showdown_format(showdown_text)
+
+        self.assertEqual(parsed['pokeball'], DEFAULT_POKEBALL_ID)
+
+    def test_supported_balls_have_catch_rate_modifiers(self):
+        items_db = ItemsDatabase('data/items.json')
+        expected_balls = [
+            'poke_ball', 'great_ball', 'ultra_ball', 'master_ball',
+            'premier_ball', 'luxury_ball', 'quick_ball', 'dusk_ball'
+        ]
+
+        for ball_id in expected_balls:
+            item = items_db.get_item(ball_id)
+            self.assertIsNotNone(item, f"Missing item data for {ball_id}")
+            self.assertIn('catch_rate_modifier', item)
+            self.assertGreater(item['catch_rate_modifier'], 0)
 
 
 if __name__ == '__main__':
