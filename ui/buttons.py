@@ -159,6 +159,13 @@ LOCATION_ACTIVITY_DEFINITIONS = {
     },
 }
 
+# Allow newer Residential District location IDs to reuse the same activity settings
+LOCATION_ACTIVITY_ALIASES = {
+    "residential_district_library": "lights_district_library",
+    "residential_district_gym": "lights_district_gym",
+    "residential_district_dojo": "lights_district_dojo",
+}
+
 POKEMON_STAT_LABELS = {
     "hp": "HP",
     "attack": "Attack",
@@ -174,7 +181,9 @@ def _get_location_activity(location_id: Optional[str]) -> Optional[Dict[str, Any
 
     if not location_id:
         return None
-    return LOCATION_ACTIVITY_DEFINITIONS.get(location_id)
+
+    canonical_id = LOCATION_ACTIVITY_ALIASES.get(location_id, location_id)
+    return LOCATION_ACTIVITY_DEFINITIONS.get(canonical_id)
 
 
 def _apply_social_points(bot, trainer, stat_key: str, amount: int) -> Dict[str, Any]:
@@ -621,17 +630,6 @@ class MainMenuView(View):
             if wild_area_manager.is_in_wild_area(user_id):
                 # Add exit button dynamically
                 self._add_exit_button()
-
-        # Location-based activities
-        if user_id:
-            try:
-                trainer = self.bot.player_manager.get_player(user_id)
-            except Exception:
-                trainer = None
-
-            activity = _get_location_activity(getattr(trainer, "current_location_id", None)) if trainer else None
-            if activity:
-                self._add_location_activity_button(activity)
 
     async def _deny_if_in_battle(self, interaction: discord.Interaction) -> bool:
         battle_cog = self.bot.get_cog("BattleCog")
