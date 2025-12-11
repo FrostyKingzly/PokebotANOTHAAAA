@@ -2358,5 +2358,32 @@
         ]
       }
     ]
+  },
+  "residential_district_library": {
+    "name": "Residential District - Reverie Library",
+    "description": "A quiet, modern library filled with research terminals and study spaces.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "residential_district_gym": {
+    "name": "Residential District - Ironcore Gym",
+    "description": "A state-of-the-art training facility packed with equipment for you and your partners.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "residential_district_dojo": {
+    "name": "Residential District - Dawnrise Dojo",
+    "description": "A disciplined dojo where trainers refine their focus and push their teams beyond their limits.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
   }
 }
