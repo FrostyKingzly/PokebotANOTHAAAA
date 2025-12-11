@@ -1,30 +1,176 @@
 {
-  "poke_ball": {
-    "price": 200,
-    "min_tier": 1
+  "pokemart": {
+    "name": "Pok\u00e9Mart",
+    "items": {
+      "poke_ball": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "potion": {
+        "price": 300,
+        "min_tier": 1
+      },
+      "antidote": {
+        "price": 100,
+        "min_tier": 1
+      },
+      "paralyze_heal": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "awakening": {
+        "price": 250,
+        "min_tier": 1
+      },
+      "burn_heal": {
+        "price": 250,
+        "min_tier": 1
+      },
+      "ice_heal": {
+        "price": 250,
+        "min_tier": 1
+      }
+    }
   },
-  "potion": {
-    "price": 300,
-    "min_tier": 1
-  },
-  "antidote": {
-    "price": 100,
-    "min_tier": 1
-  },
-  "paralyze_heal": {
-    "price": 200,
-    "min_tier": 1
-  },
-  "awakening": {
-    "price": 250,
-    "min_tier": 1
-  },
-  "burn_heal": {
-    "price": 250,
-    "min_tier": 1
-  },
-  "ice_heal": {
-    "price": 250,
-    "min_tier": 1
+  "berry_stall": {
+    "name": "Berry Stall",
+    "items": {
+      "aspear_berry": {
+        "price": 80,
+        "min_tier": 1
+      },
+      "babiri_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "charti_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "cheri_berry": {
+        "price": 80,
+        "min_tier": 1
+      },
+      "chesto_berry": {
+        "price": 80,
+        "min_tier": 1
+      },
+      "chilan_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "chople_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "coba_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "colbur_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "grepa_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "haban_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "hondew_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "kasib_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "kebia_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "kelpsy_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "leppa_berry": {
+        "price": 80,
+        "min_tier": 1
+      },
+      "lum_berry": {
+        "price": 600,
+        "min_tier": 1
+      },
+      "occa_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "oran_berry": {
+        "price": 80,
+        "min_tier": 1
+      },
+      "passho_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "payapa_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "pecha_berry": {
+        "price": 80,
+        "min_tier": 1
+      },
+      "persim_berry": {
+        "price": 80,
+        "min_tier": 1
+      },
+      "pomeg_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "qualot_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "rawst_berry": {
+        "price": 80,
+        "min_tier": 1
+      },
+      "rindo_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "roseli_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "shuca_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "sitrus_berry": {
+        "price": 400,
+        "min_tier": 1
+      },
+      "tamato_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "tanga_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "wacan_berry": {
+        "price": 200,
+        "min_tier": 1
+      },
+      "yache_berry": {
+        "price": 200,
+        "min_tier": 1
+      }
+    }
   }
 }
