@@ -122,7 +122,7 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
 
 
 LOCATION_ACTIVITY_DEFINITIONS = {
-    "residential_district_library": {
+    "lights_district_library": {
         "id": "study",
         "label": "Study",
         "emoji": "📚",
@@ -132,7 +132,7 @@ LOCATION_ACTIVITY_DEFINITIONS = {
         "social_reward": {"stat_key": "insight", "points": 2},
         "type": "passive",
     },
-    "residential_district_gym": {
+    "lights_district_gym": {
         "id": "gym_train",
         "label": "Train",
         "emoji": "🏋️",
@@ -143,7 +143,7 @@ LOCATION_ACTIVITY_DEFINITIONS = {
         "exp_percent": 5,
         "type": "party_training",
     },
-    "residential_district_dojo": {
+    "lights_district_dojo": {
         "id": "dojo_train",
         "label": "Train",
         "emoji": "🥋",
