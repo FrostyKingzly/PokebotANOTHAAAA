@@ -2359,8 +2359,8 @@
       }
     ]
   },
-  "residential_district_library": {
-    "name": "Residential District - Reverie Library",
+  "lights_district_library": {
+    "name": "Lights District - Reverie Library",
     "description": "A quiet, modern library filled with research terminals and study spaces.",
     "channel_ids": [],
     "amenities": [],
@@ -2368,8 +2368,8 @@
     "encounters": [],
     "npc_trainers": []
   },
-  "residential_district_gym": {
-    "name": "Residential District - Ironcore Gym",
+  "lights_district_gym": {
+    "name": "Lights District - Ironcore Gym",
     "description": "A state-of-the-art training facility packed with equipment for you and your partners.",
     "channel_ids": [],
     "amenities": [],
@@ -2377,8 +2377,8 @@
     "encounters": [],
     "npc_trainers": []
   },
-  "residential_district_dojo": {
-    "name": "Residential District - Dawnrise Dojo",
+  "lights_district_dojo": {
+    "name": "Lights District - Dawnrise Dojo",
     "description": "A disciplined dojo where trainers refine their focus and push their teams beyond their limits.",
     "channel_ids": [],
     "amenities": [],

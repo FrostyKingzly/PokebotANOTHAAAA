@@ -121,15 +121,8 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
     return pokemon
 
 
-LOCATION_ID_ALIASES = {
-    "lights_district_library": "residential_district_library",
-    "lights_district_gym": "residential_district_gym",
-    "lights_district_dojo": "residential_district_dojo",
-}
-
-
 LOCATION_ACTIVITY_DEFINITIONS = {
-    "residential_district_library": {
+    "lights_district_library": {
         "id": "study",
         "label": "Study",
         "emoji": "📚",
@@ -139,7 +132,7 @@ LOCATION_ACTIVITY_DEFINITIONS = {
         "social_reward": {"stat_key": "insight", "points": 2},
         "type": "passive",
     },
-    "residential_district_gym": {
+    "lights_district_gym": {
         "id": "gym_train",
         "label": "Train",
         "emoji": "🏋️",
@@ -150,7 +143,7 @@ LOCATION_ACTIVITY_DEFINITIONS = {
         "exp_percent": 5,
         "type": "party_training",
     },
-    "residential_district_dojo": {
+    "lights_district_dojo": {
         "id": "dojo_train",
         "label": "Train",
         "emoji": "🥋",
@@ -176,43 +169,12 @@ POKEMON_STAT_LABELS = {
 }
 
 
-def _get_location_activity(
-    location_id: Optional[str],
-    location_manager=None,
-) -> Optional[Dict[str, Any]]:
+def _get_location_activity(location_id: Optional[str]) -> Optional[Dict[str, Any]]:
     """Return the configured activity for a location, if any."""
 
     if not location_id:
         return None
-
-    normalized_id = LOCATION_ID_ALIASES.get(location_id, location_id)
-    activity = LOCATION_ACTIVITY_DEFINITIONS.get(normalized_id)
-    if activity:
-        return activity
-
-    if not location_manager:
-        return None
-
-    # Some trainers may have their current location stored as the display name
-    # instead of the canonical location ID. Try to resolve that name back to an
-    # ID that has an activity definition.
-    try:
-        location_data = location_manager.get_location(normalized_id) or location_manager.get_location(location_id)
-    except Exception:
-        location_data = None
-
-    if not location_data:
-        try:
-            # Fall back to matching by name if the ID lookup failed
-            all_locations = getattr(location_manager, "locations", {})
-            for loc_id, loc_data in all_locations.items():
-                if str(loc_data.get("name", "")).lower() == str(location_id).lower():
-                    normalized_id = LOCATION_ID_ALIASES.get(loc_id, loc_id)
-                    break
-        except Exception:
-            return None
-
-    return LOCATION_ACTIVITY_DEFINITIONS.get(normalized_id)
+    return LOCATION_ACTIVITY_DEFINITIONS.get(location_id)
 
 
 def _apply_social_points(bot, trainer, stat_key: str, amount: int) -> Dict[str, Any]:
@@ -648,15 +610,7 @@ class MainMenuView(View):
             except Exception:
                 trainer = None
 
-            location_manager = getattr(self.bot, "location_manager", None)
-            activity = (
-                _get_location_activity(
-                    getattr(trainer, "current_location_id", None),
-                    location_manager=location_manager,
-                )
-                if trainer
-                else None
-            )
+            activity = _get_location_activity(getattr(trainer, "current_location_id", None)) if trainer else None
             if activity:
                 self._add_location_activity_button(activity)
 
@@ -667,6 +621,17 @@ class MainMenuView(View):
             if wild_area_manager.is_in_wild_area(user_id):
                 # Add exit button dynamically
                 self._add_exit_button()
+
+        # Location-based activities
+        if user_id:
+            try:
+                trainer = self.bot.player_manager.get_player(user_id)
+            except Exception:
+                trainer = None
+
+            activity = _get_location_activity(getattr(trainer, "current_location_id", None)) if trainer else None
+            if activity:
+                self._add_location_activity_button(activity)
 
     async def _deny_if_in_battle(self, interaction: discord.Interaction) -> bool:
         battle_cog = self.bot.get_cog("BattleCog")
