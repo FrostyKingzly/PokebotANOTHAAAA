@@ -443,7 +443,8 @@ class BattleMusicManager:
 
     async def _play_sound_effect(self, sound_file_path: str, duration: float) -> float:
         """
-        Play a sound effect, temporarily pausing music.
+        Play a sound effect alongside music (both play simultaneously).
+        Mixes sound effect with music using FFmpeg for true simultaneous playback.
 
         Args:
             sound_file_path: Path to the sound effect file
@@ -455,53 +456,131 @@ class BattleMusicManager:
         if not self.voice_client or not self.voice_client.is_connected():
             return 0.0
 
-        print(f"🎵 Playing sound effect: {sound_file_path}")
+        print(f"🎵 Playing sound effect alongside music: {sound_file_path}")
 
         try:
-            # Save music state
+            import os
+
+            # Check if music is playing
             music_url = self._current_music_url
-            was_playing = self.voice_client.is_playing() and self.current_phase == BattlePhase.BATTLE
+            is_music_playing = self.voice_client.is_playing() and self.current_phase == BattlePhase.BATTLE
 
-            # Stop music if playing
+            if not is_music_playing or not music_url:
+                # No music playing, just play sound effect
+                print(f"🔊 No music playing, playing sound alone...")
+                if self.voice_client.is_playing():
+                    self.voice_client.stop()
+                    await asyncio.sleep(0.2)
+
+                source = discord.FFmpegPCMAudio(sound_file_path, **self.FFMPEG_OPTIONS)
+                source = discord.PCMVolumeTransformer(source, volume=1.0)
+                self.voice_client.play(source)
+
+                while self.voice_client.is_playing():
+                    await asyncio.sleep(0.1)
+
+                return duration
+
+            # Music is playing - mix sound effect with music!
+            print(f"🎛️ Creating mixed audio (music + sound effect)...")
+
+            # Get the music stream URL
+            event_loop = asyncio.get_event_loop()
+            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
+                info = await event_loop.run_in_executor(None, lambda: ydl.extract_info(music_url, download=False))
+
+            if 'url' not in info:
+                print(f"❌ Couldn't get music URL, falling back to sound-only")
+                # Fallback to just playing sound
+                if self.voice_client.is_playing():
+                    self.voice_client.stop()
+                    await asyncio.sleep(0.3)
+
+                source = discord.FFmpegPCMAudio(sound_file_path, **self.FFMPEG_OPTIONS)
+                source = discord.PCMVolumeTransformer(source, volume=1.0)
+                self.voice_client.play(source)
+
+                while self.voice_client.is_playing():
+                    await asyncio.sleep(0.1)
+
+                await asyncio.sleep(0.5)
+                if not self.voice_client.is_playing():
+                    asyncio.create_task(self._play_theme(music_url, loop=True))
+
+                return duration
+
+            audio_url = info['url']
+
+            # Create mixed audio file
+            mixed_file = await self._create_mixed_audio(audio_url, sound_file_path, duration)
+
+            if not mixed_file:
+                print(f"⚠️ Mixing failed, falling back to sound-only")
+                # Fallback
+                if self.voice_client.is_playing():
+                    self.voice_client.stop()
+                    await asyncio.sleep(0.3)
+
+                source = discord.FFmpegPCMAudio(sound_file_path, **self.FFMPEG_OPTIONS)
+                source = discord.PCMVolumeTransformer(source, volume=1.0)
+                self.voice_client.play(source)
+
+                while self.voice_client.is_playing():
+                    await asyncio.sleep(0.1)
+
+                await asyncio.sleep(0.5)
+                if not self.voice_client.is_playing():
+                    asyncio.create_task(self._play_theme(music_url, loop=True))
+
+                return duration
+
+            # Stop current playback
             if self.voice_client.is_playing():
-                print(f"⏸️ Pausing music for sound effect...")
                 self.voice_client.stop()
-                await asyncio.sleep(0.2)  # Wait for clean stop
+                await asyncio.sleep(0.3)
 
-            # Play sound effect with high quality settings
-            print(f"🔊 Playing sound effect...")
-            source = discord.FFmpegPCMAudio(
-                sound_file_path,
-                before_options='-re',  # Read input at native framerate
-                options='-vn -b:a 192k'  # High quality audio
-            )
-            source = discord.PCMVolumeTransformer(source, volume=1.0)
+            # Play the mixed audio (music + sound effect together!)
+            print(f"🔊 Playing mixed audio (music at 30% + sound at 100%)...")
+            source = discord.FFmpegPCMAudio(mixed_file, **self.FFMPEG_OPTIONS)
+            source = discord.PCMVolumeTransformer(source, volume=self.volume)
 
             self.voice_client.play(source)
 
-            # Wait for sound to finish with timeout
+            # Wait for mixed audio to finish
             start_time = asyncio.get_event_loop().time()
             while self.voice_client.is_playing():
                 await asyncio.sleep(0.1)
-                # Safety timeout
-                if asyncio.get_event_loop().time() - start_time > duration + 3:
-                    print(f"⚠️ Sound effect timeout, stopping...")
+                if asyncio.get_event_loop().time() - start_time > duration + 5:
+                    print(f"⚠️ Mixed audio timeout")
                     self.voice_client.stop()
                     break
 
             elapsed = asyncio.get_event_loop().time() - start_time
-            print(f"✅ Sound effect played for {elapsed:.2f}s")
+            print(f"✅ Mixed audio played for {elapsed:.2f}s")
 
-            # Resume music if it was playing
-            if was_playing and music_url and self.current_phase == BattlePhase.BATTLE:
-                print(f"▶️ Resuming music...")
-                await asyncio.sleep(0.3)  # Small delay before resuming
+            # Clean up mixed file
+            try:
+                os.unlink(mixed_file)
+            except Exception as e:
+                print(f"⚠️ Failed to clean up {mixed_file}: {e}")
 
-                # Only resume if nothing else is playing
+            # Wait for FFmpeg to fully terminate
+            await asyncio.sleep(0.5)
+
+            # Resume normal music playback
+            if is_music_playing and music_url and self.current_phase == BattlePhase.BATTLE:
+                print(f"🔁 Resuming normal music...")
+
+                # Wait for playback to fully stop
+                retries = 0
+                while self.voice_client.is_playing() and retries < 10:
+                    await asyncio.sleep(0.2)
+                    retries += 1
+
                 if not self.voice_client.is_playing():
                     asyncio.create_task(self._play_theme(music_url, loop=True))
                 else:
-                    print(f"⚠️ Audio already playing, skipping resume")
+                    print(f"⚠️ Still playing after {retries} retries, not resuming")
 
             return duration
 
@@ -510,10 +589,11 @@ class BattleMusicManager:
             import traceback
             traceback.print_exc()
 
-            # Try to resume music on error
+            # Try to resume music
             if self._current_music_url and self.current_phase == BattlePhase.BATTLE:
+                await asyncio.sleep(0.5)
                 if not self.voice_client.is_playing():
-                    print(f"🔁 Attempting to resume music after error...")
+                    print(f"🔁 Resuming music after error...")
                     asyncio.create_task(self._play_theme(self._current_music_url, loop=True))
 
             return 0.0
