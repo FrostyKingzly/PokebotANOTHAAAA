@@ -541,6 +541,16 @@ class PlayerDatabase:
         """)
 
         self._ensure_pokemon_columns(cursor)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pokemon_memories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pokemon_id TEXT NOT NULL,
+                memory TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (pokemon_id) REFERENCES pokemon_instances(pokemon_id)
+            )
+        """)
         
         # Inventory table
         cursor.execute("""
@@ -1165,6 +1175,57 @@ class PlayerDatabase:
             boxes.append(pokemon)
 
         return boxes
+
+    def add_pokemon_memory(self, pokemon_id: str, memory: str, max_entries: int = 20):
+        """Store a short memory snippet for a Pokemon."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO pokemon_memories (pokemon_id, memory)
+            VALUES (?, ?)
+            """,
+            (pokemon_id, memory),
+        )
+
+        cursor.execute(
+            """
+            DELETE FROM pokemon_memories
+            WHERE pokemon_id = ?
+            AND id NOT IN (
+                SELECT id FROM pokemon_memories
+                WHERE pokemon_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+            )
+            """,
+            (pokemon_id, pokemon_id, max_entries),
+        )
+
+        conn.commit()
+        conn.close()
+
+    def get_pokemon_memories(self, pokemon_id: str, limit: int = 5) -> List[Dict]:
+        """Return recent memory snippets for a Pokemon."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT memory, created_at
+            FROM pokemon_memories
+            WHERE pokemon_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (pokemon_id, limit),
+        )
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        return [dict(row) for row in rows]
 
     def heal_party(self, discord_user_id: int) -> int:
         """Restore all party Pokémon HP and clear their major status conditions."""

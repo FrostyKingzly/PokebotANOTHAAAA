@@ -505,6 +505,14 @@ class PlayerManager:
         """Get all Pokemon owned by trainer"""
         return self.get_party(discord_user_id) + self.get_boxes(discord_user_id)
 
+    def add_pokemon_memory(self, pokemon_id: str, memory: str, max_entries: int = 20):
+        """Store a short memory snippet for a Pokemon's AI responses."""
+        self.db.add_pokemon_memory(pokemon_id, memory, max_entries)
+
+    def get_pokemon_memories(self, pokemon_id: str, limit: int = 5) -> List[Dict]:
+        """Fetch recent memory snippets for a Pokemon."""
+        return self.db.get_pokemon_memories(pokemon_id, limit)
+
     def heal_party(self, discord_user_id: int) -> int:
         """Fully restore every Pokémon currently in the trainer's party."""
         return self.db.heal_party(discord_user_id)
