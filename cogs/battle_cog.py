@@ -618,16 +618,8 @@ class BattleCog(commands.Cog):
             )
             send_embed.set_thumbnail(url=sprite_url)
 
-            sound_task = None
-            if self.music_manager.current_session:
-                sound_task = asyncio.create_task(
-                    self.music_manager.play_send_out_sound(mon.species_dex_number)
-                )
-
             await interaction.followup.send(embed=send_embed)
             await asyncio.sleep(1)
-            if sound_task:
-                await sound_task
 
         # For multi battles, also send out partner's Pokemon
         if battle.battle_format == BattleFormat.MULTI and battle.trainer_partner:
@@ -653,16 +645,8 @@ class BattleCog(commands.Cog):
                 )
                 send_embed.set_thumbnail(url=sprite_url)
 
-                sound_task = None
-                if self.music_manager.current_session:
-                    sound_task = asyncio.create_task(
-                        self.music_manager.play_send_out_sound(mon.species_dex_number)
-                    )
-
                 await interaction.followup.send(embed=send_embed)
                 await asyncio.sleep(1)
-                if sound_task:
-                    await sound_task
 
         # For trainer battles, also send out opponent's Pokemon (one embed per Pokemon)
         if battle_mode != BattleType.WILD:
@@ -687,16 +671,8 @@ class BattleCog(commands.Cog):
                 )
                 send_embed.set_thumbnail(url=sprite_url)
 
-                sound_task = None
-                if self.music_manager.current_session:
-                    sound_task = asyncio.create_task(
-                        self.music_manager.play_send_out_sound(mon.species_dex_number)
-                    )
-
                 await interaction.followup.send(embed=send_embed)
                 await asyncio.sleep(1)
-                if sound_task:
-                    await sound_task
 
             # For multi battles, also send out opponent partner's Pokemon
             if battle.battle_format == BattleFormat.MULTI and battle.opponent_partner:
@@ -722,16 +698,8 @@ class BattleCog(commands.Cog):
                     )
                     send_embed.set_thumbnail(url=sprite_url)
 
-                    sound_task = None
-                    if self.music_manager.current_session:
-                        sound_task = asyncio.create_task(
-                            self.music_manager.play_send_out_sound(mon.species_dex_number)
-                        )
-
                     await interaction.followup.send(embed=send_embed)
                     await asyncio.sleep(1)
-                    if sound_task:
-                        await sound_task
 
         # If there are entry messages or field effects, send them in a final embed
         field_embed = self._create_field_effects_embed(battle, entry_messages)
