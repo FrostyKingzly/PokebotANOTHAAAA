@@ -536,6 +536,56 @@ class HeldItemManager:
             return effect.get('multiplier', 1.0)
         return 1.0
 
+    def get_priority_effect(self, pokemon, move_data) -> Optional[Dict[str, Any]]:
+        """Return priority modification info if the held item provides one."""
+
+        item = self._get_item(pokemon)
+        if not item:
+            return None
+
+        effect = dict(item.get('effect_data') or {})
+        priority_boost = effect.get('priority_boost')
+        if not priority_boost:
+            return None
+
+        # Trigger conditions
+        trigger = effect.get('trigger')
+        if trigger == 'hp_threshold':
+            threshold = effect.get('hp_threshold')
+            if threshold is None:
+                return None
+            try:
+                threshold_value = float(threshold)
+            except (TypeError, ValueError):
+                return None
+            if (
+                getattr(pokemon, 'current_hp', 0) <= 0
+                or getattr(pokemon, 'max_hp', 0) <= 0
+                or pokemon.current_hp > pokemon.max_hp * threshold_value
+            ):
+                return None
+
+        chance = effect.get('priority_chance')
+        if chance is not None:
+            try:
+                chance_value = float(chance)
+            except (TypeError, ValueError):
+                chance_value = None
+            if chance_value is None or random.random() > chance_value:
+                return None
+
+        message_template = effect.get('priority_message')
+        message = None
+        if message_template:
+            message = message_template.format(pokemon=pokemon.species_name)
+
+        return {
+            'priority_boost': priority_boost,
+            'message': message,
+            'consume': effect.get('one_time_use', False),
+            'item_id': item.get('id'),
+        }
+
 @dataclass
 class BattleAction:
     """A single action taken by a battler"""
