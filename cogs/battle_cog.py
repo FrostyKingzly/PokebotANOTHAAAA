@@ -1968,23 +1968,45 @@ class PartySelect(discord.ui.Select):
         self.battle = battle
         self.battler_id = battler_id
         self.forced = forced
-        options = []
         battler = _get_battler_by_id(battle, battler_id) or battle.trainer
         party = battler.party
         active_index = battler.active_positions[0]  # Get actual active position
+
+        options = []
         for idx, mon in enumerate(party):
             name = getattr(mon, "species_name", f"Slot {idx+1}")
             current_hp = getattr(mon, 'current_hp', 0)
             max_hp = getattr(mon, 'max_hp', 1)
             hp = "(Fainted)" if current_hp <= 0 else f"{current_hp}/{max_hp}"
+
             # Skip disabled options (active or fainted Pokemon)
             if idx == active_index or current_hp <= 0:
                 continue
+
             options.append(discord.SelectOption(label=name, description=f"HP {hp}", value=str(idx), default=False))
+
+        # Discord select menus must always have at least one option; provide a disabled fallback
+        if not options:
+            options = [
+                discord.SelectOption(
+                    label="No available Pokémon", description="All other party members are unable to battle.", value="none"
+                )
+            ]
+
         placeholder = "Choose a Pokémon to send out" if forced else "Choose a Pokémon to switch in"
         super().__init__(placeholder=placeholder, min_values=1, max_values=1, options=options)
 
+        # Disable the select when no valid switch targets exist
+        if options and options[0].value == "none":
+            self.disabled = True
+
     async def callback(self, interaction: discord.Interaction):
+        if self.disabled or (self.values and self.values[0] == "none"):
+            await interaction.response.send_message(
+                "❌ You have no available Pokémon to switch in.", ephemeral=True
+            )
+            return
+
         # Verify that the user clicking the button is the correct player
         battler = _get_battler_by_id(self.battle, self.battler_id)
         if battler and battler.battler_id != interaction.user.id:
