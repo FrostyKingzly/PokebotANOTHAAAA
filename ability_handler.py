@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 import os
 import random
+import copy
 
 
 class AbilityHandler:
@@ -62,6 +63,100 @@ class AbilityHandler:
                     continue
 
     # ----------------------
+    # Ability helpers
+    # ----------------------
+    def ability_matches(self, pokemon: Any, ability_id: str) -> bool:
+        """Return True if the Pokemon's ability matches the given ID (normalized)."""
+        ability = getattr(pokemon, 'ability', None) or getattr(pokemon, 'current_ability', None)
+        return self._normalize(ability) == self._normalize(ability_id)
+
+    def reset_battle_state(self, pokemon: Any):
+        """Reset per-battle flags when a Pokemon enters the field."""
+        # Reset HP-trigger switch abilities so they can activate again on re-entry
+        if self.ability_matches(pokemon, 'emergencyexit') or self.ability_matches(pokemon, 'wimpout'):
+            setattr(pokemon, '_hp_switch_triggered', False)
+
+        # Ensure Schooling state starts fresh each time the Pokemon hits the field
+        if self.ability_matches(pokemon, 'schooling'):
+            if not hasattr(pokemon, '_schooling_state'):
+                pokemon._schooling_state = None
+            if not hasattr(pokemon, '_schooling_base_name'):
+                pokemon._schooling_base_name = getattr(pokemon, 'species_name', 'Wishiwashi')
+
+    def apply_schooling(self, pokemon: Any) -> Optional[str]:
+        """Apply Schooling form changes for Wishiwashi based on HP and level."""
+        if not self.ability_matches(pokemon, 'schooling'):
+            return None
+
+        # Schooling only works on Wishiwashi at level 20+
+        if getattr(pokemon, 'species_dex_number', None) != 746:
+            return None
+
+        ability = self.get_ability('schooling') or {}
+        min_level = ability.get('min_level', 20)
+        if getattr(pokemon, 'level', 0) < min_level:
+            return None
+
+        max_hp = getattr(pokemon, 'max_hp', 0) or 0
+        if max_hp <= 0:
+            return None
+
+        threshold = ability.get('threshold', 0.25)
+        hp_ratio = getattr(pokemon, 'current_hp', 0) / max_hp if max_hp else 0
+        target_form = 'school' if pokemon.current_hp > 0 and hp_ratio >= threshold else 'solo'
+
+        # Cache solo stats/name for reversion
+        forms = ability.get('forms', {})
+        solo_form = forms.get('solo', {})
+        school_form = forms.get('school', {})
+
+        if not hasattr(pokemon, '_schooling_solo_stats'):
+            base_stats = solo_form.get('base_stats') or getattr(pokemon, 'base_stats', {})
+            pokemon._schooling_solo_stats = copy.deepcopy(base_stats)
+        if not hasattr(pokemon, '_schooling_base_name'):
+            pokemon._schooling_base_name = solo_form.get('name') or getattr(pokemon, 'species_name', 'Wishiwashi')
+
+        # Avoid duplicate work if already in the correct form
+        current_state = getattr(pokemon, '_schooling_state', None) or 'solo'
+        if current_state == target_form:
+            return None
+
+        new_form_data = school_form if target_form == 'school' else solo_form
+        new_stats = new_form_data.get('base_stats') or (
+            pokemon._schooling_solo_stats if target_form == 'solo' else None
+        )
+
+        if not new_stats:
+            return None
+
+        prev_hp = getattr(pokemon, 'current_hp', 0)
+        prev_max_hp = max_hp
+        prev_ratio = (prev_hp / prev_max_hp) if prev_max_hp else 0
+        old_name = getattr(pokemon, 'species_name', 'Wishiwashi')
+
+        # Recalculate stats with the new base statline
+        pokemon.base_stats = copy.deepcopy(new_stats)
+        if hasattr(pokemon, '_calculate_stats'):
+            pokemon._calculate_stats()
+
+        # Preserve current HP proportionally (minimum 1 HP if previously conscious)
+        if prev_hp > 0 and getattr(pokemon, 'max_hp', 0) > 0:
+            preserved_hp = int(round(pokemon.max_hp * prev_ratio))
+            pokemon.current_hp = min(pokemon.max_hp, max(1, preserved_hp))
+        else:
+            pokemon.current_hp = max(0, min(getattr(pokemon, 'max_hp', 0), prev_hp))
+
+        pokemon.form = new_form_data.get('form') if new_form_data.get('form') is not None else None
+        pokemon.species_name = new_form_data.get('name') or (
+            'Wishiwashi School' if target_form == 'school' else pokemon._schooling_base_name
+        )
+        pokemon._schooling_state = target_form
+
+        if target_form == 'school':
+            return f"{pokemon.species_name} formed a school!"
+        return f"{pokemon._schooling_base_name}'s Schooling broke apart!"
+
+    # ----------------------
     # Utilities
     # ----------------------
     def _normalize(self, s: str) -> str:
@@ -93,6 +188,9 @@ class AbilityHandler:
         ability = self.get_ability(ability_id)
         if not ability:
             return msgs
+
+        # Reset per-entry flags and apply any passive form changes (e.g., Schooling)
+        self.reset_battle_state(pokemon)
 
         events = ability.get('events') or ability.get('triggers') or []
         if isinstance(events, str):
@@ -186,6 +284,11 @@ class AbilityHandler:
                         msgs.append(f"{getattr(mon, 'species_name','The foe')} was intimidated! Attack fell!")
             except Exception:
                 pass
+
+        # Passive form changes (e.g., Schooling) may need to run on entry as well
+        schooling_msg = self.apply_schooling(pokemon)
+        if schooling_msg:
+            msgs.append(schooling_msg)
 
         return msgs
 

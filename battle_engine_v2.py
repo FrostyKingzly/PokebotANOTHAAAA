@@ -1038,6 +1038,84 @@ class BattleEngine:
 
         return messages
 
+    def _apply_start_of_turn_passives(self, battle: BattleState) -> list[str]:
+        """Handle start-of-turn passive ability upkeep (e.g., Schooling)."""
+        if not ENHANCED_SYSTEMS_AVAILABLE:
+            return []
+
+        messages: List[str] = []
+        for battler in battle.get_all_battlers():
+            if battler.is_eliminated:
+                continue
+            for mon in battler.get_active_pokemon():
+                schooling_msg = self.ability_handler.apply_schooling(mon)
+                if schooling_msg:
+                    messages.append(schooling_msg)
+
+        return messages
+
+    def _maybe_queue_hp_switch(self, battle: BattleState, battler: Battler, pokemon: Any) -> Optional[str]:
+        """Queue a forced switch for Emergency Exit / Wimp Out if HP is low enough."""
+        if not ENHANCED_SYSTEMS_AVAILABLE or not self.ability_handler:
+            return None
+
+        ability_id = getattr(pokemon, 'ability', None)
+        is_emergency_exit = self.ability_handler.ability_matches(pokemon, 'emergencyexit')
+        is_wimp_out = self.ability_handler.ability_matches(pokemon, 'wimpout')
+        if not (is_emergency_exit or is_wimp_out):
+            return None
+
+        ability = self.ability_handler.get_ability(ability_id) or {}
+        threshold = ability.get('threshold', 0.5)
+
+        max_hp = getattr(pokemon, 'max_hp', 0) or 0
+        if max_hp <= 0:
+            return None
+
+        # Reset the flag if the Pokemon recovered above the threshold
+        if getattr(pokemon, '_hp_switch_triggered', False) and pokemon.current_hp > max_hp * threshold:
+            pokemon._hp_switch_triggered = False
+
+        if getattr(pokemon, 'current_hp', 0) <= 0:
+            return None
+        if pokemon.current_hp > max_hp * threshold:
+            return None
+        if getattr(pokemon, '_hp_switch_triggered', False):
+            return None
+
+        # Must have a bench Pokemon to swap into
+        has_replacement = any(
+            idx not in battler.active_positions and getattr(p, 'current_hp', 0) > 0
+            for idx, p in enumerate(battler.party)
+        )
+        if not has_replacement:
+            return None
+
+        # Find the active position for this Pokemon
+        active_position = None
+        for pos_idx, party_idx in enumerate(battler.active_positions):
+            if party_idx < len(battler.party) and battler.party[party_idx] is pokemon:
+                active_position = pos_idx
+                break
+
+        if active_position is None:
+            return None
+
+        pokemon._hp_switch_triggered = True
+
+        if battler.battler_id not in battle.pending_switches:
+            battle.pending_switches[battler.battler_id] = {
+                'position': active_position,
+                'switch_type': 'FORCED'
+            }
+        battle.phase = 'FORCED_SWITCH'
+        if not battle.forced_switch_battler_id:
+            battle.forced_switch_battler_id = battler.battler_id
+            battle.forced_switch_position = active_position
+
+        ability_name = ability.get('name', ability_id) or ability_id
+        return f"{pokemon.species_name}'s {ability_name} activated!"
+
 
     # ========================
     # Action Registration
@@ -1368,9 +1446,13 @@ class BattleEngine:
                     action = self.generate_ai_action(battle_id, battler.battler_id, pos)
                     if action:
                         battle.pending_actions[action_key] = action
-        
+
         # Clear turn log
         battle.turn_log = []
+
+        # Apply start-of-turn passive ability upkeep (e.g., Schooling)
+        upkeep_messages = self._apply_start_of_turn_passives(battle)
+        battle.turn_log.extend(upkeep_messages)
 
         # Sort actions by priority and speed
         actions = list(battle.pending_actions.values())
@@ -1984,6 +2066,11 @@ class BattleEngine:
             ):
                 defender.rage_fist_hits_taken = getattr(defender, 'rage_fist_hits_taken', 0) + 1
 
+        if ENHANCED_SYSTEMS_AVAILABLE:
+            exit_msg = self._maybe_queue_hp_switch(battle, defender_battler, defender)
+            if exit_msg:
+                messages.append(exit_msg)
+
         # Build message
         crit_text = " It's a critical hit!" if is_crit else ""
         effectiveness_text = ""
@@ -2394,26 +2481,11 @@ class BattleEngine:
             pokemon.stat_stages['speed'] = max(-6, pokemon.stat_stages['speed'] - 1)
             messages.append(f"{pokemon.species_name}'s Speed fell! (-1)")
 
-        return messages
+        if ENHANCED_SYSTEMS_AVAILABLE:
+            exit_msg = self._maybe_queue_hp_switch(battle, battler, pokemon)
+            if exit_msg:
+                messages.append(exit_msg)
 
-        # Stealth Rock
-        if 'stealth_rock' in hazards and hasattr(pokemon, 'species_data'):
-            defender_types = [t.lower() for t in pokemon.species_data.get('types', [])]
-            # Build chart
-            chart = self.type_chart.chart if hasattr(self.type_chart, 'chart') else self.type_chart
-            # Effectiveness of Rock vs defender types
-            eff = 1.0
-            if chart and 'rock' in chart:
-                for t in defender_types:
-                    if t in chart['rock']:
-                        eff *= chart['rock'][t]
-            base = max(1, pokemon.max_hp // 8)
-            dmg = int(base * eff)
-            if eff > 0 and dmg < 1:
-                dmg = 1
-            if dmg > 0:
-                pokemon.current_hp = max(0, pokemon.current_hp - dmg)
-                messages.append(f"{pokemon.species_name} is hurt by Stealth Rock! (-{dmg} HP)")
         return messages
     def _execute_switch(self, battle: BattleState, action: BattleAction, forced: bool = False) -> Dict:
         """Execute a Pokemon switch"""
@@ -2682,6 +2754,19 @@ class BattleEngine:
             battle.trick_room_turns -= 1
             if battle.trick_room_turns <= 0:
                 messages.append("The dimensions returned to normal!")
+
+        if ENHANCED_SYSTEMS_AVAILABLE:
+            for battler in battle.get_all_battlers():
+                if battler.is_eliminated:
+                    continue
+                for mon in battler.get_active_pokemon():
+                    exit_msg = self._maybe_queue_hp_switch(battle, battler, mon)
+                    if exit_msg:
+                        messages.append(exit_msg)
+
+                    schooling_msg = self.ability_handler.apply_schooling(mon)
+                    if schooling_msg:
+                        messages.append(schooling_msg)
 
         return messages
     
