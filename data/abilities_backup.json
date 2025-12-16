@@ -764,13 +764,15 @@
   },
   "emergencyexit": {
     "id": "emergencyexit",
-    "name": "Emergencyexit",
-    "num": null,
+    "name": "Emergency Exit",
+    "num": 194,
     "rating": null,
-    "shortDesc": null,
-    "desc": null,
+    "shortDesc": "Switches out when HP is 50% or less after taking damage.",
+    "desc": "When this Pokémon's HP falls to 50% or less from damage, it immediately attempts to switch out if a replacement is available.",
     "isNonstandard": null,
-    "gen": null
+    "gen": 7,
+    "effect": "hp_switch",
+    "threshold": 0.5
   },
   "fairyaura": {
     "id": "fairyaura",
@@ -2418,12 +2420,40 @@
   "schooling": {
     "id": "schooling",
     "name": "Schooling",
-    "num": null,
+    "num": 208,
     "rating": null,
-    "shortDesc": null,
-    "desc": null,
+    "shortDesc": "Wishiwashi (Lv. 20+) is in School Form above 25% HP, Solo otherwise.",
+    "desc": "If a Wishiwashi is level 20 or above, it becomes School Form when its HP is at least 25% of its maximum HP and reverts to Solo Form otherwise. The check occurs on switch-in and at the start/end of each turn.",
     "isNonstandard": null,
-    "gen": null
+    "gen": 7,
+    "threshold": 0.25,
+    "min_level": 20,
+    "forms": {
+      "solo": {
+        "name": "Wishiwashi Solo",
+        "form": null,
+        "base_stats": {
+          "hp": 45,
+          "attack": 20,
+          "defense": 20,
+          "sp_attack": 25,
+          "sp_defense": 25,
+          "speed": 40
+        }
+      },
+      "school": {
+        "name": "Wishiwashi School",
+        "form": "school",
+        "base_stats": {
+          "hp": 45,
+          "attack": 140,
+          "defense": 130,
+          "sp_attack": 140,
+          "sp_defense": 135,
+          "speed": 30
+        }
+      }
+    }
   },
   "scrappy": {
     "id": "scrappy",
@@ -3400,13 +3430,15 @@
   },
   "wimpout": {
     "id": "wimpout",
-    "name": "Wimpout",
-    "num": null,
+    "name": "Wimp Out",
+    "num": 193,
     "rating": null,
-    "shortDesc": null,
-    "desc": null,
+    "shortDesc": "Switches out when HP is 50% or less after taking damage.",
+    "desc": "When this Pokémon's HP falls to 50% or less from damage, it immediately attempts to switch out if a replacement is available.",
     "isNonstandard": null,
-    "gen": null
+    "gen": 7,
+    "effect": "hp_switch",
+    "threshold": 0.5
   },
   "windpower": {
     "id": "windpower",
