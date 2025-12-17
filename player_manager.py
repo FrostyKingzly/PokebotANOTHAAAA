@@ -368,7 +368,34 @@ class PlayerManager:
     # ============================================================
     # POKEMON OPERATIONS
     # ============================================================
-    
+
+    def add_pokemon(self, discord_id: int, pokemon: Pokemon) -> str:
+        """Add a Pokemon to the trainer's collection, preferring the party.
+
+        If the party has an open slot the new partner is placed there; otherwise
+        it is stored in the next available box position.
+        """
+
+        pokemon.owner_discord_id = discord_id
+
+        # Attempt to place in party first
+        party = self.get_party(discord_id)
+        if len(party) < 6:
+            pokemon.in_party = True
+            pokemon.party_position = len(party)
+            pokemon_id = self.db.add_pokemon(pokemon.to_dict())
+        else:
+            pokemon.in_party = False
+            boxes = self.get_boxes(discord_id)
+            pokemon.box_position = len(boxes)
+            pokemon_id = self.db.add_pokemon(pokemon.to_dict())
+
+        # Record Pokédex sighting upon acquisition
+        if pokemon.species_dex_number is not None:
+            self.add_pokedex_seen(discord_id, pokemon.species_dex_number)
+
+        return pokemon_id
+
     def add_pokemon_to_party(self, pokemon: Pokemon, position: int = None) -> str:
         """
         Add a Pokemon to trainer's party
@@ -393,15 +420,21 @@ class PlayerManager:
         
         pokemon.in_party = True
         pokemon.party_position = position
+
+        if pokemon.owner_discord_id:
+            self.add_pokedex_seen(pokemon.owner_discord_id, pokemon.species_dex_number)
         
         return self.db.add_pokemon(pokemon.to_dict())
-    
+
     def add_pokemon_to_box(self, pokemon: Pokemon) -> str:
         """Add a Pokemon to storage box"""
         boxes = self.get_boxes(pokemon.owner_discord_id)
         
         pokemon.in_party = False
         pokemon.box_position = len(boxes)
+
+        if pokemon.owner_discord_id:
+            self.add_pokedex_seen(pokemon.owner_discord_id, pokemon.species_dex_number)
         
         return self.db.add_pokemon(pokemon.to_dict())
     

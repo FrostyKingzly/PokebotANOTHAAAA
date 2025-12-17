@@ -72,9 +72,9 @@ class SpeciesDatabase:
     def _normalize_name(self, name: str) -> str:
         """Normalize species names (removes punctuation, accents, spacing)"""
         normalized = unicodedata.normalize('NFKD', name)
+        normalized = normalized.replace('♀', 'f').replace('♂', 'm')
         normalized = normalized.encode('ascii', 'ignore').decode('ascii')
         normalized = normalized.lower()
-        normalized = normalized.replace('♀', 'f').replace('♂', 'm')
         normalized = normalized.replace('-', ' ').replace('_', ' ')
         normalized = re.sub(r'[^a-z0-9 ]+', ' ', normalized)
         normalized = re.sub(r'\s+', '', normalized)

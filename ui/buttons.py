@@ -844,13 +844,12 @@ class MainMenuView(View):
         """View Pokedex"""
         if await self._deny_if_in_battle(interaction):
             return
-        embed = discord.Embed(
-            title="📘 Pokédex",
-            description="Coming soon!",
-            color=discord.Color.blue(),
+        view = PokedexView(
+            self.bot,
+            interaction.user.id,
+            back_callback=lambda i: _show_main_menu(i, self.bot, interaction.user.id),
         )
-        view = View(timeout=300)
-        _add_back_button(view, lambda i: _show_main_menu(i, self.bot, interaction.user.id))
+        embed = view.create_embed()
 
         await interaction.response.edit_message(embed=embed, view=view)
     
@@ -1148,6 +1147,180 @@ class MainMenuView(View):
         view.add_item(cancel_button)
 
         await interaction.response.edit_message(embed=embed, view=view)
+
+
+class PokedexView(View):
+    """Interactive Pokédex browser with filtering and navigation."""
+
+    def __init__(self, bot, player_id: int, back_callback: Callable[[discord.Interaction], Awaitable[None]]):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.player_id = player_id
+        self.back_callback = back_callback
+        self.filter_mode = "all"
+        self.current_index = 0
+
+        self.seen_species = set(bot.player_manager.get_pokedex(player_id))
+        owned = bot.player_manager.get_all_pokemon(player_id)
+        self.caught_species = {p.get("species_dex_number") for p in owned if p.get("species_dex_number") is not None}
+
+        self.species_entries: List[Dict[str, Any]] = sorted(
+            [s for s in bot.species_db.data.values() if isinstance(s, dict) and s.get("dex_number")],
+            key=lambda s: s["dex_number"],
+        )
+
+        self._refresh_items()
+
+    # Status helpers -----------------------------------------------------
+    def _status(self, species: Dict[str, Any]) -> str:
+        dex = species.get("dex_number")
+        if dex in self.caught_species:
+            return "caught"
+        if dex in self.seen_species:
+            return "seen"
+        return "unseen"
+
+    def _is_seen(self, species: Dict[str, Any]) -> bool:
+        status = self._status(species)
+        return status in {"seen", "caught"}
+
+    def _is_caught(self, species: Dict[str, Any]) -> bool:
+        return self._status(species) == "caught"
+
+    # Data helpers -------------------------------------------------------
+    def _filtered_species(self) -> List[Dict[str, Any]]:
+        if self.filter_mode == "all":
+            return self.species_entries
+        if self.filter_mode == "seen":
+            return [s for s in self.species_entries if self._status(s) in {"seen", "caught"}]
+        if self.filter_mode == "caught":
+            return [s for s in self.species_entries if self._status(s) == "caught"]
+        if self.filter_mode == "unseen":
+            return [s for s in self.species_entries if self._status(s) == "unseen"]
+        return self.species_entries
+
+    def _spawn_locations(self, species: Optional[Dict[str, Any]]) -> List[str]:
+        if not species or not (self._is_seen(species) or self._is_caught(species)):
+            return []
+
+        loc_manager = getattr(self.bot, "location_manager", None)
+        if not loc_manager:
+            return []
+
+        results: List[str] = []
+        for location in loc_manager.get_all_locations().values():
+            for encounter in location.get("encounters", []):
+                if encounter.get("species_dex_number") != species.get("dex_number"):
+                    continue
+
+                loc_name = location.get("name") or "Unknown area"
+                form = encounter.get("form")
+                if form:
+                    loc_name = f"{loc_name} ({str(form).replace('_', ' ').title()})"
+                results.append(loc_name)
+                break
+
+        # Deduplicate while preserving order
+        seen_names = set()
+        unique_locations = []
+        for name in results:
+            if name not in seen_names:
+                unique_locations.append(name)
+                seen_names.add(name)
+
+        return unique_locations
+
+    # UI helpers ---------------------------------------------------------
+    def _clamp_index(self):
+        filtered = self._filtered_species()
+        if not filtered:
+            self.current_index = 0
+            return
+
+        self.current_index = max(0, min(self.current_index, len(filtered) - 1))
+
+    def _build_embed(self) -> discord.Embed:
+        filtered = self._filtered_species()
+        self._clamp_index()
+
+        species = filtered[self.current_index] if filtered else None
+        seen_total = len(self.seen_species | self.caught_species)
+        caught_total = len(self.caught_species)
+        total_species = len(self.species_entries)
+        filtered_total = len(filtered) if filtered else 1
+
+        return EmbedBuilder.pokedex_entry(
+            species,
+            seen=self._is_seen(species) if species else False,
+            caught=self._is_caught(species) if species else False,
+            entry_index=self.current_index,
+            filtered_total=filtered_total,
+            total_species=total_species,
+            seen_total=seen_total,
+            caught_total=caught_total,
+            spawn_locations=self._spawn_locations(species),
+        )
+
+    def _refresh_items(self):
+        self.clear_items()
+
+        # Filter select
+        filter_select = Select(
+            placeholder="Filter entries…",
+            options=[
+                discord.SelectOption(label="All", value="all", default=self.filter_mode == "all"),
+                discord.SelectOption(label="Seen", value="seen", default=self.filter_mode == "seen"),
+                discord.SelectOption(label="Caught", value="caught", default=self.filter_mode == "caught"),
+                discord.SelectOption(label="Unseen", value="unseen", default=self.filter_mode == "unseen"),
+            ],
+            row=0,
+        )
+
+        async def _on_filter_change(interaction: discord.Interaction):
+            self.filter_mode = filter_select.values[0]
+            self.current_index = 0
+            self._refresh_items()
+            await interaction.response.edit_message(embed=self._build_embed(), view=self)
+
+        filter_select.callback = _on_filter_change
+        self.add_item(filter_select)
+
+        # Navigation buttons
+        prev_button = Button(
+            label="◀ Previous",
+            style=discord.ButtonStyle.secondary,
+            disabled=self.current_index <= 0 or not self._filtered_species(),
+            row=1,
+        )
+
+        async def _prev(interaction: discord.Interaction):
+            self.current_index = max(0, self.current_index - 1)
+            self._refresh_items()
+            await interaction.response.edit_message(embed=self._build_embed(), view=self)
+
+        prev_button.callback = _prev
+        self.add_item(prev_button)
+
+        next_button = Button(
+            label="Next ▶",
+            style=discord.ButtonStyle.secondary,
+            disabled=self.current_index >= len(self._filtered_species()) - 1 if self._filtered_species() else True,
+            row=1,
+        )
+
+        async def _next(interaction: discord.Interaction):
+            self.current_index = min(len(self._filtered_species()) - 1, self.current_index + 1)
+            self._refresh_items()
+            await interaction.response.edit_message(embed=self._build_embed(), view=self)
+
+        next_button.callback = _next
+        self.add_item(next_button)
+
+        if self.back_callback:
+            _add_back_button(self, self.back_callback, row=2)
+
+    def create_embed(self) -> discord.Embed:
+        return self._build_embed()
 
     def _build_activity_embed(self, trainer, activity: Dict[str, Any]) -> discord.Embed:
         """Create a consistent preview embed for stamina activities."""
@@ -3996,6 +4169,17 @@ class EncounterSelectView(View):
         self.location = location
         self.player_id = player_id
         self.location_id = location_id
+
+        # Record Pokédex sightings for all rolled encounters
+        for encounter in encounters:
+            try:
+                self.bot.player_manager.add_pokedex_seen(
+                    player_id,
+                    encounter.species_dex_number,
+                )
+            except Exception:
+                # Best-effort logging only; failure shouldn't block encounter UI
+                logging.getLogger(__name__).exception("Failed to record Pokédex sighting")
 
         self._persist_active_encounters()
         
