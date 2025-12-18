@@ -114,6 +114,13 @@ class EffectHandler:
                 target='self',
                 params={'status': 'protect'}
             ))
+        elif move_id == 'kings_shield':
+            effects.append(MoveEffect(
+                effect_type='inflict_volatile',
+                chance=100,
+                target='self',
+                params={'status': 'kings_shield'}
+            ))
 
         # Endure (survive this turn at 1 HP)
         if move_id == 'endure':
