@@ -2578,7 +2578,34 @@
     "shortDesc": "Transforms this Minior between Core Form and Meteor Form. Prevents major status ailments and drowsiness while in Meteor Form.",
     "desc": "When this Pok\u00e9mon enters battle and at the end of each turn, if its HP is 50% or above, it changes into Meteor Form; otherwise, it changes into Core Form. In Meteor Form, it cannot be given a major status ailment (though existing ones are not cured), cannot become drowsy from []{move:yawn}, and cannot use []{move:rest} (which will simply fail). This ability cannot be copied, replaced, or nullified. This ability only takes effect for Minior.",
     "isNonstandard": null,
-    "gen": null
+    "gen": null,
+    "threshold": 0.5,
+    "forms": {
+      "meteor": {
+        "name": "Minior (Meteor Form)",
+        "form": "meteor",
+        "base_stats": {
+          "hp": 60,
+          "attack": 60,
+          "defense": 100,
+          "sp_attack": 60,
+          "sp_defense": 100,
+          "speed": 60
+        }
+      },
+      "core": {
+        "name": "Minior (Core Form)",
+        "form": "core",
+        "base_stats": {
+          "hp": 60,
+          "attack": 100,
+          "defense": 60,
+          "sp_attack": 100,
+          "sp_defense": 60,
+          "speed": 120
+        }
+      }
+    }
   },
   "simple": {
     "id": "simple",
@@ -2769,7 +2796,33 @@
     "shortDesc": "Changes []{pokemon:aegislash} to Blade Forme before using a damaging move, or Shield Forme before using []{move:kings-shield}.",
     "desc": "Changes []{pokemon:aegislash} to Blade Forme before using a damaging move, or Shield Forme before using []{move:kings-shield}.",
     "isNonstandard": null,
-    "gen": null
+    "gen": null,
+    "forms": {
+      "shield": {
+        "name": "Aegislash (Shield Forme)",
+        "form": "shield",
+        "base_stats": {
+          "hp": 60,
+          "attack": 50,
+          "defense": 140,
+          "sp_attack": 50,
+          "sp_defense": 140,
+          "speed": 60
+        }
+      },
+      "blade": {
+        "name": "Aegislash (Blade Forme)",
+        "form": "blade",
+        "base_stats": {
+          "hp": 60,
+          "attack": 150,
+          "defense": 50,
+          "sp_attack": 150,
+          "sp_defense": 50,
+          "speed": 60
+        }
+      }
+    }
   },
   "static": {
     "id": "static",

@@ -11,6 +11,7 @@ import re
 import os
 import random
 import copy
+from status_conditions import StatusType
 
 
 class AbilityHandler:
@@ -82,6 +83,18 @@ class AbilityHandler:
                 pokemon._schooling_state = None
             if not hasattr(pokemon, '_schooling_base_name'):
                 pokemon._schooling_base_name = getattr(pokemon, 'species_name', 'Wishiwashi')
+
+        # Reset Shields Down state tracking so Minior can re-evaluate after switching
+        if self.ability_matches(pokemon, 'shieldsdown'):
+            pokemon._shields_down_state = None
+            if not hasattr(pokemon, '_shields_down_base_name'):
+                pokemon._shields_down_base_name = getattr(pokemon, 'species_name', 'Minior')
+
+        # Reset Stance Change back to Shield Form on entry
+        if self.ability_matches(pokemon, 'stancechange'):
+            pokemon._stance_state = None
+            if not hasattr(pokemon, '_stance_base_name'):
+                pokemon._stance_base_name = getattr(pokemon, 'species_name', 'Aegislash')
 
     def apply_schooling(self, pokemon: Any) -> Optional[str]:
         """Apply Schooling form changes for Wishiwashi based on HP and level."""
@@ -155,6 +168,142 @@ class AbilityHandler:
         if target_form == 'school':
             return f"{pokemon.species_name} formed a school!"
         return f"{pokemon._schooling_base_name}'s Schooling broke apart!"
+
+    def apply_shields_down(self, pokemon: Any) -> Optional[str]:
+        """Handle Minior's Shields Down form changes and immunities."""
+        if not self.ability_matches(pokemon, 'shieldsdown'):
+            return None
+
+        if getattr(pokemon, 'species_dex_number', None) != 774:
+            return None
+
+        ability = self.get_ability('shieldsdown') or {}
+        max_hp = getattr(pokemon, 'max_hp', 0) or 0
+        if max_hp <= 0:
+            return None
+
+        threshold = ability.get('threshold', 0.5)
+        hp_ratio = getattr(pokemon, 'current_hp', 0) / max_hp if max_hp else 0
+        target_form = 'meteor' if pokemon.current_hp > 0 and hp_ratio >= threshold else 'core'
+
+        forms = ability.get('forms', {})
+        meteor_form = forms.get('meteor', {})
+        core_form = forms.get('core', {})
+
+        if not hasattr(pokemon, '_shields_down_state'):
+            pokemon._shields_down_state = None
+        if not hasattr(pokemon, '_shields_down_base_name'):
+            pokemon._shields_down_base_name = getattr(pokemon, 'species_name', 'Minior')
+
+        if pokemon._shields_down_state == target_form:
+            return None
+
+        new_form_data = meteor_form if target_form == 'meteor' else core_form
+        new_stats = new_form_data.get('base_stats')
+        if not new_stats:
+            return None
+
+        prev_hp = getattr(pokemon, 'current_hp', 0)
+        prev_ratio = (prev_hp / max_hp) if max_hp else 0
+
+        pokemon.base_stats = copy.deepcopy(new_stats)
+        if hasattr(pokemon, '_calculate_stats'):
+            pokemon._calculate_stats()
+
+        if prev_hp > 0 and getattr(pokemon, 'max_hp', 0) > 0:
+            preserved_hp = int(round(pokemon.max_hp * prev_ratio))
+            pokemon.current_hp = min(pokemon.max_hp, max(1, preserved_hp))
+        else:
+            pokemon.current_hp = max(0, min(getattr(pokemon, 'max_hp', 0), prev_hp))
+
+        pokemon.form = new_form_data.get('form')
+        pokemon.species_name = new_form_data.get('name') or pokemon._shields_down_base_name
+        pokemon._shields_down_state = target_form
+
+        # Manage major status immunities in Meteor Form
+        status_manager = getattr(pokemon, 'status_manager', None)
+        if status_manager and hasattr(status_manager, 'immunities'):
+            all_major_statuses = {s.value for s in StatusType}
+            if target_form == 'meteor':
+                status_manager.immunities.update(all_major_statuses)
+            else:
+                status_manager.immunities.difference_update(all_major_statuses)
+
+        if target_form == 'meteor':
+            return f"{pokemon.species_name}'s Shields Down formed a sturdy shell!"
+        return f"{pokemon._shields_down_base_name} emerged from its shell!"
+
+    def apply_stance_change(self, pokemon: Any, move_data: Optional[Dict] = None, force_form: Optional[str] = None) -> Optional[str]:
+        """Toggle Aegislash between Shield and Blade formes based on move usage."""
+        if not self.ability_matches(pokemon, 'stancechange'):
+            return None
+
+        if getattr(pokemon, 'species_dex_number', None) != 681:
+            return None
+
+        ability = self.get_ability('stancechange') or {}
+        forms = ability.get('forms', {})
+        shield_form = forms.get('shield', {})
+        blade_form = forms.get('blade', {})
+
+        if not hasattr(pokemon, '_stance_state'):
+            pokemon._stance_state = None
+        if not hasattr(pokemon, '_stance_base_name'):
+            pokemon._stance_base_name = getattr(pokemon, 'species_name', 'Aegislash')
+
+        target_form = force_form
+        if not target_form and move_data:
+            move_id = move_data.get('id')
+            category = move_data.get('category')
+            if move_id == 'kings_shield':
+                target_form = 'shield'
+            elif category in ['physical', 'special']:
+                target_form = 'blade'
+
+        # Default to Shield form if no state is set
+        if not target_form and pokemon._stance_state is None:
+            target_form = 'shield'
+
+        if not target_form or pokemon._stance_state == target_form:
+            return None
+
+        new_form_data = shield_form if target_form == 'shield' else blade_form
+        new_stats = new_form_data.get('base_stats')
+        if not new_stats:
+            return None
+
+        prev_hp = getattr(pokemon, 'current_hp', 0)
+        prev_max_hp = getattr(pokemon, 'max_hp', 0) or 0
+        prev_ratio = (prev_hp / prev_max_hp) if prev_max_hp else 0
+
+        pokemon.base_stats = copy.deepcopy(new_stats)
+        if hasattr(pokemon, '_calculate_stats'):
+            pokemon._calculate_stats()
+
+        if prev_hp > 0 and getattr(pokemon, 'max_hp', 0) > 0:
+            preserved_hp = int(round(pokemon.max_hp * prev_ratio))
+            pokemon.current_hp = min(pokemon.max_hp, max(1, preserved_hp))
+        else:
+            pokemon.current_hp = max(0, min(getattr(pokemon, 'max_hp', 0), prev_hp))
+
+        pokemon.form = new_form_data.get('form')
+        pokemon.species_name = new_form_data.get('name') or pokemon._stance_base_name
+        pokemon._stance_state = target_form
+
+        if target_form == 'blade':
+            return f"{pokemon.species_name} shifted into Blade Forme!"
+        return f"{pokemon._stance_base_name} took on its Shield Forme!"
+
+    def update_form_passives(self, pokemon: Any) -> List[str]:
+        """Apply any passive form changes that depend on HP/ability."""
+        msgs: List[str] = []
+        schooling_msg = self.apply_schooling(pokemon)
+        if schooling_msg:
+            msgs.append(schooling_msg)
+        shields_msg = self.apply_shields_down(pokemon)
+        if shields_msg:
+            msgs.append(shields_msg)
+        return msgs
 
     # ----------------------
     # Utilities
@@ -285,10 +434,13 @@ class AbilityHandler:
             except Exception:
                 pass
 
-        # Passive form changes (e.g., Schooling) may need to run on entry as well
-        schooling_msg = self.apply_schooling(pokemon)
-        if schooling_msg:
-            msgs.append(schooling_msg)
+        # Passive form changes (e.g., Schooling/Shields Down) may need to run on entry as well
+        msgs.extend(self.update_form_passives(pokemon))
+
+        # Ensure Aegislash starts in Shield Forme when switching in
+        stance_msg = self.apply_stance_change(pokemon, force_form='shield')
+        if stance_msg:
+            msgs.append(stance_msg)
 
         return msgs
 

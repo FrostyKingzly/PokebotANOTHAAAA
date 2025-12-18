@@ -273,6 +273,32 @@ class HeldItemManager:
         item_name = item.get('name', item['id'])
         return reduced_damage, f"{defender.species_name}'s {item_name} weakened the attack!"
 
+    def _get_protect_status(self, pokemon) -> Optional[str]:
+        """Return the active protect-like volatile status if present."""
+        status_manager = getattr(pokemon, 'status_manager', None)
+        if not status_manager:
+            return None
+        statuses = getattr(status_manager, 'volatile_statuses', {})
+        for status_name in ('protect', 'kings_shield', 'detect'):
+            if status_name in statuses:
+                return status_name
+        return None
+
+    def _apply_kings_shield_attack_drop(self, attacker, move_data, messages: list[str]) -> None:
+        """Apply King's Shield contact penalty if applicable."""
+        flags = move_data.get('flags', {}) if isinstance(move_data, dict) else {}
+        is_contact = isinstance(flags, dict) and flags.get('contact')
+        if not is_contact or move_data.get('category') == 'status':
+            return
+
+        if not hasattr(attacker, 'stat_stages'):
+            attacker.stat_stages = {
+                'attack': 0, 'defense': 0, 'sp_attack': 0,
+                'sp_defense': 0, 'speed': 0, 'evasion': 0, 'accuracy': 0
+            }
+        attacker.stat_stages['attack'] = max(-6, attacker.stat_stages['attack'] - 2)
+        messages.append(f"{attacker.species_name}'s Attack harshly fell after hitting the shield!")
+
     def _maybe_cure_status(self, pokemon, effect: Dict[str, Any]) -> Optional[str]:
         cures = effect.get('cures')
         trigger = effect.get('trigger')
@@ -1048,9 +1074,8 @@ class BattleEngine:
             if battler.is_eliminated:
                 continue
             for mon in battler.get_active_pokemon():
-                schooling_msg = self.ability_handler.apply_schooling(mon)
-                if schooling_msg:
-                    messages.append(schooling_msg)
+                passive_msgs = self.ability_handler.update_form_passives(mon)
+                messages.extend(passive_msgs)
 
         return messages
 
@@ -1327,7 +1352,7 @@ class BattleEngine:
                     offensive_moves.append(move)
                     if is_super_effective:
                         super_effective_moves.append(move)
-            elif target_type in ['ally', 'all_allies'] or move['move_id'] in ['helping_hand', 'protect', 'detect']:
+            elif target_type in ['ally', 'all_allies'] or move['move_id'] in ['helping_hand', 'protect', 'detect', 'kings_shield']:
                 support_moves.append(move)
             elif target_type in ['self', 'user_field']:
                 setup_moves.append(move)
@@ -1806,8 +1831,11 @@ class BattleEngine:
         for defender_battler, defender in valid_targets:
             # Check if defender is protected
             if ENHANCED_SYSTEMS_AVAILABLE and hasattr(defender, 'status_manager'):
-                if 'protect' in getattr(defender.status_manager, 'volatile_statuses', {}):
+                protect_status = self._get_protect_status(defender)
+                if protect_status:
                     if move_data.get('category') in ['physical', 'special']:
+                        if protect_status == 'kings_shield':
+                            self._apply_kings_shield_attack_drop(attacker, move_data, messages)
                         messages.append(f"{defender.species_name} protected itself!")
                         continue
 
@@ -1848,19 +1876,24 @@ class BattleEngine:
                 messages.append(f"It doesn't affect {defender.species_name}...")
                 continue
 
-            damage_text = f"{defender.species_name} took {damage} damage!{crit_text}{effectiveness_text}"
-            messages.append(damage_text)
-            messages.extend(effect_msgs)
+        damage_text = f"{defender.species_name} took {damage} damage!{crit_text}{effectiveness_text}"
+        messages.append(damage_text)
+        messages.extend(effect_msgs)
 
-            # Check for faint
-            if defender.current_hp <= 0:
-                if battle.battle_type == BattleType.WILD and defender_battler == battle.opponent:
-                    defender.current_hp = 1
-                    battle.wild_dazed = True
-                    battle.phase = 'DAZED'
-                    messages.append(f"The wild {defender.species_name} is dazed!")
-                else:
-                    messages.append(f"{defender.species_name} fainted!")
+        # Check for HP-based form changes after the exchange
+        if self.ability_handler:
+            messages.extend(self.ability_handler.update_form_passives(defender))
+            messages.extend(self.ability_handler.update_form_passives(attacker))
+
+        # Check for faint
+        if defender.current_hp <= 0:
+            if battle.battle_type == BattleType.WILD and defender_battler == battle.opponent:
+                defender.current_hp = 1
+                battle.wild_dazed = True
+                battle.phase = 'DAZED'
+                messages.append(f"The wild {defender.species_name} is dazed!")
+            else:
+                messages.append(f"{defender.species_name} fainted!")
 
         return {"messages": messages}
 
@@ -1896,6 +1929,12 @@ class BattleEngine:
         move_data = self.moves_db.get_move(action.move_id)
         if not move_data:
             return {"messages": [f"{attacker.species_name} tried to use an unknown move!"]}
+
+        # Handle form changes tied to move usage (e.g., Stance Change)
+        if self.ability_handler:
+            stance_msg = self.ability_handler.apply_stance_change(attacker, move_data)
+            if stance_msg:
+                messages.append(stance_msg)
 
         # Taunt prevents status-category moves
         if (
@@ -1973,8 +2012,8 @@ class BattleEngine:
                 attacker_battler=attacker_battler,
             )
 
-        # Handle Protect/Detect successive use failure
-        if action.move_id in ['protect', 'detect']:
+        # Handle Protect/Detect/King's Shield successive use failure
+        if action.move_id in ['protect', 'detect', 'kings_shield']:
             protect_count = getattr(attacker, '_protect_count', 0)
             if protect_count > 0:
                 # Calculate success rate: (1/3)^protect_count
@@ -2024,9 +2063,12 @@ class BattleEngine:
 
         # Check if defender is protected (Protect/Detect blocks damaging moves)
         if ENHANCED_SYSTEMS_AVAILABLE and hasattr(defender, 'status_manager'):
-            if 'protect' in getattr(defender.status_manager, 'volatile_statuses', {}):
+            protect_status = self._get_protect_status(defender)
+            if protect_status:
                 # Protect blocks all damaging moves and most status moves
                 if move_data.get('category') in ['physical', 'special']:
+                    if protect_status == 'kings_shield':
+                        self._apply_kings_shield_attack_drop(attacker, move_data, messages)
                     move_msg = f"{attacker.species_name} used {move_data['name']}, but {defender.species_name} protected itself!"
                     return {"messages": [move_msg]}
 

@@ -39,6 +39,7 @@ class VolatileStatus(Enum):
     PROTECT = "protect"
     DETECT = "detect"
     ENDURE = "endure"
+    KINGS_SHIELD = "kings_shield"
     # Stat stages
     FOCUS_ENERGY = "focusenergy"  # Increased crit rate
     FOLLOW_ME = "follow_me"
@@ -389,6 +390,7 @@ class StatusConditionManager:
             VolatileStatus.FLINCH.value: "flinched!",
             VolatileStatus.PROTECT.value: "protected itself!",
             VolatileStatus.DETECT.value: "protected itself!",
+            VolatileStatus.KINGS_SHIELD.value: "took a defensive stance!",
             VolatileStatus.ENDURE.value: "is preparing to endure!",
             VolatileStatus.FOLLOW_ME.value: "became the center of attention!",
         }
