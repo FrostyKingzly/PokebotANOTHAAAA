@@ -444,6 +444,101 @@ class EmbedBuilder:
         return embed
 
     @staticmethod
+    def pokedex_entry(
+        species: Dict,
+        *,
+        seen: bool,
+        caught: bool,
+        entry_index: int,
+        filtered_total: int,
+        total_species: int,
+        seen_total: int,
+        caught_total: int,
+        spawn_locations: List[str],
+    ) -> discord.Embed:
+        """Build a Pokédex entry embed for a single species."""
+
+        if not species:
+            return discord.Embed(
+                title="📘 Pokédex",
+                description="No entries match this view yet.",
+                color=EmbedBuilder.WARNING_COLOR,
+            )
+
+        status_text = "✅ Captured" if caught else "👀 Seen" if seen else "❔ Unseen"
+        color = (
+            EmbedBuilder.SUCCESS_COLOR if caught else EmbedBuilder.INFO_COLOR if seen else EmbedBuilder.WARNING_COLOR
+        )
+
+        description = species.get("description") or "No Pokédex notes recorded yet."
+        if not seen and not caught:
+            description = (
+                "You haven't encountered this Pokémon yet. Once you spot it in the wild or add it to your team, "
+                "its entry will be fully verified.\n\n"
+            ) + description
+
+        type_list = species.get("types", []) or []
+        type_line = " / ".join(EmbedBuilder._type_to_emoji(t) for t in type_list) or "Unknown"
+
+        abilities = species.get("abilities", {}) or {}
+        ability_parts: List[str] = []
+        if abilities.get("primary"):
+            ability_parts.append(f"1️⃣ {abilities['primary'].replace('_', ' ').title()}")
+        if abilities.get("secondary"):
+            ability_parts.append(f"2️⃣ {abilities['secondary'].replace('_', ' ').title()}")
+        if abilities.get("hidden"):
+            ability_parts.append(f"✨ {abilities['hidden'].replace('_', ' ').title()}")
+        ability_text = "\n".join(ability_parts) if ability_parts else "No ability data recorded."
+
+        stats = species.get("base_stats", {}) or {}
+        stat_line_one = (
+            f"HP {stats.get('hp', '?')} | Atk {stats.get('attack', '?')} | Def {stats.get('defense', '?')}"
+        )
+        stat_line_two = (
+            f"SpA {stats.get('sp_attack', '?')} | SpD {stats.get('sp_defense', '?')} | Spe {stats.get('speed', '?')}"
+        )
+        stats_text = f"{stat_line_one}\n{stat_line_two}"
+
+        spawn_text = "No wild encounter data recorded."
+        if spawn_locations:
+            shown = spawn_locations[:8]
+            spawn_text = "\n".join(f"• {loc}" for loc in shown)
+            remaining = len(spawn_locations) - len(shown)
+            if remaining > 0:
+                spawn_text += f"\n…and {remaining} more areas"
+        elif not (seen or caught):
+            spawn_text = "Sight a wild specimen to unlock location data."
+
+        dex_number = species.get("dex_number")
+        name = species.get("name", "Unknown Pokémon")
+
+        embed = discord.Embed(
+            title=f"📘 #{dex_number:03d} {name}",
+            description=description,
+            color=color,
+        )
+
+        sprite = PokemonSpriteHelper.get_sprite(name, dex_number, style="official", use_fallback=False)
+        if sprite:
+            embed.set_thumbnail(url=sprite)
+
+        embed.add_field(name="Status", value=status_text, inline=True)
+        embed.add_field(name="Typing", value=type_line, inline=True)
+
+        embed.add_field(name="Abilities", value=ability_text, inline=False)
+        embed.add_field(name="Base Stats", value=stats_text, inline=False)
+        embed.add_field(name="Wild Locations", value=spawn_text, inline=False)
+
+        embed.set_footer(
+            text=(
+                f"Entry {entry_index + 1}/{filtered_total} • Seen {seen_total}/{total_species} "
+                f"• Caught {caught_total}/{total_species}"
+            )
+        )
+
+        return embed
+
+    @staticmethod
     def trainer_card(trainer: Trainer, party_count: int = 0,
                     total_pokemon: int = 0, pokedex_seen: int = 0,
                     location_manager=None) -> discord.Embed:
