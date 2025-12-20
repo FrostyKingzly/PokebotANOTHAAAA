@@ -167,6 +167,20 @@ class RankCog(commands.Cog):
             ephemeral=True,
         )
 
+    @app_commands.command(name="omni_activate", description="[ADMIN] Deliver Omni Rings to all trainers")
+    @app_commands.check(is_admin)
+    async def omni_activate(self, interaction: discord.Interaction):
+        manager = self._get_manager()
+        if not manager:
+            await interaction.response.send_message("Rank system offline.", ephemeral=True)
+            return
+
+        manager.activate_omni_ring_distribution()
+        await interaction.response.send_message(
+            "✅ Omni Rings have been added to every trainer's alerts. Use /rank_select_gimmick to configure them.",
+            ephemeral=True,
+        )
+
     @app_commands.command(name="rank_unlock", description="[ADMIN] Unlock the next rank tier")
     @app_commands.describe(tier="Highest tier (1-8) that should be unlocked")
     @app_commands.check(is_admin)

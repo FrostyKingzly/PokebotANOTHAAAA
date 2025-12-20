@@ -8,6 +8,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+# Provided Omni Ring artwork for alerts and inventory UI
+OMNI_RING_IMAGE_URL = "https://i.imgur.com/yKHl7aC.jpg"
+
 # Rank definitions: eight tiers spread across five named ranks
 RANK_TIER_DEFINITIONS: List[Dict[str, Any]] = [
     {
@@ -162,6 +165,8 @@ class RankManager:
             "twilight_invite_active": False,
             "twilight_started": False,
             "twilight_participants": [],
+            # Global toggles
+            "omni_ring_global": False,
         }
 
         if self.state_path.exists():
@@ -429,6 +434,15 @@ class RankManager:
     def twilight_started(self) -> bool:
         return bool(self._state.get("twilight_started", False))
 
+    def activate_omni_ring_distribution(self) -> None:
+        """Enable global Omni Ring delivery for all trainers."""
+
+        self._state["omni_ring_global"] = True
+        self._save_state()
+
+    def omni_distribution_active(self) -> bool:
+        return bool(self._state.get("omni_ring_global", False))
+
     def is_twilight_participant(self, discord_id: int) -> bool:
         participants = self._state.get("twilight_participants") or []
         return int(discord_id) in {int(pid) for pid in participants}
@@ -483,6 +497,47 @@ class RankManager:
                     "action": "sign_up",
                     "status": "joined" if participant else "pending",
                     "cta_label": "Sign Up" if not participant else "Already Signed",
+                }
+            )
+
+        omni_active = self.omni_distribution_active()
+        tier = trainer.rank_tier_number or 1
+        has_ring = getattr(trainer, "has_omni_ring", False)
+        slots, owned = self.get_available_gimmicks(trainer)
+        if omni_active or has_ring or tier >= 2:
+            if omni_active and not has_ring:
+                self.player_manager.update_player(trainer.discord_user_id, has_omni_ring=1)
+                trainer.has_omni_ring = True
+                has_ring = True
+
+            remaining = max(0, slots - len(owned))
+            if has_ring:
+                summary = "Select your Omni Ring gimmick." if remaining else "All attunements set for now."
+                details_lines = [
+                    "Your Omni Ring is ready to channel a battle gimmick.",
+                    "Use `/rank_select_gimmick` to attune Mega Evolution, Z-Moves, Dynamax, or Terastalization.",
+                ]
+                if remaining:
+                    details_lines.append(f"You have {remaining} open slot(s) to configure.")
+                status = "joined" if remaining == 0 else "pending"
+            else:
+                summary = "Claim your Omni Ring to unlock gimmicks."
+                details_lines = [
+                    "Challengers receive an Omni Ring to access battle gimmicks.",
+                    "Play ranked to qualify, then attune it with `/rank_select_gimmick`.",
+                ]
+                status = "pending"
+
+            alerts.append(
+                {
+                    "id": "omni_ring_setup",
+                    "title": "Omni Ring Unlocked",
+                    "summary": summary,
+                    "details": "\n".join(details_lines),
+                    "action": "configure_omni",
+                    "status": status,
+                    "cta_label": "Open Omni Ring",
+                    "image": OMNI_RING_IMAGE_URL,
                 }
             )
 

@@ -435,6 +435,9 @@ class EmbedBuilder:
             color=EmbedBuilder.INFO_COLOR,
         )
 
+        if alert.get("image"):
+            embed.set_thumbnail(url=alert["image"])
+
         status = alert.get("status")
         if status == "joined":
             embed.add_field(name="Status", value="✅ You're signed up.", inline=False)
