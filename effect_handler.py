@@ -5,6 +5,7 @@ Handles stat changes, status infliction, healing, recoil, drain, hazards, and mo
 """
 
 from typing import Dict, List, Optional, Any, Tuple
+import copy
 from dataclasses import dataclass
 import random
 import json
@@ -151,11 +152,15 @@ class EffectHandler:
         
         # Top-level status (Thunder Wave, Will-O-Wisp, etc.)
         if 'status' in move_data:
+            status_params = {'status': move_data['status']}
+            if move_id == 'rest':
+                status_params['duration'] = 2
+                status_params['force_replace'] = True
             effects.append(MoveEffect(
                 effect_type='inflict_status',
                 chance=100,
                 target='normal',
-                params={'status': move_data['status']}
+                params=status_params
             ))
         
         # Top-level volatile status
@@ -249,7 +254,7 @@ class EffectHandler:
                     effect_type='heal',
                     chance=100,
                     target='self',
-                    params={'percentage': percentage}
+                    params={'percentage': percentage, 'move_id': move_id}
                 ))
         
         # Ohko moves
@@ -270,12 +275,22 @@ class EffectHandler:
 
         # Moves that make user switch (U-turn, Volt Switch, etc.)
         # These moves are detected by their move_id since the JSON doesn't have selfSwitch field
-        switch_moves = ['volt_switch', 'u_turn', 'flip_turn', 'baton_pass', 'parting_shot', 'teleport']
+        switch_moves = [
+            'volt_switch',
+            'u_turn',
+            'flip_turn',
+            'baton_pass',
+            'parting_shot',
+            'teleport',
+            'shed_tail',
+            'chilly_reception',
+        ]
         if move_data.get('selfSwitch') or move_id in switch_moves:
             effects.append(MoveEffect(
                 effect_type='self_switch',
                 chance=100,
-                target='self'
+                target='self',
+                params={'move_id': move_id}
             ))
 
         # Trick Room (reverse move order for 5 turns)
@@ -297,15 +312,47 @@ class EffectHandler:
             ))
 
         # Taunt (prevents status moves)
-        if move_id == 'taunt':
-            effects.append(MoveEffect(
-                effect_type='inflict_volatile',
-                chance=100,
-                target='normal',
-                params={'status': 'taunt'}
-            ))
+            if move_id == 'taunt':
+                effects.append(MoveEffect(
+                    effect_type='inflict_volatile',
+                    chance=100,
+                    target='normal',
+                    params={'status': 'taunt'}
+                ))
 
         return effects
+
+    def _prepare_baton_pass_payload(self, attacker: Any) -> Dict:
+        """Capture transferable effects for Baton Pass."""
+        payload: Dict[str, Any] = {}
+
+        # Copy stat stages (initialize defaults if missing)
+        if not hasattr(attacker, 'stat_stages'):
+            attacker.stat_stages = {
+                'attack': 0, 'defense': 0, 'sp_attack': 0, 'sp_defense': 0,
+                'speed': 0, 'evasion': 0, 'accuracy': 0
+            }
+        payload['stat_stages'] = copy.deepcopy(attacker.stat_stages)
+
+        # Copy passable volatile statuses (e.g., Substitute, Focus Energy)
+        status_manager = getattr(attacker, 'status_manager', None)
+        passable_statuses = {
+            VolatileStatus.SUBSTITUTE.value,
+            VolatileStatus.FOCUS_ENERGY.value,
+        }
+
+        if status_manager:
+            payload['volatiles'] = {}
+            for status_name, condition in status_manager.volatile_statuses.items():
+                if status_name in passable_statuses:
+                    payload['volatiles'][status_name] = {
+                        'duration': condition.duration,
+                        'counter': condition.counter,
+                        'source': condition.source,
+                        'metadata': copy.deepcopy(condition.metadata),
+                    }
+
+        return payload
     
     def apply_move_effects(
         self,
@@ -358,7 +405,7 @@ class EffectHandler:
                     messages.append(result)
             
             elif effect.effect_type == 'heal':
-                result = self._apply_heal(effect, target)
+                result = self._apply_heal(effect, target, battle_state)
                 if result:
                     messages.append(result)
             
@@ -384,8 +431,16 @@ class EffectHandler:
             elif effect.effect_type == 'self_switch':
                 # Mark that the attacker should switch after this move
                 # The battle engine will handle the actual switching
+                move_id = (effect.params.get('move_id') or '').lower()
+                if move_id == 'baton_pass':
+                    attacker._baton_pass_transfer = self._prepare_baton_pass_payload(attacker)
                 attacker._should_switch = True
                 messages.append(f"{attacker.species_name} will switch out!")
+
+            elif effect.effect_type == 'force_switch':
+                result = self._apply_force_switch(effect, defender)
+                if result:
+                    messages.append(result)
 
             elif effect.effect_type == 'weather':
                 result = self._apply_weather(effect, battle_state, attacker)
@@ -399,6 +454,11 @@ class EffectHandler:
 
             elif effect.effect_type == 'trick_room':
                 result = self._apply_trick_room(effect, battle_state)
+                if result:
+                    messages.append(result)
+
+            elif effect.effect_type == 'ohko':
+                result = self._apply_ohko(effect, attacker, defender)
                 if result:
                     messages.append(result)
 
@@ -481,12 +541,28 @@ class EffectHandler:
         attacker.current_hp = max(0, attacker.current_hp - recoil_damage)
         return f"{attacker.species_name} took {recoil_damage} recoil damage!"
     
-    def _apply_heal(self, effect: MoveEffect, target: Any) -> Optional[str]:
-        """Apply healing effect"""
+    def _apply_heal(self, effect: MoveEffect, target: Any, battle_state: Any = None) -> Optional[str]:
+        """Apply healing effect with weather-aware scaling for certain moves."""
         percentage = effect.params.get('percentage', 50)
+        move_id = effect.params.get('move_id')
+
+        weather = getattr(battle_state, 'weather', None) if battle_state else None
+
+        if move_id in ['morning_sun', 'synthesis', 'moonlight']:
+            if weather == 'sun':
+                percentage = 66
+            elif weather in ['rain', 'sandstorm', 'hail', 'snow']:
+                percentage = 25
+            else:
+                percentage = 50
+        elif move_id == 'shore_up':
+            percentage = 66 if weather == 'sandstorm' else 50
+        elif move_id == 'rest':
+            percentage = 100
+
         heal_amount = max(1, int(target.max_hp * percentage / 100))
         heal_amount = min(heal_amount, target.max_hp - target.current_hp)
-        
+
         if heal_amount > 0:
             target.current_hp += heal_amount
             return f"{target.species_name} restored {heal_amount} HP!"
@@ -549,18 +625,23 @@ class EffectHandler:
     def _apply_status(self, effect: MoveEffect, target: Any) -> Optional[str]:
         """Apply major status condition"""
         status = effect.params.get('status')
-        
+        duration_override = effect.params.get('duration')
+        force_replace = effect.params.get('force_replace', False)
+
         if not hasattr(target, 'status_manager'):
             target.status_manager = StatusConditionManager()
-        
+
+        if force_replace and getattr(target.status_manager, 'major_status', None):
+            target.status_manager.major_status = None
+
         # Check type immunities
         pokemon_types = target.species_data.get('types', [])
         can_apply, reason = target.status_manager.can_apply_status(status, pokemon_types, target)
-        
+
         if not can_apply:
             return f"{target.species_name} is not affected! ({reason})"
-        
-        success, message = target.status_manager.apply_status(status)
+
+        success, message = target.status_manager.apply_status(status, duration=duration_override)
         if success:
             return f"{target.species_name} {message}"
         
@@ -600,6 +681,14 @@ class EffectHandler:
             return f"{target.species_name} {message}"
 
         return None
+
+    def _apply_force_switch(self, effect: MoveEffect, target: Any) -> Optional[str]:
+        """Mark the target to be forced out after this turn."""
+        if not target or getattr(target, 'current_hp', 0) <= 0:
+            return None
+
+        setattr(target, '_force_switch', True)
+        return f"{target.species_name} will be forced out!"
 
     def _apply_weather(self, effect: MoveEffect, battle_state: Any, attacker: Any = None) -> Optional[str]:
         """Apply weather to the field"""
@@ -685,6 +774,30 @@ class EffectHandler:
 
         battle_state.trick_room_turns = effect.params.get('duration', 5)
         return "The dimensions twisted! Slower Pokémon will move first."
+
+    def _apply_ohko(self, effect: MoveEffect, attacker: Any, defender: Any) -> Optional[str]:
+        """Apply one-hit KO logic after a successful hit."""
+        if not defender or getattr(defender, 'current_hp', 0) <= 0:
+            return None
+
+        attacker_level = getattr(attacker, 'level', None)
+        defender_level = getattr(defender, 'level', None)
+
+        # If we don't have level data, treat as guaranteed for now (better than silent failure)
+        if attacker_level is None or defender_level is None:
+            defender.current_hp = 0
+            return f"{defender.species_name} was felled by a one-hit KO!"
+
+        if attacker_level < defender_level:
+            return f"{defender.species_name} withstood the one-hit KO due to its higher level!"
+
+        accuracy = max(30 + attacker_level - defender_level, 1)
+        roll = random.uniform(0, 100)
+        if roll > accuracy:
+            return f"{defender.species_name} avoided the one-hit KO!"
+
+        defender.current_hp = 0
+        return f"{defender.species_name} was felled by a one-hit KO!"
     
     def get_stat_multiplier(self, stage: int) -> float:
         """Get the stat multiplier for a given stage (-6 to +6)"""

@@ -24,6 +24,7 @@ try:
     ENHANCED_SYSTEMS_AVAILABLE = True
 except ImportError:
     ENHANCED_SYSTEMS_AVAILABLE = False
+    from status_conditions import StatusConditionManager
     print("⚠️ Enhanced systems not available. Using basic calculator.")
 
 
@@ -1897,6 +1898,27 @@ class BattleEngine:
 
         return {"messages": messages}
 
+    def _should_skip_charge(self, move_data: Dict, battle: BattleState) -> bool:
+        """Check if a charging move should skip its charge turn (e.g., Solar Beam in sun)."""
+        move_id = (move_data.get('id') or '').lower()
+        weather = getattr(battle, 'weather', None)
+
+        if move_id in ['solar_beam', 'solar_blade'] and weather == 'sun':
+            return True
+        return False
+
+    def _apply_charge_start_effects(self, attacker, move_data: Dict, messages: List[str]):
+        """Apply first-turn effects for charging moves (e.g., Skull Bash defense boost)."""
+        move_id = (move_data.get('id') or '').lower()
+
+        if move_id == 'skull_bash':
+            if not hasattr(attacker, 'stat_stages'):
+                attacker.stat_stages = {'attack': 0, 'defense': 0, 'sp_attack': 0, 'sp_defense': 0, 'speed': 0,
+                                         'evasion': 0, 'accuracy': 0}
+            current = attacker.stat_stages.get('defense', 0)
+            attacker.stat_stages['defense'] = min(6, current + 1)
+            messages.append(f"{attacker.species_name} is bracing itself! Defense rose.")
+
     async def _execute_move(self, battle: BattleState, action: BattleAction) -> Dict:
         """Execute a move action - now supports spread moves hitting multiple targets"""
         # Get attacker and defender
@@ -1944,6 +1966,30 @@ class BattleEngine:
             and move_data.get('category') == 'status'
         ):
             return {"messages": [f"{attacker.species_name} fell for the Taunt and can't use {move_data['name']}!"]}
+
+        # Two-turn charging moves
+        skip_pp_deduct = False
+        if getattr(attacker, '_charge_state', None) and attacker._charge_state.get('move_id') != action.move_id:
+            attacker._charge_state = None
+
+        if move_data.get('flags', {}).get('charge'):
+            charge_state = getattr(attacker, '_charge_state', None)
+            if charge_state and charge_state.get('move_id') == action.move_id:
+                messages.append(f"{attacker.species_name} unleashed {move_data['name']}!")
+                skip_pp_deduct = charge_state.get('pp_paid', False)
+                attacker._charge_state = None
+            elif not self._should_skip_charge(move_data, battle):
+                # Deduct PP immediately since we're returning before normal processing
+                for move in attacker.moves:
+                    if move['move_id'] == action.move_id:
+                        move['pp'] = max(0, move['pp'] - 1)
+                        break
+                messages.append(f"{attacker.species_name} began charging {move_data['name']}!")
+                self._apply_charge_start_effects(attacker, move_data, messages)
+                attacker._charge_state = {'move_id': action.move_id, 'pp_paid': True}
+                return {"messages": messages}
+            else:
+                messages.append(f"{attacker.species_name} used {move_data['name']} without charging!")
 
         # Special handling for Revival Blessing (target selection can include fainted allies)
         if move_data.get('id') == 'revival_blessing':
@@ -2056,10 +2102,11 @@ class BattleEngine:
                 return {"messages": [f"{attacker.species_name} tried to use {move_data.get('name', action.move_id)}, but it doesn't affect Rogue Pokemon!"]}
 
         # Deduct PP
-        for move in attacker.moves:
-            if move['move_id'] == action.move_id:
-                move['pp'] = max(0, move['pp'] - 1)
-                break
+        if not skip_pp_deduct:
+            for move in attacker.moves:
+                if move['move_id'] == action.move_id:
+                    move['pp'] = max(0, move['pp'] - 1)
+                    break
 
         # Check if defender is protected (Protect/Detect blocks damaging moves)
         if ENHANCED_SYSTEMS_AVAILABLE and hasattr(defender, 'status_manager'):
@@ -2159,6 +2206,30 @@ class BattleEngine:
                 defender, move_data, damage
             )
             messages.extend(reactive_msgs)
+
+        # Handle moves that force the target to switch out without fainting
+        if getattr(defender, '_force_switch', False) and defender.current_hp > 0:
+            defender._force_switch = False
+
+            defender_battler = next((b for b in battle.get_all_battlers() if defender in b.party), battle.opponent)
+            if defender_battler.can_switch and defender_battler.has_usable_pokemon():
+                # Determine which active slot holds the target
+                forced_position = None
+                for pos_idx, party_idx in enumerate(defender_battler.active_positions):
+                    if defender_battler.party[party_idx] == defender:
+                        forced_position = pos_idx
+                        break
+
+                if forced_position is not None:
+                    battle.pending_switches[defender_battler.battler_id] = {
+                        'position': forced_position,
+                        'switch_type': 'FORCED'
+                    }
+                    battle.phase = 'FORCED_SWITCH'
+                    if not battle.forced_switch_battler_id:
+                        battle.forced_switch_battler_id = defender_battler.battler_id
+                        battle.forced_switch_position = forced_position
+                    messages.append(f"{defender.species_name} was forced to switch out!")
 
         # Check for faint / dazed state
         if defender.current_hp <= 0:
@@ -2541,7 +2612,16 @@ class BattleEngine:
             switch_position = action.pokemon_position
 
         # Get old and new Pokemon
-        old_pokemon = battler.get_active_pokemon()[switch_position] if switch_position < len(battler.get_active_pokemon()) else battler.get_active_pokemon()[0]
+        old_active = battler.get_active_pokemon()
+        old_pokemon = old_active[switch_position] if switch_position < len(old_active) else old_active[0]
+
+        if not forced and hasattr(old_pokemon, 'status_manager'):
+            trapping_statuses = {
+                'partiallytrapped', 'bind', 'wrap', 'firespin', 'whirlpool', 'sandtomb', 'clamp', 'infestation'
+            }
+            if any(old_pokemon.status_manager.has_status(status) for status in trapping_statuses):
+                return {"messages": [f"{old_pokemon.species_name} is trapped and can't be switched out!"]}
+
         new_pokemon = battler.party[action.switch_to_position]
 
         # Switch
@@ -2557,6 +2637,24 @@ class BattleEngine:
             messages.extend(ability_msgs)
 
         messages.extend(self._apply_entry_hazards(battle, battler, new_pokemon))
+
+        # Baton Pass: transfer select effects and stat stages
+        baton_pass_payload = getattr(old_pokemon, '_baton_pass_transfer', None)
+        if baton_pass_payload:
+            old_pokemon._baton_pass_transfer = None
+            if baton_pass_payload.get('stat_stages') is not None:
+                new_pokemon.stat_stages = baton_pass_payload['stat_stages']
+
+            if baton_pass_payload.get('volatiles'):
+                if not hasattr(new_pokemon, 'status_manager'):
+                    new_pokemon.status_manager = StatusConditionManager()
+                for status_name, condition_data in baton_pass_payload['volatiles'].items():
+                    new_pokemon.status_manager.apply_status(
+                        status_name,
+                        duration=condition_data.get('duration'),
+                        source=condition_data.get('source'),
+                        metadata=condition_data.get('metadata')
+                    )
 
         if forced:
             lead_messages = [f"{battler.battler_name} sent out {new_pokemon.species_name}!"]

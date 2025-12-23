@@ -287,7 +287,7 @@ class StatusConditionManager:
             elif status_name in [VolatileStatus.BIND.value, VolatileStatus.WRAP.value,
                                 VolatileStatus.FIRE_SPIN.value, VolatileStatus.WHIRLPOOL.value,
                                 VolatileStatus.SAND_TOMB.value, VolatileStatus.CLAMP.value,
-                                VolatileStatus.INFESTATION.value]:
+                                VolatileStatus.INFESTATION.value, VolatileStatus.PARTIALLY_TRAPPED.value]:
                 damage = max(1, pokemon.max_hp // 8)
                 pokemon.current_hp = max(0, pokemon.current_hp - damage)
                 status_display = status_name.replace("_", " ").title()
@@ -312,7 +312,7 @@ class StatusConditionManager:
                             VolatileStatus.BIND.value, VolatileStatus.WRAP.value,
                             VolatileStatus.FIRE_SPIN.value, VolatileStatus.WHIRLPOOL.value,
                             VolatileStatus.SAND_TOMB.value, VolatileStatus.CLAMP.value,
-                            VolatileStatus.INFESTATION.value]:
+                            VolatileStatus.INFESTATION.value, VolatileStatus.PARTIALLY_TRAPPED.value]:
                 if status.tick_turn():
                     del self.volatile_statuses[name]
 
