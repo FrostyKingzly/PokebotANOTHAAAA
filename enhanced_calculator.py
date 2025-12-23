@@ -144,6 +144,23 @@ class EnhancedDamageCalculator:
             hits_taken = getattr(attacker, 'rage_fist_hits_taken', 0)
             power = min(350, 50 + 50 * hits_taken)
 
+        if move_id in {'counter', 'mirror_coat', 'metal_burst'}:
+            last_damage = getattr(attacker, 'last_damage_taken', 0)
+            last_category = getattr(attacker, 'last_damage_category', None)
+            last_from = getattr(attacker, 'last_damage_from', None)
+            category_ok = (
+                (move_id == 'counter' and last_category == 'physical')
+                or (move_id == 'mirror_coat' and last_category == 'special')
+                or (move_id == 'metal_burst' and last_category in {'physical', 'special'})
+            )
+            if last_damage > 0 and last_from == defender and category_ok:
+                multiplier = 2.0 if move_id in {'counter', 'mirror_coat'} else 1.5
+                attacker.last_damage_taken = 0
+                attacker.last_damage_category = None
+                attacker.last_damage_from = None
+                return max(1, int(round(last_damage * multiplier))), False, 1.0
+            return 0, False, 1.0
+
         # Special fixed-damage and fractional HP moves (e.g., Super Fang)
         if move_id in {'super_fang', 'natures_madness', 'ruination'}:
             # Respect full immunities (e.g., Ghost vs Normal) but ignore resistances
@@ -176,8 +193,25 @@ class EnhancedDamageCalculator:
 
             return max(1, damage), False, 1.0
 
+        if move_id == 'endeavor':
+            effectiveness = self._get_type_effectiveness(move_data['type'], defender.species_data['types'])
+            if effectiveness == 0:
+                return 0, False, 0
+            damage = max(0, defender.current_hp - attacker.current_hp)
+            return damage, False, 1.0
+
+        if move_id == 'final_gambit':
+            effectiveness = self._get_type_effectiveness(move_data['type'], defender.species_data['types'])
+            if effectiveness == 0:
+                return 0, False, 0
+            return max(1, attacker.current_hp), False, 1.0
+
+        power = self._calculate_variable_power(attacker, defender, move_data, power)
+
         # Safety check: Status moves or moves with no power
         if power is None:
+            return 0, False, 1.0
+        if power == 0:
             return 0, False, 1.0
         
         # Critical hit check
@@ -245,6 +279,156 @@ class EnhancedDamageCalculator:
             damage = max(1, int(damage))
         
         return damage, is_critical, effectiveness
+
+    def _calculate_variable_power(
+        self,
+        attacker: Any,
+        defender: Any,
+        move_data: Dict,
+        base_power: Optional[int]
+    ) -> Optional[int]:
+        move_id = (move_data.get('id') or '').lower()
+
+        if move_id in {'low_kick', 'grass_knot'}:
+            weight = defender.species_data.get('weight', 0)
+            weight_kg = weight / 10 if weight else 0
+            if weight_kg < 10:
+                return 20
+            if weight_kg < 25:
+                return 40
+            if weight_kg < 50:
+                return 60
+            if weight_kg < 100:
+                return 80
+            if weight_kg < 200:
+                return 100
+            return 120
+
+        if move_id in {'heavy_slam', 'heat_crash'}:
+            attacker_weight = attacker.species_data.get('weight', 0)
+            defender_weight = defender.species_data.get('weight', 1) or 1
+            ratio = attacker_weight / defender_weight
+            if ratio >= 5:
+                return 120
+            if ratio >= 4:
+                return 100
+            if ratio >= 3:
+                return 80
+            if ratio >= 2:
+                return 60
+            return 40
+
+        if move_id == 'gyro_ball':
+            attacker_speed = max(1, self.get_speed(attacker))
+            defender_speed = max(1, self.get_speed(defender))
+            return min(150, int(25 * defender_speed / attacker_speed))
+
+        if move_id == 'electro_ball':
+            attacker_speed = max(1, self.get_speed(attacker))
+            defender_speed = max(1, self.get_speed(defender))
+            ratio = defender_speed / attacker_speed
+            if ratio >= 4:
+                return 150
+            if ratio >= 3:
+                return 120
+            if ratio >= 2:
+                return 80
+            if ratio >= 1:
+                return 60
+            return 40
+
+        if move_id in {'flail', 'reversal'}:
+            if attacker.max_hp <= 0:
+                return 20
+            hp_ratio = attacker.current_hp / attacker.max_hp
+            if hp_ratio <= 0.0417:
+                return 200
+            if hp_ratio <= 0.1042:
+                return 150
+            if hp_ratio <= 0.2083:
+                return 100
+            if hp_ratio <= 0.3542:
+                return 80
+            if hp_ratio <= 0.6875:
+                return 40
+            return 20
+
+        if move_id in {'return', 'frustration'}:
+            friendship = getattr(attacker, 'friendship', 70)
+            if move_id == 'return':
+                return min(102, int(friendship * 2 / 5))
+            return min(102, int((255 - friendship) * 2 / 5))
+
+        if move_id == 'magnitude':
+            roll = random.random()
+            if roll < 0.04:
+                return 10
+            if roll < 0.09:
+                return 30
+            if roll < 0.19:
+                return 50
+            if roll < 0.39:
+                return 70
+            if roll < 0.69:
+                return 90
+            if roll < 0.89:
+                return 110
+            return 150
+
+        if move_id == 'present':
+            roll = random.random()
+            if roll < 0.4:
+                return 40
+            if roll < 0.7:
+                return 80
+            if roll < 0.8:
+                return 120
+            return 0
+
+        if move_id == 'trump_card':
+            pp_remaining = None
+            for move in getattr(attacker, 'moves', []) or []:
+                if move.get('move_id') == move_id:
+                    pp_remaining = move.get('pp')
+                    break
+            if pp_remaining is None:
+                pp_remaining = move_data.get('pp', 0)
+            if pp_remaining <= 0:
+                return 200
+            if pp_remaining == 1:
+                return 80
+            if pp_remaining == 2:
+                return 60
+            if pp_remaining == 3:
+                return 50
+            return 40
+
+        if move_id in {'wring_out', 'crush_grip'}:
+            if defender.max_hp <= 0:
+                return 1
+            return max(1, int(120 * defender.current_hp / defender.max_hp))
+
+        if move_id == 'punishment':
+            boosts = getattr(defender, 'stat_stages', {}) or {}
+            total_boosts = sum(max(0, stage) for stage in boosts.values())
+            return min(200, 60 + 20 * total_boosts)
+
+        if move_id == 'spit_up':
+            stockpile = getattr(attacker, 'stockpile_count', 0)
+            if stockpile <= 0:
+                return 0
+            return 100 * min(3, stockpile)
+
+        if move_id == 'beat_up':
+            return base_power or 10
+
+        if move_id == 'fling':
+            return base_power or 30
+
+        if move_id == 'natural_gift':
+            return base_power or 60
+
+        return base_power
     
     def _check_accuracy(self, move_data: Dict, attacker: Any, defender: Any, weather: Optional[str] = None) -> bool:
         """Check if move hits based on accuracy"""

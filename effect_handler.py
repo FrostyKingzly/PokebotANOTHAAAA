@@ -98,12 +98,13 @@ class EffectHandler:
                     params={'percentage': percentage}
                 ))
         
-        # Self-destruct moves (Explosion, Self-Destruct)
-        if move_data.get('selfdestruct'):
+        # Self-destruct moves (Explosion, Self-Destruct, Final Gambit)
+        if move_data.get('selfdestruct') or move_id == 'final_gambit':
             effects.append(MoveEffect(
                 effect_type='selfdestruct',
                 chance=100,
-                target='self'
+                target='self',
+                params={'reason': 'gambit'} if move_id == 'final_gambit' else {}
             ))
         
 
@@ -426,7 +427,10 @@ class EffectHandler:
             
             elif effect.effect_type == 'selfdestruct':
                 attacker.current_hp = 0
-                messages.append(f"{attacker.species_name} fainted from the blast!")
+                if effect.params.get('reason') == 'gambit':
+                    messages.append(f"{attacker.species_name} fainted after the gambit!")
+                else:
+                    messages.append(f"{attacker.species_name} fainted from the blast!")
 
             elif effect.effect_type == 'self_switch':
                 # Mark that the attacker should switch after this move
