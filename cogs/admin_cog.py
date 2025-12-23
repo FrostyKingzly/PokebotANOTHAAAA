@@ -243,7 +243,10 @@ class AdminCog(commands.Cog):
             summary_lines = []
             for pokemon, _species_data in created_pokemon:
                 shiny_indicator = "✨ " if pokemon.is_shiny else ""
-                summary_lines.append(f"{shiny_indicator}**{pokemon.get_display_name()}** (Lv. {pokemon.level})")
+                summary_lines.append(
+                    f"{shiny_indicator}{user.display_name} received **{pokemon.get_display_name()}** "
+                    f"(Lv. {pokemon.level})"
+                )
 
             embed_kwargs = {
                 "description": "\n".join(summary_lines),
