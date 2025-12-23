@@ -1240,6 +1240,8 @@ class PokedexView(View):
         self.current_index = max(0, min(self.current_index, len(filtered) - 1))
 
     def _build_embed(self) -> discord.Embed:
+        from ui.embeds import EmbedBuilder
+
         filtered = self._filtered_species()
         self._clamp_index()
 
