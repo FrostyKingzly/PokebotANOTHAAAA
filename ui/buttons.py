@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import random
+import re
 
 import discord
 from discord.ui import Button, View, Select
@@ -862,15 +863,18 @@ class MainMenuView(View):
 
         trainer = self.bot.player_manager.get_player(interaction.user.id)
         party = self.bot.player_manager.get_party(interaction.user.id)
-        total_pokemon = len(self.bot.player_manager.get_all_pokemon(interaction.user.id))
-        pokedex = self.bot.player_manager.get_pokedex(interaction.user.id)
+        all_pokemon = self.bot.player_manager.get_all_pokemon(interaction.user.id)
+        total_pokemon = len(all_pokemon)
+        pokedex_caught = len(
+            {pokemon.get("species_dex_number") for pokemon in all_pokemon if pokemon.get("species_dex_number")}
+        )
         location_manager = getattr(self.bot, "location_manager", None)
 
         embed = EmbedBuilder.trainer_card(
             trainer,
             party_count=len(party),
             total_pokemon=total_pokemon,
-            pokedex_seen=len(pokedex),
+            pokedex_caught=pokedex_caught,
             location_manager=location_manager,
         )
 
@@ -1152,6 +1156,8 @@ class MainMenuView(View):
 class PokedexView(View):
     """Interactive Pokédex browser with filtering and navigation."""
 
+    DISPLAY_TOTAL = 1026
+
     def __init__(self, bot, player_id: int, back_callback: Callable[[discord.Interaction], Awaitable[None]]):
         super().__init__(timeout=300)
         self.bot = bot
@@ -1230,6 +1236,29 @@ class PokedexView(View):
 
         return unique_locations
 
+    def _normalize_species_name(self, name: str) -> str:
+        return re.sub(r"[^a-z0-9]", "", name.lower())
+
+    def _find_species(self, query: str) -> Optional[Tuple[int, Dict[str, Any]]]:
+        cleaned = query.strip()
+        if not cleaned:
+            return None
+
+        cleaned = cleaned.lstrip("#")
+        if cleaned.isdigit():
+            dex_number = int(cleaned)
+            for index, species in enumerate(self.species_entries):
+                if species.get("dex_number") == dex_number:
+                    return index, species
+            return None
+
+        normalized_query = self._normalize_species_name(cleaned)
+        for index, species in enumerate(self.species_entries):
+            if self._normalize_species_name(species.get("name", "")) == normalized_query:
+                return index, species
+
+        return None
+
     # UI helpers ---------------------------------------------------------
     def _clamp_index(self):
         filtered = self._filtered_species()
@@ -1248,7 +1277,7 @@ class PokedexView(View):
         species = filtered[self.current_index] if filtered else None
         seen_total = len(self.seen_species | self.caught_species)
         caught_total = len(self.caught_species)
-        total_species = len(self.species_entries)
+        total_species = max(len(self.species_entries), self.DISPLAY_TOTAL)
         filtered_total = len(filtered) if filtered else 1
 
         return EmbedBuilder.pokedex_entry(
@@ -1267,13 +1296,17 @@ class PokedexView(View):
         self.clear_items()
 
         # Filter select
+        seen_total = len(self.seen_species | self.caught_species)
+        caught_total = len(self.caught_species)
+        display_total = self.DISPLAY_TOTAL
+        unseen_total = max(0, display_total - seen_total)
         filter_select = Select(
             placeholder="Filter entries…",
             options=[
-                discord.SelectOption(label="All", value="all", default=self.filter_mode == "all"),
-                discord.SelectOption(label="Seen", value="seen", default=self.filter_mode == "seen"),
-                discord.SelectOption(label="Caught", value="caught", default=self.filter_mode == "caught"),
-                discord.SelectOption(label="Unseen", value="unseen", default=self.filter_mode == "unseen"),
+                discord.SelectOption(label=f"All [{display_total}]", value="all", default=self.filter_mode == "all"),
+                discord.SelectOption(label=f"Seen [{seen_total}]", value="seen", default=self.filter_mode == "seen"),
+                discord.SelectOption(label=f"Caught [{caught_total}]", value="caught", default=self.filter_mode == "caught"),
+                discord.SelectOption(label=f"Unseen [{unseen_total}]", value="unseen", default=self.filter_mode == "unseen"),
             ],
             row=0,
         )
@@ -1317,6 +1350,19 @@ class PokedexView(View):
 
         next_button.callback = _next
         self.add_item(next_button)
+
+        search_button = Button(
+            label="🔎 Search",
+            style=discord.ButtonStyle.primary,
+            row=2,
+        )
+
+        async def _search(interaction: discord.Interaction):
+            modal = PokedexSearchModal(self)
+            await interaction.response.send_modal(modal)
+
+        search_button.callback = _search
+        self.add_item(search_button)
 
         if self.back_callback:
             _add_back_button(self, self.back_callback, row=2)
@@ -1746,6 +1792,35 @@ class DojoPokemonSelectView(View):
             self.add_item(placeholder)
 
         _add_back_button(self, self.back_callback)
+
+
+class PokedexSearchModal(discord.ui.Modal, title="Search Pokédex"):
+    """Modal that lets trainers jump directly to a Dex number or name."""
+
+    query = discord.ui.TextInput(
+        label="Pokédex # or Pokémon name",
+        placeholder="Try 25, #151, or Mew",
+        max_length=32,
+    )
+
+    def __init__(self, pokedex_view: PokedexView):
+        super().__init__(timeout=None)
+        self.pokedex_view = pokedex_view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        result = self.pokedex_view._find_species(self.query.value)
+        if not result:
+            await interaction.response.send_message(
+                "❌ No matching Pokédex entry found. Try a name or dex number.",
+                ephemeral=True,
+            )
+            return
+
+        index, _species = result
+        self.pokedex_view.filter_mode = "all"
+        self.pokedex_view.current_index = index
+        self.pokedex_view._refresh_items()
+        await interaction.response.edit_message(embed=self.pokedex_view._build_embed(), view=self.pokedex_view)
 
 
 class DojoIVAllocationView(View):

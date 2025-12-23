@@ -543,7 +543,7 @@ class EmbedBuilder:
 
     @staticmethod
     def trainer_card(trainer: Trainer, party_count: int = 0,
-                    total_pokemon: int = 0, pokedex_seen: int = 0,
+                    total_pokemon: int = 0, pokedex_caught: int = 0,
                     location_manager=None) -> discord.Embed:
         """Create trainer card embed"""
         embed = discord.Embed(
@@ -610,7 +610,7 @@ class EmbedBuilder:
                 # Pokemon collection
         collection_text = f"**Party:** {party_count}/6\n"
         collection_text += f"**Total:** {total_pokemon}\n"
-        collection_text += f"**Pokédex:** {pokedex_seen}"
+        collection_text += f"**Pokédex:** {pokedex_caught}"
         
         embed.add_field(
             name="📦 Collection",
