@@ -70,16 +70,35 @@ class EnhancedDamageCalculator:
         move_data = self.moves_db.get_move(move_id)
         if not move_data:
             return 0, False, 1.0, [f"Move {move_id} not found!"]
-        
+
+        move_id_normalized = (move_data.get('id') or '').lower()
+
+        if move_id_normalized == 'bide':
+            return self._resolve_bide(attacker, defender, move_data)
+
 
         # Special-case: Fling requires a held item
-        if move_data['id'] == 'fling':
+        if move_id_normalized == 'fling':
             held = getattr(attacker, 'held_item', None) or getattr(attacker, 'item', None)
             if not held:
                 return 0, False, 1.0, ["But it failed! (No item to fling)"]
             # Check accuracy
         if not self._check_accuracy(move_data, attacker, defender, weather):
             return 0, False, 1.0, ["The attack missed!"]
+
+        if move_id_normalized == 'present':
+            outcome = random.random()
+            if outcome >= 0.8:
+                heal_amount = max(1, int(defender.max_hp * 0.25))
+                defender.current_hp = min(defender.max_hp, defender.current_hp + heal_amount)
+                return 0, False, 1.0, [f"{defender.species_name} regained {heal_amount} HP from Present!"]
+            move_data = dict(move_data)
+            if outcome < 0.4:
+                move_data['power'] = 40
+            elif outcome < 0.7:
+                move_data['power'] = 80
+            else:
+                move_data['power'] = 120
         
         # Status moves don't deal damage but have effects
         if move_data['category'] == 'status':
@@ -376,6 +395,8 @@ class EnhancedDamageCalculator:
             return 150
 
         if move_id == 'present':
+            if base_power is not None:
+                return base_power
             roll = random.random()
             if roll < 0.4:
                 return 40
@@ -419,6 +440,11 @@ class EnhancedDamageCalculator:
                 return 0
             return 100 * min(3, stockpile)
 
+        if move_id.endswith('__physical') or move_id.endswith('__special'):
+            base_power = self._get_z_move_base_power(attacker, base_power)
+            if base_power is not None:
+                return self._calculate_z_move_power(base_power)
+
         if move_id == 'beat_up':
             return base_power or 10
 
@@ -429,6 +455,38 @@ class EnhancedDamageCalculator:
             return base_power or 60
 
         return base_power
+
+    def _get_z_move_base_power(self, attacker: Any, fallback: Optional[int]) -> Optional[int]:
+        base_move_id = getattr(attacker, 'z_move_base_id', None) or getattr(attacker, 'z_move_base_move_id', None)
+        if base_move_id:
+            base_move = self.moves_db.get_move(str(base_move_id))
+            if base_move and base_move.get('power') is not None:
+                return base_move['power']
+        base_power = getattr(attacker, 'z_move_base_power', None)
+        if base_power is not None:
+            return base_power
+        return fallback
+
+    def _calculate_z_move_power(self, base_power: int) -> int:
+        if base_power <= 55:
+            return 100
+        if base_power <= 65:
+            return 120
+        if base_power <= 75:
+            return 140
+        if base_power <= 85:
+            return 160
+        if base_power <= 95:
+            return 175
+        if base_power <= 100:
+            return 180
+        if base_power <= 110:
+            return 185
+        if base_power <= 125:
+            return 190
+        if base_power <= 130:
+            return 195
+        return 200
     
     def _check_accuracy(self, move_data: Dict, attacker: Any, defender: Any, weather: Optional[str] = None) -> bool:
         """Check if move hits based on accuracy"""
@@ -472,6 +530,38 @@ class EnhancedDamageCalculator:
         final_accuracy = accuracy * multiplier
 
         return random.random() * 100 < final_accuracy
+
+    def _resolve_bide(
+        self,
+        attacker: Any,
+        defender: Any,
+        move_data: Dict
+    ) -> Tuple[int, bool, float, List[str]]:
+        turns_remaining = getattr(attacker, 'bide_turns_remaining', None)
+
+        if turns_remaining is None:
+            attacker.bide_turns_remaining = 2
+            attacker.bide_damage = 0
+            return 0, False, 1.0, [f"{attacker.species_name} is biding its time!"]
+
+        if turns_remaining > 1:
+            attacker.bide_turns_remaining = turns_remaining - 1
+            return 0, False, 1.0, [f"{attacker.species_name} is biding its time!"]
+
+        attacker.bide_turns_remaining = None
+        stored_damage = max(0, int(getattr(attacker, 'bide_damage', 0)))
+        attacker.bide_damage = 0
+
+        if stored_damage <= 0:
+            return 0, False, 1.0, ["But it failed!"]
+
+        move_type = move_data.get('type', 'normal')
+        effectiveness = self._get_type_effectiveness(move_type, defender.species_data['types'])
+        if effectiveness == 0:
+            return 0, False, 0, [f"It doesn't affect {defender.species_name}..."]
+
+        damage = max(1, int(stored_damage * 2))
+        return damage, False, effectiveness, []
     
     def _get_type_effectiveness(self, attack_type: str, defender_types: List[str]) -> float:
         """Calculate type effectiveness multiplier"""

@@ -1862,6 +1862,8 @@ class BattleEngine:
                     defender.last_damage_taken = damage
                     defender.last_damage_category = move_data.get('category')
                     defender.last_damage_from = attacker
+                if getattr(defender, 'bide_turns_remaining', 0):
+                    defender.bide_damage = getattr(defender, 'bide_damage', 0) + damage
                 if (
                     ENHANCED_SYSTEMS_AVAILABLE
                     and move_data.get('category') in ['physical', 'special']
@@ -2150,12 +2152,14 @@ class BattleEngine:
                 damage = defender.current_hp - 1
                 effect_msgs.append(f"{defender.species_name} endured the hit!")
         # Apply damage
-        if damage > 0:
-            defender.current_hp = max(0, defender.current_hp - damage)
-            if move_data.get('category') in ['physical', 'special']:
-                defender.last_damage_taken = damage
-                defender.last_damage_category = move_data.get('category')
-                defender.last_damage_from = attacker
+            if damage > 0:
+                defender.current_hp = max(0, defender.current_hp - damage)
+                if move_data.get('category') in ['physical', 'special']:
+                    defender.last_damage_taken = damage
+                    defender.last_damage_category = move_data.get('category')
+                    defender.last_damage_from = attacker
+                if getattr(defender, 'bide_turns_remaining', 0):
+                    defender.bide_damage = getattr(defender, 'bide_damage', 0) + damage
             if (
                 ENHANCED_SYSTEMS_AVAILABLE
                 and move_data.get('category') in ['physical', 'special']
