@@ -82,7 +82,7 @@ class RankCog(commands.Cog):
             readable = ", ".join(GIMMICK_OPTIONS.get(g, g.title()) for g in trainer.omni_ring_gimmicks)
             info_lines.append(f"**Omni Ring:** {readable}")
         elif trainer.has_omni_ring:
-            info_lines.append("**Omni Ring:** Unconfigured. Use /rank_select_gimmick.")
+            info_lines.append("**Omni Ring:** Unconfigured. Choose a power from your Alerts menu.")
 
         embed = discord.Embed(
             title=f"{trainer.trainer_name}'s Ranked Profile",
@@ -177,7 +177,7 @@ class RankCog(commands.Cog):
 
         manager.activate_omni_ring_distribution()
         await interaction.response.send_message(
-            "✅ Omni Rings have been added to every trainer's alerts. Use /rank_select_gimmick to configure them.",
+            "✅ Omni Rings have been added to every trainer's alerts. Configure them from the Alerts menu.",
             ephemeral=True,
         )
 
