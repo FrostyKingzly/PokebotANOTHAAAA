@@ -5341,6 +5341,24 @@ class BattleMenuView(View):
             return
 
         ranked_npcs = self.location.get('ranked_npc_trainers', []) if self.location else []
+        locked_rank_override = None
+        pending_match_npc_name = None
+        if rank_manager:
+            pending_match = rank_manager.get_pending_match_for_player(interaction.user.id)
+            if pending_match:
+                npc_participants = [
+                    participant for participant in pending_match.participants
+                    if participant.get("type") == "npc"
+                ]
+                if npc_participants:
+                    npc_participant = npc_participants[0]
+                    pending_match_npc_name = npc_participant.get("name")
+                    locked_rank_override = npc_participant.get("rank_tier_number")
+                    if pending_match_npc_name:
+                        ranked_npcs = [
+                            npc for npc in ranked_npcs
+                            if npc.get("name") == pending_match_npc_name
+                        ]
 
         response_sent = False
 
@@ -5359,13 +5377,29 @@ class BattleMenuView(View):
             response_sent = True
 
         if ranked_npcs:
-            npc_view = NpcTrainerSelectView(self.bot, ranked_npcs, self.location, ranked=True)
+            npc_view = NpcTrainerSelectView(
+                self.bot,
+                ranked_npcs,
+                self.location,
+                ranked=True,
+                locked_rank_override=locked_rank_override,
+            )
             npc_embed = EmbedBuilder.npc_trainer_list(ranked_npcs, self.location, ranked=True)
             if response_sent:
                 await interaction.followup.send(embed=npc_embed, view=npc_view, ephemeral=True)
             else:
                 await interaction.response.send_message(embed=npc_embed, view=npc_view, ephemeral=True)
                 response_sent = True
+        elif pending_match_npc_name:
+            message = (
+                f"⚠️ Your promotion match is scheduled against **{pending_match_npc_name}**, "
+                "but they aren't available at this location."
+            )
+            if response_sent:
+                await interaction.followup.send(message, ephemeral=True)
+            else:
+                await interaction.response.send_message(message, ephemeral=True)
+            return
 
         if not response_sent:
             await interaction.response.send_message(
@@ -6496,7 +6530,14 @@ class MultiPartnerInviteView(View):
 class NpcTrainerSelectView(View):
     """Select an NPC trainer to battle"""
 
-    def __init__(self, bot, npc_trainers: list, location: dict, ranked: bool = False):
+    def __init__(
+        self,
+        bot,
+        npc_trainers: list,
+        location: dict,
+        ranked: bool = False,
+        locked_rank_override: Optional[int] = None,
+    ):
         super().__init__(timeout=300)
         self.bot = bot
         self.npc_trainers = npc_trainers
@@ -6533,7 +6574,7 @@ class NpcTrainerSelectView(View):
         select.callback = self.npc_callback
         self.add_item(select)
 
-        if ranked:
+        if ranked and locked_rank_override is None:
             rank_options = [
                 discord.SelectOption(
                     label="Use NPC's default rank",
@@ -6569,7 +6610,9 @@ class NpcTrainerSelectView(View):
 
             rank_select.callback = rank_callback
             self.add_item(rank_select)
-    
+        elif ranked and locked_rank_override is not None:
+            self.selected_rank_override = locked_rank_override
+
     async def npc_callback(self, interaction: discord.Interaction):
         """Handle NPC selection - start trainer battle"""
         from battle_engine_v2 import BattleType
