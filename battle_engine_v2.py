@@ -2182,20 +2182,20 @@ class BattleEngine:
                 damage = defender.current_hp - 1
                 effect_msgs.append(f"{defender.species_name} endured the hit!")
         # Apply damage
-            if damage > 0:
-                defender.current_hp = max(0, defender.current_hp - damage)
-                if move_data.get('category') in ['physical', 'special']:
-                    defender.last_damage_taken = damage
-                    defender.last_damage_category = move_data.get('category')
-                    defender.last_damage_from = attacker
-                if getattr(defender, 'bide_turns_remaining', 0):
-                    defender.bide_damage = getattr(defender, 'bide_damage', 0) + damage
-            if (
-                ENHANCED_SYSTEMS_AVAILABLE
-                and move_data.get('category') in ['physical', 'special']
-                and attacker_battler != defender_battler
-            ):
-                defender.rage_fist_hits_taken = getattr(defender, 'rage_fist_hits_taken', 0) + 1
+        if damage > 0:
+            defender.current_hp = max(0, defender.current_hp - damage)
+            if move_data.get('category') in ['physical', 'special']:
+                defender.last_damage_taken = damage
+                defender.last_damage_category = move_data.get('category')
+                defender.last_damage_from = attacker
+            if getattr(defender, 'bide_turns_remaining', 0):
+                defender.bide_damage = getattr(defender, 'bide_damage', 0) + damage
+        if (
+            ENHANCED_SYSTEMS_AVAILABLE
+            and move_data.get('category') in ['physical', 'special']
+            and attacker_battler != defender_battler
+        ):
+            defender.rage_fist_hits_taken = getattr(defender, 'rage_fist_hits_taken', 0) + 1
 
         if ENHANCED_SYSTEMS_AVAILABLE:
             exit_msg = self._maybe_queue_hp_switch(battle, defender_battler, defender)
