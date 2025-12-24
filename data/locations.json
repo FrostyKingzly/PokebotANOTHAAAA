@@ -513,6 +513,422 @@
             ]
           }
         ]
+      },
+      {
+        "name": "Backpacker Lyn",
+        "class": "Backpacker",
+        "rank_tier_number": 1,
+        "prize_money": 700,
+        "party": [
+          {
+            "species_dex_number": 43,
+            "level": 7,
+            "moves": [
+              "acid",
+              "absorb",
+              "growth"
+            ]
+          },
+          {
+            "species_dex_number": 163,
+            "level": 7,
+            "moves": [
+              "echoed_voice",
+              "tackle",
+              "growl",
+              "peck"
+            ]
+          },
+          {
+            "species_dex_number": 919,
+            "level": 8,
+            "moves": [
+              "astonish",
+              "struggle_bug",
+              "leer",
+              "tackle"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Youngster Caleb",
+        "class": "Youngster",
+        "rank_tier_number": 1,
+        "prize_money": 600,
+        "party": [
+          {
+            "species_dex_number": 261,
+            "level": 6,
+            "moves": [
+              "howl",
+              "tackle"
+            ]
+          },
+          {
+            "species_dex_number": 396,
+            "level": 6,
+            "moves": [
+              "quick_attack",
+              "growl",
+              "tackle"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Schoolgirl Mina",
+        "class": "Schoolgirl",
+        "rank_tier_number": 1,
+        "prize_money": 900,
+        "party": [
+          {
+            "species_dex_number": 928,
+            "level": 9,
+            "moves": [
+              "growth",
+              "absorb",
+              "sweet_scent",
+              "tackle"
+            ]
+          },
+          {
+            "species_dex_number": 926,
+            "level": 9,
+            "moves": [
+              "covet",
+              "tail_whip",
+              "lick",
+              "growl"
+            ]
+          },
+          {
+            "species_dex_number": 179,
+            "level": 10,
+            "moves": [
+              "thunder_shock",
+              "thunder_wave",
+              "growl",
+              "tackle"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Bug Catcher Rowan",
+        "class": "Bug Catcher",
+        "rank_tier_number": 1,
+        "prize_money": 1100,
+        "party": [
+          {
+            "species_dex_number": 824,
+            "level": 10,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          },
+          {
+            "species_dex_number": 167,
+            "level": 11,
+            "moves": [
+              "infestation",
+              "absorb",
+              "poison_sting",
+              "string_shot"
+            ]
+          },
+          {
+            "species_dex_number": 290,
+            "level": 11,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          },
+          {
+            "species_dex_number": 543,
+            "level": 12,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Lass Tori",
+        "class": "Lass",
+        "rank_tier_number": 1,
+        "prize_money": 1200,
+        "party": [
+          {
+            "species_dex_number": 661,
+            "level": 12,
+            "moves": [
+              "ember",
+              "quick_attack",
+              "growl",
+              "peck"
+            ]
+          },
+          {
+            "species_dex_number": 572,
+            "level": 12,
+            "moves": [
+              "sing",
+              "echoed_voice",
+              "helping_hand",
+              "baby_doll_eyes"
+            ]
+          },
+          {
+            "species_dex_number": 172,
+            "level": 13,
+            "moves": [
+              "nuzzle",
+              "sweet_kiss",
+              "play_nice",
+              "tail_whip"
+            ]
+          },
+          {
+            "species_dex_number": 280,
+            "level": 13,
+            "moves": [
+              "draining_kiss",
+              "hypnosis",
+              "confusion",
+              "double_team"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Hiker Brent",
+        "class": "Hiker",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "party": [
+          {
+            "species_dex_number": 74,
+            "level": 14,
+            "moves": [
+              "bulldoze",
+              "rollout",
+              "rock_polish",
+              "defense_curl"
+            ]
+          },
+          {
+            "species_dex_number": 524,
+            "level": 14,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          },
+          {
+            "species_dex_number": 194,
+            "level": 15,
+            "moves": [
+              "haze",
+              "mist",
+              "mud_shot",
+              "rain_dance"
+            ]
+          },
+          {
+            "species_dex_number": 66,
+            "level": 15,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Rising Star Elio",
+        "class": "Rising Star",
+        "rank_tier_number": 1,
+        "prize_money": 1600,
+        "party": [
+          {
+            "species_dex_number": 935,
+            "level": 15,
+            "moves": [
+              "fire_spin",
+              "clear_smog",
+              "astonish",
+              "ember"
+            ]
+          },
+          {
+            "species_dex_number": 921,
+            "level": 15,
+            "moves": [
+              "dig",
+              "nuzzle",
+              "charge",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 940,
+            "level": 16,
+            "moves": [
+              "spark",
+              "pluck",
+              "quick_attack",
+              "thunder_shock"
+            ]
+          },
+          {
+            "species_dex_number": 924,
+            "level": 16,
+            "moves": [
+              "double_hit",
+              "super_fang",
+              "helping_hand",
+              "echoed_voice"
+            ]
+          },
+          {
+            "species_dex_number": 971,
+            "level": 16,
+            "moves": [
+              "dig",
+              "headbutt",
+              "roar",
+              "bite"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Ace Trainer Naomi",
+        "class": "Ace Trainer",
+        "rank_tier_number": 1,
+        "prize_money": 1800,
+        "party": [
+          {
+            "species_dex_number": 447,
+            "level": 17,
+            "moves": [
+              "work_up",
+              "counter",
+              "metal_claw",
+              "feint"
+            ]
+          },
+          {
+            "species_dex_number": 996,
+            "level": 17,
+            "moves": [
+              "dragon_breath",
+              "icy_wind",
+              "dragon_tail",
+              "leer"
+            ]
+          },
+          {
+            "species_dex_number": 957,
+            "level": 18,
+            "moves": [
+              "draining_kiss",
+              "rock_smash",
+              "covet",
+              "metal_claw"
+            ]
+          },
+          {
+            "species_dex_number": 443,
+            "level": 18,
+            "moves": [
+              "bulldoze",
+              "dragon_breath",
+              "sand_attack",
+              "sand_tomb"
+            ]
+          },
+          {
+            "species_dex_number": 58,
+            "level": 18,
+            "moves": [
+              "helping_hand",
+              "flame_wheel",
+              "bite",
+              "howl"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Veteran Kai",
+        "class": "Veteran",
+        "rank_tier_number": 1,
+        "prize_money": 1900,
+        "party": [
+          {
+            "species_dex_number": 246,
+            "level": 19,
+            "moves": [
+              "stomping_tantrum",
+              "rock_slide",
+              "scary_face",
+              "bite"
+            ]
+          },
+          {
+            "species_dex_number": 885,
+            "level": 19,
+            "moves": [
+              "astonish",
+              "bite",
+              "infestation",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 56,
+            "level": 20,
+            "moves": [
+              "swagger",
+              "seismic_toss",
+              "low_kick",
+              "fury_swipes"
+            ]
+          },
+          {
+            "species_dex_number": 529,
+            "level": 20,
+            "moves": [
+              "sandstorm",
+              "metal_claw",
+              "fury_swipes",
+              "hone_claws"
+            ]
+          },
+          {
+            "species_dex_number": 215,
+            "level": 20,
+            "moves": [
+              "metal_claw",
+              "quick_attack",
+              "taunt",
+              "leer"
+            ]
+          },
+          {
+            "species_dex_number": 63,
+            "level": 19,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          }
+        ]
       }
     ]
   },
