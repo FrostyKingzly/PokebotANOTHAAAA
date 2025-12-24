@@ -1259,6 +1259,33 @@ class BattleCog(commands.Cog):
         return embed
 
     async def _send_turn_resolution(self, interaction: discord.Interaction, turn_result: dict):
+        switch_events = turn_result.get("switch_events")
+        if switch_events is None:
+            switch_msgs = [msg for msg in (turn_result.get('switch_messages') or []) if msg]
+            switch_events = ([{"messages": switch_msgs}] if switch_msgs else [])
+
+        manual_switch_events = [event for event in (switch_events or []) if event.get("source") == "manual"]
+        auto_switch_events = [event for event in (switch_events or []) if event.get("source") != "manual"]
+
+        async def send_switch_events(events: list[dict]):
+            for event in events:
+                embed = self._build_switch_embed(event.get("messages") or [], pokemon=event.get("pokemon"))
+                sound_task = None
+                pokemon = event.get("pokemon")
+                if pokemon and hasattr(pokemon, "species_dex_number") and self.music_manager.current_session:
+                    sound_task = asyncio.create_task(
+                        self.music_manager.play_switch_sound(pokemon.species_dex_number)
+                    )
+
+                if embed:
+                    await self._safe_followup_send(interaction, embed=embed)
+                    await asyncio.sleep(1)
+
+                if sound_task:
+                    await sound_task
+
+        await send_switch_events(manual_switch_events)
+
         action_embeds = self._build_turn_embeds(turn_result)
         for embed in action_embeds:
             faint_sound_task = None
@@ -1274,26 +1301,7 @@ class BattleCog(commands.Cog):
             if faint_sound_task:
                 await faint_sound_task
 
-        switch_events = turn_result.get("switch_events")
-        if switch_events is None:
-            switch_msgs = [msg for msg in (turn_result.get('switch_messages') or []) if msg]
-            switch_events = ([{"messages": switch_msgs}] if switch_msgs else [])
-
-        for event in switch_events or []:
-            embed = self._build_switch_embed(event.get("messages") or [], pokemon=event.get("pokemon"))
-            sound_task = None
-            pokemon = event.get("pokemon")
-            if pokemon and hasattr(pokemon, "species_dex_number") and self.music_manager.current_session:
-                sound_task = asyncio.create_task(
-                    self.music_manager.play_switch_sound(pokemon.species_dex_number)
-                )
-
-            if embed:
-                await self._safe_followup_send(interaction, embed=embed)
-                await asyncio.sleep(1)
-
-            if sound_task:
-                await sound_task
+        await send_switch_events(auto_switch_events)
 
     async def _prompt_forced_switch(self, interaction: discord.Interaction, battle, battler_id: int):
         # Always refresh the battle state to avoid stale active slots or parties
