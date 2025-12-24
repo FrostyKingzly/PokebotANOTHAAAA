@@ -9,7 +9,10 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 # Provided Omni Ring artwork for alerts and inventory UI
-OMNI_RING_IMAGE_URL = "https://i.imgur.com/yKHl7aC.jpg"
+OMNI_RING_IMAGE_URL = (
+    "https://cdn.discordapp.com/attachments/1430369965642485843/1453175007403577385/"
+    "image0.jpg?ex=694c7e30&is=694b2cb0&hm=9d0c16955d79bf3403ecd0b3f66f3695996a4831bd46d0b99abc5729d1fa8348&"
+)
 
 # Rank definitions: eight tiers spread across five named ranks
 RANK_TIER_DEFINITIONS: List[Dict[str, Any]] = [
@@ -512,19 +515,15 @@ class RankManager:
 
             remaining = max(0, slots - len(owned))
             if has_ring:
-                summary = "Select your Omni Ring gimmick." if remaining else "All attunements set for now."
+                summary = "Choose your Omni Ring power."
                 details_lines = [
-                    "Your Omni Ring is ready to channel a battle gimmick.",
-                    "Use `/rank_select_gimmick` to attune Mega Evolution, Z-Moves, Dynamax, or Terastalization.",
+                    "Your Omni Ring is now ready for use! Please select which power to obtain first.",
                 ]
-                if remaining:
-                    details_lines.append(f"You have {remaining} open slot(s) to configure.")
-                status = "joined" if remaining == 0 else "pending"
+                status = "pending"
             else:
-                summary = "Claim your Omni Ring to unlock gimmicks."
+                summary = "Choose your Omni Ring power."
                 details_lines = [
-                    "Challengers receive an Omni Ring to access battle gimmicks.",
-                    "Play ranked to qualify, then attune it with `/rank_select_gimmick`.",
+                    "Your Omni Ring is now ready for use! Please select which power to obtain first.",
                 ]
                 status = "pending"
 
@@ -536,7 +535,7 @@ class RankManager:
                     "details": "\n".join(details_lines),
                     "action": "configure_omni",
                     "status": status,
-                    "cta_label": "Open Omni Ring",
+                    "cta_label": "Choose Now",
                     "image": OMNI_RING_IMAGE_URL,
                 }
             )
@@ -734,11 +733,11 @@ class RankManager:
         if tier >= 2 and not getattr(trainer, "has_omni_ring", False):
             self.player_manager.update_player(trainer.discord_user_id, has_omni_ring=1)
             trainer.has_omni_ring = True
-            text_fragments.append("Received the Omni Ring! Use /rank_select_gimmick to attune it.")
+            text_fragments.append("Received the Omni Ring! Choose its power from your Alerts menu.")
         if len(gimmicks) < slots:
             remaining = slots - len(gimmicks)
             text_fragments.append(
-                f"You have {remaining} open gimmick slot(s). Choose them with /rank_select_gimmick."
+                f"You have {remaining} open gimmick slot(s). Choose them from your Alerts menu."
             )
         return "\n".join(text_fragments) if text_fragments else None
 

@@ -539,6 +539,219 @@ class AlertDetailView(View):
 
             signup_button.callback = _signup
             self.add_item(signup_button)
+        elif action == "configure_omni":
+            cta_label = alert.get("cta_label") or "Choose Now"
+            choose_button = Button(
+                label=cta_label,
+                style=discord.ButtonStyle.primary,
+                row=2,
+            )
+
+            async def _choose(interaction: discord.Interaction):
+                if interaction.user.id != self.user_id:
+                    await interaction.response.send_message(
+                        "❌ Only the alert owner can configure the Omni Ring.",
+                        ephemeral=True,
+                    )
+                    return
+                embed = _build_omni_selection_embed(alert)
+                view = OmniGimmickSelectView(self.bot, self.user_id, self.alert_id)
+                await interaction.response.edit_message(embed=embed, view=view)
+
+            choose_button.callback = _choose
+            self.add_item(choose_button)
+
+
+def _build_omni_selection_embed(alert: Dict[str, Any]) -> discord.Embed:
+    from ui.embeds import EmbedBuilder
+
+    embed = EmbedBuilder.alert_detail(alert)
+    embed.add_field(
+        name="Choose a power",
+        value="Select the battle mechanic you want to attune first.",
+        inline=False,
+    )
+    return embed
+
+
+def _build_omni_confirm_embed(alert: Dict[str, Any], gimmick_label: str) -> discord.Embed:
+    embed = discord.Embed(
+        title="🔔 Confirm Omni Ring Power",
+        description=(
+            f"You're about to lock in **{gimmick_label}**.\n\n"
+            "This decision cannot be undone. Are you sure?"
+        ),
+        color=discord.Color.blurple(),
+    )
+    if alert.get("image"):
+        embed.set_thumbnail(url=alert["image"])
+    return embed
+
+
+class OmniGimmickSelectView(View):
+    """Select a gimmick for the Omni Ring."""
+
+    def __init__(self, bot, user_id: int, alert_id: str):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+        self.alert_id = alert_id
+
+        from rank_manager import GIMMICK_OPTIONS
+
+        options = [
+            discord.SelectOption(label=label, value=key)
+            for key, label in GIMMICK_OPTIONS.items()
+        ]
+        select = Select(
+            placeholder="Select an Omni Ring power...",
+            options=options,
+            min_values=1,
+            max_values=1,
+        )
+
+        async def _select(interaction: discord.Interaction):
+            if interaction.user.id != self.user_id:
+                await interaction.response.send_message(
+                    "❌ Only the alert owner can configure the Omni Ring.",
+                    ephemeral=True,
+                )
+                return
+            gimmick_id = select.values[0]
+            alert = self._current_alert()
+            if not alert:
+                await interaction.response.send_message(
+                    "❌ That alert is no longer available.",
+                    ephemeral=True,
+                )
+                return
+            gimmick_label = GIMMICK_OPTIONS.get(gimmick_id, gimmick_id.title())
+            embed = _build_omni_confirm_embed(alert, gimmick_label)
+            view = OmniGimmickConfirmView(
+                self.bot,
+                self.user_id,
+                self.alert_id,
+                gimmick_id,
+                gimmick_label,
+            )
+            await interaction.response.edit_message(embed=embed, view=view)
+
+        select.callback = _select
+        self.add_item(select)
+
+        back_button = Button(
+            label="⬅️ Back",
+            style=discord.ButtonStyle.secondary,
+            row=3,
+        )
+
+        async def _back(interaction: discord.Interaction):
+            if interaction.user.id != self.user_id:
+                await interaction.response.send_message(
+                    "❌ Only the alert owner can use this menu.",
+                    ephemeral=True,
+                )
+                return
+            alert = self._current_alert()
+            if not alert:
+                await interaction.response.send_message(
+                    "❌ That alert is no longer available.",
+                    ephemeral=True,
+                )
+                return
+            from ui.embeds import EmbedBuilder
+
+            embed = EmbedBuilder.alert_detail(alert)
+            view = AlertDetailView(self.bot, self.user_id, self.alert_id)
+            await interaction.response.edit_message(embed=embed, view=view)
+
+        back_button.callback = _back
+        self.add_item(back_button)
+
+    def _current_alert(self) -> Optional[Dict[str, Any]]:
+        _, alerts = _get_alert_data(self.bot, self.user_id)
+        return next((a for a in alerts if a.get("id") == self.alert_id), None)
+
+
+class OmniGimmickConfirmView(View):
+    """Confirm the selected Omni Ring gimmick."""
+
+    def __init__(self, bot, user_id: int, alert_id: str, gimmick_id: str, gimmick_label: str):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+        self.alert_id = alert_id
+        self.gimmick_id = gimmick_id
+        self.gimmick_label = gimmick_label
+
+        confirm_button = Button(
+            label="✅ Confirm",
+            style=discord.ButtonStyle.success,
+        )
+        cancel_button = Button(
+            label="❌ Cancel",
+            style=discord.ButtonStyle.danger,
+        )
+
+        async def _confirm(interaction: discord.Interaction):
+            if interaction.user.id != self.user_id:
+                await interaction.response.send_message(
+                    "❌ Only the alert owner can configure the Omni Ring.",
+                    ephemeral=True,
+                )
+                return
+            rank_manager = getattr(self.bot, "rank_manager", None)
+            trainer = self.bot.player_manager.get_player(self.user_id)
+            if not rank_manager or not trainer:
+                await interaction.response.send_message(
+                    "❌ The ranked system isn't available right now.",
+                    ephemeral=True,
+                )
+                return
+            success, message = rank_manager.select_gimmick(trainer, self.gimmick_id)
+            if not success:
+                await interaction.response.send_message(f"❌ {message}", ephemeral=True)
+                return
+            from ui.embeds import EmbedBuilder
+
+            refreshed_alert = self._current_alert() or {
+                "title": "Omni Ring Unlocked",
+                "details": "Your Omni Ring is now ready for use!",
+            }
+            embed = EmbedBuilder.alert_detail(refreshed_alert)
+            new_view = AlertDetailView(self.bot, self.user_id, self.alert_id)
+            await interaction.response.edit_message(embed=embed, view=new_view)
+            await interaction.followup.send(
+                f"✅ Locked in {self.gimmick_label} for your Omni Ring.",
+                ephemeral=True,
+            )
+
+        async def _cancel(interaction: discord.Interaction):
+            if interaction.user.id != self.user_id:
+                await interaction.response.send_message(
+                    "❌ Only the alert owner can configure the Omni Ring.",
+                    ephemeral=True,
+                )
+                return
+            alert = self._current_alert()
+            if not alert:
+                await interaction.response.send_message(
+                    "❌ That alert is no longer available.",
+                    ephemeral=True,
+                )
+                return
+            embed = _build_omni_selection_embed(alert)
+            view = OmniGimmickSelectView(self.bot, self.user_id, self.alert_id)
+            await interaction.response.edit_message(embed=embed, view=view)
+
+        confirm_button.callback = _confirm
+        cancel_button.callback = _cancel
+        self.add_item(confirm_button)
+        self.add_item(cancel_button)
+
+    def _current_alert(self) -> Optional[Dict[str, Any]]:
+        _, alerts = _get_alert_data(self.bot, self.user_id)
+        return next((a for a in alerts if a.get("id") == self.alert_id), None)
 
 
 class TrainerCardView(View):
