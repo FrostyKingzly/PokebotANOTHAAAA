@@ -1574,7 +1574,11 @@ class BattleEngine:
                     messages = [f"{acting_pokemon.species_name} used {move_name}!"]
 
             if action.action_type == 'switch':
-                switch_event = {"messages": messages, "pokemon": result.get("pokemon") or result.get("switched_in")}
+                switch_event = {
+                    "messages": messages,
+                    "pokemon": result.get("pokemon") or result.get("switched_in"),
+                    "source": "manual",
+                }
                 manual_switch_events.append(switch_event)
             else:
                 battle.turn_log.extend(messages)
@@ -1788,6 +1792,32 @@ class BattleEngine:
                 targets.append((defender_battler, defender_active[target_pos]))
 
         return targets
+
+    def _get_protect_status(self, pokemon) -> Optional[str]:
+        """Return the active protect-like volatile status if present."""
+        status_manager = getattr(pokemon, 'status_manager', None)
+        if not status_manager:
+            return None
+        statuses = getattr(status_manager, 'volatile_statuses', {})
+        for status_name in ('protect', 'kings_shield', 'detect'):
+            if status_name in statuses:
+                return status_name
+        return None
+
+    def _apply_kings_shield_attack_drop(self, attacker, move_data, messages: list[str]) -> None:
+        """Apply King's Shield contact penalty if applicable."""
+        flags = move_data.get('flags', {}) if isinstance(move_data, dict) else {}
+        is_contact = isinstance(flags, dict) and flags.get('contact')
+        if not is_contact or move_data.get('category') == 'status':
+            return
+
+        if not hasattr(attacker, 'stat_stages'):
+            attacker.stat_stages = {
+                'attack': 0, 'defense': 0, 'sp_attack': 0,
+                'sp_defense': 0, 'speed': 0, 'evasion': 0, 'accuracy': 0
+            }
+        attacker.stat_stages['attack'] = max(-6, attacker.stat_stages['attack'] - 2)
+        messages.append(f"{attacker.species_name}'s Attack harshly fell after hitting the shield!")
 
     async def _execute_spread_move(
         self,
@@ -2517,7 +2547,13 @@ class BattleEngine:
             battle.forced_switch_battler_id = None
             battle.forced_switch_position = None
 
-        return [{"messages": result.get("messages", []), "pokemon": result.get("pokemon") or result.get("switched_in")}] if result else []
+        return [
+            {
+                "messages": result.get("messages", []),
+                "pokemon": result.get("pokemon") or result.get("switched_in"),
+                "source": "auto",
+            }
+        ] if result else []
 
     def _get_battler_by_id(self, battle: BattleState, battler_id: int) -> Battler:
         """Return the Battler object matching the given ID, searching allies in raids."""
