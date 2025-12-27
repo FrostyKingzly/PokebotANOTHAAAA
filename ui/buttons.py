@@ -5356,9 +5356,59 @@ class BattleMenuView(View):
                 await interaction.response.send_message(lock_message, ephemeral=True)
                 return
 
-        _, location_id, location_name, available_trainers, error = self._get_available_players(interaction)
+        trainer, location_id, location_name, available_trainers, error = self._get_available_players(interaction)
         if error:
             await interaction.response.send_message(error, ephemeral=True)
+            return
+
+        pending_match = rank_manager.get_pending_match_for_player(interaction.user.id) if rank_manager else None
+        if pending_match:
+            player_manager = getattr(self.bot, 'player_manager', None)
+            opponent_players = [
+                participant for participant in pending_match.participants
+                if participant.get("type") == "player" and participant.get("id") != interaction.user.id
+            ]
+            npc_participants = [
+                participant for participant in pending_match.participants
+                if participant.get("type") == "npc"
+            ]
+            opponent_labels = []
+            for participant in opponent_players:
+                opponent_trainer = player_manager.get_player(participant.get("id")) if player_manager else None
+                opponent_name = opponent_trainer.trainer_name if opponent_trainer else "Trainer"
+                opponent_labels.append(f"{opponent_name} (<@{participant.get('id')}>)")
+            if npc_participants:
+                opponent_labels.append(npc_participants[0].get("name", "NPC"))
+            opponent_label = "\n".join(opponent_labels) if opponent_labels else "Unknown opponent"
+
+            opponent_details = None
+            if npc_participants and self.location:
+                npc_name = npc_participants[0].get("name")
+                ranked_npcs = self.location.get('ranked_npc_trainers', [])
+                npc_data = next(
+                    (npc for npc in ranked_npcs if npc.get("name") == npc_name),
+                    None,
+                )
+                if npc_name and not npc_data:
+                    opponent_details = (
+                        f"⚠️ {npc_name} is not available at your current location."
+                    )
+
+            embed = EmbedBuilder.promotion_match_ready(
+                pending_match,
+                opponent_label=opponent_label,
+                opponent_details=opponent_details,
+            )
+            view = PromotionMatchView(
+                bot=self.bot,
+                challenger=interaction.user,
+                match=pending_match,
+                location=self.location,
+                location_id=location_id,
+                location_name=location_name,
+                guild=interaction.guild,
+            )
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
             return
 
         ranked_npcs = self.location.get('ranked_npc_trainers', []) if self.location else []
@@ -5438,6 +5488,455 @@ class BattleMenuView(View):
                 "⚠️ No ranked challengers are available at this location right now.",
                 ephemeral=True
             )
+
+
+class PromotionMatchView(View):
+    """Display a scheduled promotion match and handle starting it."""
+
+    def __init__(
+        self,
+        bot,
+        challenger: discord.Member,
+        match,
+        location: Optional[dict],
+        location_id: str,
+        location_name: str,
+        guild: Optional[discord.Guild],
+    ):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.challenger = challenger
+        self.match = match
+        self.location = location
+        self.location_id = location_id
+        self.location_name = location_name
+        self.guild = guild
+        self.npc_participant = next(
+            (participant for participant in match.participants if participant.get("type") == "npc"),
+            None,
+        )
+        self.opponent_players = [
+            participant for participant in match.participants
+            if participant.get("type") == "player" and participant.get("id") != challenger.id
+        ]
+        self.opponent_id = self.opponent_players[0].get("id") if len(self.opponent_players) == 1 else None
+        self.npc_data = None
+        if self.npc_participant and self.location:
+            npc_name = self.npc_participant.get("name")
+            ranked_npcs = self.location.get("ranked_npc_trainers", [])
+            self.npc_data = next((npc for npc in ranked_npcs if npc.get("name") == npc_name), None)
+
+        if self.opponent_id:
+            card_button = Button(
+                label="View Opponent Trainer Card",
+                style=discord.ButtonStyle.secondary,
+                custom_id="promotion_view_trainer_card",
+            )
+            card_button.callback = self.view_opponent_card
+            self.add_item(card_button)
+
+        button_label = "Start Promotion Match" if self.npc_participant else "Send Promotion Challenge"
+        challenge_button = Button(
+            label=button_label,
+            style=discord.ButtonStyle.success,
+            custom_id="promotion_start_match",
+        )
+        if self.npc_participant and not self.npc_data:
+            challenge_button.disabled = True
+        challenge_button.callback = self.start_match
+        self.add_item(challenge_button)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.challenger.id:
+            await interaction.response.send_message(
+                "❌ Only the challenger can use this menu.",
+                ephemeral=True,
+            )
+            return False
+        return True
+
+    async def view_opponent_card(self, interaction: discord.Interaction):
+        from ui.embeds import EmbedBuilder
+
+        if not self.opponent_id:
+            await interaction.response.send_message("No trainer opponent found for this match.", ephemeral=True)
+            return
+
+        player_manager = getattr(self.bot, "player_manager", None)
+        if not player_manager:
+            await interaction.response.send_message("Trainer data is unavailable right now.", ephemeral=True)
+            return
+
+        opponent = player_manager.get_player(self.opponent_id)
+        if not opponent:
+            await interaction.response.send_message("Opponent trainer data could not be loaded.", ephemeral=True)
+            return
+
+        party = player_manager.get_party(self.opponent_id)
+        all_pokemon = player_manager.get_all_pokemon(self.opponent_id)
+        total_pokemon = len(all_pokemon)
+        pokedex_caught = len(
+            {pokemon.get("species_dex_number") for pokemon in all_pokemon if pokemon.get("species_dex_number")}
+        )
+        location_manager = getattr(self.bot, "location_manager", None)
+
+        embed = EmbedBuilder.trainer_card(
+            opponent,
+            party_count=len(party),
+            total_pokemon=total_pokemon,
+            pokedex_caught=pokedex_caught,
+            location_manager=location_manager,
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    async def start_match(self, interaction: discord.Interaction):
+        if self.npc_participant:
+            await self._start_npc_match(interaction)
+        else:
+            await self._send_pvp_challenge(interaction)
+
+    def _get_match_format(self) -> Optional[str]:
+        return (getattr(self.match, "format", None) or "singles").lower()
+
+    def _resolve_battle_format(self) -> Optional[BattleFormat]:
+        format_name = self._get_match_format()
+        if format_name == "doubles" and BattleFormat:
+            return BattleFormat.DOUBLES
+        if format_name == "singles" and BattleFormat:
+            return BattleFormat.SINGLES
+        return None
+
+    async def _send_pvp_challenge(self, interaction: discord.Interaction):
+        if not self.opponent_id:
+            await interaction.response.send_message("No opponent is assigned to this match.", ephemeral=True)
+            return
+
+        format_name = self._get_match_format()
+        if format_name == "multi":
+            await interaction.response.send_message(
+                "Multi promotion matches must be coordinated with staff.",
+                ephemeral=True,
+            )
+            return
+
+        battle_format = self._resolve_battle_format()
+        if not battle_format:
+            await interaction.response.send_message(
+                "Promotion match format is unavailable right now.",
+                ephemeral=True,
+            )
+            return
+
+        battle_cog = self.bot.get_cog('BattleCog')
+        if not battle_cog:
+            await interaction.response.send_message(
+                "❌ Battle system not available right now.",
+                ephemeral=True
+            )
+            return
+
+        player_manager = self.bot.player_manager
+        challenger_trainer = player_manager.get_player(self.challenger.id)
+        opponent_trainer = player_manager.get_player(self.opponent_id)
+        if not challenger_trainer or not opponent_trainer:
+            await interaction.response.send_message(
+                "❌ Could not load trainer data for this challenge.",
+                ephemeral=True
+            )
+            return
+
+        if challenger_trainer.current_location_id != self.location_id:
+            await interaction.response.send_message(
+                "⚠️ Travel back to your current location before starting this match.",
+                ephemeral=True
+            )
+            return
+
+        if opponent_trainer.current_location_id != self.location_id:
+            await interaction.response.send_message(
+                "⚠️ Your opponent is not in this location right now.",
+                ephemeral=True
+            )
+            return
+
+        busy_ids = set(battle_cog.user_battles.keys())
+        if self.challenger.id in busy_ids or self.opponent_id in busy_ids:
+            await interaction.response.send_message(
+                "⚠️ One of the trainers is already in a battle.",
+                ephemeral=True
+            )
+            return
+
+        challenger_party = player_manager.get_party(self.challenger.id)
+        opponent_party = player_manager.get_party(self.opponent_id)
+
+        challenger_ready = sum(1 for mon in challenger_party if mon.get('current_hp', 0) > 0)
+        opponent_ready = sum(1 for mon in opponent_party if mon.get('current_hp', 0) > 0)
+
+        if challenger_ready <= 0:
+            await interaction.response.send_message(
+                "❌ You don't have any healthy Pokémon right now.",
+                ephemeral=True
+            )
+            return
+
+        if opponent_ready <= 0:
+            await interaction.response.send_message(
+                "⚠️ That trainer doesn't have any healthy Pokémon right now.",
+                ephemeral=True
+            )
+            return
+
+        team_size = min(6, challenger_ready, opponent_ready)
+        if format_name == "doubles" and team_size < 2:
+            await interaction.response.send_message(
+                "Doubles promotion matches require at least 2 healthy Pokémon per trainer.",
+                ephemeral=True,
+            )
+            return
+
+        if not interaction.channel:
+            await interaction.response.send_message(
+                "❌ This channel is unavailable for sending the challenge.",
+                ephemeral=True
+            )
+            return
+
+        rank_manager = getattr(self.bot, 'rank_manager', None)
+        extra_context: Dict[str, Any] = {}
+        if rank_manager:
+            allowed, message, extra_context = rank_manager.prepare_ranked_battle(
+                self.challenger.id,
+                self.opponent_id,
+                format_name=format_name,
+            )
+            if not allowed:
+                await interaction.response.send_message(message or "Ranked battle unavailable.", ephemeral=True)
+                return
+
+        await interaction.response.defer(ephemeral=True)
+
+        opponent_member = self.guild.get_member(self.opponent_id) if self.guild else None
+        opponent_mention = opponent_member.mention if opponent_member else f"<@{self.opponent_id}>"
+        challenger_mention = self.challenger.mention
+
+        embed = discord.Embed(
+            title="🏆 Promotion Match Challenge",
+            description=(
+                f"{challenger_mention} has issued a promotion match challenge to {opponent_mention}!\n"
+                f"Location: **{self.location_name}**"
+            ),
+            color=discord.Color.gold(),
+        )
+        embed.add_field(
+            name="Format",
+            value=f"{format_name.title()} — {team_size} Pokémon per trainer",
+            inline=False,
+        )
+        embed.set_footer(text="Only the challenged trainer can accept.")
+
+        response_view = PvPChallengeResponseView(
+            bot=self.bot,
+            challenger_id=self.challenger.id,
+            opponent_id=self.opponent_id,
+            battle_format=battle_format,
+            team_size=team_size,
+            location_id=self.location_id,
+            location_name=self.location_name,
+            challenger_name=getattr(challenger_trainer, 'trainer_name', self.challenger.display_name),
+            opponent_name=getattr(opponent_trainer, 'trainer_name', opponent_member.display_name if opponent_member else 'Trainer'),
+            is_ranked=True,
+        )
+        response_view.pending_rank_context = extra_context or {}
+
+        message = await interaction.channel.send(
+            content=f"{opponent_mention}, {challenger_mention} is ready for a promotion match!",
+            embed=embed,
+            view=response_view,
+        )
+        response_view.message = message
+
+        await interaction.followup.send("Promotion challenge sent! Waiting for them to respond...", ephemeral=True)
+        self.stop()
+
+    async def _start_npc_match(self, interaction: discord.Interaction):
+        if not self.npc_data:
+            npc_name = self.npc_participant.get("name") if self.npc_participant else "this trainer"
+            await interaction.response.send_message(
+                f"⚠️ Your promotion match is scheduled against **{npc_name}**, but they're not here.",
+                ephemeral=True,
+            )
+            return
+
+        format_name = self._get_match_format()
+        if format_name == "multi":
+            await interaction.response.send_message(
+                "Multi promotion matches must be coordinated with staff.",
+                ephemeral=True,
+            )
+            return
+
+        battle_format = self._resolve_battle_format()
+        if not battle_format:
+            await interaction.response.send_message(
+                "Promotion match format is unavailable right now.",
+                ephemeral=True,
+            )
+            return
+
+        battle_cog = self.bot.get_cog('BattleCog')
+        if not battle_cog:
+            await interaction.response.send_message(
+                "❌ Battle system not loaded!",
+                ephemeral=True
+            )
+            return
+
+        player_manager = getattr(self.bot, 'player_manager', None)
+        if player_manager:
+            trainer = player_manager.get_player(interaction.user.id)
+            if trainer and trainer.current_location_id != self.location_id:
+                await interaction.response.send_message(
+                    "⚠️ Travel back to this location before starting the promotion match.",
+                    ephemeral=True,
+                )
+                return
+        if player_manager:
+            identifier = self.npc_data.get('id') or self.npc_data.get('name')
+            on_cooldown, remaining = player_manager.is_on_battle_cooldown(
+                interaction.user.id, 'npc_ranked', str(identifier)
+            )
+            if on_cooldown:
+                message = "⏳ You need to wait before rematching this trainer."
+                if remaining:
+                    hours = max(1, int(round(remaining / 3600)))
+                    message = f"⏳ You can rematch this trainer in about {hours} hour(s)."
+                await interaction.response.send_message(message, ephemeral=True)
+                return
+
+        if interaction.user.id in battle_cog.user_battles:
+            await interaction.response.send_message(
+                "❌ You're already in a battle! Finish it first!",
+                ephemeral=True
+            )
+            return
+
+        extra_context: Dict[str, Any] = {}
+        rank_manager = getattr(self.bot, 'rank_manager', None)
+        if rank_manager:
+            allowed, message, extra_context = rank_manager.prepare_ranked_battle(
+                interaction.user.id,
+                npc_name=self.npc_data.get('name'),
+                format_name=format_name,
+            )
+            if not allowed:
+                await interaction.response.send_message(message or "Ranked battle unavailable.", ephemeral=True)
+                return
+
+        trainer_party_data = self.bot.player_manager.get_party(interaction.user.id)
+        trainer_pokemon = []
+        for poke_data in trainer_party_data:
+            species_data = self.bot.species_db.get_species(poke_data['species_dex_number'])
+            pokemon = reconstruct_pokemon_from_data(poke_data, species_data)
+            trainer_pokemon.append(pokemon)
+
+        healthy_count = sum(1 for p in trainer_pokemon if getattr(p, 'current_hp', 0) > 0)
+        if healthy_count < 1:
+            await interaction.response.send_message(
+                "❌ You need at least 1 healthy Pokémon for promotion matches!",
+                ephemeral=True
+            )
+            return
+
+        if format_name == "doubles" and healthy_count < 2:
+            await interaction.response.send_message(
+                f"❌ You need at least 2 healthy Pokémon for doubles battles! (You have {healthy_count})",
+                ephemeral=True
+            )
+            return
+
+        ok, message = consume_ranked_stamina(
+            player_manager,
+            [(interaction.user.id, interaction.user.display_name)]
+        )
+        if not ok:
+            await interaction.response.send_message(message, ephemeral=True)
+            return
+
+        npc_pokemon = []
+        for npc_poke in self.npc_data.get('party', []):
+            pokemon = self._create_npc_pokemon(npc_poke)
+            npc_pokemon.append(pokemon)
+
+        await interaction.response.defer()
+
+        ranked_context = None
+        if rank_manager:
+            npc_rank = (
+                self.npc_participant.get("rank_tier_number")
+                if self.npc_participant else self.match.tier
+            )
+            ranked_context = {
+                'mode': 'npc',
+                'npc_rank': npc_rank or self.match.tier,
+                'npc_name': self.npc_data.get('name'),
+                'npc_class': self.npc_data.get('class')
+            }
+            if extra_context:
+                ranked_context.update(extra_context)
+
+        battle_id = battle_cog.battle_engine.start_trainer_battle(
+            trainer_id=interaction.user.id,
+            trainer_name=interaction.user.display_name,
+            trainer_party=trainer_pokemon,
+            npc_party=npc_pokemon,
+            npc_name=self.npc_data.get('name', 'Trainer'),
+            npc_class=self.npc_data.get('class', 'Trainer'),
+            prize_money=self.npc_data.get('prize_money', 0),
+            battle_format=battle_format,
+            is_ranked=True,
+            ranked_context=ranked_context
+        )
+
+        battle_cog.user_battles[interaction.user.id] = battle_id
+
+        await battle_cog.prompt_and_start_battle_ui(
+            interaction=interaction,
+            battle_id=battle_id,
+            battle_type=BattleType.TRAINER
+        )
+
+        self.stop()
+
+    def _create_npc_pokemon(self, npc_poke_data: dict):
+        """Create a Pokemon object from NPC trainer data."""
+        from models import Pokemon
+
+        species_dex_number = npc_poke_data.get('species_dex_number')
+        species_data = self.bot.species_db.get_species(species_dex_number)
+        level = npc_poke_data.get('level', 5)
+        moves = npc_poke_data.get('moves', [])
+
+        ivs = {
+            'hp': random.randint(20, 31),
+            'attack': random.randint(20, 31),
+            'defense': random.randint(20, 31),
+            'sp_attack': random.randint(20, 31),
+            'sp_defense': random.randint(20, 31),
+            'speed': random.randint(20, 31)
+        }
+
+        pokemon = Pokemon(
+            species_data=species_data,
+            level=level,
+            owner_discord_id=-1,
+            nature=npc_poke_data.get('nature'),
+            ability=npc_poke_data.get('ability'),
+            moves=moves if moves else None,
+            ivs=ivs
+        )
+
+        return pokemon
 
 
 class PvPChallengeSetupView(View):
@@ -5879,6 +6378,7 @@ class PvPChallengeResponseView(View):
         self.opponent_name = opponent_name
         self.message: Optional[discord.Message] = None
         self.is_ranked = is_ranked
+        self.pending_rank_context: Dict[str, Any] = {}
 
     def _format_label(self) -> str:
         if not BattleFormat or not self.battle_format:

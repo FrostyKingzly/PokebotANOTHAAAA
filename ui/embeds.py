@@ -389,6 +389,58 @@ class EmbedBuilder:
         return embed
 
     @staticmethod
+    def promotion_match_ready(
+        match,
+        opponent_label: str,
+        opponent_details: Optional[str] = None,
+    ) -> discord.Embed:
+        """Build an embed that highlights a scheduled promotion match."""
+        tier_name = get_rank_tier_definition(match.tier)["name"]
+        format_name = getattr(match, "format", "ranked").title()
+
+        embed = discord.Embed(
+            title="🏆 Promotion Match Ready",
+            description="Your next rank-up match is ready to begin.",
+            color=discord.Color.gold(),
+        )
+
+        embed.add_field(
+            name="Tier",
+            value=f"{tier_name} (Tier {match.tier})",
+            inline=True,
+        )
+        embed.add_field(
+            name="Format",
+            value=format_name,
+            inline=True,
+        )
+        embed.add_field(
+            name="Match ID",
+            value=match.match_id,
+            inline=True,
+        )
+        embed.add_field(
+            name="Opponent",
+            value=opponent_label,
+            inline=False,
+        )
+        if opponent_details:
+            embed.add_field(
+                name="Match Details",
+                value=opponent_details,
+                inline=False,
+            )
+        if getattr(match, "notes", None):
+            embed.add_field(
+                name="Staff Notes",
+                value=match.notes,
+                inline=False,
+            )
+
+        embed.set_footer(text="Use the buttons below to view your opponent or start the match.")
+        return embed
+
+    @staticmethod
     def _format_weather_line(weather_info: Optional[Dict]) -> Optional[str]:
         """Return a friendly weather status line."""
 

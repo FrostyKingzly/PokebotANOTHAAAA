@@ -214,7 +214,25 @@ class PokemonSpriteHelper:
                 else PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=gendered_name)
             )
 
-            sprite_urls = [animated_url, static_fallback, showdown_static]
+            pokeapi_fallback = None
+            if dex_number is not None:
+                if gender and gender.lower() == "female":
+                    pokeapi_fallback = (
+                        PokemonSpriteHelper.POKEAPI_SHINY_FEMALE.format(id=dex_number)
+                        if shiny
+                        else PokemonSpriteHelper.POKEAPI_FRONT_FEMALE.format(id=dex_number)
+                    )
+                else:
+                    pokeapi_fallback = (
+                        PokemonSpriteHelper.POKEAPI_SHINY.format(id=dex_number)
+                        if shiny
+                        else PokemonSpriteHelper.POKEAPI_FRONT.format(id=dex_number)
+                    )
+
+            sprite_urls = [animated_url, static_fallback]
+            if pokeapi_fallback:
+                sprite_urls.append(pokeapi_fallback)
+            sprite_urls.append(showdown_static)
             available_urls = [url for url in sprite_urls if PokemonSpriteHelper._url_exists(url)]
 
             if available_urls:

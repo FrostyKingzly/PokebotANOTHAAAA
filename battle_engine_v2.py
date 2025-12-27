@@ -1955,6 +1955,27 @@ class BattleEngine:
             attacker.stat_stages['defense'] = min(6, current + 1)
             messages.append(f"{attacker.species_name} is bracing itself! Defense rose.")
 
+    def _get_semi_invulnerable_state(self, move_id: str) -> Optional[str]:
+        """Return the semi-invulnerable state applied by a charging move."""
+        move_id = (move_id or '').lower()
+        if move_id == 'dig':
+            return 'underground'
+        return None
+
+    def _move_hits_semi_invulnerable(self, move_id: str, state: str) -> bool:
+        """Return True if a move can hit a target in a semi-invulnerable state."""
+        move_id = (move_id or '').lower()
+        if state == 'underground':
+            return move_id in {'earthquake', 'magnitude', 'fissure'}
+        return False
+
+    def _is_target_semi_invulnerable(self, target, move_data: Dict) -> bool:
+        """Return True if the target should be untargetable by the move."""
+        state = getattr(target, '_semi_invulnerable', None)
+        if not state:
+            return False
+        return not self._move_hits_semi_invulnerable(move_data.get('id'), state)
+
     async def _execute_move(self, battle: BattleState, action: BattleAction) -> Dict:
         """Execute a move action - now supports spread moves hitting multiple targets"""
         # Get attacker and defender
@@ -2007,6 +2028,7 @@ class BattleEngine:
         skip_pp_deduct = False
         if getattr(attacker, '_charge_state', None) and attacker._charge_state.get('move_id') != action.move_id:
             attacker._charge_state = None
+            attacker._semi_invulnerable = None
 
         if move_data.get('flags', {}).get('charge'):
             charge_state = getattr(attacker, '_charge_state', None)
@@ -2014,6 +2036,7 @@ class BattleEngine:
                 messages.append(f"{attacker.species_name} unleashed {move_data['name']}!")
                 skip_pp_deduct = charge_state.get('pp_paid', False)
                 attacker._charge_state = None
+                attacker._semi_invulnerable = None
             elif not self._should_skip_charge(move_data, battle):
                 # Deduct PP immediately since we're returning before normal processing
                 for move in attacker.moves:
@@ -2023,6 +2046,9 @@ class BattleEngine:
                 messages.append(f"{attacker.species_name} began charging {move_data['name']}!")
                 self._apply_charge_start_effects(attacker, move_data, messages)
                 attacker._charge_state = {'move_id': action.move_id, 'pp_paid': True}
+                invulnerable_state = self._get_semi_invulnerable_state(move_data.get('id'))
+                if invulnerable_state:
+                    attacker._semi_invulnerable = invulnerable_state
                 return {"messages": messages}
             else:
                 messages.append(f"{attacker.species_name} used {move_data['name']} without charging!")
@@ -2049,6 +2075,18 @@ class BattleEngine:
         # Filter out fainted targets and redirect to valid targets if needed
         valid_targets = [(b, p) for b, p in targets if p.current_hp > 0]
 
+        if valid_targets:
+            filtered_targets = []
+            for battler, target in valid_targets:
+                if self._is_target_semi_invulnerable(target, move_data):
+                    if getattr(target, '_semi_invulnerable', None) == 'underground':
+                        messages.append(f"{target.species_name} is hiding underground!")
+                    else:
+                        messages.append(f"{target.species_name} can't be hit right now!")
+                else:
+                    filtered_targets.append((battler, target))
+            valid_targets = filtered_targets
+
         # If original target(s) fainted, try to find a new target for single-target moves
         if not valid_targets and target_type == 'single':
             # Get opposing team to find alternative target
@@ -2069,6 +2107,9 @@ class BattleEngine:
                 if move['move_id'] == action.move_id:
                     move['pp'] = max(0, move['pp'] - 1)
                     break
+            if targets:
+                messages.append(f"{attacker.species_name}'s attack missed!")
+                return {"messages": messages}
             return {"messages": [f"{attacker.species_name} used {move_data['name']}, but there was no target!"]}
 
         # Use the filtered valid targets
