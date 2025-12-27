@@ -18,6 +18,7 @@ from social_stats import (
     points_to_rank,
     calculate_max_stamina,
 )
+from rank_manager import get_rank_tier_definition
 from raid_manager import RaidEncounter
 
 
@@ -120,6 +121,26 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
         pokemon.tera_type = poke_data['tera_type']
 
     return pokemon
+
+
+def consume_ranked_stamina(player_manager, participants: List[Tuple[int, str]]) -> Tuple[bool, Optional[str]]:
+    """Consume 1 stamina from each participant in a ranked battle."""
+    if not player_manager:
+        return True, None
+
+    for user_id, name in participants:
+        trainer = player_manager.get_player(user_id)
+        if not trainer:
+            return False, f"Unable to load trainer data for {name}."
+        if getattr(trainer, "stamina_current", 0) < 1:
+            return False, f"❌ {name} doesn't have enough stamina for a ranked battle."
+
+    for user_id, _ in participants:
+        success, _ = player_manager.consume_stamina(user_id, 1)
+        if not success:
+            return False, "❌ You don't have enough stamina for a ranked battle."
+
+    return True, None
 
 
 def _ensure_pokemon_instance(bot, pokemon_data):
@@ -5341,6 +5362,17 @@ class BattleMenuView(View):
             return
 
         ranked_npcs = self.location.get('ranked_npc_trainers', []) if self.location else []
+        player_manager = getattr(self.bot, 'player_manager', None)
+        if ranked_npcs and player_manager:
+            available_ranked_npcs = []
+            for idx, npc in enumerate(ranked_npcs):
+                identifier = npc.get('id') or npc.get('name') or str(idx)
+                on_cooldown, _ = player_manager.is_on_battle_cooldown(
+                    interaction.user.id, 'npc_ranked', identifier
+                )
+                if not on_cooldown:
+                    available_ranked_npcs.append(npc)
+            ranked_npcs = available_ranked_npcs
         locked_rank_override = None
         pending_match_npc_name = None
         if rank_manager:
@@ -5950,6 +5982,13 @@ class PvPChallengeResponseView(View):
                 'players': [self.challenger_id, self.opponent_id]
             }
             ranked_context.update(self.pending_rank_context or {})
+            player_manager = getattr(self.bot, 'player_manager', None)
+            ok, message = consume_ranked_stamina(
+                player_manager,
+                [(self.challenger_id, self.challenger_name), (self.opponent_id, self.opponent_name)]
+            )
+            if not ok:
+                return message
 
         battle_id = battle_cog.battle_engine.start_pvp_battle(
             trainer1_id=self.challenger_id,
@@ -6175,6 +6214,20 @@ class MultiPvPChallengeResponseView(View):
             p2_member = interaction.guild.get_member(self.partner_id)
             p3_member = interaction.guild.get_member(self.opponent_id)
             p4_member = interaction.guild.get_member(self.opponent_partner_id)
+
+            if self.is_ranked:
+                player_manager = getattr(self.bot, 'player_manager', None)
+                participants = [
+                    (self.challenger_id, p1_member.display_name if p1_member else self.challenger_name),
+                    (self.partner_id, p2_member.display_name if p2_member else self.partner_name),
+                    (self.opponent_id, p3_member.display_name if p3_member else self.opponent_name),
+                    (self.opponent_partner_id, p4_member.display_name if p4_member else "Opponent Partner"),
+                ]
+                ok, message = consume_ranked_stamina(player_manager, participants)
+                if not ok:
+                    await self._finalize(message)
+                    await interaction.followup.send(message, ephemeral=True)
+                    return
 
             battle_id = battle_cog.battle_engine.start_multi_battle(
                 trainer1_id=self.challenger_id,
@@ -6436,6 +6489,19 @@ class MultiPartnerInviteView(View):
 
         from battle_engine_v2 import BattleType
 
+        if self.ranked:
+            player_manager = getattr(self.bot, 'player_manager', None)
+            participants = [
+                (self.initiator.id, self.initiator.display_name),
+                (self.partner.id, self.partner.display_name),
+            ]
+            ok, message = consume_ranked_stamina(player_manager, participants)
+            if not ok:
+                await interaction.followup.send(message, ephemeral=True)
+                await self._finalize(message)
+                self.stop()
+                return
+
         # Start multi battle
         battle_id = battle_cog.battle_engine.start_multi_battle(
             trainer1_id=self.initiator.id,
@@ -6555,6 +6621,12 @@ class NpcTrainerSelectView(View):
             
             label = npc_name
             description = npc_class
+            if ranked:
+                npc_rank = npc.get("rank_tier_number") or npc.get("rank") or 1
+                rank_name = get_rank_tier_definition(npc_rank)["name"]
+                levels = [poke.get("level", 1) for poke in npc.get("party", []) if poke.get("level") is not None]
+                avg_level = round(sum(levels) / len(levels)) if levels else 1
+                description = f"{rank_name} (Lv. {avg_level})"
             
             options.append(
                 discord.SelectOption(
@@ -6574,43 +6646,7 @@ class NpcTrainerSelectView(View):
         select.callback = self.npc_callback
         self.add_item(select)
 
-        if ranked and locked_rank_override is None:
-            rank_options = [
-                discord.SelectOption(
-                    label="Use NPC's default rank",
-                    value="npc_default",
-                    description="Keep the trainer's configured tier"
-                )
-            ]
-            for tier in range(1, 9):
-                rank_options.append(
-                    discord.SelectOption(
-                        label=f"Tier {tier}",
-                        value=str(tier),
-                        description=f"Force this battle to use Tier {tier}"
-                    )
-                )
-
-            rank_select = Select(
-                placeholder="Choose the NPC's rank tier (defaults to NPC's tier)",
-                options=rank_options,
-                custom_id="ranked_npc_rank_select",
-            )
-
-            async def rank_callback(interaction: discord.Interaction):
-                choice = interaction.data['values'][0]
-                if choice == "npc_default":
-                    self.selected_rank_override = None
-                    message = "Using the NPC's configured rank tier."
-                else:
-                    self.selected_rank_override = int(choice)
-                    message = f"NPC rank set to Tier {self.selected_rank_override}."
-
-                await interaction.response.send_message(message, ephemeral=True, delete_after=10)
-
-            rank_select.callback = rank_callback
-            self.add_item(rank_select)
-        elif ranked and locked_rank_override is not None:
+        if ranked and locked_rank_override is not None:
             self.selected_rank_override = locked_rank_override
 
     async def npc_callback(self, interaction: discord.Interaction):
@@ -6674,6 +6710,16 @@ class NpcTrainerSelectView(View):
                     f"❌ You need at least 2 healthy Pokemon for doubles battles! (You have {healthy_count})",
                     ephemeral=True
                 )
+                return
+
+        if self.ranked and battle_format_str != 'multi':
+            player_manager = getattr(self.bot, 'player_manager', None)
+            ok, message = consume_ranked_stamina(
+                player_manager,
+                [(interaction.user.id, interaction.user.display_name)]
+            )
+            if not ok:
+                await interaction.response.send_message(message, ephemeral=True)
                 return
 
         # For multi battles, need to select a partner
