@@ -184,6 +184,10 @@ class BattleMusicManager:
         # Play victory theme (no loop, will disconnect when song ends)
         await self._play_theme(self.victory_theme_url, loop=False, disconnect_after=True)
 
+    async def play_switch_sound(self, species_dex_number: int) -> None:
+        """No-op: sound effects are disabled; music only."""
+        return
+
     async def _play_theme(self, url: str, loop: bool = False, disconnect_after: bool = False):
         """Play a theme from YouTube URL"""
         if not self.voice_client:
