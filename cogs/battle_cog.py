@@ -1129,30 +1129,6 @@ class BattleCog(commands.Cog):
 
         return action_msgs, faint_msgs
 
-    def _get_species_dex(self, name: str) -> Optional[int]:
-        species_db = getattr(self.bot, "species_db", None)
-        if not species_db or not name:
-            return None
-
-        species = species_db.get_species(name)
-        if not species:
-            return None
-
-        return species.get("dex_number")
-
-    async def _play_faint_sounds(self, messages: list[str]):
-        for msg in messages:
-            msg_clean = msg.replace("The wild", "").replace("wild", "").strip()
-            msg_clean = msg_clean.replace("!", "")
-            if " fainted" not in msg_clean.lower():
-                continue
-
-            # Extract name before the word 'fainted'
-            name_part = msg_clean.split("fainted")[0].strip()
-            dex_number = self._get_species_dex(name_part)
-            if dex_number and self.music_manager.current_session:
-                await self.music_manager.play_faint_sound(dex_number)
-
     async def _safe_followup_send(self, interaction: discord.Interaction, **kwargs):
         """Send a message to the channel without creating reply chains."""
         # Send directly to channel to avoid reply chains
@@ -1288,18 +1264,8 @@ class BattleCog(commands.Cog):
 
         action_embeds = self._build_turn_embeds(turn_result)
         for embed in action_embeds:
-            faint_sound_task = None
-            if embed.title == "Pokémon Fainted":
-                faint_msgs = [line for line in (embed.description or "").split("\n") if line.strip()]
-                if faint_msgs:
-                    faint_sound_task = asyncio.create_task(
-                        self._play_faint_sounds(faint_msgs)
-                    )
-
             await self._safe_followup_send(interaction, embed=embed)
             await asyncio.sleep(1)
-            if faint_sound_task:
-                await faint_sound_task
 
         await send_switch_events(auto_switch_events)
 
