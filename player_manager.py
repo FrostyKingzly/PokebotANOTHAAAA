@@ -1025,11 +1025,16 @@ class PlayerManager:
             return None
 
         old_level = int(pokemon.get("level", 1))
+        trainer = self.get_player(discord_user_id)
+        level_cap = self.get_level_cap_for_trainer(trainer) if trainer else None
+        cap_level = min(level_cap, 100) if level_cap else 100
+        if level_cap and old_level >= cap_level:
+            return None
         # Cap between 1 and 100
         if set_level is None:
-            new_level = min(old_level + 1, 100)
+            new_level = min(old_level + 1, cap_level)
         else:
-            new_level = max(1, min(int(set_level), 100))
+            new_level = max(1, min(int(set_level), cap_level))
 
         if new_level == old_level:
             # Nothing to do
@@ -1124,8 +1129,36 @@ class PlayerManager:
         current_exp = int(pokemon.get('exp', 0))
         old_level = int(pokemon.get('level', 1))
         exp_amount = ExpSystem.apply_partner_bonus(exp_amount, pokemon)
+        trainer = self.get_player(discord_user_id)
+        level_cap = self.get_level_cap_for_trainer(trainer) if trainer else None
+        cap_level = min(level_cap, 100) if level_cap else 100
+        cap_exp = ExpSystem.exp_to_level(cap_level, growth_rate) if level_cap else None
+        stored_exp = int(pokemon.get('stored_exp', 0))
+
+        if stored_exp and (level_cap is None or old_level < cap_level):
+            exp_amount += stored_exp
+            stored_exp = 0
+
+        if level_cap and old_level >= cap_level:
+            stored_exp += exp_amount
+            self.db.update_pokemon(pokemon_id, {'stored_exp': stored_exp})
+            return {
+                'old_level': old_level,
+                'new_level': old_level,
+                'new_exp': current_exp,
+                'level_up_data': None,
+                'capped': True,
+            }
+
         new_total_exp = max(0, current_exp + exp_amount)
+        if cap_exp is not None and new_total_exp > cap_exp:
+            overflow = new_total_exp - cap_exp
+            new_total_exp = cap_exp
+            stored_exp += overflow
+
         new_level = ExpSystem._calculate_level_from_exp(new_total_exp, growth_rate)
+        if level_cap:
+            new_level = min(new_level, cap_level)
 
         level_up_data = None
         if new_level > old_level:
@@ -1136,6 +1169,7 @@ class PlayerManager:
             {
                 'exp': new_total_exp,
                 'level': new_level,
+                'stored_exp': stored_exp,
             }
         )
 

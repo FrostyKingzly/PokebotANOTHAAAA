@@ -367,6 +367,14 @@ class ItemUsageManager:
         if pokemon.get('level', 1) >= 100:
             return ItemUseResult(False, f"❌ {species_name} is already at max level (100)!")
 
+        trainer = self.bot.player_manager.get_player(player_id)
+        level_cap = self.bot.player_manager.get_level_cap_for_trainer(trainer) if trainer else None
+        if level_cap and pokemon.get('level', 1) >= level_cap:
+            return ItemUseResult(
+                False,
+                f"❌ {species_name} is already at the current level cap (Lv. {level_cap})."
+            )
+
         # Level up Pokemon
         old_level = pokemon.get('level', 1)
         levelup_result = self.bot.player_manager.level_up_pokemon(
