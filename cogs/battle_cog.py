@@ -1246,19 +1246,10 @@ class BattleCog(commands.Cog):
         async def send_switch_events(events: list[dict]):
             for event in events:
                 embed = self._build_switch_embed(event.get("messages") or [], pokemon=event.get("pokemon"))
-                sound_task = None
-                pokemon = event.get("pokemon")
-                if pokemon and hasattr(pokemon, "species_dex_number") and self.music_manager.current_session:
-                    sound_task = asyncio.create_task(
-                        self.music_manager.play_switch_sound(pokemon.species_dex_number)
-                    )
 
                 if embed:
                     await self._safe_followup_send(interaction, embed=embed)
                     await asyncio.sleep(1)
-
-                if sound_task:
-                    await sound_task
 
         await send_switch_events(manual_switch_events)
 
