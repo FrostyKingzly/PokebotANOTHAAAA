@@ -1510,6 +1510,12 @@ class EmbedBuilder:
 
             trainer_info = f"**{npc_class}**\n"
             trainer_info += f"Battle Type: {format_display}"
+            if ranked:
+                npc_rank = npc.get("rank_tier_number") or npc.get("rank") or 1
+                rank_name = get_rank_tier_definition(npc_rank)["name"]
+                levels = [poke.get("level", 1) for poke in npc.get("party", []) if poke.get("level") is not None]
+                avg_level = round(sum(levels) / len(levels)) if levels else 1
+                trainer_info = f"**{rank_name} (Lv. {avg_level})**\nBattle Type: {format_display}"
 
             embed.add_field(
                 name=f"{i}. {npc_name}",

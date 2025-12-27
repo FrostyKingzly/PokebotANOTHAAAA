@@ -606,7 +606,13 @@ class RankManager:
         opponent_is_player: bool,
         opponent_label: str,
     ) -> Optional[Dict[str, Any]]:
+        def format_rank_label(name: str, tier_number: int) -> str:
+            tier_name = get_rank_tier_definition(tier_number)["name"]
+            return f"{name} ({tier_name})"
+
         winner_rank = winner.rank_tier_number or 1
+        winner_label = format_rank_label(winner.trainer_name, winner_rank)
+        opponent_label_with_rank = format_rank_label(opponent_label, opponent_rank or 1)
         points_awarded = self._calculate_point_reward(winner_rank, opponent_rank, opponent_is_player)
         if points_awarded == 0:
             return None
@@ -625,11 +631,13 @@ class RankManager:
             penalty = max(5, points_awarded // 2)
             old_loser_points = getattr(loser, "ladder_points", 0) or 0
             new_loser_points = self._update_points(loser, -penalty)
-            loser_summary = f"{loser.trainer_name}: {old_loser_points} → {new_loser_points} (Δ −{penalty})"
+            loser_rank = getattr(loser, "rank_tier_number", None) or 1
+            loser_label = format_rank_label(loser.trainer_name, loser_rank)
+            loser_summary = f"{loser_label}: {old_loser_points} → {new_loser_points} (Δ −{penalty})"
 
         result = {
             "title": "🏆 Challenger Points Updated",
-            "description": f"{winner.trainer_name} defeated {opponent_label} and earned Challenger points.",
+            "description": f"{winner_label} defeated {opponent_label_with_rank} and earned Challenger points.",
             "fields": [
                 {"name": "Points", "value": "\n".join(summary_lines), "inline": False}
             ],
@@ -647,8 +655,14 @@ class RankManager:
         loser: Optional[Any],
         opponent_label: str,
     ) -> Optional[Dict[str, Any]]:
+        def format_rank_label(name: str, tier_number: int) -> str:
+            tier_name = get_rank_tier_definition(tier_number)["name"]
+            return f"{name} ({tier_name})"
+
         current_tier = winner.rank_tier_number or 1
         target_tier = min(8, current_tier + 1)
+        winner_label = format_rank_label(winner.trainer_name, current_tier)
+        opponent_label_with_rank = format_rank_label(opponent_label, match.tier)
 
         promotion_embed_lines = []
         pending = False
@@ -670,11 +684,13 @@ class RankManager:
             old_points = getattr(loser, "ladder_points", 0) or 0
             new_points = self._update_points(loser, -(old_points // 2))
             self._consume_ticket(loser)
-            loser_text = f"{loser.trainer_name}: {old_points} → {new_points} (lost promotion ticket)"
+            loser_rank = getattr(loser, "rank_tier_number", None) or 1
+            loser_label = format_rank_label(loser.trainer_name, loser_rank)
+            loser_text = f"{loser_label}: {old_points} → {new_points} (lost promotion ticket)"
 
         result = {
             "title": "🎟️ Promotion Match Resolved",
-            "description": f"{winner.trainer_name} won their promotion match against {opponent_label}!",
+            "description": f"{winner_label} won their promotion match against {opponent_label_with_rank}!",
             "fields": [
                 {
                     "name": "Rank Status",

@@ -1,4 +1,5 @@
 import asyncio
+import re
 import discord
 from discord.ext import commands
 from pathlib import Path
@@ -12,7 +13,7 @@ from battle_themes import get_random_npc_theme, get_ranked_npc_theme, get_raid_t
 from battle_music_ui import (
     MusicOptInView, MusicQueueView,
     create_music_opt_in_embed, create_queue_status_embed,
-    create_music_starting_embed, create_victory_music_embed
+    create_music_starting_embed
 )
 from capture import simulate_throw, guaranteed_capture
 from learnset_database import LearnsetDatabase
@@ -256,14 +257,6 @@ class BattleCog(commands.Cog):
             return
 
         await self.music_manager.play_victory_music()
-
-        # Optionally send a victory music notification
-        if interaction:
-            victory_embed = create_victory_music_embed(winner_name)
-            try:
-                await interaction.followup.send(embed=victory_embed, ephemeral=True)
-            except:
-                pass
 
     async def _cleanup_battle_music(self, battle_id: str):
         """Clean up music session when battle ends or is cancelled"""
@@ -1161,7 +1154,15 @@ class BattleCog(commands.Cog):
             action_msgs, faint_msgs = self._split_faint_messages(messages)
             embeds.append(self._build_action_embed(action_msgs, title="Turn Result"))
             if faint_msgs:
-                embeds.append(self._build_action_embed(faint_msgs, title="Pokémon Fainted", color=discord.Color.red()))
+                fainted_species = self._extract_fainted_species(faint_msgs)
+                embeds.append(
+                    self._build_action_embed(
+                        faint_msgs,
+                        title="Pokémon Fainted",
+                        color=discord.Color.red(),
+                        species_name=fainted_species
+                    )
+                )
             return [emb for emb in embeds if emb]
 
         for event in events:
@@ -1175,15 +1176,21 @@ class BattleCog(commands.Cog):
                 else:
                     actor = event.get("actor")
                     actor_name = self._format_pokemon_name(actor, include_level=False) if actor else "Action"
-                    title = f"{actor_name}'s Action" if actor else "Action"
+                    title = f"{actor_name}'s Turn" if actor else "Turn"
                     color = discord.Color.orange()
 
-                embed = self._build_action_embed(action_msgs, title=title, color=color)
+                embed = self._build_action_embed(action_msgs, title=title, color=color, pokemon=event.get("actor"))
                 if embed:
                     embeds.append(embed)
 
             if faint_msgs:
-                faint_embed = self._build_action_embed(faint_msgs, title="Pokémon Fainted", color=discord.Color.red())
+                fainted_species = self._extract_fainted_species(faint_msgs)
+                faint_embed = self._build_action_embed(
+                    faint_msgs,
+                    title="Pokémon Fainted",
+                    color=discord.Color.red(),
+                    species_name=fainted_species
+                )
                 if faint_embed:
                     embeds.append(faint_embed)
 
@@ -1194,13 +1201,26 @@ class BattleCog(commands.Cog):
             if fallback:
                 embeds.append(fallback)
             if faint_msgs:
-                faint_fallback = self._build_action_embed(faint_msgs, title="Pokémon Fainted", color=discord.Color.red())
+                fainted_species = self._extract_fainted_species(faint_msgs)
+                faint_fallback = self._build_action_embed(
+                    faint_msgs,
+                    title="Pokémon Fainted",
+                    color=discord.Color.red(),
+                    species_name=fainted_species
+                )
                 if faint_fallback:
                     embeds.append(faint_fallback)
 
         return embeds
 
-    def _build_action_embed(self, messages: list[str], title: str, color: Optional[discord.Color] = None) -> Optional[discord.Embed]:
+    def _build_action_embed(
+        self,
+        messages: list[str],
+        title: str,
+        color: Optional[discord.Color] = None,
+        pokemon=None,
+        species_name: Optional[str] = None,
+    ) -> Optional[discord.Embed]:
         if not messages:
             return None
         spaced = []
@@ -1212,7 +1232,46 @@ class BattleCog(commands.Cog):
         if spaced and spaced[-1] == "":
             spaced.pop()
         desc = "\n".join(spaced) if spaced else "The turn resolves."
-        return discord.Embed(title=title, description=desc, color=color or discord.Color.orange())
+        embed = discord.Embed(title=title, description=desc, color=color or discord.Color.orange())
+        sprite_url = self._get_action_sprite_url(pokemon=pokemon, species_name=species_name)
+        if sprite_url:
+            embed.set_thumbnail(url=sprite_url)
+        return embed
+
+    def _get_action_sprite_url(self, pokemon=None, species_name: Optional[str] = None) -> Optional[str]:
+        if pokemon:
+            sprite_url = PokemonSpriteHelper.get_sprite(
+                getattr(pokemon, "species_name", None),
+                getattr(pokemon, "species_dex_number", None),
+                style='animated',
+                gender=getattr(pokemon, 'gender', None),
+                shiny=getattr(pokemon, 'is_shiny', False),
+                use_fallback=False
+            )
+            return sprite_url
+        if species_name:
+            return PokemonSpriteHelper.get_sprite(
+                species_name,
+                None,
+                style='animated',
+                shiny=False,
+                use_fallback=False
+            )
+        return None
+
+    def _extract_fainted_species(self, messages: list[str]) -> Optional[str]:
+        for msg in messages:
+            if not msg:
+                continue
+            match = re.search(r"(.+?) fainted!", str(msg), flags=re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if name.lower().startswith("the wild "):
+                    name = name[9:]
+                if name.lower() in {"the pokémon", "the pokemon"}:
+                    return None
+                return name
+        return None
 
     def _build_switch_embed(self, messages: list[str], title: str = "Switch", color: Optional[discord.Color] = None, pokemon=None):
         if not messages:
@@ -1339,10 +1398,10 @@ class BattleCog(commands.Cog):
         elif result == 'opponent':
             winner_name, loser_name = opponent_name, trainer_name
         else:
-            desc = "🏆 Battle Over\n\nIt's a draw!"
+            desc = "It's a draw!"
             await self._safe_followup_send(
                 interaction,
-                embed=discord.Embed(title='Battle Over', description=desc, color=discord.Color.gold())
+                embed=discord.Embed(title='The Battle Has Been Decided!', description=desc, color=discord.Color.gold())
             )
             self.battle_engine.end_battle(battle.battle_id)
             self._unregister_battle(battle)
@@ -1377,11 +1436,11 @@ class BattleCog(commands.Cog):
                     f"The Dreamlites surge, and the {raid_name} continues to rampage…\n\n"
                     "You Lose."
                 )
-                title = 'Battle Over'
+                title = 'The Battle Has Been Decided!'
                 color = discord.Color.red()
         else:
-            desc = f"🏆 Battle Over\n\nAll of {loser_name}'s Pokémon have fainted! {winner_name} wins!"
-            title = 'Battle Over'
+            desc = f"All of {loser_name}'s Pokémon have fainted! {winner_name} wins!"
+            title = 'The Battle Has Been Decided!'
             color = discord.Color.gold() if result == 'trainer' else discord.Color.red()
 
         # Play victory music if enabled
@@ -1398,12 +1457,7 @@ class BattleCog(commands.Cog):
         if result == 'trainer':
             exp_embed = await self._create_exp_embed(battle, interaction)
         if exp_embed:
-            # Send exp embed as ephemeral to reduce clutter
-            try:
-                await interaction.followup.send(embed=exp_embed, ephemeral=True)
-            except Exception:
-                # Fallback to channel send if ephemeral fails
-                await self._safe_followup_send(interaction, embed=exp_embed)
+            await self._safe_followup_send(interaction, embed=exp_embed)
 
         ranked_embed = self._build_ranked_result_embed(battle)
         if ranked_embed:
@@ -1424,7 +1478,7 @@ class BattleCog(commands.Cog):
 
         self.battle_engine.end_battle(battle.battle_id)
         self._unregister_battle(battle)
-        # Note: Don't cleanup music here - let it play victory theme for 1 minute
+        # Note: Don't cleanup music here - let it play the victory theme naturally
 
         if getattr(battle, 'battle_type', None) == BattleType.WILD:
             await self.send_return_to_encounter_prompt(interaction, battle.trainer.battler_id)
