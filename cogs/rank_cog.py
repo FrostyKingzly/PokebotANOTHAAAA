@@ -3,7 +3,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from rank_manager import (
     GIMMICK_OPTIONS,
@@ -25,6 +25,30 @@ class RankCog(commands.Cog):
 
     def _get_manager(self):
         return getattr(self.bot, "rank_manager", None)
+
+    def _get_ticketed_ranked_npcs(self) -> List[Dict[str, Any]]:
+        location_manager = getattr(self.bot, "location_manager", None)
+        if not location_manager:
+            return []
+        locations = location_manager.get_all_locations() or {}
+        ticketed: List[Dict[str, Any]] = []
+        for location in locations.values():
+            for npc in location.get("ranked_npc_trainers", []) or []:
+                if npc.get("has_promotion_ticket"):
+                    ticketed.append(npc)
+        return ticketed
+
+    async def _autocomplete_promotion_npc_name(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> List[app_commands.Choice[str]]:
+        npcs = self._get_ticketed_ranked_npcs()
+        names = sorted({npc.get("name") for npc in npcs if npc.get("name")})
+        if current:
+            current_lower = current.lower()
+            names = [name for name in names if current_lower in name.lower()]
+        return [app_commands.Choice(name=name, value=name) for name in names[:25]]
 
     # ------------------------------------------------------------------
     # Public commands
@@ -339,6 +363,14 @@ class RankCog(commands.Cog):
 
                     embed.set_footer(text="Place your bets and cheer them on!")
                     await channel.send(embed=embed)
+
+    @rank_schedule.autocomplete("npc_name")
+    async def rank_schedule_npc_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> List[app_commands.Choice[str]]:
+        return await self._autocomplete_promotion_npc_name(interaction, current)
 
 
 
