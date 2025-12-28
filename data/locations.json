@@ -104,8 +104,8 @@
     ],
     "npc_trainers": [
       {
-        "name": "Pok\u00e9 Maniac Lochs",
-        "class": "Pok\u00e9 Maniac",
+        "name": "Poké Maniac Lochs",
+        "class": "Poké Maniac",
         "prize_money": 6000,
         "party": [
           {
@@ -474,7 +474,8 @@
               "wish"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Circuit Ace Rina",
@@ -512,7 +513,8 @@
               "nasty_plot"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Backpacker Lyn",
@@ -549,7 +551,8 @@
               "tackle"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Youngster Caleb",
@@ -574,7 +577,8 @@
               "tackle"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Schoolgirl Mina",
@@ -612,7 +616,8 @@
               "tackle"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Bug Catcher Rowan",
@@ -654,7 +659,8 @@
               "growl"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Lass Tori",
@@ -702,7 +708,8 @@
               "double_team"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Hiker Brent",
@@ -746,7 +753,8 @@
               "growl"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Rising Star Elio",
@@ -804,7 +812,8 @@
               "bite"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Ace Trainer Naomi",
@@ -862,7 +871,8 @@
               "howl"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Veteran Kai",
@@ -928,7 +938,8 @@
               "growl"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       }
     ]
   },
@@ -978,7 +989,7 @@
     ],
     "npc_trainers": [
       {
-        "name": "Art Master Monka\u00e9",
+        "name": "Art Master Monkaé",
         "class": "Art Master",
         "prize_money": 6200,
         "party": [
@@ -1042,7 +1053,8 @@
               "thunder_wave"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       },
       {
         "name": "Master Painter Jules",
@@ -1080,13 +1092,14 @@
               "toxic"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       }
     ]
   },
   "wild_area_forest_meadow_path": {
-    "name": "Wild Area \u03b1 - Forest: Meadow Path",
-    "description": "A peaceful meadow at the edge of the forest, filled with wildflowers and gentle Pok\u00e9mon. The perfect starting point for new trainers to begin their wild area adventures.",
+    "name": "Wild Area α - Forest: Meadow Path",
+    "description": "A peaceful meadow at the edge of the forest, filled with wildflowers and gentle Pokémon. The perfect starting point for new trainers to begin their wild area adventures.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -1169,14 +1182,14 @@
       },
       {
         "species_dex_number": 32,
-        "species_name": "Nidoran\u2642",
+        "species_name": "Nidoran♂",
         "min_level": 4,
         "max_level": 8,
         "weight": 2
       },
       {
         "species_dex_number": 29,
-        "species_name": "Nidoran\u2640",
+        "species_name": "Nidoran♀",
         "min_level": 4,
         "max_level": 8,
         "weight": 2
@@ -1255,8 +1268,8 @@
     "npc_trainers": []
   },
   "wild_area_canyon_redstone_canyon": {
-    "name": "Wild Area \u03b2 - Canyon: Redstone Canyon",
-    "description": "A rugged canyon carved by ancient rivers, with red stone cliffs and rocky outcrops. Rock and Ground-type Pok\u00e9mon make their homes in the caves and ledges throughout the area.",
+    "name": "Wild Area β - Canyon: Redstone Canyon",
+    "description": "A rugged canyon carved by ancient rivers, with red stone cliffs and rocky outcrops. Rock and Ground-type Pokémon make their homes in the caves and ledges throughout the area.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -1404,8 +1417,8 @@
     "npc_trainers": []
   },
   "wild_area_desert_sunbaked_path": {
-    "name": "Wild Area \u03b3 - Desert: Sandy Crossing",
-    "description": "The outskirts of a vast desert, where the ground begins to turn sandy under the scorching sun. Hardy Pok\u00e9mon adapted to heat and arid conditions can be found here.",
+    "name": "Wild Area γ - Desert: Sandy Crossing",
+    "description": "The outskirts of a vast desert, where the ground begins to turn sandy under the scorching sun. Hardy Pokémon adapted to heat and arid conditions can be found here.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -1569,8 +1582,8 @@
     "npc_trainers": []
   },
   "wild_area_tundra_snowdust_crossing": {
-    "name": "Wild Area \u03b4 - Tundra: Snowdust Crossing",
-    "description": "A frozen path through the tundra where snow falls year-round. Ice and hardy Pok\u00e9mon brave the cold winds and bitter temperatures of this unforgiving landscape.",
+    "name": "Wild Area δ - Tundra: Snowdust Crossing",
+    "description": "A frozen path through the tundra where snow falls year-round. Ice and hardy Pokémon brave the cold winds and bitter temperatures of this unforgiving landscape.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -1956,7 +1969,7 @@
     "shops": [
       {
         "id": "pokemart",
-        "name": "Pok\u00e9Mart"
+        "name": "PokéMart"
       },
       {
         "id": "berry_stall",
@@ -2771,7 +2784,8 @@
               "confuse_ray"
             ]
           }
-        ]
+        ],
+        "has_promotion_ticket": true
       }
     ]
   },
