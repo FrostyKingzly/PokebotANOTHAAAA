@@ -92,7 +92,7 @@ class PokemonSpriteHelper:
             if exc.code == 404:
                 return False
 
-            if exc.code != 405:
+            if exc.code not in {403, 405}:
                 return True
 
             # Some hosts reject HEAD requests; retry with GET.
