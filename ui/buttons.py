@@ -122,7 +122,8 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
     pokemon.nickname = poke_data.get('nickname')
     pokemon.held_item = poke_data.get('held_item')
     pokemon.status_condition = poke_data.get('status_condition')
-    pokemon.friendship = poke_data.get('friendship', 70)
+    pokemon.friendship = poke_data.get('friendship', 20)
+    pokemon.consecutive_faints = poke_data.get('consecutive_faints', 0)
 
     # Additional attributes that might be in database
     if 'exp' in poke_data:

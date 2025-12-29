@@ -373,7 +373,7 @@ class EnhancedDamageCalculator:
             return 20
 
         if move_id in {'return', 'frustration'}:
-            friendship = getattr(attacker, 'friendship', 70)
+            friendship = getattr(attacker, 'friendship', 20)
             if move_id == 'return':
                 return min(102, int(friendship * 2 / 5))
             return min(102, int((255 - friendship) * 2 / 5))

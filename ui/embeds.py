@@ -989,7 +989,7 @@ class EmbedBuilder:
         embed.add_field(name="🎯 Moves", value=moves_text, inline=False)
 
         # Bond & Friendship
-        bond_text = f"**Friendship:** {pokemon.get('friendship', 70)}/255\n"
+        bond_text = f"**Friendship:** {pokemon.get('friendship', 20)}/255\n"
         bond_text += f"**Bond Level:** {pokemon.get('bond_level', 0)}"
         
         embed.add_field(name="🤝 Bond", value=bond_text, inline=True)

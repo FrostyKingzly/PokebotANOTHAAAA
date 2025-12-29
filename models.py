@@ -117,8 +117,9 @@ class Pokemon:
         self.status_condition = None
         
         # Social
-        self.friendship = 70
+        self.friendship = 20
         self.bond_level = 0
+        self.consecutive_faints = 0
 
         # Capture metadata
         self.pokeball = pokeball or 'poke_ball'
@@ -284,6 +285,7 @@ class Pokemon:
             'pokeball': self.pokeball,
             'friendship': self.friendship,
             'bond_level': self.bond_level,
+            'consecutive_faints': self.consecutive_faints,
             'stored_exp': self.stored_exp,
             'in_party': 1 if self.in_party else 0,
             'party_position': self.party_position,

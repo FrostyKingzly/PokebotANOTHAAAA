@@ -861,6 +861,80 @@ Modest Nature
         )
         
         await interaction.response.send_message(embed=embed)
+
+    # ============================================================
+    # GIVE FRIENDSHIP
+    # ============================================================
+    @app_commands.command(
+        name="give_friendship",
+        description="[ADMIN] Add friendship points to tagged players' party Pokemon"
+    )
+    @app_commands.describe(
+        users="Players to reward (mention them)",
+        amount="Friendship points to add to each party Pokemon"
+    )
+    @app_commands.check(is_admin)
+    async def give_friendship(
+        self,
+        interaction: discord.Interaction,
+        users: str,
+        amount: int
+    ):
+        """Add friendship to all party Pokemon for the tagged players."""
+        if amount <= 0:
+            await interaction.response.send_message(
+                "❌ Amount must be positive!",
+                ephemeral=True,
+            )
+            return
+
+        user_ids = []
+        for mention in users.split():
+            match = re.match(r'<@!?(\d+)>', mention)
+            if match:
+                user_ids.append(int(match.group(1)))
+
+        if not user_ids:
+            await interaction.response.send_message(
+                "❌ No valid user mentions found! Mention users with @username.",
+                ephemeral=True,
+            )
+            return
+
+        results = []
+        valid_mentions = []
+        for user_id in user_ids:
+            mention = f"<@{user_id}>"
+            if not self.bot.player_manager.player_exists(user_id):
+                results.append(f"❌ {mention} hasn't registered yet!")
+                continue
+
+            updated = self.bot.player_manager.adjust_party_friendship(
+                discord_user_id=user_id,
+                amount=amount,
+            )
+            if updated == 0:
+                results.append(f"⚠️ {mention} has no party Pokémon to update.")
+                continue
+
+            valid_mentions.append(mention)
+
+        if not valid_mentions:
+            await interaction.response.send_message(
+                "\n".join(results) if results else "❌ No eligible players found.",
+                ephemeral=True,
+            )
+            return
+
+        names_text = ", ".join(valid_mentions)
+        response_lines = [
+            f"{names_text} have come to better understand their pokemon",
+            f"+{amount} friendship",
+        ]
+        if results:
+            response_lines.append("\n".join(results))
+
+        await interaction.response.send_message("\n".join(response_lines))
     
     # ============================================================
     # VIEW PLAYER INFO (ADMIN)
