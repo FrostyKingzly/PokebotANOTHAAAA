@@ -18,7 +18,7 @@ OMNI_RING_IMAGE_URL = (
 RANK_TIER_DEFINITIONS: List[Dict[str, Any]] = [
     {
         "tier": 1,
-        "name": "Qualifiers",
+        "name": "Qualifier",
         "group": "Qualifiers",
         "ticket_threshold": 100,
         "point_cap": 200,
@@ -368,6 +368,12 @@ class RankManager:
                 "to join and unlock ranked battles."
             )
 
+        if getattr(trainer, "rank_pending_tier", None):
+            return (
+                "⏳ Awaiting promotion. You already secured your next rank and must wait for the league "
+                "to unlock it before battling ranked again."
+            )
+
         if getattr(trainer, "has_promotion_ticket", False):
             match = self._find_match_for_pair(trainer.discord_user_id)
             if match is None:
@@ -507,24 +513,25 @@ class RankManager:
         started = self._state.get("twilight_started", False)
         if invite_active:
             participant = self.is_twilight_participant(trainer.discord_user_id)
-            body_lines = [
-                "The Twilight Summit is about to begin.",
-                "Please sign up here to participate.",
-            ]
-            if started:
-                body_lines.append("Ranked battles are now live for registered participants.")
+            if not participant:
+                body_lines = [
+                    "The Twilight Summit is about to begin.",
+                    "Please sign up here to participate.",
+                ]
+                if started:
+                    body_lines.append("Ranked battles are now live for registered participants.")
 
-            alerts.append(
-                {
-                    "id": "twilight_summit_invite",
-                    "title": "Twilight Summit Invitation",
-                    "summary": "Join the Summit to unlock your ranked profile.",
-                    "details": "\n".join(body_lines),
-                    "action": "sign_up",
-                    "status": "joined" if participant else "pending",
-                    "cta_label": "Sign Up" if not participant else "Already Signed",
-                }
-            )
+                alerts.append(
+                    {
+                        "id": "twilight_summit_invite",
+                        "title": "Twilight Summit Invitation",
+                        "summary": "Join the Summit to unlock your ranked profile.",
+                        "details": "\n".join(body_lines),
+                        "action": "sign_up",
+                        "status": "pending",
+                        "cta_label": "Sign Up",
+                    }
+                )
 
         omni_active = self.omni_distribution_active()
         tier = trainer.rank_tier_number or 1
@@ -537,31 +544,25 @@ class RankManager:
                 has_ring = True
 
             remaining = max(0, slots - len(owned))
-            if has_ring:
-                summary = "Choose your Omni Ring power."
-                details_lines = [
-                    "Your Omni Ring is now ready for use! Please select which power to obtain first.",
-                ]
-                status = "pending"
-            else:
+            if remaining > 0:
                 summary = "Choose your Omni Ring power."
                 details_lines = [
                     "Your Omni Ring is now ready for use! Please select which power to obtain first.",
                 ]
                 status = "pending"
 
-            alerts.append(
-                {
-                    "id": "omni_ring_setup",
-                    "title": "Omni Ring Unlocked",
-                    "summary": summary,
-                    "details": "\n".join(details_lines),
-                    "action": "configure_omni",
-                    "status": status,
-                    "cta_label": "Choose Now",
-                    "image": OMNI_RING_IMAGE_URL,
-                }
-            )
+                alerts.append(
+                    {
+                        "id": "omni_ring_setup",
+                        "title": "Omni Ring Unlocked",
+                        "summary": summary,
+                        "details": "\n".join(details_lines),
+                        "action": "configure_omni",
+                        "status": status,
+                        "cta_label": "Choose Now",
+                        "image": OMNI_RING_IMAGE_URL,
+                    }
+                )
 
         return alerts
 
@@ -747,8 +748,13 @@ class RankManager:
         trainer.ticket_tier = None
 
     def _set_pending_promotion(self, trainer, target_tier: int):
-        self.player_manager.update_player(trainer.discord_user_id, rank_pending_tier=target_tier)
+        self.player_manager.update_player(
+            trainer.discord_user_id,
+            rank_pending_tier=target_tier,
+            ladder_points=0,
+        )
         trainer.rank_pending_tier = target_tier
+        trainer.ladder_points = 0
 
     def _apply_rank_promotion(self, trainer, new_tier: int):
         definition = get_rank_tier_definition(new_tier)

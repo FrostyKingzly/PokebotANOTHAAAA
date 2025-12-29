@@ -210,15 +210,24 @@ class EmbedBuilder:
         Uses ladder_points out of 100 for the visual, and notes if a ticket
         has already been earned.
         """
+        if getattr(trainer, "rank_pending_tier", None):
+            return "Awaiting Promotion"
         tier = trainer.rank_tier_number or 1
         definition = get_rank_tier_definition(tier)
-        max_points = definition.get('ticket_threshold') or definition.get('point_cap') or 100
+        ticket_threshold = definition.get('ticket_threshold')
+        point_cap = definition.get('point_cap')
+        if ticket_threshold and ticket_threshold > 0:
+            max_points = ticket_threshold
+        elif point_cap and point_cap > 0:
+            max_points = point_cap
+        else:
+            max_points = 0
         raw_points = getattr(trainer, "ladder_points", 0) or 0
         points = max(0, int(raw_points))
         clamped = min(points, max_points)
 
         if max_points <= 0:
-            return "No progress data"
+            return f"{points} pts (No cap)"
 
         filled_segments = int(round((clamped / max_points) * segments))
         filled_segments = max(0, min(segments, filled_segments))
@@ -354,7 +363,12 @@ class EmbedBuilder:
 
         # Ranked promotion state
         status_text = None
-        if rank_manager is not None and getattr(trainer, "has_promotion_ticket", False):
+        if rank_manager is not None and getattr(trainer, "rank_pending_tier", None):
+            status_text = (
+                "⏳ **Awaiting Promotion**\n"
+                "Your promotion is secured. Ranked battles are locked until the league unlocks the next tier."
+            )
+        elif rank_manager is not None and getattr(trainer, "has_promotion_ticket", False):
             try:
                 match = rank_manager.get_pending_match_for_player(trainer.discord_user_id)
             except Exception:

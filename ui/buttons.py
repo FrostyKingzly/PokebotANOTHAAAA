@@ -139,9 +139,16 @@ def reconstruct_pokemon_from_data(poke_data: dict, species_data: dict):
     return pokemon
 
 
-def consume_ranked_stamina(player_manager, participants: List[Tuple[int, str]]) -> Tuple[bool, Optional[str]]:
+def consume_ranked_stamina(
+    player_manager,
+    participants: List[Tuple[int, str]],
+    *,
+    is_promotion_match: bool = False,
+) -> Tuple[bool, Optional[str]]:
     """Consume 1 stamina from each participant in a ranked battle."""
     if not player_manager:
+        return True, None
+    if is_promotion_match:
         return True, None
 
     for user_id, name in participants:
@@ -5862,7 +5869,8 @@ class PromotionMatchView(View):
 
         ok, message = consume_ranked_stamina(
             player_manager,
-            [(interaction.user.id, interaction.user.display_name)]
+            [(interaction.user.id, interaction.user.display_name)],
+            is_promotion_match=bool(extra_context.get("match_id")),
         )
         if not ok:
             await interaction.response.send_message(message, ephemeral=True)
@@ -6489,7 +6497,8 @@ class PvPChallengeResponseView(View):
             player_manager = getattr(self.bot, 'player_manager', None)
             ok, message = consume_ranked_stamina(
                 player_manager,
-                [(self.challenger_id, self.challenger_name), (self.opponent_id, self.opponent_name)]
+                [(self.challenger_id, self.challenger_name), (self.opponent_id, self.opponent_name)],
+                is_promotion_match=bool((self.pending_rank_context or {}).get("match_id")),
             )
             if not ok:
                 return message
@@ -7219,7 +7228,8 @@ class NpcTrainerSelectView(View):
             player_manager = getattr(self.bot, 'player_manager', None)
             ok, message = consume_ranked_stamina(
                 player_manager,
-                [(interaction.user.id, interaction.user.display_name)]
+                [(interaction.user.id, interaction.user.display_name)],
+                is_promotion_match=bool(extra_context.get("match_id")),
             )
             if not ok:
                 await interaction.response.send_message(message, ephemeral=True)
