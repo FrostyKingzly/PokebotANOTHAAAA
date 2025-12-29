@@ -250,6 +250,18 @@ class RankCog(commands.Cog):
             )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    @app_commands.command(name="rank_cancel", description="[ADMIN] Cancel a promotion match")
+    @app_commands.check(is_admin)
+    @app_commands.describe(match_id="Promotion match ID to cancel")
+    async def rank_cancel(self, interaction: discord.Interaction, match_id: str):
+        manager = self._get_manager()
+        if not manager:
+            await interaction.response.send_message("Rank system offline.", ephemeral=True)
+            return
+        ok, message = manager.cancel_match(match_id, cancelled_by=interaction.user.id)
+        prefix = "✅" if ok else "❌"
+        await interaction.response.send_message(f"{prefix} {message}", ephemeral=True)
+
     @app_commands.command(name="rank_schedule", description="[ADMIN] Schedule a promotion match")
     @app_commands.check(is_admin)
     @app_commands.describe(

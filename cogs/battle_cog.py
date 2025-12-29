@@ -1695,6 +1695,32 @@ class BattleActionView(discord.ui.View):
             )
         else:
             # Singles battle
+            battler = _get_battler_by_id(battle, battler_id)
+            active_pokemon = None
+            if battler:
+                active_list = battler.get_active_pokemon()
+                active_pokemon = active_list[0] if active_list else None
+            charge_state = getattr(active_pokemon, "_charge_state", None) if active_pokemon else None
+            if charge_state and charge_state.get("move_id"):
+                action = BattleAction(
+                    action_type='move',
+                    battler_id=battler_id,
+                    move_id=charge_state["move_id"],
+                    target_position=0,
+                )
+                res = self.engine.register_action(self.battle_id, battler_id, action)
+                cog = self.cog or interaction.client.get_cog("BattleCog")
+                if not res.get("ready_to_resolve"):
+                    await interaction.response.send_message(
+                        f"{active_pokemon.species_name} is charging and will strike next!",
+                        ephemeral=True,
+                    )
+                    return
+                if res.get("ready_to_resolve") and cog:
+                    turn = await self.engine.process_turn(self.battle_id)
+                    await cog._send_turn_resolution(interaction, turn)
+                await cog._handle_post_turn(interaction, self.battle_id)
+                return
             await interaction.response.send_message(
                 "Choose a move:",
                 view=MoveSelectView(battle, battler_id, self.engine, controller_id=interaction.user.id),

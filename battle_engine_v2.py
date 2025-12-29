@@ -1960,6 +1960,8 @@ class BattleEngine:
         move_id = (move_id or '').lower()
         if move_id == 'dig':
             return 'underground'
+        if move_id == 'fly':
+            return 'air'
         return None
 
     def _move_hits_semi_invulnerable(self, move_id: str, state: str) -> bool:
@@ -1967,6 +1969,8 @@ class BattleEngine:
         move_id = (move_id or '').lower()
         if state == 'underground':
             return move_id in {'earthquake', 'magnitude', 'fissure'}
+        if state == 'air':
+            return move_id in {'gust', 'thunder', 'hurricane', 'twister', 'smack_down', 'thousand_arrows'}
         return False
 
     def _is_target_semi_invulnerable(self, target, move_data: Dict) -> bool:
@@ -1975,6 +1979,60 @@ class BattleEngine:
         if not state:
             return False
         return not self._move_hits_semi_invulnerable(move_data.get('id'), state)
+
+    def _semi_invulnerable_message(self, target) -> str:
+        state = getattr(target, '_semi_invulnerable', None)
+        if state == 'underground':
+            return f"{target.species_name} is hiding underground!"
+        if state == 'air':
+            return f"{target.species_name} is flying high!"
+        return f"{target.species_name} can't be hit right now!"
+
+    def _get_charge_message(self, attacker, move_data: Dict) -> Optional[str]:
+        move_id = (move_data.get('id') or '').lower()
+        if move_id == 'dig':
+            return f"{attacker.species_name} began to dig underground!"
+        if move_id == 'fly':
+            return f"{attacker.species_name} flew up high!"
+        return None
+
+    def _roll_multihit_count(self, move_data: Dict) -> int:
+        multihit = move_data.get('multihit')
+        if isinstance(multihit, list) and len(multihit) == 2:
+            return random.randint(multihit[0], multihit[1])
+        if isinstance(multihit, int):
+            return multihit
+        return 1
+
+    def _build_move_message(self, attacker, move_data: Dict, defender, target_type: str) -> str:
+        if target_type in ['self', 'entire_field', 'user_field', 'enemy_field', 'all_allies']:
+            return f"{attacker.species_name} used {move_data['name']}!"
+        return f"{attacker.species_name} used {move_data['name']} on {defender.species_name}!"
+
+    def _calculate_damage_without_accuracy(self, attacker, defender, move_data: Dict, battle: BattleState) -> Tuple[int, bool, float, List[str]]:
+        if move_data.get('category') == 'status':
+            effects = self.calculator.effect_handler.apply_move_effects(
+                move_data, attacker, defender, 0, battle
+            )
+            return 0, False, 1.0, effects
+
+        damage, is_crit, effectiveness = self.calculator._calculate_base_damage(
+            attacker,
+            defender,
+            move_data,
+            False,
+            battle.weather,
+            battle.terrain
+        )
+
+        if effectiveness == 0:
+            return 0, is_crit, effectiveness, []
+
+        damage_dealt = min(damage, defender.current_hp)
+        effects = self.calculator.effect_handler.apply_move_effects(
+            move_data, attacker, defender, damage_dealt, battle
+        )
+        return damage_dealt, is_crit, effectiveness, effects
 
     async def _execute_move(self, battle: BattleState, action: BattleAction) -> Dict:
         """Execute a move action - now supports spread moves hitting multiple targets"""
@@ -2043,7 +2101,8 @@ class BattleEngine:
                     if move['move_id'] == action.move_id:
                         move['pp'] = max(0, move['pp'] - 1)
                         break
-                messages.append(f"{attacker.species_name} began charging {move_data['name']}!")
+                charge_message = self._get_charge_message(attacker, move_data)
+                messages.append(charge_message or f"{attacker.species_name} began charging {move_data['name']}!")
                 self._apply_charge_start_effects(attacker, move_data, messages)
                 attacker._charge_state = {'move_id': action.move_id, 'pp_paid': True}
                 invulnerable_state = self._get_semi_invulnerable_state(move_data.get('id'))
@@ -2072,6 +2131,19 @@ class BattleEngine:
         target_type = move_data.get('target', 'single')
         targets = self._determine_move_targets(battle, action, move_data)
 
+        if targets and target_type == 'single':
+            _, target = targets[0]
+            if self._is_target_semi_invulnerable(target, move_data):
+                if not skip_pp_deduct:
+                    for move in attacker.moves:
+                        if move['move_id'] == action.move_id:
+                            move['pp'] = max(0, move['pp'] - 1)
+                            break
+                messages.append(self._build_move_message(attacker, move_data, target, target_type))
+                messages.append(self._semi_invulnerable_message(target))
+                messages.append(f"{attacker.species_name}'s attack missed!")
+                return {"messages": messages}
+
         # Filter out fainted targets and redirect to valid targets if needed
         valid_targets = [(b, p) for b, p in targets if p.current_hp > 0]
 
@@ -2079,10 +2151,7 @@ class BattleEngine:
             filtered_targets = []
             for battler, target in valid_targets:
                 if self._is_target_semi_invulnerable(target, move_data):
-                    if getattr(target, '_semi_invulnerable', None) == 'underground':
-                        messages.append(f"{target.species_name} is hiding underground!")
-                    else:
-                        messages.append(f"{target.species_name} can't be hit right now!")
+                    messages.append(self._semi_invulnerable_message(target))
                 else:
                     filtered_targets.append((battler, target))
             valid_targets = filtered_targets
@@ -2196,6 +2265,120 @@ class BattleEngine:
                     move_msg = f"{attacker.species_name} used {move_data['name']}, but {defender.species_name} protected itself!"
                     return {"messages": [move_msg]}
 
+        if move_data.get('multihit') and move_data.get('category') in ['physical', 'special']:
+            hit_count = self._roll_multihit_count(move_data)
+            target_type = move_data.get('target', 'single')
+            messages.append(self._build_move_message(attacker, move_data, defender, target_type))
+
+            if ENHANCED_SYSTEMS_AVAILABLE and hasattr(self.calculator, '_check_accuracy'):
+                if not self.calculator._check_accuracy(move_data, attacker, defender, battle.weather):
+                    messages.append(f"{attacker.species_name}'s attack missed!")
+                    return {"messages": messages}
+
+            actual_hits = 0
+            for hit_index in range(1, hit_count + 1):
+                if ENHANCED_SYSTEMS_AVAILABLE:
+                    if hit_index == 1:
+                        damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
+                            attacker, defender, action.move_id,
+                            weather=battle.weather,
+                            terrain=battle.terrain,
+                            battle_state=battle
+                        )
+                    else:
+                        damage, is_crit, effectiveness, effect_msgs = self._calculate_damage_without_accuracy(
+                            attacker, defender, move_data, battle
+                        )
+                else:
+                    damage = 10
+                    is_crit = False
+                    effectiveness = 1.0
+                    effect_msgs = []
+
+                if effectiveness == 0:
+                    messages.append(f"It doesn't affect {defender.species_name}...")
+                    break
+
+                if self.held_item_manager:
+                    damage, held_msgs = self.held_item_manager.modify_damage(attacker, defender, move_data, damage)
+                    effect_msgs.extend(held_msgs)
+
+                damage = min(damage, defender.current_hp)
+
+                if (
+                    damage >= defender.current_hp
+                    and hasattr(defender, 'status_manager')
+                    and 'endure' in getattr(defender.status_manager, 'volatile_statuses', {})
+                ):
+                    if defender.current_hp > 1:
+                        damage = defender.current_hp - 1
+                        effect_msgs.append(f"{defender.species_name} endured the hit!")
+
+                if damage > 0:
+                    defender.current_hp = max(0, defender.current_hp - damage)
+                    defender.last_damage_taken = damage
+                    defender.last_damage_category = move_data.get('category')
+                    defender.last_damage_from = attacker
+                    if getattr(defender, 'bide_turns_remaining', 0):
+                        defender.bide_damage = getattr(defender, 'bide_damage', 0) + damage
+
+                if (
+                    ENHANCED_SYSTEMS_AVAILABLE
+                    and move_data.get('category') in ['physical', 'special']
+                    and attacker_battler != defender_battler
+                ):
+                    defender.rage_fist_hits_taken = getattr(defender, 'rage_fist_hits_taken', 0) + 1
+
+                if ENHANCED_SYSTEMS_AVAILABLE:
+                    exit_msg = self._maybe_queue_hp_switch(battle, defender_battler, defender)
+                    if exit_msg:
+                        messages.append(exit_msg)
+
+                crit_text = " It's a critical hit!" if is_crit else ""
+                effectiveness_text = ""
+                if effectiveness > 1:
+                    effectiveness_text = " It's super effective!"
+                elif effectiveness < 1 and effectiveness > 0:
+                    effectiveness_text = " It's not very effective..."
+
+                if damage > 0:
+                    messages.append(
+                        f"Hit {hit_index}: {defender.species_name} took {damage} damage!{crit_text}{effectiveness_text}"
+                    )
+                messages.extend(effect_msgs)
+
+                if self.held_item_manager:
+                    post_msgs = self.held_item_manager.apply_after_damage(attacker, move_data, damage)
+                    messages.extend(post_msgs)
+
+                if self.held_item_manager:
+                    reactive_msgs = self.held_item_manager.process_reactive_effects(
+                        defender, move_data, damage
+                    )
+                    messages.extend(reactive_msgs)
+
+                actual_hits += 1
+                if defender.current_hp <= 0:
+                    break
+
+            if actual_hits:
+                messages.append(f"It hit {actual_hits} time(s)!")
+
+            if self.ability_handler:
+                messages.extend(self.ability_handler.update_form_passives(defender))
+                messages.extend(self.ability_handler.update_form_passives(attacker))
+
+            if defender.current_hp <= 0:
+                if battle.battle_type == BattleType.WILD and defender_battler == battle.opponent:
+                    defender.current_hp = 1
+                    battle.wild_dazed = True
+                    battle.phase = 'DAZED'
+                    messages.append(f"The wild {defender.species_name} is dazed!")
+                else:
+                    messages.append(f"{defender.species_name} fainted!")
+
+            return {"messages": messages}
+
         # Calculate damage and apply effects
         if ENHANCED_SYSTEMS_AVAILABLE:
             damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
@@ -2255,13 +2438,7 @@ class BattleEngine:
         
         # Show who used the move and on whom (if single target)
         target_type = move_data.get('target', 'single')
-        if target_type in ['self', 'entire_field', 'user_field', 'enemy_field', 'all_allies']:
-            # Field effects or self-targeting moves don't need "on [target]"
-            move_msg = f"{attacker.species_name} used {move_data['name']}!"
-        else:
-            # Single target moves show who they targeted
-            move_msg = f"{attacker.species_name} used {move_data['name']} on {defender.species_name}!"
-        messages.append(move_msg)
+        messages.append(self._build_move_message(attacker, move_data, defender, target_type))
 
         # Show damage as a separate message
         if damage > 0:
