@@ -229,10 +229,9 @@ class PokemonSpriteHelper:
                         else PokemonSpriteHelper.POKEAPI_FRONT.format(id=dex_number)
                     )
 
-            sprite_urls = [animated_url, static_fallback]
+            sprite_urls = [animated_url, static_fallback, showdown_static]
             if pokeapi_fallback:
                 sprite_urls.append(pokeapi_fallback)
-            sprite_urls.append(showdown_static)
             available_urls = [url for url in sprite_urls if PokemonSpriteHelper._url_exists(url)]
 
             if available_urls:
