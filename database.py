@@ -880,6 +880,22 @@ class PlayerDatabase:
             return dict(row)
         return None
 
+    def get_trainer_by_name(self, trainer_name: str) -> Optional[Dict]:
+        """Get trainer by name (case-insensitive)."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT * FROM trainers WHERE LOWER(trainer_name) = LOWER(?) LIMIT 1",
+            (trainer_name,),
+        )
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return dict(row)
+        return None
+
     def trainer_exists(self, discord_user_id: int) -> bool:
         """Check if trainer exists"""
         return self.get_trainer(discord_user_id) is not None

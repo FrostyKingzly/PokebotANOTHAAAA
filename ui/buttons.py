@@ -28,6 +28,22 @@ def get_stat_display_name(stat_key: str) -> str:
     definition = SOCIAL_STAT_DEFINITIONS.get(stat_key)
     return definition.display_name if definition else stat_key.title()
 
+
+def format_cooldown(remaining_seconds: Optional[float]) -> str:
+    if not remaining_seconds:
+        return "a moment"
+    total_seconds = max(1, int(round(remaining_seconds)))
+    minutes, seconds = divmod(total_seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    parts = []
+    if hours:
+        parts.append(f"{hours}h")
+    if minutes:
+        parts.append(f"{minutes}m")
+    if seconds and not hours:
+        parts.append(f"{seconds}s")
+    return " ".join(parts) if parts else "a moment"
+
 try:
     from cogs.pokemon_management_cog import PokemonActionsView as ManagementPokemonActionsView
 except Exception:  # pragma: no cover - best effort import guard for runtime safety
@@ -5801,18 +5817,7 @@ class PromotionMatchView(View):
                     ephemeral=True,
                 )
                 return
-        if player_manager:
-            identifier = self.npc_data.get('id') or self.npc_data.get('name')
-            on_cooldown, remaining = player_manager.is_on_battle_cooldown(
-                interaction.user.id, 'npc_ranked', str(identifier)
-            )
-            if on_cooldown:
-                message = "⏳ You need to wait before rematching this trainer."
-                if remaining:
-                    hours = max(1, int(round(remaining / 3600)))
-                    message = f"⏳ You can rematch this trainer in about {hours} hour(s)."
-                await interaction.response.send_message(message, ephemeral=True)
-                return
+        # Promotion matches ignore rematch timers.
 
         if interaction.user.id in battle_cog.user_battles:
             await interaction.response.send_message(
@@ -6451,7 +6456,7 @@ class PvPChallengeResponseView(View):
                 format_label = 'doubles'
             extra_context: Dict[str, Any] = {}
             player_manager = getattr(self.bot, 'player_manager', None)
-            if player_manager:
+            if player_manager and not (self.pending_rank_context or {}).get("match_id"):
                 pairs = [
                     (self.challenger_id, self.opponent_id),
                     (self.opponent_id, self.challenger_id),
@@ -6464,8 +6469,7 @@ class PvPChallengeResponseView(View):
                         who = "You" if source == self.challenger_id else self.opponent_name
                         message = f"{who} recently battled this opponent in ranked play."
                         if remaining:
-                            hours = max(1, int(round(remaining / 3600)))
-                            message = f"{who} can rematch in about {hours} hour(s)."
+                            message = f"{who} can rematch in about {format_cooldown(remaining)}."
                         return message
             rank_manager = getattr(self.bot, 'rank_manager', None)
             if rank_manager:
@@ -7166,8 +7170,7 @@ class NpcTrainerSelectView(View):
             if on_cooldown:
                 message = "⏳ You need to wait before rematching this trainer."
                 if remaining:
-                    hours = max(1, int(round(remaining / 3600)))
-                    message = f"⏳ You can rematch this trainer in about {hours} hour(s)."
+                    message = f"⏳ You can rematch this trainer in about {format_cooldown(remaining)}."
                 await interaction.response.send_message(message, ephemeral=True)
                 return
 

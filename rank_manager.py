@@ -158,6 +158,7 @@ class RankManager:
         self.matches_path = Path(matches_path)
         self._state = self._load_state()
         self._matches = self._load_matches()
+        self._ensure_promotion_ticket_for_trainer("Red")
 
     # ------------------------------------------------------------------
     # Persistence helpers
@@ -267,6 +268,18 @@ class RankManager:
             return list(self._matches)
         return [match for match in self._matches if match.status == "pending"]
 
+    def cancel_match(self, match_id: str, cancelled_by: Optional[int] = None) -> Tuple[bool, str]:
+        match = self.get_match(match_id)
+        if not match:
+            return False, "Promotion match not found."
+        if match.status != "pending":
+            return False, f"Match {match.match_id} is already {match.status}."
+        match.status = "cancelled"
+        if cancelled_by:
+            match.notes = f"Cancelled by <@{cancelled_by}>. {match.notes or ''}".strip()
+        self._save_matches()
+        return True, f"Promotion match {match.match_id} has been cancelled."
+
     def has_pending_match(self, discord_id: int) -> bool:
         return self._find_match_for_pair(discord_id) is not None
 
@@ -307,6 +320,16 @@ class RankManager:
             if match.match_id == match_id:
                 return match
         return None
+
+    def _ensure_promotion_ticket_for_trainer(self, trainer_name: str) -> None:
+        trainer = self.player_manager.get_player_by_name(trainer_name)
+        if not trainer or getattr(trainer, "has_promotion_ticket", False):
+            return
+        tier = trainer.rank_tier_number or 1
+        updates = {"has_promotion_ticket": 1, "ticket_tier": tier}
+        self.player_manager.update_player(trainer.discord_user_id, **updates)
+        trainer.has_promotion_ticket = True
+        trainer.ticket_tier = tier
 
     def _find_match_for_pair(
         self,
