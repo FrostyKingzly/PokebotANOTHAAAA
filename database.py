@@ -518,8 +518,9 @@ class PlayerDatabase:
                 moves TEXT NOT NULL,
 
                 -- Social
-                friendship INTEGER DEFAULT 70,
+                friendship INTEGER DEFAULT 20,
                 bond_level INTEGER DEFAULT 0,
+                consecutive_faints INTEGER DEFAULT 0,
 
                 -- Storage
                 in_party INTEGER DEFAULT 0,
@@ -769,6 +770,9 @@ class PlayerDatabase:
 
         # Forever partner flag
         add_column('is_partner', 'INTEGER DEFAULT 0')
+
+        # Friendship/faint tracking
+        add_column('consecutive_faints', 'INTEGER DEFAULT 0')
 
         # Cooldown tracking for per-opponent battles
         cursor.execute(
@@ -1087,8 +1091,9 @@ class PlayerDatabase:
             ('ev_sp_defense', pokemon_data.get('ev_sp_defense', 0)),
             ('ev_speed', pokemon_data.get('ev_speed', 0)),
                 ('moves', json.dumps(pokemon_data['moves'])),
-                ('friendship', pokemon_data.get('friendship', 70)),
+                ('friendship', pokemon_data.get('friendship', 20)),
                 ('bond_level', pokemon_data.get('bond_level', 0)),
+                ('consecutive_faints', pokemon_data.get('consecutive_faints', 0)),
                 ('in_party', pokemon_data.get('in_party', 0)),
                 ('party_position', pokemon_data.get('party_position')),
                 ('box_position', pokemon_data.get('box_position')),

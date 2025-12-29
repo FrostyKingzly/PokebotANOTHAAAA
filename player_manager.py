@@ -30,6 +30,12 @@ class PlayerManager:
         8: 100,  # Master
     }
 
+    FRIENDSHIP_MIN = 0
+    FRIENDSHIP_MAX = 255
+    FRIENDSHIP_START = 20
+    FRIENDSHIP_PARTNER = 50
+    FRIENDSHIP_OBEY_THRESHOLD = 10
+
     def __init__(self, db_path: str = "data/players.db", species_db=None, items_db=None):
         self.db = PlayerDatabase(db_path)
         self.species_db = species_db
@@ -79,6 +85,137 @@ class PlayerManager:
                 inventory.append(row)
                 self._set_cached_quantity(row["discord_user_id"], row["item_id"], row["quantity"])
         return inventory
+
+    def _boost_partner_friendship(self, pokemon: Dict | object):
+        current = self._get_friendship_value(pokemon)
+        updated = max(current, self.FRIENDSHIP_PARTNER)
+        self._set_friendship_value(pokemon, updated)
+        pokemon_id = self._get_pokemon_id(pokemon)
+        if pokemon_id:
+            self.db.update_pokemon(pokemon_id, {'friendship': updated})
+
+    def _get_friendship_value(self, pokemon: Dict | object) -> int:
+        if isinstance(pokemon, dict):
+            return int(pokemon.get('friendship', self.FRIENDSHIP_START))
+        return int(getattr(pokemon, 'friendship', self.FRIENDSHIP_START))
+
+    def _set_friendship_value(self, pokemon: Dict | object, value: int):
+        if isinstance(pokemon, dict):
+            pokemon['friendship'] = value
+        else:
+            pokemon.friendship = value
+
+    def _set_consecutive_faints(self, pokemon: Dict | object, value: int):
+        if isinstance(pokemon, dict):
+            pokemon['consecutive_faints'] = value
+        else:
+            pokemon.consecutive_faints = value
+
+    def _get_consecutive_faints(self, pokemon: Dict | object) -> int:
+        if isinstance(pokemon, dict):
+            return int(pokemon.get('consecutive_faints', 0))
+        return int(getattr(pokemon, 'consecutive_faints', 0))
+
+    def _get_pokemon_id(self, pokemon: Dict | object) -> Optional[str]:
+        if isinstance(pokemon, dict):
+            return pokemon.get('pokemon_id')
+        return getattr(pokemon, 'pokemon_id', None)
+
+    def _get_pokemon_owner(self, pokemon: Dict | object) -> Optional[int]:
+        if isinstance(pokemon, dict):
+            return pokemon.get('owner_discord_id')
+        return getattr(pokemon, 'owner_discord_id', None)
+
+    def _clamp_friendship(self, value: int) -> int:
+        return max(self.FRIENDSHIP_MIN, min(self.FRIENDSHIP_MAX, int(value)))
+
+    def _initialize_friendship(self, pokemon: Pokemon):
+        owner_id = getattr(pokemon, 'owner_discord_id', None)
+        initial_friendship = self.FRIENDSHIP_PARTNER if pokemon.is_partner else self.FRIENDSHIP_START
+
+        if owner_id:
+            trainer = self.get_player(owner_id)
+            if trainer:
+                level_cap = self.get_level_cap_for_trainer(trainer)
+                if level_cap and pokemon.level > level_cap:
+                    initial_friendship = 0
+
+        pokemon.friendship = self._clamp_friendship(initial_friendship)
+        pokemon.consecutive_faints = 0
+
+    def adjust_party_friendship(
+        self,
+        *,
+        discord_user_id: Optional[int] = None,
+        party_pokemon: Optional[List[Dict | object]] = None,
+        amount: int = 1,
+        only_survivors: bool = False,
+    ) -> int:
+        if party_pokemon is None:
+            if discord_user_id is None:
+                return 0
+            party_pokemon = self.get_party(discord_user_id)
+
+        updated = 0
+        for pokemon in party_pokemon:
+            owner_id = self._get_pokemon_owner(pokemon)
+            if discord_user_id and owner_id and owner_id != discord_user_id:
+                continue
+            current_hp = pokemon.get('current_hp', 0) if isinstance(pokemon, dict) else getattr(pokemon, 'current_hp', 0)
+            if only_survivors and current_hp <= 0:
+                continue
+            current = self._get_friendship_value(pokemon)
+            new_value = self._clamp_friendship(current + amount)
+            if new_value == current:
+                continue
+            self._set_friendship_value(pokemon, new_value)
+            pokemon_id = self._get_pokemon_id(pokemon)
+            if pokemon_id:
+                self.db.update_pokemon(pokemon_id, {'friendship': new_value})
+            updated += 1
+        return updated
+
+    def reset_faint_streaks(
+        self,
+        *,
+        discord_user_id: Optional[int] = None,
+        party_pokemon: Optional[List[Dict | object]] = None,
+    ):
+        if party_pokemon is None:
+            if discord_user_id is None:
+                return
+            party_pokemon = self.get_party(discord_user_id)
+
+        for pokemon in party_pokemon:
+            self._set_consecutive_faints(pokemon, 0)
+            pokemon_id = self._get_pokemon_id(pokemon)
+            if pokemon_id:
+                self.db.update_pokemon(pokemon_id, {'consecutive_faints': 0})
+
+    def record_faint(self, pokemon: Dict | object):
+        owner_id = self._get_pokemon_owner(pokemon)
+        if not owner_id or owner_id <= 0:
+            return
+
+        streak = self._get_consecutive_faints(pokemon) + 1
+        friendship_delta = 0
+
+        if streak >= 3:
+            streak = 0
+            friendship_delta = -1
+
+        new_friendship = self._clamp_friendship(self._get_friendship_value(pokemon) + friendship_delta)
+
+        self._set_consecutive_faints(pokemon, streak)
+        if friendship_delta:
+            self._set_friendship_value(pokemon, new_friendship)
+
+        pokemon_id = self._get_pokemon_id(pokemon)
+        if pokemon_id:
+            updates = {'consecutive_faints': streak}
+            if friendship_delta:
+                updates['friendship'] = new_friendship
+            self.db.update_pokemon(pokemon_id, updates)
 
     def _apply_passive_stamina(self, trainer_data: Dict) -> Dict:
         if not trainer_data:
@@ -183,9 +320,11 @@ class PlayerManager:
         if pokemon.get('is_partner'):
             # Already set as partner, just ensure trainer record is synced
             self.db.set_partner_pokemon(discord_user_id, pokemon_id)
+            self._boost_partner_friendship(pokemon)
             return True, "✅ This Pokemon is already your partner."
 
         self.db.set_partner_pokemon(discord_user_id, pokemon_id)
+        self._boost_partner_friendship(pokemon)
         return True, "✅ Partner set!"
     
     def player_exists(self, discord_user_id: int) -> bool:
@@ -296,6 +435,7 @@ class PlayerManager:
             stamina_current=new_current,
             last_stamina_update=int(time.time()),
         )
+        self.adjust_party_friendship(discord_user_id=discord_user_id, amount=1)
         return True, new_current
 
     def restore_stamina(self, discord_user_id: int, amount: int) -> tuple[bool, int]:
@@ -385,6 +525,7 @@ class PlayerManager:
         """
 
         pokemon.owner_discord_id = discord_id
+        self._initialize_friendship(pokemon)
 
         # Attempt to place in party first
         party = self.get_party(discord_id)
@@ -426,6 +567,7 @@ class PlayerManager:
         if position is None:
             position = len(party)
         
+        self._initialize_friendship(pokemon)
         pokemon.in_party = True
         pokemon.party_position = position
 
@@ -438,6 +580,7 @@ class PlayerManager:
         """Add a Pokemon to storage box"""
         boxes = self.get_boxes(pokemon.owner_discord_id)
         
+        self._initialize_friendship(pokemon)
         pokemon.in_party = False
         pokemon.box_position = len(boxes)
 
@@ -493,6 +636,7 @@ class PlayerManager:
             'moves',
             'friendship',
             'bond_level',
+            'consecutive_faints',
             'in_party',
             'party_position',
             'box_position',

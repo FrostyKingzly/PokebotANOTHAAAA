@@ -677,6 +677,7 @@ class BattleEngine:
         
         # Active battles
         self.active_battles: Dict[str, BattleState] = {}
+        self.player_manager = None
     
     # ========================
     # Battle Initialization
@@ -832,6 +833,31 @@ class BattleEngine:
         self.active_battles[battle_id] = battle
         
         return battle_id
+
+    def _get_action_pokemon(self, battler: Battler, action: BattleAction) -> Optional[Any]:
+        if not battler:
+            return None
+        active_idx = getattr(action, 'pokemon_position', 0)
+        if active_idx >= len(battler.active_positions):
+            active_idx = 0
+        party_index = battler.active_positions[active_idx] if battler.active_positions else 0
+        if party_index >= len(battler.party):
+            return None
+        return battler.party[party_index]
+
+    def _record_faint(self, battler: Optional[Battler], pokemon: Any):
+        if not battler or battler.is_ai:
+            return
+        if not self.player_manager:
+            return
+        self.player_manager.record_faint(pokemon)
+
+    def _award_action_friendship(self, battler: Optional[Battler]):
+        if not battler or battler.is_ai:
+            return
+        if not self.player_manager:
+            return
+        self.player_manager.adjust_party_friendship(party_pokemon=battler.party, amount=1)
     
     def start_wild_battle(self, trainer_id: int, trainer_name: str, 
                          trainer_party: List[Any], wild_pokemon: Any) -> str:
@@ -1210,6 +1236,19 @@ class BattleEngine:
 
         if battler_id not in valid_battler_ids:
             return {"error": "Invalid battler ID"}
+
+        battler = self._get_battler_by_id(battle, battler_id)
+        if battler and not battler.is_ai and action.action_type == 'move':
+            active_pokemon = self._get_action_pokemon(battler, action)
+            friendship_value = getattr(active_pokemon, 'friendship', 20) if active_pokemon else 20
+            obey_threshold = (
+                getattr(self.player_manager, 'FRIENDSHIP_OBEY_THRESHOLD', 10)
+                if self.player_manager
+                else 10
+            )
+            if friendship_value <= obey_threshold:
+                action.action_type = 'disobey'
+                action.move_id = None
 
         # Store action with composite key for doubles/multi (battler_id_position)
         if battle.battle_format in [BattleFormat.DOUBLES, BattleFormat.MULTI, BattleFormat.RAID]:
@@ -1694,14 +1733,26 @@ class BattleEngine:
     
     async def _execute_action(self, battle: BattleState, action: BattleAction) -> Dict:
         """Execute a single action"""
+        battler = self._get_battler_by_id(battle, action.battler_id)
+        if action.action_type == 'disobey':
+            pokemon = self._get_action_pokemon(battler, action)
+            name = getattr(pokemon, 'species_name', 'The Pokémon')
+            return {"messages": [f"{name} won't obey!"]}
         if action.action_type == 'move':
-            return await self._execute_move(battle, action)
+            result = await self._execute_move(battle, action)
         elif action.action_type == 'switch':
-            return self._execute_switch(battle, action)
+            result = self._execute_switch(battle, action)
         elif action.action_type == 'item':
-            return self._execute_item(battle, action)
+            result = self._execute_item(battle, action)
         elif action.action_type == 'flee':
-            return self._execute_flee(battle, action)
+            result = self._execute_flee(battle, action)
+        else:
+            result = {"messages": []}
+
+        if action.action_type != 'disobey':
+            self._award_action_friendship(battler)
+
+        return result
         
         return {"messages": []}
     
@@ -1931,6 +1982,7 @@ class BattleEngine:
                 messages.append(f"The wild {defender.species_name} is dazed!")
             else:
                 messages.append(f"{defender.species_name} fainted!")
+                self._record_faint(defender_battler, defender)
 
         return {"messages": messages}
 
@@ -2376,6 +2428,7 @@ class BattleEngine:
                     messages.append(f"The wild {defender.species_name} is dazed!")
                 else:
                     messages.append(f"{defender.species_name} fainted!")
+                    self._record_faint(defender_battler, defender)
 
             return {"messages": messages}
 
@@ -2505,6 +2558,7 @@ class BattleEngine:
                 messages.append(f"The wild {defender.species_name} is dazed!")
             else:
                 messages.append(f"{defender.species_name} fainted!")
+                self._record_faint(defender_battler, defender)
 
                 # Determine which position the fainted Pokemon was in
                 fainted_position = None
@@ -3082,6 +3136,7 @@ class BattleEngine:
                 # Find which battler owns this Pokemon and set up forced switch
                 for battler in battle.get_all_battlers():
                     if not battler.is_eliminated and fainted_mon in battler.party:
+                        self._record_faint(battler, fainted_mon)
                         # Find position of fainted Pokemon
                         fainted_position = None
                         for pos_idx, party_idx in enumerate(battler.active_positions):

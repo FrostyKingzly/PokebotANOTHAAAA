@@ -1419,6 +1419,28 @@ class BattleCog(commands.Cog):
         except Exception:
             pass
 
+        player_manager = getattr(self.bot, 'player_manager', None)
+        if player_manager and result in ['trainer', 'opponent']:
+            if battle.battle_format == BattleFormat.RAID and result == 'trainer':
+                winner_battlers = [b for b in battle.get_all_battlers() if not b.is_ai]
+            elif result == 'trainer':
+                winner_battlers = [battle.trainer]
+                if getattr(battle, 'trainer_partner', None):
+                    winner_battlers.append(battle.trainer_partner)
+            else:
+                winner_battlers = [battle.opponent]
+                if getattr(battle, 'opponent_partner', None):
+                    winner_battlers.append(battle.opponent_partner)
+
+            for battler in winner_battlers:
+                if battler and not battler.is_ai:
+                    player_manager.adjust_party_friendship(
+                        party_pokemon=battler.party,
+                        amount=1,
+                        only_survivors=True,
+                    )
+                    player_manager.reset_faint_streaks(party_pokemon=battler.party)
+
         if battle.battle_format == BattleFormat.RAID:
             raid_mon = (battle.opponent.get_active_pokemon() or [None])[0]
             raid_name = self._format_pokemon_name(raid_mon, include_level=False) if raid_mon else opponent_name
@@ -3009,4 +3031,5 @@ async def setup(bot):
             engine.held_item_manager = HeldItemManager(
                 bot.items_db, getattr(engine, 'type_chart', None)
             )
+    engine.player_manager = getattr(bot, 'player_manager', None)
     await bot.add_cog(BattleCog(bot, engine))

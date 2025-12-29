@@ -284,8 +284,8 @@ class ItemUsageManager:
             return False, 'trade', evolution
 
         elif method == 'friendship':
-            # Simplified: assume high friendship after certain level
-            if pokemon.get('level', 0) >= 20:
+            friendship = int(pokemon.get('friendship', 20) or 0)
+            if friendship >= 220:
                 return True, 'friendship', evolution
 
         elif method == 'multiple':
