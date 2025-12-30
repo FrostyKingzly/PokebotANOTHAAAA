@@ -1410,224 +1410,6 @@ class MainMenuView(View):
 
         await interaction.response.edit_message(embed=embed, view=view)
 
-
-class PokedexView(View):
-    """Interactive Pokédex browser with filtering and navigation."""
-
-    DISPLAY_TOTAL = 1026
-
-    def __init__(self, bot, player_id: int, back_callback: Callable[[discord.Interaction], Awaitable[None]]):
-        super().__init__(timeout=300)
-        self.bot = bot
-        self.player_id = player_id
-        self.back_callback = back_callback
-        self.filter_mode = "all"
-        self.current_index = 0
-
-        self.seen_species = set(bot.player_manager.get_pokedex(player_id))
-        owned = bot.player_manager.get_all_pokemon(player_id)
-        self.caught_species = {p.get("species_dex_number") for p in owned if p.get("species_dex_number") is not None}
-
-        self.species_entries: List[Dict[str, Any]] = sorted(
-            [s for s in bot.species_db.data.values() if isinstance(s, dict) and s.get("dex_number")],
-            key=lambda s: s["dex_number"],
-        )
-
-        self._refresh_items()
-
-    # Status helpers -----------------------------------------------------
-    def _status(self, species: Dict[str, Any]) -> str:
-        dex = species.get("dex_number")
-        if dex in self.caught_species:
-            return "caught"
-        if dex in self.seen_species:
-            return "seen"
-        return "unseen"
-
-    def _is_seen(self, species: Dict[str, Any]) -> bool:
-        status = self._status(species)
-        return status in {"seen", "caught"}
-
-    def _is_caught(self, species: Dict[str, Any]) -> bool:
-        return self._status(species) == "caught"
-
-    # Data helpers -------------------------------------------------------
-    def _filtered_species(self) -> List[Dict[str, Any]]:
-        if self.filter_mode == "all":
-            return self.species_entries
-        if self.filter_mode == "seen":
-            return [s for s in self.species_entries if self._status(s) in {"seen", "caught"}]
-        if self.filter_mode == "caught":
-            return [s for s in self.species_entries if self._status(s) == "caught"]
-        if self.filter_mode == "unseen":
-            return [s for s in self.species_entries if self._status(s) == "unseen"]
-        return self.species_entries
-
-    def _spawn_locations(self, species: Optional[Dict[str, Any]]) -> List[str]:
-        if not species or not (self._is_seen(species) or self._is_caught(species)):
-            return []
-
-        loc_manager = getattr(self.bot, "location_manager", None)
-        if not loc_manager:
-            return []
-
-        results: List[str] = []
-        for location in loc_manager.get_all_locations().values():
-            for encounter in location.get("encounters", []):
-                if encounter.get("species_dex_number") != species.get("dex_number"):
-                    continue
-
-                loc_name = location.get("name") or "Unknown area"
-                form = encounter.get("form")
-                if form:
-                    loc_name = f"{loc_name} ({str(form).replace('_', ' ').title()})"
-                results.append(loc_name)
-                break
-
-        # Deduplicate while preserving order
-        seen_names = set()
-        unique_locations = []
-        for name in results:
-            if name not in seen_names:
-                unique_locations.append(name)
-                seen_names.add(name)
-
-        return unique_locations
-
-    def _normalize_species_name(self, name: str) -> str:
-        return re.sub(r"[^a-z0-9]", "", name.lower())
-
-    def _find_species(self, query: str) -> Optional[Tuple[int, Dict[str, Any]]]:
-        cleaned = query.strip()
-        if not cleaned:
-            return None
-
-        cleaned = cleaned.lstrip("#")
-        if cleaned.isdigit():
-            dex_number = int(cleaned)
-            for index, species in enumerate(self.species_entries):
-                if species.get("dex_number") == dex_number:
-                    return index, species
-            return None
-
-        normalized_query = self._normalize_species_name(cleaned)
-        for index, species in enumerate(self.species_entries):
-            if self._normalize_species_name(species.get("name", "")) == normalized_query:
-                return index, species
-
-        return None
-
-    # UI helpers ---------------------------------------------------------
-    def _clamp_index(self):
-        filtered = self._filtered_species()
-        if not filtered:
-            self.current_index = 0
-            return
-
-        self.current_index = max(0, min(self.current_index, len(filtered) - 1))
-
-    def _build_embed(self) -> discord.Embed:
-        from ui.embeds import EmbedBuilder
-
-        filtered = self._filtered_species()
-        self._clamp_index()
-
-        species = filtered[self.current_index] if filtered else None
-        seen_total = len(self.seen_species | self.caught_species)
-        caught_total = len(self.caught_species)
-        total_species = max(len(self.species_entries), self.DISPLAY_TOTAL)
-        filtered_total = len(filtered) if filtered else 1
-
-        return EmbedBuilder.pokedex_entry(
-            species,
-            seen=self._is_seen(species) if species else False,
-            caught=self._is_caught(species) if species else False,
-            entry_index=self.current_index,
-            filtered_total=filtered_total,
-            total_species=total_species,
-            seen_total=seen_total,
-            caught_total=caught_total,
-            spawn_locations=self._spawn_locations(species),
-        )
-
-    def _refresh_items(self):
-        self.clear_items()
-
-        # Filter select
-        seen_total = len(self.seen_species | self.caught_species)
-        caught_total = len(self.caught_species)
-        display_total = self.DISPLAY_TOTAL
-        unseen_total = max(0, display_total - seen_total)
-        filter_select = Select(
-            placeholder="Filter entries…",
-            options=[
-                discord.SelectOption(label=f"All [{display_total}]", value="all", default=self.filter_mode == "all"),
-                discord.SelectOption(label=f"Seen [{seen_total}]", value="seen", default=self.filter_mode == "seen"),
-                discord.SelectOption(label=f"Caught [{caught_total}]", value="caught", default=self.filter_mode == "caught"),
-                discord.SelectOption(label=f"Unseen [{unseen_total}]", value="unseen", default=self.filter_mode == "unseen"),
-            ],
-            row=0,
-        )
-
-        async def _on_filter_change(interaction: discord.Interaction):
-            self.filter_mode = filter_select.values[0]
-            self.current_index = 0
-            self._refresh_items()
-            await interaction.response.edit_message(embed=self._build_embed(), view=self)
-
-        filter_select.callback = _on_filter_change
-        self.add_item(filter_select)
-
-        # Navigation buttons
-        prev_button = Button(
-            label="◀ Previous",
-            style=discord.ButtonStyle.secondary,
-            disabled=self.current_index <= 0 or not self._filtered_species(),
-            row=1,
-        )
-
-        async def _prev(interaction: discord.Interaction):
-            self.current_index = max(0, self.current_index - 1)
-            self._refresh_items()
-            await interaction.response.edit_message(embed=self._build_embed(), view=self)
-
-        prev_button.callback = _prev
-        self.add_item(prev_button)
-
-        next_button = Button(
-            label="Next ▶",
-            style=discord.ButtonStyle.secondary,
-            disabled=self.current_index >= len(self._filtered_species()) - 1 if self._filtered_species() else True,
-            row=1,
-        )
-
-        async def _next(interaction: discord.Interaction):
-            self.current_index = min(len(self._filtered_species()) - 1, self.current_index + 1)
-            self._refresh_items()
-            await interaction.response.edit_message(embed=self._build_embed(), view=self)
-
-        next_button.callback = _next
-        self.add_item(next_button)
-
-        search_button = Button(
-            label="🔎 Search",
-            style=discord.ButtonStyle.primary,
-            row=2,
-        )
-
-        async def _search(interaction: discord.Interaction):
-            modal = PokedexSearchModal(self)
-            await interaction.response.send_modal(modal)
-
-        search_button.callback = _search
-        self.add_item(search_button)
-
-        if self.back_callback:
-            _add_back_button(self, self.back_callback, row=2)
-
-    def create_embed(self) -> discord.Embed:
-        return self._build_embed()
-
     def _build_activity_embed(self, trainer, activity: Dict[str, Any]) -> discord.Embed:
         """Create a consistent preview embed for stamina activities."""
 
@@ -1977,6 +1759,224 @@ class PokedexView(View):
             view=view,
             ephemeral=True
         )
+
+
+class PokedexView(View):
+    """Interactive Pokédex browser with filtering and navigation."""
+
+    DISPLAY_TOTAL = 1026
+
+    def __init__(self, bot, player_id: int, back_callback: Callable[[discord.Interaction], Awaitable[None]]):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.player_id = player_id
+        self.back_callback = back_callback
+        self.filter_mode = "all"
+        self.current_index = 0
+
+        self.seen_species = set(bot.player_manager.get_pokedex(player_id))
+        owned = bot.player_manager.get_all_pokemon(player_id)
+        self.caught_species = {p.get("species_dex_number") for p in owned if p.get("species_dex_number") is not None}
+
+        self.species_entries: List[Dict[str, Any]] = sorted(
+            [s for s in bot.species_db.data.values() if isinstance(s, dict) and s.get("dex_number")],
+            key=lambda s: s["dex_number"],
+        )
+
+        self._refresh_items()
+
+    # Status helpers -----------------------------------------------------
+    def _status(self, species: Dict[str, Any]) -> str:
+        dex = species.get("dex_number")
+        if dex in self.caught_species:
+            return "caught"
+        if dex in self.seen_species:
+            return "seen"
+        return "unseen"
+
+    def _is_seen(self, species: Dict[str, Any]) -> bool:
+        status = self._status(species)
+        return status in {"seen", "caught"}
+
+    def _is_caught(self, species: Dict[str, Any]) -> bool:
+        return self._status(species) == "caught"
+
+    # Data helpers -------------------------------------------------------
+    def _filtered_species(self) -> List[Dict[str, Any]]:
+        if self.filter_mode == "all":
+            return self.species_entries
+        if self.filter_mode == "seen":
+            return [s for s in self.species_entries if self._status(s) in {"seen", "caught"}]
+        if self.filter_mode == "caught":
+            return [s for s in self.species_entries if self._status(s) == "caught"]
+        if self.filter_mode == "unseen":
+            return [s for s in self.species_entries if self._status(s) == "unseen"]
+        return self.species_entries
+
+    def _spawn_locations(self, species: Optional[Dict[str, Any]]) -> List[str]:
+        if not species or not (self._is_seen(species) or self._is_caught(species)):
+            return []
+
+        loc_manager = getattr(self.bot, "location_manager", None)
+        if not loc_manager:
+            return []
+
+        results: List[str] = []
+        for location in loc_manager.get_all_locations().values():
+            for encounter in location.get("encounters", []):
+                if encounter.get("species_dex_number") != species.get("dex_number"):
+                    continue
+
+                loc_name = location.get("name") or "Unknown area"
+                form = encounter.get("form")
+                if form:
+                    loc_name = f"{loc_name} ({str(form).replace('_', ' ').title()})"
+                results.append(loc_name)
+                break
+
+        # Deduplicate while preserving order
+        seen_names = set()
+        unique_locations = []
+        for name in results:
+            if name not in seen_names:
+                unique_locations.append(name)
+                seen_names.add(name)
+
+        return unique_locations
+
+    def _normalize_species_name(self, name: str) -> str:
+        return re.sub(r"[^a-z0-9]", "", name.lower())
+
+    def _find_species(self, query: str) -> Optional[Tuple[int, Dict[str, Any]]]:
+        cleaned = query.strip()
+        if not cleaned:
+            return None
+
+        cleaned = cleaned.lstrip("#")
+        if cleaned.isdigit():
+            dex_number = int(cleaned)
+            for index, species in enumerate(self.species_entries):
+                if species.get("dex_number") == dex_number:
+                    return index, species
+            return None
+
+        normalized_query = self._normalize_species_name(cleaned)
+        for index, species in enumerate(self.species_entries):
+            if self._normalize_species_name(species.get("name", "")) == normalized_query:
+                return index, species
+
+        return None
+
+    # UI helpers ---------------------------------------------------------
+    def _clamp_index(self):
+        filtered = self._filtered_species()
+        if not filtered:
+            self.current_index = 0
+            return
+
+        self.current_index = max(0, min(self.current_index, len(filtered) - 1))
+
+    def _build_embed(self) -> discord.Embed:
+        from ui.embeds import EmbedBuilder
+
+        filtered = self._filtered_species()
+        self._clamp_index()
+
+        species = filtered[self.current_index] if filtered else None
+        seen_total = len(self.seen_species | self.caught_species)
+        caught_total = len(self.caught_species)
+        total_species = max(len(self.species_entries), self.DISPLAY_TOTAL)
+        filtered_total = len(filtered) if filtered else 1
+
+        return EmbedBuilder.pokedex_entry(
+            species,
+            seen=self._is_seen(species) if species else False,
+            caught=self._is_caught(species) if species else False,
+            entry_index=self.current_index,
+            filtered_total=filtered_total,
+            total_species=total_species,
+            seen_total=seen_total,
+            caught_total=caught_total,
+            spawn_locations=self._spawn_locations(species),
+        )
+
+    def _refresh_items(self):
+        self.clear_items()
+
+        # Filter select
+        seen_total = len(self.seen_species | self.caught_species)
+        caught_total = len(self.caught_species)
+        display_total = self.DISPLAY_TOTAL
+        unseen_total = max(0, display_total - seen_total)
+        filter_select = Select(
+            placeholder="Filter entries…",
+            options=[
+                discord.SelectOption(label=f"All [{display_total}]", value="all", default=self.filter_mode == "all"),
+                discord.SelectOption(label=f"Seen [{seen_total}]", value="seen", default=self.filter_mode == "seen"),
+                discord.SelectOption(label=f"Caught [{caught_total}]", value="caught", default=self.filter_mode == "caught"),
+                discord.SelectOption(label=f"Unseen [{unseen_total}]", value="unseen", default=self.filter_mode == "unseen"),
+            ],
+            row=0,
+        )
+
+        async def _on_filter_change(interaction: discord.Interaction):
+            self.filter_mode = filter_select.values[0]
+            self.current_index = 0
+            self._refresh_items()
+            await interaction.response.edit_message(embed=self._build_embed(), view=self)
+
+        filter_select.callback = _on_filter_change
+        self.add_item(filter_select)
+
+        # Navigation buttons
+        prev_button = Button(
+            label="◀ Previous",
+            style=discord.ButtonStyle.secondary,
+            disabled=self.current_index <= 0 or not self._filtered_species(),
+            row=1,
+        )
+
+        async def _prev(interaction: discord.Interaction):
+            self.current_index = max(0, self.current_index - 1)
+            self._refresh_items()
+            await interaction.response.edit_message(embed=self._build_embed(), view=self)
+
+        prev_button.callback = _prev
+        self.add_item(prev_button)
+
+        next_button = Button(
+            label="Next ▶",
+            style=discord.ButtonStyle.secondary,
+            disabled=self.current_index >= len(self._filtered_species()) - 1 if self._filtered_species() else True,
+            row=1,
+        )
+
+        async def _next(interaction: discord.Interaction):
+            self.current_index = min(len(self._filtered_species()) - 1, self.current_index + 1)
+            self._refresh_items()
+            await interaction.response.edit_message(embed=self._build_embed(), view=self)
+
+        next_button.callback = _next
+        self.add_item(next_button)
+
+        search_button = Button(
+            label="🔎 Search",
+            style=discord.ButtonStyle.primary,
+            row=2,
+        )
+
+        async def _search(interaction: discord.Interaction):
+            modal = PokedexSearchModal(self)
+            await interaction.response.send_modal(modal)
+
+        search_button.callback = _search
+        self.add_item(search_button)
+
+        if self.back_callback:
+            _add_back_button(self, self.back_callback, row=2)
+
+    def create_embed(self) -> discord.Embed:
+        return self._build_embed()
 
 
 class DojoPokemonSelectView(View):
