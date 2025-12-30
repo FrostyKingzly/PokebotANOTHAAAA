@@ -900,6 +900,19 @@ class PlayerDatabase:
             return dict(row)
         return None
 
+    def get_trainers_by_rank_tier(self, tier: int) -> List[Dict]:
+        """Get all trainers with the specified rank tier."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT * FROM trainers WHERE rank_tier_number = ?",
+            (tier,),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
     def trainer_exists(self, discord_user_id: int) -> bool:
         """Check if trainer exists"""
         return self.get_trainer(discord_user_id) is not None

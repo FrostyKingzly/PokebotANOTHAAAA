@@ -1168,6 +1168,9 @@ class BattleCog(commands.Cog):
                 if event_type == "end_of_turn":
                     title = "End of Turn"
                     color = discord.Color.orange()
+                elif event_type == "omni_ring":
+                    title = "Omni Ring"
+                    color = discord.Color.gold()
                 elif event_type == "mega_evolve":
                     title = "Mega Evolution"
                     color = discord.Color.purple()
@@ -1177,7 +1180,30 @@ class BattleCog(commands.Cog):
                     title = f"{actor_name}'s Turn" if actor else "Turn"
                     color = discord.Color.orange()
 
-                embed = self._build_action_embed(action_msgs, title=title, color=color, pokemon=event.get("actor"))
+                if event_type == "omni_ring":
+                    embed = self._build_action_embed(
+                        action_msgs,
+                        title=title,
+                        color=color,
+                        trainer=event.get("trainer"),
+                    )
+                elif event_type == "mega_evolve":
+                    embed = self._build_action_embed(
+                        action_msgs,
+                        title=title,
+                        color=color,
+                        pokemon=None,
+                    )
+                    mega_art_url = self._get_mega_art_url(event.get("actor"))
+                    if embed and mega_art_url:
+                        embed.set_image(url=mega_art_url)
+                else:
+                    embed = self._build_action_embed(
+                        action_msgs,
+                        title=title,
+                        color=color,
+                        pokemon=event.get("actor"),
+                    )
                 if embed:
                     embeds.append(embed)
 
@@ -1217,6 +1243,7 @@ class BattleCog(commands.Cog):
         title: str,
         color: Optional[discord.Color] = None,
         pokemon=None,
+        trainer=None,
         species_name: Optional[str] = None,
     ) -> Optional[discord.Embed]:
         if not messages:
@@ -1231,9 +1258,13 @@ class BattleCog(commands.Cog):
             spaced.pop()
         desc = "\n".join(spaced) if spaced else "The turn resolves."
         embed = discord.Embed(title=title, description=desc, color=color or discord.Color.orange())
-        sprite_url = self._get_action_sprite_url(pokemon=pokemon, species_name=species_name)
-        if sprite_url:
-            embed.set_thumbnail(url=sprite_url)
+        trainer_avatar = getattr(trainer, "avatar_url", None) if trainer else None
+        if trainer_avatar:
+            embed.set_thumbnail(url=trainer_avatar)
+        else:
+            sprite_url = self._get_action_sprite_url(pokemon=pokemon, species_name=species_name)
+            if sprite_url:
+                embed.set_thumbnail(url=sprite_url)
         return embed
 
     def _get_action_sprite_url(self, pokemon=None, species_name: Optional[str] = None) -> Optional[str]:
@@ -1256,6 +1287,21 @@ class BattleCog(commands.Cog):
                 use_fallback=False
             )
         return None
+
+    def _get_mega_art_url(self, pokemon) -> Optional[str]:
+        if not pokemon:
+            return None
+        sprite_url = PokemonSpriteHelper.get_sprite(
+            getattr(pokemon, "species_name", None),
+            getattr(pokemon, "species_dex_number", None),
+            style='showdown',
+            gender=getattr(pokemon, 'gender', None),
+            shiny=False,
+            use_fallback=False,
+        )
+        if not sprite_url:
+            return None
+        return sprite_url.replace("/sprites/pokemon/", "/sprites/other/official-artwork/")
 
     def _extract_fainted_species(self, messages: list[str]) -> Optional[str]:
         for msg in messages:
@@ -1878,6 +1924,35 @@ def _get_battler_by_id(battle, battler_id: int):
     return battle.trainer
 
 
+def _get_battle_status_label(pokemon) -> Optional[str]:
+    status_type = None
+    status_manager = getattr(pokemon, "status_manager", None)
+    if status_manager and getattr(status_manager, "major_status", None):
+        status_type = status_manager.major_status.status_type
+    if not status_type:
+        status_type = getattr(pokemon, "status_condition", None)
+    if not status_type:
+        return None
+
+    normalized = str(status_type).lower()
+    status_map = {
+        "brn": "Burn 🔥",
+        "burn": "Burn 🔥",
+        "par": "Paralysis ⚡️",
+        "paralysis": "Paralysis ⚡️",
+        "slp": "Sleep 💤",
+        "sleep": "Sleep 💤",
+        "frz": "Freeze ❄️",
+        "freeze": "Freeze ❄️",
+        "psn": "Poison ☠️",
+        "poison": "Poison ☠️",
+        "tox": "Badly Poisoned ☠️",
+        "toxic": "Badly Poisoned ☠️",
+        "badly_poisoned": "Badly Poisoned ☠️",
+    }
+    return status_map.get(normalized)
+
+
 def _format_battle_pokemon_name(pokemon, include_level: bool = False) -> str:
     name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
     if getattr(pokemon, "is_mega_evolved", False) and not name.lower().startswith("mega "):
@@ -1886,7 +1961,9 @@ def _format_battle_pokemon_name(pokemon, include_level: bool = False) -> str:
         name = f"Rogue {name}"
     level = getattr(pokemon, "level", None)
     if include_level and level is not None:
-        return f"{name} Lv{level}"
+        status_label = _get_battle_status_label(pokemon)
+        status_suffix = f" ({status_label})" if status_label else ""
+        return f"{name} Lv{level}{status_suffix}"
     return name
 
 
