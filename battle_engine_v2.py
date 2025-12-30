@@ -133,6 +133,7 @@ class BattleState:
     # Ranked metadata
     is_ranked: bool = False
     ranked_context: Dict[str, Any] = field(default_factory=dict)
+    mega_evolution_used: set[int] = field(default_factory=set)
 
     def get_all_battlers(self) -> List[Battler]:
         """Get all battlers in this battle (2 for singles/doubles, 4 for multi)"""
@@ -845,6 +846,88 @@ class BattleEngine:
             return None
         return battler.party[party_index]
 
+    @staticmethod
+    def _normalize_name(name: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "", name.lower())
+
+    def _trainer_has_mega(self, battler_id: int) -> bool:
+        if not self.player_manager:
+            return False
+        trainer = self.player_manager.get_player(battler_id)
+        if not trainer:
+            return False
+        if not getattr(trainer, "has_omni_ring", False):
+            return False
+        gimmicks = getattr(trainer, "omni_ring_gimmicks", []) or []
+        return any(str(gimmick).lower() == "mega" for gimmick in gimmicks)
+
+    @staticmethod
+    def _extract_mega_target(item_data: Dict[str, Any]) -> Optional[str]:
+        description = item_data.get("description") or ""
+        match = re.search(r"Have ([^,]+?) hold it", description, flags=re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+        return None
+
+    @staticmethod
+    def _build_mega_name(target_name: str, item_id: str) -> str:
+        suffix = ""
+        if item_id.endswith("_x"):
+            suffix = " X"
+        elif item_id.endswith("_y"):
+            suffix = " Y"
+        return f"Mega {target_name}{suffix}"
+
+    def get_mega_evolution_name(
+        self,
+        battle: Optional[BattleState],
+        battler_id: int,
+        pokemon: Any,
+    ) -> Optional[str]:
+        if not pokemon or getattr(pokemon, "current_hp", 0) <= 0:
+            return None
+        if not self._trainer_has_mega(battler_id):
+            return None
+        if battle and battler_id in battle.mega_evolution_used:
+            return None
+        if getattr(pokemon, "is_mega_evolved", False):
+            return None
+        item_id = getattr(pokemon, "held_item", None)
+        if not item_id or not self.items_db:
+            return None
+        item_data = self.items_db.get_item(item_id)
+        if not item_data:
+            return None
+        target_name = self._extract_mega_target(item_data)
+        if not target_name:
+            return None
+        if self._normalize_name(pokemon.species_name) != self._normalize_name(target_name):
+            return None
+        return self._build_mega_name(target_name, item_id)
+
+    def _apply_mega_evolution(self, pokemon: Any, mega_name: str) -> None:
+        if not pokemon or getattr(pokemon, "is_mega_evolved", False):
+            return
+        pokemon._base_species_name = getattr(pokemon, "_base_species_name", pokemon.species_name)
+        pokemon._base_form = getattr(pokemon, "_base_form", getattr(pokemon, "form", None))
+        pokemon.is_mega_evolved = True
+        pokemon.mega_display_name = mega_name
+        pokemon.species_name = mega_name
+
+    def _revert_mega_evolutions(self, battle: BattleState) -> None:
+        for battler in battle.get_all_battlers():
+            for mon in getattr(battler, "party", []):
+                if getattr(mon, "is_mega_evolved", False):
+                    base_name = getattr(mon, "_base_species_name", None)
+                    base_form = getattr(mon, "_base_form", getattr(mon, "form", None))
+                    if base_name:
+                        mon.species_name = base_name
+                    mon.form = base_form
+                    mon.is_mega_evolved = False
+                    for attr in ("mega_display_name", "_base_species_name", "_base_form"):
+                        if hasattr(mon, attr):
+                            delattr(mon, attr)
+
     def _record_faint(self, battler: Optional[Battler], pokemon: Any):
         if not battler or battler.is_ai:
             return
@@ -1512,6 +1595,36 @@ class BattleEngine:
         upkeep_messages = self._apply_start_of_turn_passives(battle)
         battle.turn_log.extend(upkeep_messages)
 
+        manual_switch_events: List[Dict[str, Any]] = []
+        action_events: List[Dict[str, Any]] = []
+
+        # Apply mega evolutions before turn order
+        mega_actions = [action for action in battle.pending_actions.values() if getattr(action, "mega_evolve", False)]
+        for action in mega_actions:
+            if battle.is_over:
+                break
+            battler = self._get_battler_by_id(battle, action.battler_id)
+            if not battler:
+                continue
+            acting_pokemon = self._get_action_pokemon(battler, action)
+            mega_name = self.get_mega_evolution_name(battle, action.battler_id, acting_pokemon)
+            if not mega_name:
+                continue
+            self._apply_mega_evolution(acting_pokemon, mega_name)
+            battle.mega_evolution_used.add(action.battler_id)
+            messages = [
+                f"{battler.battler_name} activates their mega ring!",
+                f"{mega_name} mega evolved!",
+            ]
+            battle.turn_log.extend(messages)
+            action_events.append(
+                {
+                    "type": "mega_evolve",
+                    "actor": acting_pokemon,
+                    "messages": messages,
+                }
+            )
+
         # Sort actions by priority and speed
         actions = list(battle.pending_actions.values())
         actions = self._sort_actions(battle, actions)
@@ -1531,9 +1644,6 @@ class BattleEngine:
                         'pokemon': acting_pokemon,
                         'executed': False
                     }
-
-        manual_switch_events: List[Dict[str, Any]] = []
-        action_events: List[Dict[str, Any]] = []
 
         # Execute actions in order
         for action in actions:
@@ -3255,8 +3365,9 @@ class BattleEngine:
     
     def end_battle(self, battle_id: str):
         """Clean up a finished battle"""
-        if battle_id in self.active_battles:
-            del self.active_battles[battle_id]
+        battle = self.active_battles.pop(battle_id, None)
+        if battle:
+            self._revert_mega_evolutions(battle)
 
 
 # ========================

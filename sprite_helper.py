@@ -158,6 +158,15 @@ class PokemonSpriteHelper:
         inferred_gender = gender
         inferred_form = form
 
+        if inferred_form is None and segments and segments[0] == "mega" and len(segments) > 1:
+            base_segments = segments[1:]
+            if base_segments and base_segments[-1] in {"x", "y"}:
+                suffix = base_segments.pop()
+                inferred_form = f"mega-{suffix}"
+            else:
+                inferred_form = "mega"
+            segments = base_segments
+
         if len(segments) > 1:
             last_segment = segments[-1]
             if inferred_gender is None and last_segment in {"f", "female", "m", "male"}:
