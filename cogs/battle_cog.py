@@ -905,13 +905,7 @@ class BattleCog(commands.Cog):
         return BattleActionView(battle.battle_id, battle.trainer.battler_id, self.battle_engine, battle, self)
 
     def _format_pokemon_name(self, pokemon, include_level: bool = True) -> str:
-        name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
-        if getattr(pokemon, "is_raid_boss", False):
-            name = f"Rogue {name}"
-        level = getattr(pokemon, "level", None)
-        if include_level and level is not None:
-            return f"{name} Lv{level}"
-        return name
+        return _format_battle_pokemon_name(pokemon, include_level=include_level)
 
     def _build_raid_hp_bars(self, mon) -> str:
         total_segments = min(3, max(1, math.ceil(getattr(mon, "level", 1) / 100)))
@@ -1170,9 +1164,13 @@ class BattleCog(commands.Cog):
             action_msgs, faint_msgs = self._split_faint_messages(raw_messages)
 
             if action_msgs:
-                if event.get("type") == "end_of_turn":
+                event_type = event.get("type")
+                if event_type == "end_of_turn":
                     title = "End of Turn"
                     color = discord.Color.orange()
+                elif event_type == "mega_evolve":
+                    title = "Mega Evolution"
+                    color = discord.Color.purple()
                 else:
                     actor = event.get("actor")
                     actor_name = self._format_pokemon_name(actor, include_level=False) if actor else "Action"
@@ -1711,7 +1709,7 @@ class BattleActionView(discord.ui.View):
             battler = battle.trainer if battler_id == battle.trainer.battler_id else battle.opponent
             first_mon = battler.get_active_pokemon()[0]
             await interaction.response.send_message(
-                f"Select move for **{first_mon.species_name}** (Slot 1):",
+                f"Select move for **{_format_battle_pokemon_name(first_mon)}** (Slot 1):",
                 view=DoublesMoveSelectView(battle, battler_id, self.engine, 0, collector),
                 ephemeral=True,
             )
@@ -1734,7 +1732,7 @@ class BattleActionView(discord.ui.View):
                 cog = self.cog or interaction.client.get_cog("BattleCog")
                 if not res.get("ready_to_resolve"):
                     await interaction.response.send_message(
-                        f"{active_pokemon.species_name} is charging and will strike next!",
+                        f"{_format_battle_pokemon_name(active_pokemon)} is charging and will strike next!",
                         ephemeral=True,
                     )
                     return
@@ -1880,6 +1878,18 @@ def _get_battler_by_id(battle, battler_id: int):
     return battle.trainer
 
 
+def _format_battle_pokemon_name(pokemon, include_level: bool = False) -> str:
+    name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
+    if getattr(pokemon, "is_mega_evolved", False) and not name.lower().startswith("mega "):
+        name = f"Mega {name}"
+    if getattr(pokemon, "is_raid_boss", False):
+        name = f"Rogue {name}"
+    level = getattr(pokemon, "level", None)
+    if include_level and level is not None:
+        return f"{name} Lv{level}"
+    return name
+
+
 class MoveSelectView(discord.ui.View):
     def __init__(self, battle, battler_id: int, engine: BattleEngine, controller_id: Optional[int] = None):
         super().__init__(timeout=None)
@@ -1904,6 +1914,9 @@ class MoveSelectView(discord.ui.View):
         if not active_pokemon:
             return
 
+        self.mega_selected = False
+        self.mega_name = None
+
         # Add up to 4 move buttons for this Pokémon
         for mv in getattr(active_pokemon, "moves", [])[:4]:
             move_id = mv.get("move_id") or mv.get("id")
@@ -1926,6 +1939,32 @@ class MoveSelectView(discord.ui.View):
                     pokemon_position=0,
                     disabled=(cur_pp is not None and cur_pp <= 0),
                 )
+            )
+
+        mega_name = engine.get_mega_evolution_name(battle, battler_id, active_pokemon)
+        if mega_name:
+            self.mega_name = mega_name
+            self.add_item(MegaEvolveButton(mega_name))
+
+
+class MegaEvolveButton(discord.ui.Button):
+    def __init__(self, mega_name: str):
+        super().__init__(label="Mega Evolve", style=discord.ButtonStyle.primary, row=1)
+        self.mega_name = mega_name
+
+    async def callback(self, interaction: discord.Interaction):
+        view = self.view
+        if not view:
+            await interaction.response.send_message("This prompt expired.", ephemeral=True)
+            return
+        view.mega_selected = not getattr(view, "mega_selected", False)
+        self.label = "Mega Evolve ✅" if view.mega_selected else "Mega Evolve"
+        self.style = discord.ButtonStyle.success if view.mega_selected else discord.ButtonStyle.primary
+        await interaction.response.edit_message(view=view)
+        if view.mega_selected:
+            await interaction.followup.send(
+                f"{self.mega_name} is ready to mega evolve this turn!",
+                ephemeral=True,
             )
 
 class MoveButton(discord.ui.Button):
@@ -1957,6 +1996,7 @@ class MoveButton(discord.ui.Button):
         await interaction.response.defer()
 
         battle = self.engine.get_battle(self.battle_id)
+        mega_evolve = getattr(self.view, "mega_selected", False)
         move_data = self.engine.moves_db.get_move(self.move_id) if hasattr(self.engine, "moves_db") else {}
         if self.move_id == "revival_blessing" and battle:
             options, option_map = _build_revival_target_options(battle, self.battler_id)
@@ -1976,6 +2016,7 @@ class MoveButton(discord.ui.Button):
                     pokemon_position=self.pokemon_position,
                     options=options,
                     option_map=option_map,
+                    mega_evolve=mega_evolve,
                 ),
                 ephemeral=True,
             )
@@ -1990,11 +2031,18 @@ class MoveButton(discord.ui.Button):
                     self.move_id,
                     self.pokemon_position,
                     self.engine,
+                    mega_evolve=mega_evolve,
                 ),
                 ephemeral=True,
             )
             return
-        action = BattleAction(action_type='move', battler_id=self.battler_id, move_id=self.move_id, target_position=0)
+        action = BattleAction(
+            action_type='move',
+            battler_id=self.battler_id,
+            move_id=self.move_id,
+            target_position=0,
+            mega_evolve=mega_evolve,
+        )
         res = self.engine.register_action(self.battle_id, self.battler_id, action)
         cog = interaction.client.get_cog("BattleCog")
 
@@ -2304,7 +2352,7 @@ class DoublesActionMenuView(discord.ui.View):
         battler = _get_battler_by_id(self.battle, self.battler_id)
         pokemon = battler.get_active_pokemon()[self.pokemon_position]
         await interaction.response.edit_message(
-            content=f"Select move for **{pokemon.species_name}** (Slot {self.pokemon_position + 1}):",
+            content=f"Select move for **{_format_battle_pokemon_name(pokemon)}** (Slot {self.pokemon_position + 1}):",
             view=DoublesMoveSelectView(
                 self.battle, self.battler_id, self.engine,
                 self.pokemon_position, self.collector
@@ -2433,7 +2481,7 @@ class DoublesPartySelectView(discord.ui.View):
             battler = _get_battler_by_id(self.battle, self.battler_id)
             next_mon = battler.get_active_pokemon()[next_pos]
             await interaction.response.send_message(
-                f"Choose action for **{next_mon.species_name}** (Slot {next_pos + 1}):",
+                f"Choose action for **{_format_battle_pokemon_name(next_mon)}** (Slot {next_pos + 1}):",
                 view=DoublesActionMenuView(
                     self.battle, self.battler_id, self.engine,
                     next_pos, self.collector
@@ -2475,7 +2523,7 @@ class DoublesPartySelectView(discord.ui.View):
         battler = _get_battler_by_id(self.battle, self.battler_id)
         pokemon = battler.get_active_pokemon()[self.pokemon_position]
         await interaction.response.edit_message(
-            content=f"Choose action for **{pokemon.species_name}** (Slot {self.pokemon_position + 1}):",
+            content=f"Choose action for **{_format_battle_pokemon_name(pokemon)}** (Slot {self.pokemon_position + 1}):",
             view=DoublesActionMenuView(
                 self.battle, self.battler_id, self.engine,
                 self.pokemon_position, self.collector
@@ -2491,6 +2539,7 @@ class DoublesActionCollector:
         self.actions = {}  # {position: BattleAction}
         self.current_position = 0
         self.battle_id = battle.battle_id
+        self.mega_reserved = False
 
     def has_all_actions(self) -> bool:
         """Check if we have actions for all active Pokemon."""
@@ -2501,6 +2550,10 @@ class DoublesActionCollector:
     def add_action(self, position: int, action: BattleAction):
         """Add an action for a specific position."""
         self.actions[position] = action
+        self.refresh_mega_reserved()
+
+    def refresh_mega_reserved(self) -> None:
+        self.mega_reserved = any(getattr(action, "mega_evolve", False) for action in self.actions.values())
 
     def get_next_position(self) -> int | None:
         """Get the next position that needs an action."""
@@ -2523,6 +2576,7 @@ class RevivalTargetSelectView(discord.ui.View):
         options: list[discord.SelectOption],
         option_map: dict[str, tuple[int, int]],
         collector: DoublesActionCollector | None = None,
+        mega_evolve: bool = False,
     ):
         super().__init__(timeout=None)
         self.battle = battle
@@ -2532,6 +2586,7 @@ class RevivalTargetSelectView(discord.ui.View):
         self.pokemon_position = pokemon_position
         self.collector = collector
         self.option_map = option_map
+        self.mega_evolve = mega_evolve
 
         select = discord.ui.Select(placeholder="Select a Pokémon to revive", options=options)
         select.callback = self._on_select
@@ -2577,6 +2632,7 @@ class RevivalTargetSelectView(discord.ui.View):
             pokemon_position=self.pokemon_position,
             revive_target_battler_id=target_battler_id,
             revive_target_party_index=target_index,
+            mega_evolve=self.mega_evolve,
         )
 
         if self.collector:
@@ -2618,7 +2674,7 @@ class RevivalTargetSelectView(discord.ui.View):
             battler = _get_battler_by_id(self.battle, self.battler_id)
             next_mon = battler.get_active_pokemon()[next_pos]
             await interaction.followup.send(
-                f"Choose action for **{next_mon.species_name}** (Slot {next_pos+1}):",
+                f"Choose action for **{_format_battle_pokemon_name(next_mon)}** (Slot {next_pos+1}):",
                 view=DoublesActionMenuView(
                     self.battle, self.battler_id, self.engine,
                     next_pos, self.collector
@@ -2652,7 +2708,8 @@ class RevivalTargetSelectView(discord.ui.View):
 class TargetSelectView(discord.ui.View):
     """View for selecting which target to attack in doubles battles."""
     def __init__(self, battle, battler_id: int, move_id: str, pokemon_position: int,
-                 engine: BattleEngine, collector: DoublesActionCollector | None = None):
+                 engine: BattleEngine, collector: DoublesActionCollector | None = None,
+                 mega_evolve: bool = False):
         super().__init__(timeout=None)
         self.battle = battle
         self.battle_id = battle.battle_id
@@ -2661,6 +2718,7 @@ class TargetSelectView(discord.ui.View):
         self.pokemon_position = pokemon_position
         self.engine = engine
         self.collector = collector
+        self.mega_evolve = mega_evolve
 
         move_data = engine.moves_db.get_move(move_id) if hasattr(engine, 'moves_db') else {}
         target_type = move_data.get('target', 'single')
@@ -2698,10 +2756,7 @@ class TargetSelectView(discord.ui.View):
 
     @staticmethod
     def _format_target_name(pokemon) -> str:
-        name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
-        if getattr(pokemon, "is_raid_boss", False):
-            name = f"Rogue {name}"
-        return name
+        return _format_battle_pokemon_name(pokemon, include_level=False)
 
     def _format_candidate_label(self, candidate: dict, target_type: str) -> str:
         # For raids with single-target moves, distinguish between ally and opponent
@@ -2806,6 +2861,7 @@ class TargetSelectView(discord.ui.View):
         if self.pokemon_position > 0 and self.collector:
             # Remove the previous action
             self.collector.actions.pop(self.pokemon_position, None)
+            self.collector.refresh_mega_reserved()
             await interaction.response.edit_message(
                 content=f"Select move for Pokemon {self.pokemon_position} (Slot {self.pokemon_position+1}):",
                 view=DoublesMoveSelectView(
@@ -2837,7 +2893,8 @@ class TargetSelectView(discord.ui.View):
             move_id=self.move_id,
             target_position=target_position,
             target_battler_id=target_battler_id,
-            pokemon_position=self.pokemon_position
+            pokemon_position=self.pokemon_position,
+            mega_evolve=self.mega_evolve,
         )
 
         # If this is part of a doubles collector, add to collector
@@ -2850,7 +2907,7 @@ class TargetSelectView(discord.ui.View):
                 battler = _get_battler_by_id(self.battle, self.battler_id)
                 next_mon = battler.get_active_pokemon()[next_pos]
                 await interaction.followup.send(
-                    f"Choose action for **{next_mon.species_name}** (Slot {next_pos+1}):",
+                    f"Choose action for **{_format_battle_pokemon_name(next_mon)}** (Slot {next_pos+1}):",
                     view=DoublesActionMenuView(
                         self.battle, self.battler_id, self.engine,
                         next_pos, self.collector
@@ -2917,6 +2974,8 @@ class DoublesMoveSelectView(discord.ui.View):
         self.engine = engine
         self.pokemon_position = pokemon_position
         self.collector = collector
+        self.mega_selected = False
+        self.mega_name = None
 
         # Get the Pokemon at this position
         battler = battle.trainer if battler_id == battle.trainer.battler_id else battle.opponent
@@ -2941,6 +3000,11 @@ class DoublesMoveSelectView(discord.ui.View):
             )
             button.callback = self._create_move_callback(move_id)
             self.add_item(button)
+
+        mega_name = engine.get_mega_evolution_name(battle, battler_id, active_pokemon)
+        if mega_name and not self.collector.mega_reserved:
+            self.mega_name = mega_name
+            self.add_item(MegaEvolveButton(mega_name))
 
         # Add back button if this isn't the first Pokemon
         if pokemon_position > 0:
@@ -2971,6 +3035,7 @@ class DoublesMoveSelectView(discord.ui.View):
                         options=options,
                         option_map=option_map,
                         collector=self.collector,
+                        mega_evolve=self.mega_selected,
                     ),
                     embed=None,
                 )
@@ -2979,7 +3044,8 @@ class DoublesMoveSelectView(discord.ui.View):
                     content=f"Select target for this move:",
                     view=TargetSelectView(
                         self.battle, self.battler_id, move_id,
-                        self.pokemon_position, self.engine, self.collector
+                        self.pokemon_position, self.engine, self.collector,
+                        mega_evolve=self.mega_selected
                     ),
                     embed=None
                 )
@@ -2991,10 +3057,11 @@ class DoublesMoveSelectView(discord.ui.View):
         if prev_pos >= 0:
             # Remove previous Pokemon's action
             self.collector.actions.pop(prev_pos, None)
+            self.collector.refresh_mega_reserved()
             battler = _get_battler_by_id(self.battle, self.battler_id)
             prev_mon = battler.get_active_pokemon()[prev_pos]
             await interaction.response.edit_message(
-                content=f"Select move for **{prev_mon.species_name}** (Slot {prev_pos+1}):",
+                content=f"Select move for **{_format_battle_pokemon_name(prev_mon)}** (Slot {prev_pos+1}):",
                 view=DoublesMoveSelectView(
                     self.battle, self.battler_id, self.engine,
                     prev_pos, self.collector
