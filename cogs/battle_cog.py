@@ -1181,11 +1181,19 @@ class BattleCog(commands.Cog):
                     color = discord.Color.orange()
 
                 if event_type == "omni_ring":
+                    omni_title = action_msgs[0] if action_msgs else title
+                    trainer_ref = event.get("trainer")
+                    trainer_profile = None
+                    if trainer_ref:
+                        player_manager = getattr(self.bot, "player_manager", None)
+                        if player_manager and hasattr(trainer_ref, "battler_id"):
+                            trainer_profile = player_manager.get_player(trainer_ref.battler_id)
                     embed = self._build_action_embed(
-                        action_msgs,
-                        title=title,
+                        [],
+                        title=omni_title,
                         color=color,
-                        trainer=event.get("trainer"),
+                        trainer=trainer_profile or trainer_ref,
+                        description_override="",
                     )
                 elif event_type == "mega_evolve":
                     embed = self._build_action_embed(
@@ -1239,24 +1247,28 @@ class BattleCog(commands.Cog):
 
     def _build_action_embed(
         self,
-        messages: list[str],
+        messages: Optional[list[str]],
         title: str,
         color: Optional[discord.Color] = None,
         pokemon=None,
         trainer=None,
         species_name: Optional[str] = None,
+        description_override: Optional[str] = None,
     ) -> Optional[discord.Embed]:
-        if not messages:
+        if not messages and description_override is None:
             return None
-        spaced = []
-        for msg in messages:
-            if msg is None:
-                continue
-            spaced.append(str(msg))
-            spaced.append("")
-        if spaced and spaced[-1] == "":
-            spaced.pop()
-        desc = "\n".join(spaced) if spaced else "The turn resolves."
+        if description_override is not None:
+            desc = description_override
+        else:
+            spaced = []
+            for msg in messages or []:
+                if msg is None:
+                    continue
+                spaced.append(str(msg))
+                spaced.append("")
+            if spaced and spaced[-1] == "":
+                spaced.pop()
+            desc = "\n".join(spaced) if spaced else "The turn resolves."
         embed = discord.Embed(title=title, description=desc, color=color or discord.Color.orange())
         trainer_avatar = getattr(trainer, "avatar_url", None) if trainer else None
         if trainer_avatar:
@@ -1299,9 +1311,17 @@ class BattleCog(commands.Cog):
             shiny=False,
             use_fallback=False,
         )
-        if not sprite_url:
-            return None
-        return sprite_url.replace("/sprites/pokemon/", "/sprites/other/official-artwork/")
+        if sprite_url:
+            return sprite_url.replace("/sprites/pokemon/", "/sprites/other/official-artwork/")
+        official_url = PokemonSpriteHelper.get_sprite(
+            getattr(pokemon, "species_name", None),
+            getattr(pokemon, "species_dex_number", None),
+            style='official',
+            gender=getattr(pokemon, 'gender', None),
+            shiny=False,
+            use_fallback=False,
+        )
+        return official_url
 
     def _extract_fainted_species(self, messages: list[str]) -> Optional[str]:
         for msg in messages:
