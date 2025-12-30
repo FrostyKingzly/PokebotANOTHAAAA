@@ -1181,11 +1181,13 @@ class BattleCog(commands.Cog):
                     color = discord.Color.orange()
 
                 if event_type == "omni_ring":
+                    omni_title = action_msgs[0] if action_msgs else title
                     embed = self._build_action_embed(
-                        action_msgs,
-                        title=title,
+                        [],
+                        title=omni_title,
                         color=color,
                         trainer=event.get("trainer"),
+                        description_override="",
                     )
                 elif event_type == "mega_evolve":
                     embed = self._build_action_embed(
@@ -1239,24 +1241,28 @@ class BattleCog(commands.Cog):
 
     def _build_action_embed(
         self,
-        messages: list[str],
+        messages: Optional[list[str]],
         title: str,
         color: Optional[discord.Color] = None,
         pokemon=None,
         trainer=None,
         species_name: Optional[str] = None,
+        description_override: Optional[str] = None,
     ) -> Optional[discord.Embed]:
-        if not messages:
+        if not messages and description_override is None:
             return None
-        spaced = []
-        for msg in messages:
-            if msg is None:
-                continue
-            spaced.append(str(msg))
-            spaced.append("")
-        if spaced and spaced[-1] == "":
-            spaced.pop()
-        desc = "\n".join(spaced) if spaced else "The turn resolves."
+        if description_override is not None:
+            desc = description_override
+        else:
+            spaced = []
+            for msg in messages or []:
+                if msg is None:
+                    continue
+                spaced.append(str(msg))
+                spaced.append("")
+            if spaced and spaced[-1] == "":
+                spaced.pop()
+            desc = "\n".join(spaced) if spaced else "The turn resolves."
         embed = discord.Embed(title=title, description=desc, color=color or discord.Color.orange())
         trainer_avatar = getattr(trainer, "avatar_url", None) if trainer else None
         if trainer_avatar:
