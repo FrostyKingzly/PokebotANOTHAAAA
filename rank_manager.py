@@ -13,6 +13,7 @@ OMNI_RING_IMAGE_URL = (
     "https://cdn.discordapp.com/attachments/1430369965642485843/1453175007403577385/"
     "image0.jpg?ex=694c7e30&is=694b2cb0&hm=9d0c16955d79bf3403ecd0b3f66f3695996a4831bd46d0b99abc5729d1fa8348&"
 )
+OMNI_RING_ITEM_ID = "omni_ring"
 
 # Rank definitions: eight tiers spread across five named ranks
 RANK_TIER_DEFINITIONS: List[Dict[str, Any]] = [
@@ -471,6 +472,19 @@ class RankManager:
 
         self._state["omni_ring_global"] = True
         self._save_state()
+        self._deliver_omni_ring_items()
+
+    def _deliver_omni_ring_items(self) -> None:
+        if not self.player_manager:
+            return
+        trainers = self.player_manager.get_trainers_by_rank_tier(2)
+        for trainer in trainers:
+            trainer_id = getattr(trainer, "discord_user_id", None)
+            if not trainer_id:
+                continue
+            if self.player_manager.get_item_quantity(trainer_id, OMNI_RING_ITEM_ID) > 0:
+                continue
+            self.player_manager.add_item(trainer_id, OMNI_RING_ITEM_ID, quantity=1)
 
     def omni_distribution_active(self) -> bool:
         return bool(self._state.get("omni_ring_global", False))

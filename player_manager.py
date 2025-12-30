@@ -292,6 +292,15 @@ class PlayerManager:
             return Trainer(refreshed)
         return None
 
+    def get_trainers_by_rank_tier(self, tier: int) -> List[Trainer]:
+        """Get all trainers with the specified rank tier."""
+        rows = self.db.get_trainers_by_rank_tier(tier)
+        trainers: List[Trainer] = []
+        for data in rows:
+            refreshed = self._apply_passive_stamina(data)
+            trainers.append(Trainer(refreshed))
+        return trainers
+
     def get_partner_pokemon(self, discord_user_id: int) -> Optional[Dict]:
         """Return the trainer's designated partner Pokemon, if any."""
         trainer = self.get_player(discord_user_id)

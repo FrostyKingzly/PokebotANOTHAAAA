@@ -10531,6 +10531,15 @@
     "name": "Mega Tiara",
     "sell_price": 0
   },
+  "omni_ring": {
+    "buy_price": 0,
+    "category": "key_item",
+    "description": "A ring infused with Omni power that lets its wearer channel battle gimmicks.",
+    "generation": 1,
+    "id": "omni_ring",
+    "name": "Omni Ring",
+    "sell_price": 0
+  },
   "meltan_candy": {
     "buy_price": 20,
     "category": "other",
