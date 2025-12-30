@@ -852,13 +852,6 @@ class BattleEngine:
             return
         self.player_manager.record_faint(pokemon)
 
-    def _award_action_friendship(self, battler: Optional[Battler]):
-        if not battler or battler.is_ai:
-            return
-        if not self.player_manager:
-            return
-        self.player_manager.adjust_party_friendship(party_pokemon=battler.party, amount=1)
-    
     def start_wild_battle(self, trainer_id: int, trainer_name: str, 
                          trainer_party: List[Any], wild_pokemon: Any) -> str:
         """Convenience method for wild battles"""
@@ -1748,9 +1741,6 @@ class BattleEngine:
             result = self._execute_flee(battle, action)
         else:
             result = {"messages": []}
-
-        if action.action_type != 'disobey':
-            self._award_action_friendship(battler)
 
         return result
         
