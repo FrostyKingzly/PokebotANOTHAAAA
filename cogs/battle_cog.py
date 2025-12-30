@@ -1305,9 +1305,17 @@ class BattleCog(commands.Cog):
             shiny=False,
             use_fallback=False,
         )
-        if not sprite_url:
-            return None
-        return sprite_url.replace("/sprites/pokemon/", "/sprites/other/official-artwork/")
+        if sprite_url:
+            return sprite_url.replace("/sprites/pokemon/", "/sprites/other/official-artwork/")
+        official_url = PokemonSpriteHelper.get_sprite(
+            getattr(pokemon, "species_name", None),
+            getattr(pokemon, "species_dex_number", None),
+            style='official',
+            gender=getattr(pokemon, 'gender', None),
+            shiny=False,
+            use_fallback=False,
+        )
+        return official_url
 
     def _extract_fainted_species(self, messages: list[str]) -> Optional[str]:
         for msg in messages:
