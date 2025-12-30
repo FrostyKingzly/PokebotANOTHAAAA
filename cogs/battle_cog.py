@@ -1182,17 +1182,11 @@ class BattleCog(commands.Cog):
 
                 if event_type == "omni_ring":
                     omni_title = action_msgs[0] if action_msgs else title
-                    trainer_ref = event.get("trainer")
-                    trainer_profile = None
-                    if trainer_ref:
-                        player_manager = getattr(self.bot, "player_manager", None)
-                        if player_manager and hasattr(trainer_ref, "battler_id"):
-                            trainer_profile = player_manager.get_player(trainer_ref.battler_id)
                     embed = self._build_action_embed(
                         [],
                         title=omni_title,
                         color=color,
-                        trainer=trainer_profile or trainer_ref,
+                        trainer=event.get("trainer"),
                         description_override="",
                     )
                 elif event_type == "mega_evolve":
