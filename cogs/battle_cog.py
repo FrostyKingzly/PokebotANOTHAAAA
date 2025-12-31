@@ -1264,7 +1264,7 @@ class BattleCog(commands.Cog):
                 spaced.pop()
             desc = "\n".join(spaced) if spaced else "The turn resolves."
         embed = discord.Embed(title=title, description=desc, color=color or discord.Color.orange())
-        trainer_avatar = getattr(trainer, "avatar_url", None) if trainer else None
+        trainer_avatar = self._resolve_trainer_avatar_url(trainer)
         if trainer_avatar:
             embed.set_thumbnail(url=trainer_avatar)
         else:
@@ -1272,6 +1272,23 @@ class BattleCog(commands.Cog):
             if sprite_url:
                 embed.set_thumbnail(url=sprite_url)
         return embed
+
+    def _resolve_trainer_avatar_url(self, trainer) -> Optional[str]:
+        if not trainer:
+            return None
+        avatar_url = getattr(trainer, "avatar_url", None)
+        if avatar_url:
+            return avatar_url
+        battler_id = getattr(trainer, "battler_id", None)
+        if battler_id is None:
+            return None
+        player_manager = getattr(self.bot, "player_manager", None)
+        if player_manager:
+            profile = player_manager.get_player(battler_id)
+            avatar_url = getattr(profile, "avatar_url", None) if profile else None
+            if avatar_url:
+                return avatar_url
+        return None
 
     def _get_action_sprite_url(self, pokemon=None, species_name: Optional[str] = None) -> Optional[str]:
         if pokemon:
@@ -1306,7 +1323,8 @@ class BattleCog(commands.Cog):
             use_fallback=False,
         )
         if sprite_url:
-            return sprite_url.replace("/sprites/pokemon/", "/sprites/other/official-artwork/")
+            slug = sprite_url.rsplit("/", 1)[-1].replace(".png", "")
+            return f"https://img.pokemondb.net/artwork/large/{slug}.jpg"
         official_url = PokemonSpriteHelper.get_sprite(
             getattr(pokemon, "species_name", None),
             getattr(pokemon, "species_dex_number", None),
