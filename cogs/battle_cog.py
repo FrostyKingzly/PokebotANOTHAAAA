@@ -1172,7 +1172,9 @@ class BattleCog(commands.Cog):
                     title = "Omni Ring"
                     color = discord.Color.gold()
                 elif event_type == "mega_evolve":
-                    title = "Mega Evolution"
+                    actor = event.get("actor")
+                    actor_name = self._format_pokemon_name(actor, include_level=False) if actor else "Pokémon"
+                    title = f"{actor_name} Mega Evolved!!!"
                     color = discord.Color.purple()
                 else:
                     actor = event.get("actor")
@@ -1191,10 +1193,11 @@ class BattleCog(commands.Cog):
                     )
                 elif event_type == "mega_evolve":
                     embed = self._build_action_embed(
-                        action_msgs,
+                        [],
                         title=title,
                         color=color,
                         pokemon=None,
+                        description_override="",
                     )
                     mega_art_url = self._get_mega_art_url(event.get("actor"))
                     if embed and mega_art_url:
@@ -1324,7 +1327,7 @@ class BattleCog(commands.Cog):
         )
         if sprite_url:
             slug = sprite_url.rsplit("/", 1)[-1].replace(".png", "")
-            return f"https://img.pokemondb.net/artwork/large/{slug}.jpg"
+            return f"https://img.pokemondb.net/artwork/large/{slug}.png"
         official_url = PokemonSpriteHelper.get_sprite(
             getattr(pokemon, "species_name", None),
             getattr(pokemon, "species_dex_number", None),
