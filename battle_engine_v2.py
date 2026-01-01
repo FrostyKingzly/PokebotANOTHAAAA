@@ -1613,7 +1613,7 @@ class BattleEngine:
             base_name = getattr(acting_pokemon, "nickname", None) or getattr(acting_pokemon, "species_name", "Pokémon")
             self._apply_mega_evolution(acting_pokemon, mega_name)
             battle.mega_evolution_used.add(action.battler_id)
-            ring_messages = [f"{battler.battler_name} activates their Omni ring!"]
+            ring_messages = [f"{battler.battler_name} activates their Omni Ring!"]
             mega_messages = [f"{base_name} mega evolved!"]
             battle.turn_log.extend(ring_messages)
             battle.turn_log.extend(mega_messages)
@@ -1628,6 +1628,7 @@ class BattleEngine:
                 {
                     "type": "mega_evolve",
                     "actor": acting_pokemon,
+                    "base_name": base_name,
                     "messages": mega_messages,
                 }
             )

@@ -1172,8 +1172,13 @@ class BattleCog(commands.Cog):
                     title = "Omni Ring"
                     color = discord.Color.gold()
                 elif event_type == "mega_evolve":
-                    actor = event.get("actor")
-                    actor_name = self._format_pokemon_name(actor, include_level=False) if actor else "Pokémon"
+                    # Use base_name if available to avoid "Mega Mawile Mega Evolved"
+                    base_name = event.get("base_name")
+                    if not base_name:
+                        actor = event.get("actor")
+                        actor_name = self._format_pokemon_name(actor, include_level=False) if actor else "Pokémon"
+                    else:
+                        actor_name = base_name
                     title = f"{actor_name} Mega Evolved!!!"
                     color = discord.Color.purple()
                 else:
