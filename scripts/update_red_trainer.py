@@ -32,6 +32,8 @@ def main():
             SET rank_tier_number = 8,
                 rank_tier_name = 'Challenger',
                 ladder_points = 100,
+                has_promotion_ticket = 0,
+                ticket_tier = NULL,
                 has_omni_ring = 1,
                 omni_ring_gimmicks = 'mega',
                 updated_at = CURRENT_TIMESTAMP
@@ -41,6 +43,7 @@ def main():
         conn.commit()
         print("\n✓ Updated Red's profile:")
         print("  - Rank: Challenger 1 (Tier 8)")
+        print("  - Promotion ticket: Cleared")
         print("  - Omni Ring: Enabled with Mega Evolution")
     else:
         print("Trainer Red not found in database!")

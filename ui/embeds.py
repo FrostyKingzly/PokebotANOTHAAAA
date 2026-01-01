@@ -13,6 +13,12 @@ from sprite_helper import PokemonSpriteHelper
 from database import NaturesDatabase
 from social_stats import SOCIAL_STAT_DEFINITIONS, SOCIAL_STAT_ORDER
 
+
+class _RotomFormatDict(dict):
+    def __missing__(self, key: str) -> str:
+        return f"{{{key}}}"
+
+
 class EmbedBuilder:
     """Builds Discord embeds for the bot"""
 
@@ -67,8 +73,66 @@ class EmbedBuilder:
     ]
 
     ROTOM_QUOTES_CONTEXTUAL = {
-        # Add new context-specific quote lists here, e.g. "weather_sunny": ["…"],
-        # "stamina_low": ["…"], "ranked_push": ["…"], etc.
+        "time:morning": [
+            "Bzzt… morning detected! Let’s boot up nice and slow, okay?",
+            "Systems online! Hope you slept better than I did…",
+        ],
+        "time:day": [
+            "It’s a great day to get things done!",
+        ],
+        "time:evening": [
+            "Looks like sun’s going down… kinda pretty, huh?",
+            "Evenings feel quieter… like the world’s catching its breath.",
+            "It’s getting late… but there’s still time for another adventure!",
+        ],
+        "time:night": [
+            "It’s getting late… but I’ll stay awake as long as you do.",
+            "Hey… you still awake? Don’t forget to rest up when you can.",
+        ],
+        "stamina:full": [
+            "You’re running at peak power right now! Don’t waste it!",
+            "I can feel the spark! You’re ready for anything!",
+        ],
+        "stamina:medium": [
+            "Still doing good! Just… don’t forget to pace yourself.",
+            "You’ve still got energy left. Just be smart with it, okay?",
+        ],
+        "stamina:low": [
+            "Hey… your energy’s running low. Maybe it’s time to rest for a bit?",
+            "It’s okay to stop for now. You don’t have to do everything today.",
+        ],
+        "promotion:scheduled": [
+            "Bzzt! A promotion match has been set! We’d better prepare!",
+            "This upcoming promotion match could change everything. No pressure!",
+            "Alright! You’re up against {OPPONENT_NAME} in a {BATTLE_FORMAT} match! Data says this won’t be easy!",
+            "Looks like your opponent will be {OPPONENT_NAME} in a {BATTLE_FORMAT} match! Maybe we should learn more about them before the battle.",
+        ],
+        "ticket:held": [
+            "Challenger Ticket obtained! Now we just need to wait for your promotion match to be scheduled.",
+            "You have a Challanger Ticket! Way to go!",
+            "That’s a Challenger Ticket!! You earned it!",
+            "Now that you’ve got a Challenger Ticket, I wonder who your next opponent will be…",
+            "Nice job snagging yourself a ticket! We should use this downtime to prepare for the big match.",
+        ],
+        "rank:recent": [
+            "Bzzt! Promotion confirmed! Welcome to {RANK_NAME}!!",
+            "You did it! You’ve officially ranked up to {RANK_NAME}!",
+            "Rank up successful! I knew you had it in you!",
+            "Rank up!! From here on out, things are only getting tougher, but I know you’re ready.",
+        ],
+        "promotion:won": [
+            "You did it! That match is officially over… great work!",
+            "Bzzt! Victory confirmed! Now we just have to wait for your new rank to unlock.",
+            "You’ve earned this moment. The next rank will unlock soon!",
+            "Nicely done! You really showed what you’re capable of out there.",
+        ],
+        "promotion:lost": [
+            "That one didn’t go our way. But that’s okay. We’ll work our way back up!",
+            "A tough match… We’ll just have to come back stronger next time!",
+            "Your Challenger Points dropped back a bit… but you’re still in this.",
+            "Every strong trainer stumbles sometimes. What matters is getting back up.",
+            "You’ve come too far to stop now. Let’s keep going together.",
+        ],
     }
 
     WEATHER_DISPLAY = {
@@ -98,17 +162,25 @@ class EmbedBuilder:
         if 5 <= hour < 12:
             return "morning"
         if 12 <= hour < 17:
-            return "afternoon"
+            return "day"
         if 17 <= hour < 21:
             return "evening"
         return "night"
 
     @staticmethod
-    def _rotom_context_tags(trainer: Trainer, weather_info: Optional[Dict], now: float) -> List[str]:
+    def _rotom_context_tags(
+        trainer: Trainer,
+        weather_info: Optional[Dict],
+        rank_manager,
+        now: float,
+    ) -> tuple[List[str], Dict[str, str]]:
         """Collect contextual tags so we can expand quotes later."""
 
         timestamp = time.localtime(now)
         tags = [f"time:{EmbedBuilder._time_of_day(timestamp.tm_hour)}"]
+        context: Dict[str, str] = {
+            "RANK_NAME": getattr(trainer, "rank_tier_name", "Unknown Rank"),
+        }
 
         weather = None
         if weather_info:
@@ -124,25 +196,47 @@ class EmbedBuilder:
             tags.append("stamina:low")
         elif stamina_ratio >= 0.9:
             tags.append("stamina:full")
+        else:
+            tags.append("stamina:medium")
 
         ladder_points = getattr(trainer, "ladder_points", 0)
         if ladder_points >= 50:
             tags.append("rank:climbing")
 
+        match_context = None
+        if rank_manager and hasattr(rank_manager, "get_promotion_match_context"):
+            match_context = rank_manager.get_promotion_match_context(trainer.discord_user_id)
+            if match_context:
+                tags.append("promotion:scheduled")
+                context.update(match_context)
+
+        if getattr(trainer, "has_promotion_ticket", False) and not match_context:
+            tags.append("ticket:held")
+
+        if getattr(trainer, "last_promotion_result", None) == "win" and getattr(trainer, "rank_pending_tier", None):
+            tags.append("promotion:won")
+        elif getattr(trainer, "last_promotion_result", None) == "loss":
+            tags.append("promotion:lost")
+
+        last_rank_up_at = getattr(trainer, "last_rank_up_at", None)
+        if last_rank_up_at and (now - last_rank_up_at) <= 86400:
+            tags.append("rank:recent")
+
         # Additional tags can be added later without changing selection logic
-        return tags
+        return tags, context
 
     @staticmethod
     def _select_rotom_quote(
         trainer: Trainer,
         weather_info: Optional[Dict],
+        rank_manager,
         *,
         now: Optional[float] = None,
     ) -> str:
         """Pick a deterministic Rotom quote for the current hour/context."""
 
         now = now or time.time()
-        tags = EmbedBuilder._rotom_context_tags(trainer, weather_info, now)
+        tags, context = EmbedBuilder._rotom_context_tags(trainer, weather_info, rank_manager, now)
 
         candidates: List[str] = list(EmbedBuilder.ROTOM_QUOTES_GENERAL)
         for tag in tags:
@@ -155,7 +249,11 @@ class EmbedBuilder:
         hour_bucket = int(now // 3600)
         selection_key = f"{hour_bucket}|{'|'.join(tags)}"
         index = abs(hash(selection_key)) % len(candidates)
-        return candidates[index]
+        selected = candidates[index]
+        try:
+            return selected.format_map(_RotomFormatDict(context))
+        except (KeyError, ValueError):
+            return selected
 
     @staticmethod
     def _calculate_display_stats(pokemon: Dict, species_data: Dict) -> Dict[str, int]:
@@ -317,6 +415,7 @@ class EmbedBuilder:
         rotom_quote = EmbedBuilder._select_rotom_quote(
             trainer,
             weather_info,
+            rank_manager,
             now=time.time(),
         )
         if rotom_quote:
