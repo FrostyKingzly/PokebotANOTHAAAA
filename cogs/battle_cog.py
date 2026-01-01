@@ -1317,9 +1317,17 @@ class BattleCog(commands.Cog):
     def _get_mega_art_url(self, pokemon) -> Optional[str]:
         if not pokemon:
             return None
-        dex_number = getattr(pokemon, "species_dex_number", None)
-        if dex_number:
-            return f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/{dex_number}.png"
+        sprite_url = PokemonSpriteHelper.get_sprite(
+            getattr(pokemon, "species_name", None),
+            getattr(pokemon, "species_dex_number", None),
+            style='showdown',
+            gender=getattr(pokemon, 'gender', None),
+            shiny=False,
+            use_fallback=False,
+        )
+        if sprite_url:
+            slug = sprite_url.rsplit("/", 1)[-1].replace(".png", "")
+            return f"https://img.pokemondb.net/artwork/large/{slug}.png"
         official_url = PokemonSpriteHelper.get_sprite(
             getattr(pokemon, "species_name", None),
             getattr(pokemon, "species_dex_number", None),
