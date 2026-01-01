@@ -1317,6 +1317,7 @@ class BattleCog(commands.Cog):
     def _get_mega_art_url(self, pokemon) -> Optional[str]:
         if not pokemon:
             return None
+        # Use Showdown sprite URL directly for transparent mega artwork
         sprite_url = PokemonSpriteHelper.get_sprite(
             getattr(pokemon, "species_name", None),
             getattr(pokemon, "species_dex_number", None),
@@ -1326,8 +1327,8 @@ class BattleCog(commands.Cog):
             use_fallback=False,
         )
         if sprite_url:
-            slug = sprite_url.rsplit("/", 1)[-1].replace(".png", "")
-            return f"https://img.pokemondb.net/artwork/large/{slug}.png"
+            return sprite_url
+        # Fallback to official art if no showdown sprite exists
         official_url = PokemonSpriteHelper.get_sprite(
             getattr(pokemon, "species_name", None),
             getattr(pokemon, "species_dex_number", None),
