@@ -1317,26 +1317,16 @@ class BattleCog(commands.Cog):
     def _get_mega_art_url(self, pokemon) -> Optional[str]:
         if not pokemon:
             return None
+        # Use gen5 animated sprites for mega evolution
         sprite_url = PokemonSpriteHelper.get_sprite(
             getattr(pokemon, "species_name", None),
             getattr(pokemon, "species_dex_number", None),
-            style='showdown',
+            style='animated',
             gender=getattr(pokemon, 'gender', None),
-            shiny=False,
+            shiny=getattr(pokemon, 'is_shiny', False),
             use_fallback=False,
         )
-        if sprite_url:
-            slug = sprite_url.rsplit("/", 1)[-1].replace(".png", "")
-            return f"https://img.pokemondb.net/artwork/large/{slug}.png"
-        official_url = PokemonSpriteHelper.get_sprite(
-            getattr(pokemon, "species_name", None),
-            getattr(pokemon, "species_dex_number", None),
-            style='official',
-            gender=getattr(pokemon, 'gender', None),
-            shiny=False,
-            use_fallback=False,
-        )
-        return official_url
+        return sprite_url
 
     def _extract_fainted_species(self, messages: list[str]) -> Optional[str]:
         for msg in messages:
