@@ -385,6 +385,9 @@ class Trainer:
         self.has_promotion_ticket = bool(data.get('has_promotion_ticket', 0))
         self.ticket_tier = data.get('ticket_tier')
         self.rank_pending_tier = data.get('rank_pending_tier')
+        self.last_rank_up_at = data.get('last_rank_up_at')
+        self.last_promotion_result = data.get('last_promotion_result')
+        self.last_promotion_result_at = data.get('last_promotion_result_at')
         self.has_omni_ring = bool(data.get('has_omni_ring', 0))
         gimmicks_raw = data.get('omni_ring_gimmicks')
         if isinstance(gimmicks_raw, str):

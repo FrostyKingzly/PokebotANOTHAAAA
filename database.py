@@ -459,6 +459,9 @@ class PlayerDatabase:
                 has_promotion_ticket INTEGER DEFAULT 0,
                 ticket_tier INTEGER,
                 rank_pending_tier INTEGER,
+                last_rank_up_at INTEGER,
+                last_promotion_result TEXT,
+                last_promotion_result_at INTEGER,
                 has_omni_ring INTEGER DEFAULT 0,
                 omni_ring_gimmicks TEXT,
 
@@ -703,6 +706,9 @@ class PlayerDatabase:
         add_column('will_rank', 'INTEGER DEFAULT 1')
         add_column('ticket_tier', 'INTEGER')
         add_column('rank_pending_tier', 'INTEGER')
+        add_column('last_rank_up_at', 'INTEGER')
+        add_column('last_promotion_result', 'TEXT')
+        add_column('last_promotion_result_at', 'INTEGER')
 
         # Points
         if add_column('heart_points', 'INTEGER DEFAULT 50'):

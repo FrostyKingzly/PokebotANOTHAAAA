@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -159,7 +160,6 @@ class RankManager:
         self.matches_path = Path(matches_path)
         self._state = self._load_state()
         self._matches = self._load_matches()
-        self._ensure_promotion_ticket_for_trainer("Red")
 
     # ------------------------------------------------------------------
     # Persistence helpers
@@ -322,15 +322,39 @@ class RankManager:
                 return match
         return None
 
-    def _ensure_promotion_ticket_for_trainer(self, trainer_name: str) -> None:
-        trainer = self.player_manager.get_player_by_name(trainer_name)
-        if not trainer or getattr(trainer, "has_promotion_ticket", False):
-            return
-        tier = trainer.rank_tier_number or 1
-        updates = {"has_promotion_ticket": 1, "ticket_tier": tier}
-        self.player_manager.update_player(trainer.discord_user_id, **updates)
-        trainer.has_promotion_ticket = True
-        trainer.ticket_tier = tier
+    def get_pending_match_for_trainer(self, discord_id: int) -> Optional[RankMatch]:
+        for match in self._matches:
+            if match.status != "pending":
+                continue
+            for participant in match.participants:
+                if participant.get("type") == "player" and participant.get("id") == discord_id:
+                    return match
+        return None
+
+    def get_promotion_match_context(self, discord_id: int) -> Optional[Dict[str, str]]:
+        match = self.get_pending_match_for_trainer(discord_id)
+        if not match:
+            return None
+
+        opponent_name = "Unknown Opponent"
+        for participant in match.participants:
+            if participant.get("type") == "player" and participant.get("id") != discord_id:
+                opponent = self.player_manager.get_player(participant.get("id"))
+                if opponent:
+                    opponent_name = opponent.trainer_name
+                else:
+                    opponent_name = "Unknown Trainer"
+                break
+            if participant.get("type") == "npc":
+                opponent_name = participant.get("name") or opponent_name
+                if opponent_name:
+                    break
+
+        format_label = (match.format or "singles").replace("_", " ").title()
+        return {
+            "OPPONENT_NAME": opponent_name,
+            "BATTLE_FORMAT": format_label,
+        }
 
     def _find_match_for_pair(
         self,
@@ -704,12 +728,20 @@ class RankManager:
 
         promotion_embed_lines = []
         pending = False
+        now = int(time.time())
         if self.is_tier_unlocked(target_tier):
             self._apply_rank_promotion(winner, target_tier)
             promotion_embed_lines.append(f"Rank advanced to **{get_rank_tier_definition(target_tier)['name']}**!")
         else:
             pending = True
             self._set_pending_promotion(winner, target_tier)
+            self.player_manager.update_player(
+                winner.discord_user_id,
+                last_promotion_result="win",
+                last_promotion_result_at=now,
+            )
+            winner.last_promotion_result = "win"
+            winner.last_promotion_result_at = now
             promotion_embed_lines.append(
                 f"Rank up secured, awaiting league unlock for tier {target_tier}."
             )
@@ -722,6 +754,13 @@ class RankManager:
             old_points = getattr(loser, "ladder_points", 0) or 0
             new_points = self._update_points(loser, -(old_points // 2))
             self._consume_ticket(loser)
+            self.player_manager.update_player(
+                loser.discord_user_id,
+                last_promotion_result="loss",
+                last_promotion_result_at=now,
+            )
+            loser.last_promotion_result = "loss"
+            loser.last_promotion_result_at = now
             loser_rank = getattr(loser, "rank_tier_number", None) or 1
             loser_label = format_rank_label(loser.trainer_name, loser_rank)
             loser_text = f"{loser_label}: {old_points} → {new_points} (lost promotion ticket)"
@@ -772,17 +811,24 @@ class RankManager:
 
     def _apply_rank_promotion(self, trainer, new_tier: int):
         definition = get_rank_tier_definition(new_tier)
+        now = int(time.time())
         updates = {
             "rank_tier_number": new_tier,
             "rank_tier_name": definition["group"],
             "ladder_points": 0,
             "rank_pending_tier": None,
+            "last_rank_up_at": now,
+            "last_promotion_result": None,
+            "last_promotion_result_at": None,
         }
         self.player_manager.update_player(trainer.discord_user_id, **updates)
         trainer.rank_tier_number = new_tier
         trainer.rank_tier_name = definition["group"]
         trainer.ladder_points = 0
         trainer.rank_pending_tier = None
+        trainer.last_rank_up_at = now
+        trainer.last_promotion_result = None
+        trainer.last_promotion_result_at = None
 
     def _maybe_unlock_omni_reward(self, trainer) -> Optional[str]:
         tier = trainer.rank_tier_number or 1
