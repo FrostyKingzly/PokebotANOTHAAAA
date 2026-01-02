@@ -1724,8 +1724,11 @@ Modest Nature
             )
             return
 
+        parent_id = getattr(interaction.channel, "parent_id", None)
+        channel_id = parent_id or interaction.channel_id
         current_mapping = self.bot.location_manager.get_location_by_channel(
-            interaction.channel_id
+            interaction.channel_id,
+            parent_id=parent_id,
         )
 
         embed = discord.Embed(
@@ -1751,7 +1754,7 @@ Modest Nature
 
         view = ChannelLocationSelectView(
             bot=self.bot,
-            channel_id=interaction.channel_id,
+            channel_id=channel_id,
             locations=all_locations,
             current_mapping=current_mapping
         )
@@ -1767,7 +1770,12 @@ Modest Nature
         """Remove location mapping from a channel"""
         
         # Check if channel is mapped
-        location_id = self.bot.location_manager.get_location_by_channel(interaction.channel_id)
+        parent_id = getattr(interaction.channel, "parent_id", None)
+        channel_id = parent_id or interaction.channel_id
+        location_id = self.bot.location_manager.get_location_by_channel(
+            interaction.channel_id,
+            parent_id=parent_id,
+        )
         if not location_id:
             await interaction.response.send_message(
                 "❌ This channel isn't mapped to any location!",
@@ -1776,7 +1784,7 @@ Modest Nature
             return
         
         # Remove mapping
-        success = self.bot.location_manager.remove_channel_from_location(interaction.channel_id)
+        success = self.bot.location_manager.remove_channel_from_location(channel_id)
         
         if success:
             await interaction.response.send_message(

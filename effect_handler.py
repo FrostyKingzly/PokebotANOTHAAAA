@@ -55,6 +55,14 @@ class EffectHandler:
     def __init__(self, moves_db, type_chart):
         self.moves_db = moves_db
         self.type_chart = type_chart
+
+    @staticmethod
+    def _normalize_ability_name(ability_id: Optional[str]) -> str:
+        return "".join(ch for ch in str(ability_id or "").lower() if ch.isalnum())
+
+    def _ability_matches(self, pokemon: Any, ability_id: str) -> bool:
+        ability = getattr(pokemon, 'ability', None) or getattr(pokemon, 'current_ability', None)
+        return self._normalize_ability_name(ability) == self._normalize_ability_name(ability_id)
     
     def parse_move_effects(self, move_data: Dict) -> List[MoveEffect]:
         """
@@ -423,7 +431,10 @@ class EffectHandler:
             elif effect.effect_type == 'inflict_volatile':
                 result = self._apply_volatile(effect, target)
                 if result:
-                    messages.append(result)
+                    if isinstance(result, list):
+                        messages.extend(result)
+                    else:
+                        messages.append(result)
             
             elif effect.effect_type == 'selfdestruct':
                 attacker.current_hp = 0
@@ -651,7 +662,7 @@ class EffectHandler:
         
         return None
     
-    def _apply_volatile(self, effect: MoveEffect, target: Any) -> Optional[str]:
+    def _apply_volatile(self, effect: MoveEffect, target: Any) -> Optional[list[str] | str]:
         """Apply volatile status condition"""
         status = effect.params.get('status')
 
@@ -682,7 +693,11 @@ class EffectHandler:
 
         success, message = target.status_manager.apply_status(status, duration=duration)
         if success:
-            return f"{target.species_name} {message}"
+            messages = [f"{target.species_name} {message}"]
+            if status == 'flinch' and self._ability_matches(target, 'steadfast'):
+                steadfast_effect = MoveEffect(effect_type='stat_boost', params={'boosts': {'spe': 1}})
+                messages.extend(self._apply_stat_boost(steadfast_effect, target))
+            return messages
 
         return None
 

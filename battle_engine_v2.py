@@ -816,6 +816,10 @@ class BattleEngine:
             is_ranked=is_ranked,
             ranked_context=ranked_context or {}
         )
+
+        for battler in battle.get_all_battlers():
+            for mon in battler.get_active_pokemon():
+                self._mark_first_turn_entry(mon)
         
         # Trigger entry abilities
         # Trigger entry abilities and capture messages
@@ -845,6 +849,17 @@ class BattleEngine:
         if party_index >= len(battler.party):
             return None
         return battler.party[party_index]
+
+    @staticmethod
+    def _mark_first_turn_entry(pokemon: Any) -> None:
+        if pokemon:
+            setattr(pokemon, "_first_turn_active", True)
+
+    @staticmethod
+    def _clear_first_turn_flags(active_pokemon: List[Any]) -> None:
+        for mon in active_pokemon:
+            if getattr(mon, "_first_turn_active", False):
+                mon._first_turn_active = False
 
     @staticmethod
     def _normalize_name(name: str) -> str:
@@ -1595,6 +1610,10 @@ class BattleEngine:
         upkeep_messages = self._apply_start_of_turn_passives(battle)
         battle.turn_log.extend(upkeep_messages)
 
+        turn_start_active = []
+        for battler in battle.get_all_battlers():
+            turn_start_active.extend(battler.get_active_pokemon())
+
         manual_switch_events: List[Dict[str, Any]] = []
         action_events: List[Dict[str, Any]] = []
 
@@ -1771,6 +1790,7 @@ class BattleEngine:
         battle.pending_actions = {}
         
         # Increment turn
+        self._clear_first_turn_flags(turn_start_active)
         battle.turn_number += 1
         
         return {
@@ -2241,6 +2261,21 @@ class BattleEngine:
             and move_data.get('category') == 'status'
         ):
             return {"messages": [f"{attacker.species_name} fell for the Taunt and can't use {move_data['name']}!"]}
+
+        if move_data.get('id') == 'fake_out' and not getattr(attacker, "_first_turn_active", True):
+            for move in attacker.moves:
+                if move['move_id'] == action.move_id:
+                    move['pp'] = max(0, move['pp'] - 1)
+                    break
+            if getattr(attacker_battler, 'is_ai', False):
+                if not hasattr(battle, 'ai_failed_moves'):
+                    battle.ai_failed_moves = {}
+                pokemon_key = f"{attacker_battler.battler_id}_{id(attacker)}"
+                if pokemon_key not in battle.ai_failed_moves:
+                    battle.ai_failed_moves[pokemon_key] = {}
+                fail_count = battle.ai_failed_moves[pokemon_key].get(action.move_id, 0)
+                battle.ai_failed_moves[pokemon_key][action.move_id] = fail_count + 1
+            return {"messages": [f"{attacker.species_name} used {move_data['name']}, but it failed!"]}
 
         # Two-turn charging moves
         skip_pp_deduct = False
@@ -3054,6 +3089,7 @@ class BattleEngine:
 
         # Switch
         battler.active_positions[switch_position] = action.switch_to_position
+        self._mark_first_turn_entry(new_pokemon)
 
         if self.held_item_manager:
             self.held_item_manager.clear_choice_lock(old_pokemon)
