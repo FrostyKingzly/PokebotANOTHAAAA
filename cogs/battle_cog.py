@@ -1459,12 +1459,13 @@ class BattleCog(commands.Cog):
         trainer_has_pokemon = battle.trainer.has_usable_pokemon()
         opponent_has_pokemon = battle.opponent.has_usable_pokemon()
 
-        if trainer_has_pokemon and not opponent_has_pokemon:
-            battle.winner = 'trainer'
-        elif opponent_has_pokemon and not trainer_has_pokemon:
-            battle.winner = 'opponent'
-        elif not trainer_has_pokemon and not opponent_has_pokemon:
-            battle.winner = 'draw'
+        if battle.winner is None:
+            if trainer_has_pokemon and not opponent_has_pokemon:
+                battle.winner = 'trainer'
+            elif opponent_has_pokemon and not trainer_has_pokemon:
+                battle.winner = 'opponent'
+            elif not trainer_has_pokemon and not opponent_has_pokemon:
+                battle.winner = 'draw'
 
         result = battle.winner
         if result == 'trainer':

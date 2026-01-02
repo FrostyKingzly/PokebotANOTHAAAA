@@ -273,3 +273,19 @@ class LocationManager:
         if location:
             return location.get('name', location_id.replace('_', ' ').title())
         return location_id.replace('_', ' ').title()
+
+    def get_channel_ids_for_location(self, location_id: str) -> List[int]:
+        """Return channel IDs mapped to the given location."""
+        if not location_id:
+            return []
+
+        channel_ids = set()
+        location = self.get_location(location_id)
+        if location:
+            channel_ids.update(location.get('channel_ids') or [])
+
+        for channel_id, mapped_location in self.channel_to_location.items():
+            if mapped_location == location_id:
+                channel_ids.add(channel_id)
+
+        return sorted(channel_ids)

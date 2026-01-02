@@ -4173,6 +4173,30 @@ class ItemGivePokemonSelectView(View):
         back_button.callback = back_callback
         self.add_item(back_button)
 
+def build_travel_embed(bot, location_id: str, location_name: str) -> discord.Embed:
+    """Build the travel confirmation embed with an optional channel link."""
+    embed = discord.Embed(
+        title="🧭 Travel Complete",
+        description=f"You traveled to **{location_name}**!",
+        color=discord.Color.blue()
+    )
+
+    location_manager = getattr(bot, "location_manager", None)
+    channel_links = []
+    if location_manager:
+        channel_ids = location_manager.get_channel_ids_for_location(location_id)
+        if channel_ids:
+            channel_links = [f"<#{channel_id}>" for channel_id in channel_ids]
+
+    if channel_links:
+        embed.add_field(
+            name="📍 Location Channel",
+            value=", ".join(channel_links),
+            inline=False
+        )
+
+    return embed
+
 class PaginatedTravelView(View):
     """Paginated travel view organized by areas"""
 
@@ -4373,7 +4397,7 @@ class PaginatedTravelView(View):
 
         location_name = location_data.get('name', new_location_id.replace('_', ' ').title())
         await interaction.response.send_message(
-            f"🧭 You traveled to **{location_name}**!",
+            embed=build_travel_embed(self.bot, new_location_id, location_name),
             ephemeral=True
         )
 
@@ -4491,7 +4515,7 @@ class TravelSelectView(View):
             location_name = self.bot.location_manager.get_location_name(new_location_id)
 
             await interaction.response.send_message(
-                f"🧭 You traveled to **{location_name}**!",
+                embed=build_travel_embed(self.bot, new_location_id, location_name),
                 ephemeral=True
             )
 

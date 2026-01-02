@@ -2384,6 +2384,13 @@
         "weight": 10
       },
       {
+        "species_dex_number": 852,
+        "species_name": "Clobbopus",
+        "min_level": 4,
+        "max_level": 14,
+        "weight": 5
+      },
+      {
         "species_dex_number": 592,
         "species_name": "Frillish",
         "min_level": 5,
