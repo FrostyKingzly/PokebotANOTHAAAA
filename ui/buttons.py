@@ -1208,7 +1208,11 @@ class MainMenuView(View):
         current_location_id = trainer.current_location_id
 
         # Ensure the interaction is happening in the correct location channel
-        channel_location_id = self.bot.location_manager.get_location_by_channel(interaction.channel_id)
+        parent_id = getattr(interaction.channel, "parent_id", None)
+        channel_location_id = self.bot.location_manager.get_location_by_channel(
+            interaction.channel_id,
+            parent_id=parent_id,
+        )
         if not channel_location_id:
             await interaction.response.send_message(
                 "⚠️ This channel hasn't been linked to a location yet. Use /set_location here first.",
@@ -4628,8 +4632,6 @@ class EncounterSelectView(View):
         current_location_id = trainer.current_location_id
         
         # Roll new encounters
-        await interaction.response.defer(ephemeral=True)
-
         # Determine spawn count based on location type
         location_type = self.location.get('type', '')
         if location_type == 'wild_zone':
@@ -4646,7 +4648,7 @@ class EncounterSelectView(View):
         )
         
         if not new_encounters:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 "❌ Failed to generate encounters. Try again!",
                 ephemeral=True
             )
@@ -4662,11 +4664,7 @@ class EncounterSelectView(View):
             current_location_id
         )
         
-        await interaction.followup.send(
-            embed=embed,
-            view=new_view,
-            ephemeral=True
-        )
+        await interaction.response.edit_message(embed=embed, view=new_view)
         
         self.stop()
 

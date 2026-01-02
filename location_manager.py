@@ -125,9 +125,14 @@ class LocationManager:
         """Helper to check whether a location includes a Pokémon Center."""
         return self.location_has_amenity(location_id, 'pokemon_center')
 
-    def get_location_by_channel(self, channel_id: int) -> Optional[str]:
-        """Get location ID for a channel"""
-        return self.channel_to_location.get(channel_id)
+    def get_location_by_channel(self, channel_id: int, parent_id: Optional[int] = None) -> Optional[str]:
+        """Get location ID for a channel or its parent (thread support)."""
+        location_id = self.channel_to_location.get(channel_id)
+        if location_id:
+            return location_id
+        if parent_id is not None:
+            return self.channel_to_location.get(parent_id)
+        return None
     
     def get_all_locations(self) -> Dict[str, Dict]:
         """Get all locations"""
