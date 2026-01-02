@@ -2429,6 +2429,7 @@ class DazedCatchView(discord.ui.View):
             battle.is_over = True
             battle.winner = "trainer"
 
+        # First, edit the message to show the Pokemon fled
         await interaction.response.edit_message(
             embed=discord.Embed(
                 title="The wild Pokemon ran away!",
@@ -2437,6 +2438,12 @@ class DazedCatchView(discord.ui.View):
             ),
             view=None,
         )
+
+        # Then award exp for defeating the wild Pokemon
+        if battle:
+            exp_embed = await self.battle_cog._create_exp_embed(battle, interaction)
+            if exp_embed:
+                await interaction.followup.send(embed=exp_embed)
 
 # ============================================
 # DOUBLES BATTLE UI COMPONENTS
