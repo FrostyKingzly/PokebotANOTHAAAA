@@ -125,7 +125,10 @@ class BattleState:
     
     # NEW: queue AI replacement to happen AFTER end-of-turn
     pending_ai_switch_index: Optional[int] = None
-    
+
+    # EXP tracking: Record each opponent Pokemon that faints with the active trainer Pokemon index
+    fainted_opponents: List[Dict[str, Any]] = field(default_factory=list)  # List of {pokemon, active_trainer_index, battler_id}
+
     # For wild battles only
     catch_attempted: bool = False
     wild_dazed: bool = False  # True when wild Pokémon has been reduced to a 'dazed' state instead of fainting
@@ -949,6 +952,47 @@ class BattleEngine:
         if not self.player_manager:
             return
         self.player_manager.record_faint(pokemon)
+
+    def _record_opponent_faint_for_exp(
+        self,
+        battle: BattleState,
+        fainted_pokemon: Any,
+        fainted_battler: Battler,
+        attacker_battler: Optional[Battler] = None
+    ):
+        """
+        Record an opponent Pokemon faint for EXP calculation.
+        This tracks which opponent Pokemon fainted and which player Pokemon was active.
+
+        Args:
+            battle: The battle state
+            fainted_pokemon: The Pokemon that fainted
+            fainted_battler: The battler who owns the fainted Pokemon
+            attacker_battler: The battler whose Pokemon caused the faint (optional)
+        """
+        # Only track if the fainted battler is an opponent (AI or wild)
+        # and not a player's Pokemon
+        is_opponent_faint = fainted_battler.is_ai or fainted_battler == battle.opponent
+
+        if not is_opponent_faint:
+            return
+
+        # Determine which player Pokemon was active
+        # If attacker_battler is provided and is a player, use their active Pokemon
+        if attacker_battler and not attacker_battler.is_ai:
+            active_trainer_index = attacker_battler.active_positions[0] if attacker_battler.active_positions else 0
+            trainer_battler_id = attacker_battler.battler_id
+        else:
+            # Otherwise, use the main trainer's active Pokemon
+            active_trainer_index = battle.trainer.active_positions[0] if battle.trainer.active_positions else 0
+            trainer_battler_id = battle.trainer.battler_id
+
+        # Record the faint for EXP calculation
+        battle.fainted_opponents.append({
+            'pokemon': fainted_pokemon,
+            'active_trainer_index': active_trainer_index,
+            'trainer_battler_id': trainer_battler_id
+        })
 
     def start_wild_battle(self, trainer_id: int, trainer_name: str, 
                          trainer_party: List[Any], wild_pokemon: Any) -> str:
@@ -2111,6 +2155,8 @@ class BattleEngine:
             else:
                 messages.append(f"{defender.species_name} fainted!")
                 self._record_faint(defender_battler, defender)
+                # Record opponent faint for EXP calculation
+                self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
         return {"messages": messages}
 
@@ -2572,6 +2618,8 @@ class BattleEngine:
                 else:
                     messages.append(f"{defender.species_name} fainted!")
                     self._record_faint(defender_battler, defender)
+                    # Record opponent faint for EXP calculation
+                    self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
             return {"messages": messages}
 
@@ -2702,6 +2750,8 @@ class BattleEngine:
             else:
                 messages.append(f"{defender.species_name} fainted!")
                 self._record_faint(defender_battler, defender)
+                # Record opponent faint for EXP calculation
+                self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
                 # Determine which position the fainted Pokemon was in
                 fainted_position = None
@@ -3281,6 +3331,8 @@ class BattleEngine:
                 for battler in battle.get_all_battlers():
                     if not battler.is_eliminated and fainted_mon in battler.party:
                         self._record_faint(battler, fainted_mon)
+                        # Record opponent faint for EXP calculation (no specific attacker for weather damage)
+                        self._record_opponent_faint_for_exp(battle, fainted_mon, battler, None)
                         # Find position of fainted Pokemon
                         fainted_position = None
                         for pos_idx, party_idx in enumerate(battler.active_positions):
