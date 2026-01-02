@@ -4626,9 +4626,24 @@ class EncounterSelectView(View):
     async def reroll_callback(self, interaction: discord.Interaction):
         """Reroll encounters"""
         from ui.embeds import EmbedBuilder
+
+        if interaction.user.id != self.player_id:
+            await interaction.response.send_message(
+                "❌ This encounter roll isn't for you. Roll your own encounters!",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.defer()
         
         # Get current location
         trainer = self.bot.player_manager.get_player(interaction.user.id)
+        if not trainer:
+            await interaction.followup.send(
+                "❌ Trainer profile not found. Please `/register` first.",
+                ephemeral=True,
+            )
+            return
         current_location_id = trainer.current_location_id
         
         # Roll new encounters
@@ -4648,7 +4663,7 @@ class EncounterSelectView(View):
         )
         
         if not new_encounters:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ Failed to generate encounters. Try again!",
                 ephemeral=True
             )
@@ -4664,7 +4679,11 @@ class EncounterSelectView(View):
             current_location_id
         )
         
-        await interaction.response.edit_message(embed=embed, view=new_view)
+        await interaction.followup.edit_message(
+            interaction.message.id,
+            embed=embed,
+            view=new_view,
+        )
         
         self.stop()
 
