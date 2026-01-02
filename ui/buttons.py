@@ -4702,13 +4702,12 @@ class EncounterSelectView(View):
             interaction.user.id,
             current_location_id
         )
-        
-        await interaction.followup.edit_message(
-            interaction.message.id,
+
+        await interaction.edit_original_response(
             embed=embed,
             view=new_view,
         )
-        
+
         self.stop()
 
     def _persist_active_encounters(self):
