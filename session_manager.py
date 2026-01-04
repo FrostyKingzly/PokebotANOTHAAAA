@@ -95,6 +95,21 @@ class SessionManager:
         conn.close()
         return True
 
+    def set_join_message(self, session_id: str, message_id: int, channel_id: int) -> bool:
+        """Store the join message ID and channel for later updates"""
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE sessions
+            SET join_message_id = ?, join_message_channel_id = ?
+            WHERE session_id = ?
+        """, (message_id, channel_id, session_id))
+
+        conn.commit()
+        conn.close()
+        return True
+
     def end_session(self, session_id: str) -> bool:
         """End a session and release all participants"""
         conn = self.db.get_connection()

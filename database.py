@@ -673,6 +673,8 @@ class PlayerDatabase:
                 channel_id INTEGER NOT NULL,
                 current_location_id TEXT,
                 is_active INTEGER DEFAULT 1,
+                join_message_id INTEGER,
+                join_message_channel_id INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 ended_at TIMESTAMP,
                 FOREIGN KEY (admin_id) REFERENCES trainers(discord_user_id)
