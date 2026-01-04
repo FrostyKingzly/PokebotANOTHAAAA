@@ -1585,60 +1585,191 @@ class BattleCog(commands.Cog):
             return None
 
         trainer = getattr(battle, 'trainer', None)
-        opponent = getattr(battle, 'opponent', None)
         if not trainer or not getattr(trainer, 'party', None):
             return None
 
-        active_index = 0
-        if getattr(trainer, 'active_positions', None):
-            try:
-                active_index = int(trainer.active_positions[0])
-            except (TypeError, ValueError, IndexError):
-                active_index = 0
+        # Check for fainted opponents tracked during battle
+        fainted_opponents = getattr(battle, 'fainted_opponents', [])
 
-        defeated_pokemon = None
-        opponent_party = getattr(opponent, 'party', None) if opponent else None
-        if opponent_party:
-            active_positions = getattr(opponent, 'active_positions', None) or []
-            if active_positions:
+        if not fainted_opponents:
+            # Fallback to old behavior if no fainted opponents were tracked
+            opponent = getattr(battle, 'opponent', None)
+            active_index = 0
+            if getattr(trainer, 'active_positions', None):
                 try:
-                    opp_active_index = int(active_positions[0])
+                    active_index = int(trainer.active_positions[0])
                 except (TypeError, ValueError, IndexError):
-                    opp_active_index = 0
-            else:
-                opp_active_index = 0
+                    active_index = 0
 
-            if 0 <= opp_active_index < len(opponent_party):
-                defeated_pokemon = opponent_party[opp_active_index]
-
-            if defeated_pokemon is None:
+            defeated_pokemon = None
+            opponent_party = getattr(opponent, 'party', None) if opponent else None
+            if opponent_party:
                 for mon in reversed(opponent_party):
                     if getattr(mon, 'current_hp', 1) <= 0:
                         defeated_pokemon = mon
                         break
+                if defeated_pokemon is None and opponent_party:
+                    defeated_pokemon = opponent_party[-1]
 
-            if defeated_pokemon is None and opponent_party:
-                defeated_pokemon = opponent_party[-1]
+            if defeated_pokemon is None:
+                return None
 
-        if defeated_pokemon is None:
-            return None
+            exp_multiplier = 2.0 if battle.battle_format == BattleFormat.RAID else 1.0
 
+            try:
+                results = await self.exp_handler.award_battle_exp(
+                    trainer_id=trainer.battler_id,
+                    party=trainer.party,
+                    defeated_pokemon=defeated_pokemon,
+                    active_pokemon_index=active_index,
+                    is_trainer_battle=(battle.battle_type == BattleType.TRAINER),
+                    exp_multiplier=exp_multiplier
+                )
+            except Exception as exc:
+                print(f"[BattleCog] Failed to award EXP: {exc}")
+                return None
+
+            return self.exp_handler.create_exp_embed(results, trainer.party, defeated_pokemon)
+
+        # New behavior: Award EXP for each fainted opponent
         exp_multiplier = 2.0 if battle.battle_format == BattleFormat.RAID else 1.0
 
-        try:
-            results = await self.exp_handler.award_battle_exp(
-                trainer_id=trainer.battler_id,
-                party=trainer.party,
-                defeated_pokemon=defeated_pokemon,
-                active_pokemon_index=active_index,
-                is_trainer_battle=(battle.battle_type == BattleType.TRAINER),
-                exp_multiplier=exp_multiplier
-            )
-        except Exception as exc:
-            print(f"[BattleCog] Failed to award EXP: {exc}")
+        # Merged results across all faints
+        merged_results = {
+            'exp_gains': {},
+            'level_ups': {},
+            'evolution_ready': {}
+        }
+
+        # Process each fainted opponent
+        for faint_data in fainted_opponents:
+            defeated_pokemon = faint_data['pokemon']
+            active_index = faint_data['active_trainer_index']
+            trainer_battler_id = faint_data['trainer_battler_id']
+
+            # Find the appropriate trainer battler (for multi-battles/raids)
+            current_trainer = trainer
+            if trainer_battler_id != trainer.battler_id:
+                # Look for this trainer in raid allies or partner
+                for ally in getattr(battle, 'raid_allies', []):
+                    if ally.battler_id == trainer_battler_id:
+                        current_trainer = ally
+                        break
+                if getattr(battle, 'trainer_partner', None) and battle.trainer_partner.battler_id == trainer_battler_id:
+                    current_trainer = battle.trainer_partner
+
+            try:
+                results = await self.exp_handler.award_battle_exp(
+                    trainer_id=current_trainer.battler_id,
+                    party=current_trainer.party,
+                    defeated_pokemon=defeated_pokemon,
+                    active_pokemon_index=active_index,
+                    is_trainer_battle=(battle.battle_type == BattleType.TRAINER),
+                    exp_multiplier=exp_multiplier
+                )
+
+                # Merge EXP gains (accumulate EXP for each Pokemon)
+                for idx, exp_data in results.get('exp_gains', {}).items():
+                    if idx not in merged_results['exp_gains']:
+                        merged_results['exp_gains'][idx] = exp_data.copy()
+                    else:
+                        # Accumulate EXP gained
+                        merged_results['exp_gains'][idx]['exp_gained'] += exp_data['exp_gained']
+                        merged_results['exp_gains'][idx]['new_exp'] = exp_data['new_exp']
+
+                # Merge level-ups (keep track of all level-ups)
+                for idx, levelup_data in results.get('level_ups', {}).items():
+                    merged_results['level_ups'][idx] = levelup_data
+
+                # Merge evolution readiness
+                for idx, evo_data in results.get('evolution_ready', {}).items():
+                    merged_results['evolution_ready'][idx] = evo_data
+
+            except Exception as exc:
+                print(f"[BattleCog] Failed to award EXP for {defeated_pokemon.species_name}: {exc}")
+                continue
+
+        if not merged_results['exp_gains']:
             return None
 
-        return self.exp_handler.create_exp_embed(results, trainer.party, defeated_pokemon)
+        # Create embed with merged results
+        # Use the last defeated Pokemon for the embed title (or could show "Multiple Pokemon")
+        last_defeated = fainted_opponents[-1]['pokemon'] if fainted_opponents else None
+        if len(fainted_opponents) > 1:
+            # Create a custom embed for multiple defeats
+            embed = discord.Embed(
+                title="⭐ Battle Victory!",
+                description=f"Defeated {len(fainted_opponents)} Pokémon!",
+                color=discord.Color.gold()
+            )
+        else:
+            embed = discord.Embed(
+                title="⭐ Battle Victory!",
+                description=f"Defeated {last_defeated.species_name} (Lv. {last_defeated.level})!",
+                color=discord.Color.gold()
+            )
+
+        # Show EXP gains
+        exp_text = ""
+        for idx, exp_data in merged_results['exp_gains'].items():
+            pokemon_name = exp_data['pokemon_name']
+            exp_gained = exp_data['exp_gained']
+            exp_text += f"**{pokemon_name}** gained **{exp_gained} EXP**!\n"
+
+        if exp_text:
+            embed.add_field(name="💫 Experience Gained", value=exp_text, inline=False)
+
+        # Show level-ups
+        if merged_results['level_ups']:
+            for idx, levelup_data in merged_results['level_ups'].items():
+                pokemon_name = levelup_data['pokemon_name']
+                result = levelup_data['result']
+
+                levelup_text = f"**Level {result.old_level} → {result.new_level}!**\n\n"
+                levelup_text += "**Stat Gains:**\n"
+                levelup_text += f"• HP: +{result.stat_gains['hp']}\n"
+                levelup_text += f"• Attack: +{result.stat_gains['attack']}\n"
+                levelup_text += f"• Defense: +{result.stat_gains['defense']}\n"
+                levelup_text += f"• Sp. Atk: +{result.stat_gains['sp_attack']}\n"
+                levelup_text += f"• Sp. Def: +{result.stat_gains['sp_defense']}\n"
+                levelup_text += f"• Speed: +{result.stat_gains['speed']}\n"
+
+                if result.new_moves_learned:
+                    levelup_text += "\n**Moves Learned:**\n"
+                    unique_moves = list(dict.fromkeys(result.new_moves_learned))
+                    for move_id in unique_moves:
+                        move_name = move_id.replace('_', ' ').title()
+                        levelup_text += f"⚔️ **{move_name}**\n"
+
+                if result.moves_available_to_learn:
+                    levelup_text += "\n**Wants to learn:**\n"
+                    for move_data in result.moves_available_to_learn:
+                        move_name = move_data['move_id'].replace('_', ' ').title()
+                        levelup_text += f"• {move_name}\n"
+                    levelup_text += "\n*Already knows 4 moves!*\n"
+
+                embed.add_field(
+                    name=f"📈 {pokemon_name} leveled up!",
+                    value=levelup_text,
+                    inline=False
+                )
+
+        # Show evolution readiness
+        if merged_results.get('evolution_ready'):
+            evo_text = ""
+            for idx, evo_data in merged_results['evolution_ready'].items():
+                pokemon_name = evo_data['pokemon_name']
+                evo_text += f"✨ **{pokemon_name}** can now evolve!\n"
+
+            if evo_text:
+                evo_text += "\n*Use the Evolution menu to evolve your Pokémon!*"
+                embed.add_field(
+                    name="🌟 Evolution Ready!",
+                    value=evo_text,
+                    inline=False
+                )
+
+        return embed
 
     def _build_ranked_result_embed(self, battle) -> Optional[discord.Embed]:
         if not getattr(battle, 'is_ranked', False):
