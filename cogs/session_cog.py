@@ -63,11 +63,73 @@ class JoinSessionView(discord.ui.View):
                 f"✅ You've joined the session **{session['session_name']}**! You're now in session state and will move with the group.",
                 ephemeral=True
             )
+
+            # Update the join embed to show current participants
+            await self._update_join_embed(interaction)
         else:
             await interaction.response.send_message(
                 "❌ Failed to join session. Please try again.",
                 ephemeral=True
             )
+
+    async def _update_join_embed(self, interaction: discord.Interaction):
+        """Update the join message embed with current participant list"""
+        session = self.bot.session_manager.get_session(self.session_id)
+
+        if not session or not session.get('join_message_id'):
+            return
+
+        try:
+            # Get the original message
+            channel = interaction.guild.get_channel(session['join_message_channel_id'])
+            if not channel:
+                return
+
+            message = await channel.fetch_message(session['join_message_id'])
+
+            # Get current participants
+            participants = self.bot.session_manager.get_session_participants(self.session_id)
+            participant_list = "\n".join([f"• <@{uid}>" for uid in participants])
+
+            # Get location info
+            admin_location = session.get('current_location_id')
+            location_name = None
+            if admin_location:
+                location_name = self.bot.location_manager.get_location_name(admin_location)
+
+            # Recreate embed with updated participant count
+            embed = discord.Embed(
+                title=f"📢 Session Started: {session['session_name']}",
+                description=(
+                    f"**Session Leader:** <@{session['admin_id']}>\n\n"
+                    f"A new session has started! Click the button below to join.\n\n"
+                    f"**What happens when you join:**\n"
+                    f"• You'll enter session state\n"
+                    f"• You can't travel or battle on your own\n"
+                    f"• Your location moves with the session group\n"
+                    f"• The admin controls encounters, rewards, and movement"
+                ),
+                color=discord.Color.blue()
+            )
+
+            if admin_location:
+                embed.add_field(
+                    name="Current Location",
+                    value=location_name or admin_location,
+                    inline=False
+                )
+
+            # Add participants field
+            embed.add_field(
+                name=f"Participants ({len(participants)})",
+                value=participant_list if participants else "No participants yet",
+                inline=False
+            )
+
+            await message.edit(embed=embed)
+        except Exception as e:
+            # Silently fail if we can't update the message
+            print(f"Failed to update join embed: {e}")
 
 
 class MoveLocationSelect(discord.ui.Select):
@@ -342,6 +404,27 @@ class BattleFormatSelect(discord.ui.Select):
         )
 
 
+class ParticipantSelect(discord.ui.UserSelect):
+    """Select menu for choosing individual participants"""
+
+    def __init__(self):
+        super().__init__(
+            placeholder="Select individual participants...",
+            min_values=1,
+            max_values=25,  # Discord's max
+            row=1
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Handle participant selection"""
+        # Store selected users in the view
+        self.view.selected_participants = [user.id for user in self.values]
+        await interaction.response.send_message(
+            f"✅ Selected {len(self.values)} participant(s)! Click 'Start Selected' to create their encounters.",
+            ephemeral=True
+        )
+
+
 class EncounterParticipantView(discord.ui.View):
     """View for selecting participants for an encounter"""
 
@@ -351,14 +434,181 @@ class EncounterParticipantView(discord.ui.View):
         self.session_id = session_id
         self.participants = participants
         self.selected_format = "singles"
+        self.selected_participants = []
 
         # Add format selector
         self.add_item(BattleFormatSelect())
 
-    @discord.ui.button(label="Everyone", style=discord.ButtonStyle.primary, row=1)
+        # Add participant selector
+        self.add_item(ParticipantSelect())
+
+    @discord.ui.button(label="Everyone", style=discord.ButtonStyle.primary, row=2)
     async def everyone_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Give encounter to everyone"""
         await self._create_encounters(interaction, self.participants)
+
+    @discord.ui.button(label="Start Selected", style=discord.ButtonStyle.success, row=2)
+    async def selected_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Give encounter to selected participants"""
+        if not self.selected_participants:
+            await interaction.response.send_message(
+                "❌ Please select participants first using the dropdown menu!",
+                ephemeral=True
+            )
+            return
+
+        # Filter to only participants actually in the session
+        valid_participants = [uid for uid in self.selected_participants if uid in self.participants]
+
+        if not valid_participants:
+            await interaction.response.send_message(
+                "❌ None of the selected users are in this session!",
+                ephemeral=True
+            )
+            return
+
+        await self._create_encounters(interaction, valid_participants)
+
+    async def _start_session_battle(
+        self,
+        thread: discord.Thread,
+        user_id: int,
+        pokemon_entries: List[dict],
+        num_enemies: int,
+        battle_format: str
+    ):
+        """Start a battle for a session participant"""
+        from battle_engine_v2 import BattleType, BattleFormat
+        from models import Pokemon
+
+        # Get battle cog
+        battle_cog = self.bot.get_cog('BattleCog')
+        if not battle_cog:
+            raise Exception("Battle system not loaded")
+
+        # Check if user is already in battle
+        if user_id in battle_cog.user_battles:
+            raise Exception("Already in a battle")
+
+        # Get player's party
+        party_data = self.bot.player_manager.db.get_party(user_id)
+        if not party_data:
+            raise Exception("No Pokemon in party")
+
+        trainer_pokemon = []
+        for poke_data in party_data:
+            species_data = self.bot.species_db.get_species(poke_data['species_dex_number'])
+            if not species_data:
+                continue
+
+            # Reconstruct Pokemon from data
+            from ui.buttons import reconstruct_pokemon_from_data
+            pokemon = reconstruct_pokemon_from_data(poke_data, species_data)
+            trainer_pokemon.append(pokemon)
+
+        if not trainer_pokemon:
+            raise Exception("No valid Pokemon in party")
+
+        # Create opponent Pokemon
+        opponent_pokemon = []
+        for entry in pokemon_entries:
+            species_data = self.bot.species_db.get_species(entry.get('species', 'Pikachu'))
+            if not species_data:
+                continue
+
+            pokemon = Pokemon(
+                species=species_data,
+                level=entry.get('level', 5),
+                moves=entry.get('moves', []),
+                ability=entry.get('ability'),
+                nature=entry.get('nature'),
+                ivs=entry.get('ivs'),
+                evs=entry.get('evs'),
+                held_item=entry.get('held_item'),
+                gender=entry.get('gender'),
+                shiny=entry.get('shiny', False)
+            )
+            opponent_pokemon.append(pokemon)
+
+        if not opponent_pokemon:
+            raise Exception("Failed to create opponent Pokemon")
+
+        # Determine battle format
+        if battle_format.lower() == "doubles":
+            format_enum = BattleFormat.DOUBLES
+        elif battle_format.lower() == "multi":
+            format_enum = BattleFormat.MULTI
+        else:
+            format_enum = BattleFormat.SINGLES
+
+        # Get user object
+        user = thread.guild.get_member(user_id)
+        if not user:
+            raise Exception("User not found")
+
+        # Start trainer battle
+        battle_id = battle_cog.battle_engine.start_trainer_battle(
+            trainer_id=user_id,
+            trainer_name=user.display_name,
+            trainer_party=trainer_pokemon,
+            opponent_name="Wild Encounter",
+            opponent_party=opponent_pokemon,
+            battle_format=format_enum
+        )
+
+        # Create a mock interaction for the thread
+        # We need to send the battle UI in the thread
+        class MockInteraction:
+            def __init__(self, thread, user, guild):
+                self.channel = thread
+                self.user = user
+                self.guild = guild
+                self._response_done = False
+
+            @property
+            def response(self):
+                class Response:
+                    def __init__(self, parent):
+                        self.parent = parent
+
+                    async def defer(self):
+                        self.parent._response_done = True
+
+                    def is_done(self):
+                        return self.parent._response_done
+
+                return Response(self)
+
+            async def followup_send(self, *args, **kwargs):
+                # Map followup.send to channel.send
+                return await self.channel.send(*args, **kwargs)
+
+            @property
+            def followup(self):
+                class Followup:
+                    def __init__(self, parent):
+                        self.parent = parent
+
+                    async def send(self, *args, **kwargs):
+                        return await self.parent.channel.send(*args, **kwargs)
+
+                return Followup(self)
+
+        mock_interaction = MockInteraction(thread, user, thread.guild)
+
+        # Send initial message
+        await thread.send(
+            f"<@{user_id}> Your encounter is ready! Prepare for battle!\n"
+            f"**Enemies:** {num_enemies}",
+            allowed_mentions=discord.AllowedMentions(users=True)
+        )
+
+        # Start battle UI in the thread
+        await battle_cog.prompt_and_start_battle_ui(
+            interaction=mock_interaction,
+            battle_id=battle_id,
+            battle_type=BattleType.TRAINER
+        )
 
     async def _create_encounters(self, interaction: discord.Interaction, target_users: List[int]):
         """Create encounters for the specified users"""
@@ -427,23 +677,23 @@ class EncounterParticipantView(discord.ui.View):
                 reason=f"Session encounter created by {interaction.user.display_name}"
             )
 
-            # Ping the user in their thread
-            await thread.send(
-                f"<@{user_id}> Your encounter is ready! Prepare for battle!",
-                allowed_mentions=discord.AllowedMentions(users=True)
-            )
-
-            # TODO: Actually create the battle here using the battle engine
-            # This would require integrating with the battle system
-            # For now, just send the encounter info
-            pokemon_info = "\n".join([f"**{p.get('species', 'Unknown')}** (Lv. {p.get('level', 5)})" for p in pokemon_entries])
-            await thread.send(
-                f"**Battle Format:** {self.selected_format.title()}\n"
-                f"**Enemies:** {num_enemies}\n"
-                f"**Pokemon:**\n{pokemon_info}"
-            )
-
-            created_threads.append(thread.mention)
+            # Start the battle automatically
+            try:
+                await self._start_session_battle(
+                    thread=thread,
+                    user_id=user_id,
+                    pokemon_entries=pokemon_entries,
+                    num_enemies=num_enemies,
+                    battle_format=self.selected_format
+                )
+                created_threads.append(thread.mention)
+            except Exception as e:
+                # If battle start fails, send error message
+                await thread.send(
+                    f"<@{user_id}> ❌ Failed to start battle: {e}",
+                    allowed_mentions=discord.AllowedMentions(users=True)
+                )
+                print(f"Failed to start session battle: {e}")
 
         # Clean up pending encounter
         del self.bot._pending_encounters[interaction.user.id]
@@ -721,6 +971,10 @@ class SessionCog(commands.Cog):
             embed=embed,
             view=view
         )
+
+        # Store the message ID for later updates
+        message = await interaction.original_response()
+        self.bot.session_manager.set_join_message(session_id, message.id, interaction.channel_id)
 
         # Send controls to admin
         await interaction.followup.send(
