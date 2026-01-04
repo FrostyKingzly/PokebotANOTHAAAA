@@ -562,13 +562,19 @@ class EncounterParticipantView(discord.ui.View):
         if not user:
             raise Exception("User not found")
 
-        # Start trainer battle with CORRECT signature
+        # Create opponent name based on Pokemon
+        if len(opponent_pokemon) == 1:
+            opponent_name = f"{opponent_pokemon[0].species_name}"
+        else:
+            opponent_name = f"{opponent_pokemon[0].species_name}"  # Show first Pokemon name
+
+        # Start trainer battle with wild-style setup
         battle_id = battle_cog.battle_engine.start_trainer_battle(
             trainer_id=user_id,
             trainer_name=user.display_name,
             trainer_party=trainer_pokemon,
             npc_party=opponent_pokemon,
-            npc_name="Session Encounter",
+            npc_name=opponent_name,  # Just the Pokemon name, not "Session Encounter"
             npc_class="wild_pokemon",
             prize_money=0,
             battle_format=format_enum
@@ -609,18 +615,13 @@ class EncounterParticipantView(discord.ui.View):
 
         mock_interaction = MockInteraction(thread, user, thread.guild)
 
-        # Send initial message
-        await thread.send(
-            f"<@{user_id}> Your encounter is ready! Prepare for battle!\n"
-            f"**Enemies:** {num_enemies}",
-            allowed_mentions=discord.AllowedMentions(users=True)
-        )
+        # Send initial message (skip "ready/prepare" - let wild encounter message handle it)
 
-        # Start battle UI in the thread
+        # Start battle UI in the thread - use WILD type for wild-style encounter
         await battle_cog.prompt_and_start_battle_ui(
             interaction=mock_interaction,
             battle_id=battle_id,
-            battle_type=BattleType.TRAINER
+            battle_type=BattleType.WILD  # Changed to WILD for wild-style encounter
         )
 
     async def _create_encounters(self, interaction: discord.Interaction, target_users: List[int]):
