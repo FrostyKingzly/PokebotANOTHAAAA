@@ -509,31 +509,40 @@ class EncounterParticipantView(discord.ui.View):
         if not trainer_pokemon:
             raise Exception("No valid Pokemon in party")
 
-        # Create opponent Pokemon
+        # Create opponent Pokemon (exactly like admin_cog does)
         opponent_pokemon = []
-        for entry in pokemon_entries:
-            species_data = self.bot.species_db.get_species(entry.get('species', 'Pikachu'))
+        for pokemon_data in pokemon_entries:
+            # Get species data
+            species_name = pokemon_data.get('species', 'Pikachu')
+            species_data = self.bot.species_db.get_species(species_name)
             if not species_data:
                 continue
 
-            # Create Pokemon with correct constructor signature
+            # Create Pokemon with exact same signature as admin_cog
             pokemon = Pokemon(
                 species_data=species_data,
-                level=entry.get('level', 5),
-                moves=entry.get('moves'),
-                ability=entry.get('ability'),
-                nature=entry.get('nature'),
-                ivs=entry.get('ivs'),
-                is_shiny=entry.get('shiny', False),
-                gender=entry.get('gender')
+                level=pokemon_data.get('level', 5),
+                owner_discord_id=None,  # Wild Pokemon have no owner
+                nature=pokemon_data.get('nature', 'hardy'),
+                ability=pokemon_data.get('ability'),
+                moves=pokemon_data.get('moves'),
+                ivs=pokemon_data.get('ivs'),
+                is_shiny=pokemon_data.get('shiny', False),
+                gender=pokemon_data.get('gender'),
+                pokeball=pokemon_data.get('pokeball', 'poke_ball')
             )
 
-            # Set held item and EVs after creation
-            if entry.get('held_item'):
-                pokemon.held_item = entry.get('held_item')
+            # Set EVs after creation (like admin_cog does)
+            if pokemon_data.get('evs'):
+                pokemon.evs = pokemon_data['evs']
 
-            if entry.get('evs'):
-                pokemon.evs = entry.get('evs')
+            # Set held item after creation
+            if pokemon_data.get('held_item'):
+                pokemon.held_item = pokemon_data['held_item']
+
+            # Recalculate stats with EVs (CRITICAL - matches admin_cog)
+            pokemon._calculate_stats()
+            pokemon.current_hp = pokemon.max_hp
 
             opponent_pokemon.append(pokemon)
 
@@ -553,18 +562,19 @@ class EncounterParticipantView(discord.ui.View):
         if not user:
             raise Exception("User not found")
 
-        # Start trainer battle
+        # Start trainer battle with CORRECT signature
         battle_id = battle_cog.battle_engine.start_trainer_battle(
             trainer_id=user_id,
             trainer_name=user.display_name,
             trainer_party=trainer_pokemon,
-            opponent_name="Wild Encounter",
-            opponent_party=opponent_pokemon,
+            npc_party=opponent_pokemon,
+            npc_name="Session Encounter",
+            npc_class="wild_pokemon",
+            prize_money=0,
             battle_format=format_enum
         )
 
         # Create a mock interaction for the thread
-        # We need to send the battle UI in the thread
         class MockInteraction:
             def __init__(self, thread, user, guild):
                 self.channel = thread
@@ -585,10 +595,6 @@ class EncounterParticipantView(discord.ui.View):
                         return self.parent._response_done
 
                 return Response(self)
-
-            async def followup_send(self, *args, **kwargs):
-                # Map followup.send to channel.send
-                return await self.channel.send(*args, **kwargs)
 
             @property
             def followup(self):
