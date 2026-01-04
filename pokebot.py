@@ -28,6 +28,7 @@ from rank_manager import RankManager
 from item_usage_manager import ItemUsageManager
 from weather_manager import WeatherManager
 from wild_area_manager import WildAreaManager
+from session_manager import SessionManager
 
 
 class PokemonBot(commands.Bot):
@@ -53,6 +54,7 @@ class PokemonBot(commands.Bot):
         self.item_usage_manager = None
         self.weather_manager = None
         self.wild_area_manager = None
+        self.session_manager = None
         
         # Load databases
         self.species_db = None
@@ -90,6 +92,7 @@ class PokemonBot(commands.Bot):
         self.item_usage_manager = ItemUsageManager(self)
         self.wild_area_manager = WildAreaManager(self.player_manager.db)
         self.weather_manager = WeatherManager()
+        self.session_manager = SessionManager(self.player_manager.db)
 
         # Load cogs
         await self.load_cogs()
@@ -129,6 +132,7 @@ class PokemonBot(commands.Bot):
             'cogs.rank_cog',
             'cogs.admin_cog',
             'cogs.pokemon_ai_cog',
+            'cogs.session_cog',
         ]
         
         for cog in cogs:

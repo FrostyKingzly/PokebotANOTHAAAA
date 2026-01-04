@@ -1203,6 +1203,14 @@ class MainMenuView(View):
         """Roll wild encounters at current location"""
         from ui.embeds import EmbedBuilder
 
+        # Check if player is in a session
+        if hasattr(self.bot, 'session_manager') and self.bot.session_manager.is_in_session(interaction.user.id):
+            await interaction.response.send_message(
+                "❌ You're in a session! You can't encounter wild Pokémon on your own. Wait for the admin to create encounters.",
+                ephemeral=True
+            )
+            return
+
         # Get player's current location
         trainer = self.bot.player_manager.get_player(interaction.user.id)
         current_location_id = trainer.current_location_id
@@ -7783,6 +7791,14 @@ class WildAreaEntryConfirmView(View):
     async def confirm_button(self, interaction: discord.Interaction, button: Button):
         """Confirm entry into wild area"""
         from wild_area_manager import WildAreaManager
+
+        # Check if player is in a session
+        if hasattr(self.bot, 'session_manager') and self.bot.session_manager.is_in_session(interaction.user.id):
+            await interaction.response.send_message(
+                "❌ You're in a session! You can't travel on your own. The session admin controls movement.",
+                ephemeral=True
+            )
+            return
 
         wild_area_manager = WildAreaManager(self.bot.player_manager.db)
 
