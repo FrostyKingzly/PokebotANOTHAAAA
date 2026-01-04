@@ -516,18 +516,25 @@ class EncounterParticipantView(discord.ui.View):
             if not species_data:
                 continue
 
+            # Create Pokemon with correct constructor signature
             pokemon = Pokemon(
-                species=species_data,
+                species_data=species_data,
                 level=entry.get('level', 5),
-                moves=entry.get('moves', []),
+                moves=entry.get('moves'),
                 ability=entry.get('ability'),
                 nature=entry.get('nature'),
                 ivs=entry.get('ivs'),
-                evs=entry.get('evs'),
-                held_item=entry.get('held_item'),
-                gender=entry.get('gender'),
-                shiny=entry.get('shiny', False)
+                is_shiny=entry.get('shiny', False),
+                gender=entry.get('gender')
             )
+
+            # Set held item and EVs after creation
+            if entry.get('held_item'):
+                pokemon.held_item = entry.get('held_item')
+
+            if entry.get('evs'):
+                pokemon.evs = entry.get('evs')
+
             opponent_pokemon.append(pokemon)
 
         if not opponent_pokemon:
