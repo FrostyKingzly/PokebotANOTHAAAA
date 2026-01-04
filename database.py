@@ -662,7 +662,35 @@ class PlayerDatabase:
                 FOREIGN KEY (target_player_id) REFERENCES trainers(discord_user_id)
             )
         """)
-        
+
+        # Admin-led sessions
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sessions (
+                session_id TEXT PRIMARY KEY,
+                guild_id INTEGER NOT NULL,
+                admin_id INTEGER NOT NULL,
+                session_name TEXT NOT NULL,
+                channel_id INTEGER NOT NULL,
+                current_location_id TEXT,
+                is_active INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                ended_at TIMESTAMP,
+                FOREIGN KEY (admin_id) REFERENCES trainers(discord_user_id)
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS session_participants (
+                session_id TEXT,
+                discord_user_id INTEGER,
+                snapshot_location TEXT,
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (session_id, discord_user_id),
+                FOREIGN KEY (session_id) REFERENCES sessions(session_id),
+                FOREIGN KEY (discord_user_id) REFERENCES trainers(discord_user_id)
+            )
+        """)
+
         conn.commit()
         conn.close()
 
