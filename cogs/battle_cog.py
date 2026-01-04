@@ -1577,7 +1577,39 @@ class BattleCog(commands.Cog):
         self._unregister_battle(battle)
         # Note: Don't cleanup music here - let it play the victory theme naturally
 
-        if getattr(battle, 'battle_type', None) == BattleType.WILD:
+        # Check if this is a session encounter (thread name starts with "Encounter -")
+        is_session_encounter = (
+            isinstance(interaction.channel, discord.Thread) and
+            interaction.channel.name.startswith("Encounter -")
+        )
+
+        if is_session_encounter:
+            # Handle session encounter completion
+            trainer_id = battle.trainer.battler_id
+
+            # If player lost, deduct 1 stamina
+            if result == 'opponent':
+                session_manager = getattr(self.bot, 'session_manager', None)
+                if session_manager and session_manager.is_in_session(trainer_id):
+                    session_manager.adjust_participant_stamina(trainer_id, -1)
+                    await self._safe_followup_send(
+                        interaction,
+                        embed=discord.Embed(
+                            title="⚡ Stamina Lost",
+                            description="You lost 1 stamina point due to defeat.",
+                            color=discord.Color.orange()
+                        )
+                    )
+
+            # Close the thread after a short delay
+            await asyncio.sleep(3)
+            try:
+                await interaction.channel.send("This thread will now be closed.")
+                await asyncio.sleep(2)
+                await interaction.channel.edit(archived=True, locked=True)
+            except Exception as e:
+                print(f"Failed to close session encounter thread: {e}")
+        elif getattr(battle, 'battle_type', None) == BattleType.WILD:
             await self.send_return_to_encounter_prompt(interaction, battle.trainer.battler_id)
 
     async def _create_exp_embed(self, battle, interaction: Optional[discord.Interaction] = None) -> Optional[discord.Embed]:
