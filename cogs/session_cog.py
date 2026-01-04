@@ -491,7 +491,7 @@ class EncounterParticipantView(discord.ui.View):
             raise Exception("Already in a battle")
 
         # Get player's party
-        party_data = self.bot.player_manager.db.get_party(user_id)
+        party_data = self.bot.player_manager.db.get_trainer_party(user_id)
         if not party_data:
             raise Exception("No Pokemon in party")
 
