@@ -402,9 +402,10 @@ class InstanceActionView(View):
 
         run = manager.get_run(self.run_id)
         floor = run["current_floor"]
+        stage_level = run["stage_level"]
 
         # Get level range for floor
-        min_lvl, max_lvl = manager.get_floor_level_range(floor)
+        min_lvl, max_lvl = manager.get_floor_level_range(stage_level, floor)
 
         # Generate wild Pokemon
         is_boss = "boss" in self.instance.get("categories", [])
@@ -558,12 +559,12 @@ class InstanceActionView(View):
             await self.on_complete_callback(interaction, "skipped")
 
 
-class FloorSelectModal(Modal, title="Choose Starting Floor"):
-    """Modal for selecting starting floor"""
+class StageSelectModal(Modal, title="Choose Dream Rogue Stage"):
+    """Modal for selecting stage level"""
 
-    floor_input = TextInput(
-        label="Starting Floor (1-10)",
-        placeholder="Enter a floor number between 1 and 10",
+    stage_input = TextInput(
+        label="Stage Level (10, 20, 30, 40, 50)",
+        placeholder="Enter a stage level (e.g., 10 for Level 10 Stage)",
         style=discord.TextStyle.short,
         required=True,
         max_length=2
@@ -575,20 +576,104 @@ class FloorSelectModal(Modal, title="Choose Starting Floor"):
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
-            floor = int(self.floor_input.value)
-            if floor < 1 or floor > 10:
+            stage_level = int(self.stage_input.value)
+
+            # Validate stage level (must be multiple of 10, between 10 and 100)
+            if stage_level < 10 or stage_level > 100 or stage_level % 10 != 0:
                 await interaction.response.send_message(
-                    "❌ Floor must be between 1 and 10!",
+                    "❌ Stage level must be 10, 20, 30, 40, 50, 60, 70, 80, 90, or 100!",
                     ephemeral=True
                 )
                 return
 
-            # Call callback with floor number
+            # Call callback with stage level
             if self.callback:
-                await self.callback(interaction, floor)
+                await self.callback(interaction, stage_level)
 
         except ValueError:
             await interaction.response.send_message(
                 "❌ Please enter a valid number!",
                 ephemeral=True
             )
+
+
+# Keep FloorSelectModal for backwards compatibility but redirect to StageSelectModal
+class FloorSelectModal(StageSelectModal):
+    """Deprecated: Use StageSelectModal instead"""
+    pass
+
+
+class IndividualInstanceView(View):
+    """View for individual instances - shows button to view privately"""
+
+    def __init__(self, bot, run_id: str, instance: Dict, participant_ids: List[int], on_complete_callback):
+        super().__init__(timeout=600)
+        self.bot = bot
+        self.run_id = run_id
+        self.instance = instance
+        self.participant_ids = participant_ids
+        self.on_complete_callback = on_complete_callback
+        self.completed_users = set()
+
+    @discord.ui.button(label="View Instance", style=discord.ButtonStyle.primary, emoji="👁️")
+    async def view_instance_button(self, interaction: discord.Interaction, button: Button):
+        """Show instance details to user ephemerally"""
+        # Check if user is a participant
+        if interaction.user.id not in self.participant_ids:
+            await interaction.response.send_message(
+                "❌ You're not a participant in this dive!",
+                ephemeral=True
+            )
+            return
+
+        # Check if already completed
+        if interaction.user.id in self.completed_users:
+            await interaction.response.send_message(
+                "✅ You've already completed this instance!",
+                ephemeral=True
+            )
+            return
+
+        # Show instance details ephemerally
+        from ui.dream_rogue_embeds import DreamRogueEmbeds
+        from dream_rogue_manager import DreamRogueManager
+
+        manager = DreamRogueManager()
+        run = manager.get_run(self.run_id)
+        floor = run["current_floor"]
+
+        embed = DreamRogueEmbeds.instance_selection(self.instance, floor)
+
+        # Create instance action view for this user
+        instance_view = InstanceActionView(
+            self.bot,
+            self.run_id,
+            self.instance,
+            self._create_completion_callback(interaction.user.id)
+        )
+
+        await interaction.response.send_message(
+            embed=embed,
+            view=instance_view,
+            ephemeral=True
+        )
+
+    def _create_completion_callback(self, user_id: int):
+        """Create a completion callback for a specific user"""
+        async def callback(interaction: discord.Interaction, result: str):
+            # Mark user as completed
+            self.completed_users.add(user_id)
+
+            # Check if all participants have completed
+            if len(self.completed_users) >= len(self.participant_ids):
+                # All done, proceed with callback
+                if self.on_complete_callback:
+                    await self.on_complete_callback(interaction, result)
+            else:
+                # Still waiting on others
+                await interaction.followup.send(
+                    f"✅ Choice recorded! Waiting for {len(self.participant_ids) - len(self.completed_users)} more participants...",
+                    ephemeral=True
+                )
+
+        return callback

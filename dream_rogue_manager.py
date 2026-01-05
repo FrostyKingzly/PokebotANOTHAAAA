@@ -58,6 +58,7 @@ class DreamRogueManager:
         self,
         guild_id: int,
         initiator_id: int,
+        stage_level: int = 10,
         starting_floor: int = 1,
         session_id: Optional[str] = None
     ) -> str:
@@ -67,6 +68,7 @@ class DreamRogueManager:
         Args:
             guild_id: Discord guild ID
             initiator_id: Discord user ID of initiator
+            stage_level: Base level for this stage (10, 20, 30, etc.)
             starting_floor: Which floor to start on (1-10)
             session_id: Optional session ID if started from session mode
 
@@ -80,12 +82,12 @@ class DreamRogueManager:
         cursor.execute("""
             INSERT INTO dream_rogue_runs (
                 run_id, session_id, guild_id, initiator_id,
-                current_floor, starting_floor, is_active
-            ) VALUES (?, ?, ?, ?, ?, ?, 1)
-        """, (run_id, session_id, guild_id, initiator_id, starting_floor, starting_floor))
+                stage_level, current_floor, starting_floor, is_active
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+        """, (run_id, session_id, guild_id, initiator_id, stage_level, starting_floor, starting_floor))
 
         # Add initiator as first participant
-        starting_dreamlites = self._calculate_starting_dreamlites(starting_floor)
+        starting_dreamlites = self._calculate_starting_dreamlites(stage_level)
         cursor.execute("""
             INSERT INTO dream_rogue_participants (run_id, discord_user_id, dreamlites)
             VALUES (?, ?, ?)
@@ -95,10 +97,11 @@ class DreamRogueManager:
         conn.close()
         return run_id
 
-    def _calculate_starting_dreamlites(self, starting_floor: int) -> int:
-        """Calculate starting Dreamlites based on floor"""
-        # Base 100 + 20 per floor above 1
-        return 100 + ((starting_floor - 1) * 20)
+    def _calculate_starting_dreamlites(self, stage_level: int) -> int:
+        """Calculate starting Dreamlites based on stage"""
+        # Base 100 + (stage_level * 5)
+        # Level 10 stage = 150, Level 20 stage = 200, etc.
+        return 100 + (stage_level * 5)
 
     def add_participant(self, run_id: str, discord_user_id: int) -> bool:
         """
@@ -120,15 +123,15 @@ class DreamRogueManager:
             conn.close()
             return False
 
-        # Get starting floor to calculate Dreamlites
-        cursor.execute("SELECT starting_floor FROM dream_rogue_runs WHERE run_id = ?", (run_id,))
+        # Get stage level to calculate Dreamlites
+        cursor.execute("SELECT stage_level FROM dream_rogue_runs WHERE run_id = ?", (run_id,))
         result = cursor.fetchone()
         if not result:
             conn.close()
             return False
 
-        starting_floor = result[0]
-        starting_dreamlites = self._calculate_starting_dreamlites(starting_floor)
+        stage_level = result[0]
+        starting_dreamlites = self._calculate_starting_dreamlites(stage_level)
 
         cursor.execute("""
             INSERT INTO dream_rogue_participants (run_id, discord_user_id, dreamlites)
@@ -358,19 +361,29 @@ class DreamRogueManager:
         conn.close()
         return new_floor
 
-    def get_floor_level_range(self, floor: int) -> Tuple[int, int]:
+    def get_floor_level_range(self, stage_level: int, floor: int) -> Tuple[int, int]:
         """
-        Get min/max level for a floor
+        Get min/max level for a floor based on stage and floor number
+
+        Args:
+            stage_level: Base level for the stage (10, 20, 30, etc.)
+            floor: Floor number (1-10)
 
         Returns:
             (min_level, max_level) tuple
-        """
-        # Floor 1: Level 8-12
-        # Each floor adds ~2-3 levels
-        base_min = 8 + (floor - 1) * 2
-        base_max = 12 + (floor - 1) * 3
 
-        return (base_min, base_max)
+        Example for Level 10 Stage:
+            Floor 1: 8-12
+            Floor 5: 16-20
+            Floor 10: 26-30
+        """
+        # Each floor adds 2 levels to the range
+        floor_offset = (floor - 1) * 2
+
+        min_level = stage_level - 2 + floor_offset
+        max_level = stage_level + 2 + floor_offset
+
+        return (min_level, max_level)
 
     def generate_floor_instances(self, run_id: str, floor: int) -> List[Dict]:
         """

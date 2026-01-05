@@ -7,8 +7,12 @@ CREATE TABLE IF NOT EXISTS dream_rogue_runs (
     session_id TEXT,  -- If started from session mode
     guild_id INTEGER NOT NULL,
     initiator_id INTEGER NOT NULL,
+
+    -- Stage and floor progression
+    stage_level INTEGER DEFAULT 10,  -- Base level for this stage (e.g., 10, 20, 30)
     current_floor INTEGER DEFAULT 1,
     starting_floor INTEGER DEFAULT 1,
+
     is_active INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP,

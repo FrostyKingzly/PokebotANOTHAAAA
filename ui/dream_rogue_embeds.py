@@ -44,10 +44,10 @@ class DreamRogueEmbeds:
             floor_level_range: (min_level, max_level) for current floor
         """
         floor = run["current_floor"]
-        starting_floor = run["starting_floor"]
+        stage_level = run.get("stage_level", 10)
 
         embed = discord.Embed(
-            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Dream Rogue — Floor {floor}",
+            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Dream Rogue — Level {stage_level} Stage — Floor {floor}/10",
             description="*Now Diving… Please Stand By.*",
             color=DreamRogueEmbeds.DREAM_COLOR
         )
@@ -56,7 +56,7 @@ class DreamRogueEmbeds:
         min_lvl, max_lvl = floor_level_range
         embed.add_field(
             name="Floor Information",
-            value=f"**Level Range:** {min_lvl}-{max_lvl}\n**Started at Floor:** {starting_floor}",
+            value=f"**Stage:** Level {stage_level}\n**Floor:** {floor}/10\n**Enemy Level Range:** {min_lvl}-{max_lvl}",
             inline=False
         )
 
@@ -503,7 +503,7 @@ class DreamRogueEmbeds:
         return embed
 
     @staticmethod
-    def dive_start(starting_floor: int, participants: List[int]) -> discord.Embed:
+    def dive_start(stage_level: int, participants: List[int]) -> discord.Embed:
         """Initial dive embed"""
         embed = discord.Embed(
             title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Diving into the Dream...",
@@ -513,7 +513,7 @@ class DreamRogueEmbeds:
 
         embed.add_field(
             name="Dive Details",
-            value=f"**Starting Floor:** {starting_floor}\n**Participants:** {len(participants)}",
+            value=f"**Stage:** Level {stage_level}\n**Participants:** {len(participants)}\n**Starting Floor:** 1/10",
             inline=False
         )
 

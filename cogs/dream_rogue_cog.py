@@ -101,13 +101,13 @@ class DreamRogueCog(commands.Cog):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    async def start_dive_from_session(self, interaction: discord.Interaction, floor: int):
+    async def start_dive_from_session(self, interaction: discord.Interaction, stage_level: int):
         """
         Start a dive from session mode (called from session controls)
 
         Args:
             interaction: Discord interaction
-            floor: Starting floor number
+            stage_level: Stage level (10, 20, 30, etc.)
         """
         # Get active session
         session = self.session_manager.get_active_session_by_guild(interaction.guild_id)
@@ -155,7 +155,8 @@ class DreamRogueCog(commands.Cog):
         run_id = self.dream_manager.create_run(
             guild_id=interaction.guild_id,
             initiator_id=interaction.user.id,
-            starting_floor=floor,
+            stage_level=stage_level,
+            starting_floor=1,  # Always start at floor 1
             session_id=session["session_id"]
         )
 
@@ -167,7 +168,7 @@ class DreamRogueCog(commands.Cog):
         # Show dive start embed
         participants_list = [interaction.user.id] + [p["discord_user_id"] for p in participants if p["discord_user_id"] != interaction.user.id]
 
-        embed = DreamRogueEmbeds.dive_start(floor, participants_list)
+        embed = DreamRogueEmbeds.dive_start(stage_level, participants_list)
 
         await interaction.response.send_message(embed=embed)
 
@@ -175,13 +176,13 @@ class DreamRogueCog(commands.Cog):
         await asyncio.sleep(2)
         await self._start_floor(interaction, run_id)
 
-    async def start_dive_solo(self, interaction: discord.Interaction, floor: int):
+    async def start_dive_solo(self, interaction: discord.Interaction, stage_level: int):
         """
         Start a solo dive or create invite (from Dreamyard location)
 
         Args:
             interaction: Discord interaction
-            floor: Starting floor number
+            stage_level: Stage level (10, 20, 30, etc.)
         """
         # Check location
         trainer = self.player_db.get_trainer(interaction.user.id)
@@ -213,14 +214,14 @@ class DreamRogueCog(commands.Cog):
         run_id = self.dream_manager.create_run(
             guild_id=interaction.guild_id,
             initiator_id=interaction.user.id,
-            starting_floor=floor
+            stage_level=stage_level,
+            starting_floor=1  # Always start at floor 1
         )
 
         # Show join/start embed
         participants = self.dream_manager.get_participants(run_id)
-        floor_range = self.dream_manager.get_floor_level_range(floor)
-
         run = self.dream_manager.get_run(run_id)
+        floor_range = self.dream_manager.get_floor_level_range(stage_level, 1)
 
         embed = DreamRogueEmbeds.run_status(run, participants, floor_range)
         embed.description += "\n\n*Waiting for participants... Click 'Start Dive' when ready.*"
@@ -331,28 +332,30 @@ class DreamRogueCog(commands.Cog):
                 await interaction.response.send_message(embed=embed, view=view)
 
         else:
-            # Individual instance - send private embeds
+            # Individual instance - show public notice with private view button
             participants = self.dream_manager.get_participants(run_id)
 
-            await interaction.followup.send(
-                "📨 Individual instance sent to all participants!",
-                ephemeral=False
+            # Create a view with a button for participants to view their instance
+            from ui.dream_rogue_views import IndividualInstanceView
+
+            view = IndividualInstanceView(
+                self.bot,
+                run_id,
+                instance,
+                [p["discord_user_id"] for p in participants],
+                lambda i, result: self._on_instance_complete(i, run_id, result, remaining_instances)
             )
 
-            for p in participants:
-                user = await self.bot.fetch_user(p["discord_user_id"])
-                if user:
-                    try:
-                        view = InstanceActionView(
-                            self.bot,
-                            run_id,
-                            instance,
-                            lambda i, result: self._on_instance_complete(i, run_id, result, remaining_instances)
-                        )
+            notice_embed = discord.Embed(
+                title="📨 Individual Instance",
+                description=f"**{instance.get('name', 'Unknown')}** is a private choice.\n\nClick the button below to view and make your decision.",
+                color=DreamRogueEmbeds.DREAM_COLOR
+            )
 
-                        await user.send(embed=embed, view=view)
-                    except discord.Forbidden:
-                        pass  # User has DMs disabled
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=notice_embed, view=view)
+            else:
+                await interaction.response.send_message(embed=notice_embed, view=view)
 
     async def _on_instance_complete(
         self,
