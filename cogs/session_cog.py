@@ -879,15 +879,15 @@ class SessionControlsView(discord.ui.View):
     @discord.ui.button(label="Dive", style=discord.ButtonStyle.primary, emoji="🌀", row=0)
     async def dive_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Start Dream Rogue dive"""
-        from ui.dream_rogue_views import FloorSelectModal
+        from ui.dream_rogue_views import StageSelectModal
 
-        # Show floor selection modal
-        modal = FloorSelectModal(self._on_floor_selected)
+        # Show stage selection modal
+        modal = StageSelectModal(self._on_stage_selected)
         modal.interaction = interaction  # Store for callback
         await interaction.response.send_modal(modal)
 
-    async def _on_floor_selected(self, interaction: discord.Interaction, floor: int):
-        """Handle floor selection and start dive"""
+    async def _on_stage_selected(self, interaction: discord.Interaction, stage_level: int):
+        """Handle stage selection and start dive"""
         dream_cog = self.bot.get_cog("DreamRogueCog")
 
         if not dream_cog:
@@ -898,7 +898,7 @@ class SessionControlsView(discord.ui.View):
             return
 
         # Start dive from session
-        await dream_cog.start_dive_from_session(interaction, floor)
+        await dream_cog.start_dive_from_session(interaction, stage_level)
 
     @discord.ui.button(label="End Session", style=discord.ButtonStyle.danger, emoji="🛑", row=1)
     async def end_session_button(self, interaction: discord.Interaction, button: discord.ui.Button):
