@@ -133,6 +133,7 @@ class PokemonBot(commands.Bot):
             'cogs.admin_cog',
             'cogs.pokemon_ai_cog',
             'cogs.session_cog',
+            'cogs.dream_rogue_cog',
         ]
         
         for cog in cogs:
