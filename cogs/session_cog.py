@@ -876,6 +876,30 @@ class SessionControlsView(discord.ui.View):
             ephemeral=True
         )
 
+    @discord.ui.button(label="Dive", style=discord.ButtonStyle.primary, emoji="🌀", row=0)
+    async def dive_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Start Dream Rogue dive"""
+        from ui.dream_rogue_views import FloorSelectModal
+
+        # Show floor selection modal
+        modal = FloorSelectModal(self._on_floor_selected)
+        modal.interaction = interaction  # Store for callback
+        await interaction.response.send_modal(modal)
+
+    async def _on_floor_selected(self, interaction: discord.Interaction, floor: int):
+        """Handle floor selection and start dive"""
+        dream_cog = self.bot.get_cog("DreamRogueCog")
+
+        if not dream_cog:
+            await interaction.response.send_message(
+                "❌ Dream Rogue system not available!",
+                ephemeral=True
+            )
+            return
+
+        # Start dive from session
+        await dream_cog.start_dive_from_session(interaction, floor)
+
     @discord.ui.button(label="End Session", style=discord.ButtonStyle.danger, emoji="🛑", row=1)
     async def end_session_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """End the session"""

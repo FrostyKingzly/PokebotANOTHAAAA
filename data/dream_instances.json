@@ -1,0 +1,534 @@
+{
+  "domains": {
+    "fractured_domain": {
+      "name": "Fractured Domain",
+      "description": "The dream can't decide what it wants you to be.",
+      "categories": ["domain", "buff", "risk"],
+      "scope": "team",
+      "risk_level": "high",
+      "effect_data": {
+        "type": "domain",
+        "add_random_type": true,
+        "dual_stab": true,
+        "stack_weaknesses": true
+      },
+      "duration": "floor",
+      "visibility": "public"
+    },
+    "echo_domain": {
+      "name": "Echo Domain",
+      "description": "The last move used by each Pokémon has a 25% chance to repeat for free. Multi-hit moves can chain.",
+      "categories": ["domain", "buff"],
+      "scope": "team",
+      "risk_level": "medium",
+      "effect_data": {
+        "type": "domain",
+        "move_repeat_chance": 0.25,
+        "allow_multihit_chain": true
+      },
+      "duration": "floor",
+      "visibility": "public"
+    },
+    "hollow_domain": {
+      "name": "Hollow Domain",
+      "description": "Healing effects are reduced by 50%. Damage dealt is increased by 20%. Risk/reward floor. Bosses LOVE this one.",
+      "categories": ["domain", "buff", "curse", "risk"],
+      "scope": "team",
+      "risk_level": "high",
+      "effect_data": {
+        "type": "domain",
+        "healing_multiplier": 0.5,
+        "damage_multiplier": 1.2
+      },
+      "duration": "floor",
+      "visibility": "public"
+    }
+  },
+  "nightmares": {
+    "shared_pulse": {
+      "name": "Nightmare: Shared Pulse",
+      "description": "All damage taken is shared evenly across the team. Lasts 3 battles.",
+      "categories": ["nightmare", "curse", "social"],
+      "scope": "team",
+      "risk_level": "high",
+      "effect_data": {
+        "type": "shared_damage",
+        "damage_distribution": "even"
+      },
+      "duration": "battle",
+      "battles_remaining": 3,
+      "visibility": "public"
+    },
+    "inverted_will": {
+      "name": "Nightmare: Inverted Will",
+      "description": "Choose one: +25% crit rate, moves cost double PP OR Infinite PP, cannot crit",
+      "categories": ["nightmare", "curse", "buff"],
+      "scope": "individual",
+      "risk_level": "medium",
+      "effect_data": {
+        "type": "choice",
+        "options": [
+          {
+            "name": "Sharpened Edge",
+            "crit_rate_bonus": 0.25,
+            "pp_cost_multiplier": 2.0
+          },
+          {
+            "name": "Endless Flow",
+            "infinite_pp": true,
+            "cannot_crit": true
+          }
+        ]
+      },
+      "duration": "floor",
+      "visibility": "private"
+    },
+    "memory_leak": {
+      "name": "Nightmare: Memory Leak",
+      "description": "After each battle, a random buff is removed. Gain +40 Dreamlites per victory.",
+      "categories": ["nightmare", "curse", "economy"],
+      "scope": "team",
+      "risk_level": "medium",
+      "effect_data": {
+        "type": "buff_removal",
+        "remove_after_battle": true,
+        "dreamlite_bonus": 40
+      },
+      "duration": "floor",
+      "visibility": "public"
+    }
+  },
+  "gambling": {
+    "dream_roulette": {
+      "name": "Dream Roulette",
+      "description": "Spin the wheel of fate. Greater risk, greater reward.",
+      "categories": ["gambling", "risk", "economy"],
+      "scope": "individual",
+      "risk_level": "high",
+      "effect_data": {
+        "type": "roulette",
+        "bet_options": [25, 50, 100],
+        "outcomes": [
+          {
+            "name": "Rare Buff",
+            "weight": 20,
+            "effect": "random_rare_buff"
+          },
+          {
+            "name": "Double Dreamlites",
+            "weight": 25,
+            "effect": "double_bet"
+          },
+          {
+            "name": "Curse",
+            "weight": 15,
+            "effect": "random_curse"
+          },
+          {
+            "name": "Nothing",
+            "weight": 30,
+            "effect": "nothing"
+          },
+          {
+            "name": "The Dream Notices You",
+            "weight": 10,
+            "effect": "marked",
+            "description": "Future odds worsen 👁️"
+          }
+        ]
+      },
+      "visibility": "private"
+    },
+    "coin_of_lucidity": {
+      "name": "Coin of Lucidity",
+      "description": "Flip a coin. Heads: All players gain +1 Star in a random stat. Tails: Enemies gain a hidden passive this floor.",
+      "categories": ["gambling", "social", "risk"],
+      "scope": "team",
+      "risk_level": "medium",
+      "effect_data": {
+        "type": "coin_flip",
+        "heads": {
+          "effect": "random_star_gain",
+          "amount": 1
+        },
+        "tails": {
+          "effect": "enemy_buff",
+          "buff_type": "hidden_passive"
+        }
+      },
+      "visibility": "public"
+    },
+    "dealer_in_the_dark": {
+      "name": "Dealer in the Dark",
+      "description": "Trade one Star level for a permanent bonus.",
+      "categories": ["gambling", "economy", "risk"],
+      "scope": "individual",
+      "risk_level": "high",
+      "effect_data": {
+        "type": "star_trade",
+        "cost": "1_star_level",
+        "options": [
+          {
+            "name": "Permanent +5% damage",
+            "effect": "damage_boost",
+            "value": 0.05
+          },
+          {
+            "name": "Permanent +10% resistance",
+            "effect": "resistance_boost",
+            "value": 0.10
+          }
+        ]
+      },
+      "visibility": "private"
+    }
+  },
+  "star_trials": {
+    "trial_of_heart": {
+      "name": "Trial of Heart",
+      "description": "Pass a Heart check to heal 40% HP and PP. Fail to take 20% HP damage but gain +30 Dreamlites.",
+      "categories": ["trial", "recovery", "economy"],
+      "scope": "individual",
+      "risk_level": "low",
+      "star_stat_required": "heart",
+      "effect_data": {
+        "type": "stat_check",
+        "stat": "heart",
+        "success": {
+          "heal_hp_percent": 0.40,
+          "heal_pp_percent": 0.40
+        },
+        "failure": {
+          "damage_hp_percent": 0.20,
+          "dreamlites_gain": 30
+        }
+      },
+      "visibility": "private"
+    },
+    "trial_of_insight": {
+      "name": "Trial of Insight",
+      "description": "Success: Reveal upcoming instances for the next floor. Failure: Instance choices become hidden next floor.",
+      "categories": ["trial", "social"],
+      "scope": "team",
+      "risk_level": "medium",
+      "star_stat_required": "insight",
+      "effect_data": {
+        "type": "stat_check",
+        "stat": "insight",
+        "success": {
+          "effect": "reveal_next_floor"
+        },
+        "failure": {
+          "effect": "hide_next_floor"
+        }
+      },
+      "visibility": "public"
+    },
+    "trial_of_fortitude": {
+      "name": "Trial of Fortitude",
+      "description": "Lose 15% max HP this run. Gain +20% defense and special defense.",
+      "categories": ["trial", "buff", "risk"],
+      "scope": "individual",
+      "risk_level": "high",
+      "star_stat_required": "fortitude",
+      "effect_data": {
+        "type": "stat_trade",
+        "cost": {
+          "max_hp_percent": -0.15
+        },
+        "benefit": {
+          "defense_multiplier": 1.20,
+          "sp_defense_multiplier": 1.20
+        }
+      },
+      "duration": "run",
+      "visibility": "private"
+    }
+  },
+  "economy": {
+    "condensed_dream": {
+      "name": "Condensed Dream",
+      "description": "Convert all Dreamlites into a shared pool. Shared buffs are 25% cheaper. Individual buffs cost more.",
+      "categories": ["economy", "social"],
+      "scope": "team",
+      "risk_level": "medium",
+      "effect_data": {
+        "type": "pooled_currency",
+        "shared_buff_discount": 0.25,
+        "individual_buff_penalty": 1.5
+      },
+      "duration": "floor",
+      "visibility": "public"
+    },
+    "leaking_reality": {
+      "name": "Leaking Reality",
+      "description": "Gain +50 Dreamlites instantly. Lose 5 Dreamlites every room until extraction.",
+      "categories": ["economy", "risk"],
+      "scope": "team",
+      "risk_level": "medium",
+      "effect_data": {
+        "type": "currency_leak",
+        "instant_gain": 50,
+        "per_room_loss": 5
+      },
+      "duration": "run",
+      "visibility": "public"
+    },
+    "dream_tax": {
+      "name": "Dream Tax",
+      "description": "Pay 30 Dreamlites now. Receive triple rewards from the next battle.",
+      "categories": ["economy", "risk"],
+      "scope": "individual",
+      "risk_level": "low",
+      "dreamlite_cost": 30,
+      "effect_data": {
+        "type": "reward_multiplier",
+        "multiplier": 3,
+        "battles": 1
+      },
+      "duration": "battle",
+      "visibility": "private"
+    }
+  },
+  "type_buffs": {
+    "power_fire": {
+      "name": "Power (Fire)",
+      "description": "Fire-type moves deal +20% damage.",
+      "categories": ["buff", "type"],
+      "scope": "individual",
+      "risk_level": "low",
+      "dreamlite_cost": 40,
+      "effect_data": {
+        "type": "type_power",
+        "pokemon_type": "fire",
+        "damage_multiplier": 1.20
+      },
+      "duration": "floor",
+      "visibility": "private"
+    },
+    "resist_water": {
+      "name": "Resist (Water)",
+      "description": "Water-type damage taken reduced by 20%.",
+      "categories": ["buff", "type"],
+      "scope": "individual",
+      "risk_level": "low",
+      "dreamlite_cost": 40,
+      "effect_data": {
+        "type": "type_resist",
+        "pokemon_type": "water",
+        "damage_reduction": 0.20
+      },
+      "duration": "floor",
+      "visibility": "private"
+    },
+    "affinity_grass": {
+      "name": "Affinity (Grass)",
+      "description": "Using Grass-type moves restores 5% HP.",
+      "categories": ["buff", "type", "recovery"],
+      "scope": "individual",
+      "risk_level": "low",
+      "dreamlite_cost": 60,
+      "effect_data": {
+        "type": "type_affinity",
+        "pokemon_type": "grass",
+        "heal_percent": 0.05
+      },
+      "duration": "floor",
+      "visibility": "private"
+    },
+    "instability_electric": {
+      "name": "Instability (Electric)",
+      "description": "Electric-type moves deal +30% damage. User takes 10% recoil.",
+      "categories": ["buff", "curse", "type", "risk"],
+      "scope": "individual",
+      "risk_level": "high",
+      "dreamlite_cost": 50,
+      "effect_data": {
+        "type": "type_instability",
+        "pokemon_type": "electric",
+        "damage_multiplier": 1.30,
+        "recoil_percent": 0.10
+      },
+      "duration": "floor",
+      "visibility": "private"
+    },
+    "veil_psychic": {
+      "name": "Veil (Psychic)",
+      "description": "First Psychic-type attack each battle is negated.",
+      "categories": ["buff", "type"],
+      "scope": "individual",
+      "risk_level": "low",
+      "dreamlite_cost": 70,
+      "effect_data": {
+        "type": "type_veil",
+        "pokemon_type": "psychic",
+        "negate_first": true
+      },
+      "duration": "floor",
+      "visibility": "private"
+    }
+  },
+  "social": {
+    "split_reality": {
+      "name": "Split Reality",
+      "description": "Two outcomes are rolled. Both happen, but split between players.",
+      "categories": ["social", "chaos"],
+      "scope": "team",
+      "risk_level": "medium",
+      "effect_data": {
+        "type": "split_outcome",
+        "num_outcomes": 2,
+        "apply_both": true
+      },
+      "visibility": "public"
+    },
+    "majority_rule": {
+      "name": "Majority Rule",
+      "description": "Winning vote gets full effect. Losing voters receive a minor curse.",
+      "categories": ["social", "risk"],
+      "scope": "team",
+      "risk_level": "medium",
+      "effect_data": {
+        "type": "majority_vote",
+        "winner_gets_buff": true,
+        "loser_gets_curse": true
+      },
+      "visibility": "public"
+    },
+    "unanimous_dream": {
+      "name": "Unanimous Dream",
+      "description": "If vote is 100% aligned, effect is doubled.",
+      "categories": ["social", "buff"],
+      "scope": "team",
+      "risk_level": "low",
+      "effect_data": {
+        "type": "unanimous_vote",
+        "requires_unanimous": true,
+        "effect_multiplier": 2.0
+      },
+      "visibility": "public"
+    }
+  },
+  "rest": {
+    "safe_camp": {
+      "name": "Safe Camp",
+      "description": "Restore HP and PP fully. Extract and return later.",
+      "categories": ["rest", "recovery"],
+      "scope": "team",
+      "risk_level": "low",
+      "effect_data": {
+        "type": "rest",
+        "heal_hp_percent": 1.0,
+        "heal_pp_percent": 1.0,
+        "allow_extraction": true
+      },
+      "visibility": "public"
+    },
+    "unstable_camp": {
+      "name": "Unstable Camp",
+      "description": "Restore HP and PP partially (50%).",
+      "categories": ["rest", "recovery"],
+      "scope": "team",
+      "risk_level": "low",
+      "effect_data": {
+        "type": "rest",
+        "heal_hp_percent": 0.5,
+        "heal_pp_percent": 0.5,
+        "allow_extraction": false
+      },
+      "visibility": "public"
+    },
+    "false_exit": {
+      "name": "False Exit",
+      "description": "Extract immediately... or push one extra floor with doubled rewards.",
+      "categories": ["rest", "risk", "economy"],
+      "scope": "team",
+      "risk_level": "high",
+      "effect_data": {
+        "type": "choice",
+        "options": [
+          {
+            "name": "Extract Now",
+            "effect": "extract"
+          },
+          {
+            "name": "Push Forward",
+            "effect": "reward_multiplier",
+            "multiplier": 2.0,
+            "duration": "floor"
+          }
+        ]
+      },
+      "visibility": "public"
+    }
+  },
+  "battle": {
+    "standard_battle": {
+      "name": "Wild Battle",
+      "description": "Face wild Pokémon appropriate to this floor's level.",
+      "categories": ["battle"],
+      "scope": "team",
+      "risk_level": "medium",
+      "effect_data": {
+        "type": "battle",
+        "battle_format": "wild",
+        "num_opponents": 1
+      },
+      "visibility": "public"
+    },
+    "double_trouble": {
+      "name": "Double Trouble",
+      "description": "Face two wild Pokémon in a doubles battle.",
+      "categories": ["battle", "risk"],
+      "scope": "team",
+      "risk_level": "high",
+      "effect_data": {
+        "type": "battle",
+        "battle_format": "doubles",
+        "num_opponents": 2
+      },
+      "visibility": "public"
+    },
+    "champion_gauntlet": {
+      "name": "Champion Gauntlet",
+      "description": "Face 3 battles in a row. Gain triple Dreamlites if you survive all 3.",
+      "categories": ["battle", "risk", "economy"],
+      "scope": "team",
+      "risk_level": "high",
+      "effect_data": {
+        "type": "gauntlet",
+        "num_battles": 3,
+        "dreamlite_multiplier": 3
+      },
+      "visibility": "public"
+    }
+  },
+  "rewards": {
+    "dreamlite_cache": {
+      "name": "Dreamlite Cache",
+      "description": "Find a stash of Dreamlites. Gain 50-100 Dreamlites.",
+      "categories": ["economy", "reward"],
+      "scope": "team",
+      "risk_level": "low",
+      "effect_data": {
+        "type": "currency_gain",
+        "min_gain": 50,
+        "max_gain": 100
+      },
+      "visibility": "public"
+    },
+    "mysterious_gift": {
+      "name": "Mysterious Gift",
+      "description": "Receive a random buff for this floor.",
+      "categories": ["buff", "reward"],
+      "scope": "individual",
+      "risk_level": "low",
+      "effect_data": {
+        "type": "random_buff",
+        "rarity": "common"
+      },
+      "duration": "floor",
+      "visibility": "private"
+    }
+  }
+}

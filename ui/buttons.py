@@ -220,6 +220,15 @@ LOCATION_ACTIVITY_DEFINITIONS = {
         "iv_points": 3,
         "type": "dojo",
     },
+    "residential_district_dreamyard": {
+        "id": "dream_dive",
+        "label": "Dive",
+        "emoji": "🌀",
+        "stamina_cost": 1,
+        "description": "Delve into the dream world in a roguelike adventure.",
+        "reward_lines": ["Enter Dream Rogue mode"],
+        "type": "dream_rogue",
+    },
 }
 
 # Allow newer Residential District location IDs to reuse the same activity settings
@@ -1475,6 +1484,8 @@ class MainMenuView(View):
             await self._start_party_training(interaction, trainer, activity)
         elif activity_type == "dojo":
             await self._start_dojo_training(interaction, trainer, activity)
+        elif activity_type == "dream_rogue":
+            await self._start_dream_rogue(interaction, trainer, activity)
         else:
             await self._start_passive_activity(interaction, trainer, activity)
 
@@ -1714,6 +1725,28 @@ class MainMenuView(View):
             embed=complete_embed,
             view=MainMenuView(self.bot, user_id=trainer.discord_user_id),
         )
+
+    async def _start_dream_rogue(self, interaction, trainer, activity: Dict[str, Any]):
+        """Start Dream Rogue dive from Dreamyard location"""
+        from ui.dream_rogue_views import FloorSelectModal
+
+        # Show floor selection modal
+        modal = FloorSelectModal(lambda i, floor: self._on_dream_floor_selected(i, floor, trainer))
+        await interaction.response.send_modal(modal)
+
+    async def _on_dream_floor_selected(self, interaction: discord.Interaction, floor: int, trainer):
+        """Handle floor selection for Dream Rogue"""
+        dream_cog = self.bot.get_cog("DreamRogueCog")
+
+        if not dream_cog:
+            await interaction.response.send_message(
+                "❌ Dream Rogue system not available!",
+                ephemeral=True
+            )
+            return
+
+        # Start solo/invite dive
+        await dream_cog.start_dive_solo(interaction, floor)
 
     def _add_exit_button(self):
         """Add exit wild area button dynamically"""
