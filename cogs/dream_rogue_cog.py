@@ -30,7 +30,7 @@ class DreamRogueCog(commands.Cog):
         self.bot = bot
         self.dream_manager = DreamRogueManager()
         self.player_db = PlayerDatabase()
-        self.session_manager = SessionManager()
+        self.session_manager = SessionManager(self.player_db)
 
     @app_commands.command(name="dream_stats", description="View your Dream Rogue statistics")
     async def dream_stats(self, interaction: discord.Interaction):
