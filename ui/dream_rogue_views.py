@@ -391,14 +391,13 @@ class InstanceActionView(View):
     async def _start_battle(self, interaction: discord.Interaction):
         """Start a battle instance"""
         from dream_rogue_manager import DreamRogueManager
-        from database import PlayerDatabase
-        from species_data import SpeciesDatabase
+        from database import PlayerDatabase, SpeciesDatabase
         from models import Pokemon
         import random
 
         manager = DreamRogueManager()
         player_db = PlayerDatabase()
-        species_db = SpeciesDatabase()
+        species_db = SpeciesDatabase('data/pokemon_species.json')
 
         run = manager.get_run(self.run_id)
         floor = run["current_floor"]
