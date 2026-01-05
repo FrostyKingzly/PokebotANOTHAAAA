@@ -34,7 +34,7 @@ class DreamRogueManager:
 
         # Read and execute schema
         try:
-            with open("dream_rogue_schema.sql", "r") as f:
+            with open("dream_rogue_schema.sql", "r", encoding="utf-8") as f:
                 schema = f.read()
                 cursor.executescript(schema)
             conn.commit()
@@ -46,7 +46,7 @@ class DreamRogueManager:
     def _load_instance_templates(self):
         """Load instance templates from JSON"""
         try:
-            with open("data/dream_instances.json", "r") as f:
+            with open("data/dream_instances.json", "r", encoding="utf-8") as f:
                 self.instance_templates = json.load(f)
         except FileNotFoundError:
             print("Warning: dream_instances.json not found")
