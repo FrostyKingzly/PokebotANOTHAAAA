@@ -1728,14 +1728,14 @@ class MainMenuView(View):
 
     async def _start_dream_rogue(self, interaction, trainer, activity: Dict[str, Any]):
         """Start Dream Rogue dive from Dreamyard location"""
-        from ui.dream_rogue_views import FloorSelectModal
+        from ui.dream_rogue_views import StageSelectModal
 
-        # Show floor selection modal
-        modal = FloorSelectModal(lambda i, floor: self._on_dream_floor_selected(i, floor, trainer))
+        # Show stage selection modal
+        modal = StageSelectModal(lambda i, stage_level: self._on_dream_stage_selected(i, stage_level, trainer))
         await interaction.response.send_modal(modal)
 
-    async def _on_dream_floor_selected(self, interaction: discord.Interaction, floor: int, trainer):
-        """Handle floor selection for Dream Rogue"""
+    async def _on_dream_stage_selected(self, interaction: discord.Interaction, stage_level: int, trainer):
+        """Handle stage selection for Dream Rogue"""
         dream_cog = self.bot.get_cog("DreamRogueCog")
 
         if not dream_cog:
@@ -1746,7 +1746,7 @@ class MainMenuView(View):
             return
 
         # Start solo/invite dive
-        await dream_cog.start_dive_solo(interaction, floor)
+        await dream_cog.start_dive_solo(interaction, stage_level)
 
     def _add_exit_button(self):
         """Add exit wild area button dynamically"""
