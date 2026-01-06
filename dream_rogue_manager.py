@@ -385,25 +385,33 @@ class DreamRogueManager:
 
         return (min_level, max_level)
 
-    def generate_floor_instances(self, run_id: str, floor: int) -> List[Dict]:
+    def generate_floor_instances(
+        self,
+        run_id: str,
+        floor: int,
+        category_override: Optional[List[str]] = None
+    ) -> List[Dict]:
         """
         Generate instances for a floor
 
         Args:
             run_id: Active run
             floor: Floor number (1-10)
+            category_override: Optional list of categories to force for this floor
 
         Returns:
             List of instance dicts
         """
         instances = []
 
-        if floor == 1:
-            # Stage 1: Always start with a battle
-            instances.extend(self._get_instances_by_category(["battle"], 1))
-        elif floor == 10:
+        if floor == 10:
             # Stage 10: Boss battle
             instances.append(self._create_boss_instance(floor))
+        elif category_override:
+            instances.extend(self._get_instances_by_category(category_override, 1))
+        elif floor == 1:
+            # Stage 1: Always start with a battle
+            instances.extend(self._get_instances_by_category(["battle"], 1))
         elif floor == 5:
             # Middle stage always a rest
             instances.extend(self._get_instances_by_category(["rest"], 1))
@@ -534,7 +542,11 @@ class DreamRogueManager:
             "risk_level": "extreme",
             "effect_data": {
                 "type": "boss_raid",
-                "floor": floor
+                "floor": floor,
+                "battle_format": "raid",
+                "num_opponents": 1,
+                "raid_stat_multiplier": 2.5,
+                "raid_hp_multiplier": 6.0
             }
         }
 

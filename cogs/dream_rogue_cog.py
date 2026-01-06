@@ -7,7 +7,7 @@ Commands and orchestration for the Dream Rogue roguelike gamemode
 import discord
 from discord import app_commands
 from discord.ext import commands
-from typing import Optional
+from typing import Optional, List
 import asyncio
 import random
 
@@ -26,6 +26,20 @@ from ui.dream_rogue_views import (
 
 class DreamRogueCog(commands.Cog):
     """Dream Rogue gamemode commands"""
+
+    PATH_CHOICE_CHANCE = 0.65
+    PATH_OPTIONS = (
+        {
+            "name": "Battle Path",
+            "description": "Seek out the next battle encounter.",
+            "categories": ["battle"],
+        },
+        {
+            "name": "Gambling Path",
+            "description": "Risk it all on a gambling encounter.",
+            "categories": ["gambling"],
+        },
+    )
 
     def __init__(self, bot):
         self.bot = bot
@@ -285,7 +299,12 @@ class DreamRogueCog(commands.Cog):
             # Don't change view
             await interaction.response.defer()
 
-    async def _start_floor(self, interaction: discord.Interaction, run_id: str):
+    async def _start_floor(
+        self,
+        interaction: discord.Interaction,
+        run_id: str,
+        category_override: Optional[List[str]] = None
+    ):
         """Start a new floor"""
         run = self.dream_manager.get_run(run_id)
         floor = run["current_floor"]
@@ -294,7 +313,11 @@ class DreamRogueCog(commands.Cog):
         await self._send_embed(interaction, stage_embed)
 
         # Generate instances for floor
-        instances = self.dream_manager.generate_floor_instances(run_id, floor)
+        instances = self.dream_manager.generate_floor_instances(
+            run_id,
+            floor,
+            category_override=category_override
+        )
 
         if not instances:
             await interaction.followup.send("❌ Failed to generate floor instances!")
@@ -418,20 +441,96 @@ class DreamRogueCog(commands.Cog):
                 await interaction.followup.send(embed=embed)
 
             else:
-                # Advance to next floor
-                new_floor = self.dream_manager.advance_floor(run_id)
-
-                embed = DreamRogueEmbeds.stage_travel(floor, new_floor)
-
-                await interaction.followup.send(embed=embed)
-
-                # Start next floor after delay
-                await asyncio.sleep(3)
-                await self._start_floor(interaction, run_id)
+                await self._handle_floor_transition(interaction, run_id, floor)
 
         else:
             # More instances on this floor
             await self._show_instance(interaction, run_id, remaining_instances[0], remaining_instances)
+
+    async def _handle_floor_transition(
+        self,
+        interaction: discord.Interaction,
+        run_id: str,
+        current_floor: int
+    ):
+        """Handle path selection and travel to the next floor."""
+        run = self.dream_manager.get_run(run_id)
+        if not run or current_floor >= 10:
+            return
+
+        next_floor = current_floor + 1
+        if next_floor in {5, 10}:
+            await self._advance_to_next_floor(interaction, run_id, current_floor)
+            return
+
+        use_path_choice = random.random() <= self.PATH_CHOICE_CHANCE
+
+        if not use_path_choice:
+            await self._advance_to_next_floor(interaction, run_id, current_floor)
+            return
+
+        vote_id = self.dream_manager.create_vote(
+            run_id,
+            "Choose the path ahead:",
+            [
+                {"name": option["name"], "description": option["description"]}
+                for option in self.PATH_OPTIONS
+            ],
+        )
+
+        vote = self.dream_manager.get_vote(vote_id)
+        percentages = self.dream_manager.get_vote_percentages(vote_id)
+
+        embed = DreamRogueEmbeds.voting(vote, percentages)
+        view = VotingView(
+            self.bot,
+            vote_id,
+            run_id,
+            lambda i, result: self._on_path_vote_complete(i, run_id, current_floor, result)
+        )
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, view=view)
+        else:
+            await interaction.response.send_message(embed=embed, view=view)
+
+    async def _on_path_vote_complete(
+        self,
+        interaction: discord.Interaction,
+        run_id: str,
+        current_floor: int,
+        result_index: int
+    ):
+        """Apply the voted path and advance."""
+        if not isinstance(result_index, int):
+            await self._advance_to_next_floor(interaction, run_id, current_floor)
+            return
+
+        option = self.PATH_OPTIONS[result_index] if result_index < len(self.PATH_OPTIONS) else None
+        categories = option["categories"] if option else None
+
+        await self._advance_to_next_floor(
+            interaction,
+            run_id,
+            current_floor,
+            category_override=categories
+        )
+
+    async def _advance_to_next_floor(
+        self,
+        interaction: discord.Interaction,
+        run_id: str,
+        current_floor: int,
+        category_override: Optional[List[str]] = None
+    ):
+        """Advance the run and start the next floor."""
+        new_floor = self.dream_manager.advance_floor(run_id)
+
+        embed = DreamRogueEmbeds.stage_travel(current_floor, new_floor)
+        await interaction.followup.send(embed=embed)
+
+        await asyncio.sleep(3)
+        await self._start_floor(interaction, run_id, category_override=category_override)
 
     async def _send_embed(self, interaction: discord.Interaction, embed: discord.Embed):
         if interaction.response.is_done():

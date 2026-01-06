@@ -489,6 +489,34 @@
       },
       "visibility": "public"
     },
+    "paired_assault": {
+      "name": "Paired Assault",
+      "description": "Two teammates join forces in a multi battle against roaming foes.",
+      "categories": ["battle", "social"],
+      "scope": "team",
+      "risk_level": "medium",
+      "effect_data": {
+        "type": "battle",
+        "battle_format": "multi",
+        "num_opponents": 2
+      },
+      "visibility": "public"
+    },
+    "dream_raid": {
+      "name": "Dream Raid",
+      "description": "All dreamers unite against a single empowered foe.",
+      "categories": ["battle", "raid", "risk"],
+      "scope": "team",
+      "risk_level": "high",
+      "effect_data": {
+        "type": "battle",
+        "battle_format": "raid",
+        "num_opponents": 1,
+        "raid_stat_multiplier": 2.0,
+        "raid_hp_multiplier": 5.0
+      },
+      "visibility": "public"
+    },
     "champion_gauntlet": {
       "name": "Champion Gauntlet",
       "description": "Face 3 battles in a row. Gain triple Dreamlites if you survive all 3.",
