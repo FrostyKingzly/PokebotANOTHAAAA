@@ -330,12 +330,14 @@ class VotingView(View):
 class InstanceActionView(View):
     """View for instance-specific actions"""
 
-    def __init__(self, bot, run_id: str, instance: Dict, on_complete_callback):
+    def __init__(self, bot, run_id: str, instance: Dict, on_complete_callback, origin_channel_id: Optional[int] = None):
         super().__init__(timeout=300)
         self.bot = bot
         self.run_id = run_id
         self.instance = instance
         self.on_complete_callback = on_complete_callback
+        self.origin_channel_id = origin_channel_id
+        self._pending_battles = set()
 
         categories = instance.get("categories", [])
         effect_data = instance.get("effect_data", {})
@@ -376,108 +378,239 @@ class InstanceActionView(View):
                 custom_id="reward"
             ))
             self.children[0].callback = self._claim_reward
-
-        # Add skip button for most instances
-        if "boss" not in categories and "rest" not in categories:
+        else:
+            # Fallback action for domains/buffs/curses/etc.
             self.add_item(Button(
-                label="Skip",
-                style=discord.ButtonStyle.secondary,
-                emoji="⏭️",
-                custom_id="skip",
+                label="Proceed",
+                style=discord.ButtonStyle.primary,
+                emoji="➡️",
+                custom_id="proceed",
                 row=1
             ))
-            self.children[-1].callback = self._skip
+            self.children[-1].callback = self._proceed
 
     async def _start_battle(self, interaction: discord.Interaction):
         """Start a battle instance"""
         from dream_rogue_manager import DreamRogueManager
         from database import PlayerDatabase, SpeciesDatabase
         from models import Pokemon
+        from battle_engine_v2 import BattleType, BattleFormat
+        from ui.buttons import reconstruct_pokemon_from_data
         import random
 
         manager = DreamRogueManager()
         player_db = PlayerDatabase()
-        species_db = SpeciesDatabase('data/pokemon_species.json')
+        species_db = getattr(self.bot, "species_db", SpeciesDatabase("data/pokemon_species.json"))
+
+        battle_cog = self.bot.get_cog("BattleCog")
+        if not battle_cog:
+            await interaction.response.send_message("❌ Battle system unavailable!", ephemeral=True)
+            return
 
         run = manager.get_run(self.run_id)
         floor = run["current_floor"]
         stage_level = run["stage_level"]
-
-        # Get level range for floor
         min_lvl, max_lvl = manager.get_floor_level_range(stage_level, floor)
 
-        # Generate wild Pokemon
-        is_boss = "boss" in self.instance.get("categories", [])
+        categories = self.instance.get("categories", [])
+        effect_data = self.instance.get("effect_data", {})
+        battle_format_raw = effect_data.get("battle_format", "singles")
+        num_opponents = max(1, int(effect_data.get("num_opponents", 1)))
+        completion_result = "boss_defeated" if "boss" in categories else "battle_complete"
 
-        if is_boss:
-            # Boss battle - 10 levels higher
-            level = max_lvl + 10
-
-            # Get fully evolved Pokemon
-            all_species = species_db.get_all_species()
-            final_evos = [s for s in all_species if not s.get("evolution")]
-
-            # No legendaries
-            non_legendary = [s for s in final_evos if not s.get("is_legendary", False)]
-
-            if non_legendary:
-                species_data = random.choice(non_legendary)
-            else:
-                species_data = random.choice(final_evos)
-
-            # Create raid boss
-            boss_pokemon = Pokemon(
-                species_data=species_data,
-                level=level,
-                owner_discord_id=0,
-                is_raid_boss=True,
-                raid_stat_multiplier=2.0,
-                raid_hp_multiplier=5.0
-            )
-
-            # Start raid battle
-            battle_cog = self.bot.get_cog("BattleCog")
-            if not battle_cog:
-                await interaction.response.send_message("❌ Battle system unavailable!", ephemeral=True)
-                return
-
-            # Get participants' parties
-            participants = manager.get_participants(self.run_id)
-
-            # Create battle - simplified for now
-            await interaction.response.send_message(
-                f"⚔️ Boss battle starting! (Implementation in progress)\n**{species_data['name']}** Lv. {level}",
-                ephemeral=False
-            )
-
-            # TODO: Integrate with raid battle system
-
+        if battle_format_raw == "doubles":
+            battle_format = BattleFormat.DOUBLES
+        elif battle_format_raw == "multi":
+            battle_format = BattleFormat.MULTI
         else:
-            # Regular battle
-            level = random.randint(min_lvl, max_lvl)
+            battle_format = BattleFormat.SINGLES
 
-            # Get random species (no legendaries)
+        participants = manager.get_participants(self.run_id)
+        if not participants:
+            await interaction.response.send_message("❌ No participants found for this battle!", ephemeral=True)
+            return
+
+        if interaction.response.is_done():
+            await interaction.followup.send("⚔️ Battle instance is starting for all participants...")
+        else:
+            await interaction.response.send_message("⚔️ Battle instance is starting for all participants...")
+
+        parent_channel = interaction.channel
+        if isinstance(parent_channel, discord.Thread) and parent_channel.parent:
+            parent_channel = parent_channel.parent
+
+        if not isinstance(parent_channel, discord.TextChannel):
+            await interaction.followup.send("❌ Battles can only start in text channels.", ephemeral=True)
+            return
+
+        created_threads = []
+        self._pending_battles = {p["discord_user_id"] for p in participants}
+
+        def _create_wild_opponents():
+            opponents = []
             all_species = species_db.get_all_species()
             non_legendary = [s for s in all_species if not s.get("is_legendary", False)]
+            candidates = non_legendary or all_species
+            for _ in range(num_opponents):
+                species_data = random.choice(candidates)
+                level = random.randint(min_lvl, max_lvl)
+                if "boss" in categories:
+                    level = max_lvl + 10
+                opponents.append(Pokemon(
+                    species_data=species_data,
+                    level=level,
+                    owner_discord_id=None
+                ))
+            return opponents
 
-            species_data = random.choice(non_legendary)
+        for participant in participants:
+            user_id = participant["discord_user_id"]
+            user = interaction.guild.get_member(user_id)
+            if not user:
+                self._pending_battles.discard(user_id)
+                continue
 
-            wild_pokemon = Pokemon(
-                species_data=species_data,
-                level=level,
-                owner_discord_id=0
+            if user_id in battle_cog.user_battles:
+                self._pending_battles.discard(user_id)
+                continue
+
+            party_data = player_db.get_trainer_party(user_id)
+            trainer_pokemon = []
+            for poke_data in party_data:
+                species_data = species_db.get_species(poke_data["species_dex_number"])
+                if not species_data:
+                    continue
+                trainer_pokemon.append(reconstruct_pokemon_from_data(poke_data, species_data))
+
+            if not trainer_pokemon:
+                self._pending_battles.discard(user_id)
+                continue
+
+            opponent_pokemon = _create_wild_opponents()
+            if not opponent_pokemon:
+                self._pending_battles.discard(user_id)
+                continue
+
+            opponent_name = opponent_pokemon[0].species_name
+
+            battle_id = battle_cog.battle_engine.start_trainer_battle(
+                trainer_id=user_id,
+                trainer_name=user.display_name,
+                trainer_party=trainer_pokemon,
+                npc_party=opponent_pokemon,
+                npc_name=opponent_name,
+                npc_class="dream_rogue",
+                prize_money=0,
+                battle_format=battle_format
             )
 
-            await interaction.response.send_message(
-                f"⚔️ Wild battle starting! (Implementation in progress)\n**{species_data['name']}** Lv. {level}",
-                ephemeral=False
+            thread_name = f"Dream Rogue - {user.display_name}"
+            thread = await parent_channel.create_thread(
+                name=thread_name,
+                auto_archive_duration=60,
+                reason=f"Dream Rogue battle for {user.display_name}"
             )
 
-            # TODO: Integrate with battle engine
+            class MockInteraction:
+                def __init__(self, thread, user):
+                    self.channel = thread
+                    self.user = user
+                    self.guild = thread.guild
+                    self._response_done = False
 
-        # For now, complete the instance
-        if self.on_complete_callback:
-            await self.on_complete_callback(interaction, "battle_started")
+                @property
+                def response(self):
+                    class Response:
+                        def __init__(self, parent):
+                            self.parent = parent
+
+                        async def defer(self):
+                            self.parent._response_done = True
+
+                        def is_done(self):
+                            return self.parent._response_done
+
+                    return Response(self)
+
+                @property
+                def followup(self):
+                    class Followup:
+                        def __init__(self, parent):
+                            self.parent = parent
+
+                        async def send(self, *args, **kwargs):
+                            return await self.parent.channel.send(*args, **kwargs)
+
+                    return Followup(self)
+
+            mock_interaction = MockInteraction(thread, user)
+
+            await battle_cog.prompt_and_start_battle_ui(
+                interaction=mock_interaction,
+                battle_id=battle_id,
+                battle_type=BattleType.WILD
+            )
+
+            if not hasattr(self.bot, "dream_rogue_battle_callbacks"):
+                self.bot.dream_rogue_battle_callbacks = {}
+
+            async def _battle_done_callback(battle, result, battle_interaction, participant_id=user_id):
+                self._pending_battles.discard(participant_id)
+                if not self._pending_battles and self.on_complete_callback:
+                    await self.on_complete_callback(
+                        self._create_channel_interaction(parent_channel),
+                        completion_result
+                    )
+
+            self.bot.dream_rogue_battle_callbacks[battle_id] = _battle_done_callback
+            created_threads.append(thread.mention)
+
+        if created_threads:
+            await interaction.followup.send(
+                "✅ Battle threads created:\n" + "\n".join(created_threads)
+            )
+        else:
+            await interaction.followup.send("❌ No battle threads could be created.")
+
+        if not self._pending_battles and self.on_complete_callback:
+            await self.on_complete_callback(
+                self._create_channel_interaction(parent_channel),
+                completion_result
+            )
+
+    def _create_channel_interaction(self, channel: discord.TextChannel):
+        class ChannelInteraction:
+            def __init__(self, target_channel):
+                self.channel = target_channel
+                self.guild = target_channel.guild
+                self._response_done = True
+
+            @property
+            def response(self):
+                class Response:
+                    def __init__(self, parent):
+                        self.parent = parent
+
+                    async def defer(self):
+                        self.parent._response_done = True
+
+                    def is_done(self):
+                        return self.parent._response_done
+
+                return Response(self)
+
+            @property
+            def followup(self):
+                class Followup:
+                    def __init__(self, parent):
+                        self.parent = parent
+
+                    async def send(self, *args, **kwargs):
+                        return await self.parent.channel.send(*args, **kwargs)
+
+                return Followup(self)
+
+        return ChannelInteraction(channel)
 
     async def _rest(self, interaction: discord.Interaction):
         """Rest and restore Pokemon"""
@@ -496,7 +629,10 @@ class InstanceActionView(View):
 
             for pokemon in party:
                 # Restore HP and PP
-                player_db.update_pokemon_hp(pokemon["pokemon_id"], pokemon["max_hp"])
+                player_db.update_pokemon(
+                    pokemon["pokemon_id"],
+                    {"current_hp": pokemon["max_hp"], "status_condition": None}
+                )
 
                 # Restore PP for all moves
                 moves = pokemon.get("moves", [])
@@ -547,15 +683,48 @@ class InstanceActionView(View):
         if self.on_complete_callback:
             await self.on_complete_callback(interaction, "reward_claimed")
 
-    async def _skip(self, interaction: discord.Interaction):
-        """Skip this instance"""
-        await interaction.response.send_message(
-            "⏭️ Instance skipped.",
-            ephemeral=False
-        )
+    async def _proceed(self, interaction: discord.Interaction):
+        """Proceed through non-interactive instances (domain/buff/curse/etc.)"""
+        from dream_rogue_manager import DreamRogueManager
+
+        manager = DreamRogueManager()
+        categories = self.instance.get("categories", [])
+        scope = self.instance.get("scope", "team")
+        effect_data = self.instance.get("effect_data", {})
+        duration = self.instance.get("duration", "floor")
+
+        applied = None
+        if "buff" in categories or "curse" in categories or "nightmare" in categories or "domain" in categories:
+            buff_type = "buff"
+            if "nightmare" in categories:
+                buff_type = "nightmare"
+            elif "curse" in categories:
+                buff_type = "curse"
+            elif "domain" in categories:
+                buff_type = "domain"
+
+            target_user_id = interaction.user.id if scope == "individual" else None
+
+            manager.apply_buff(
+                run_id=self.run_id,
+                buff_type=buff_type,
+                buff_name=self.instance.get("name", "Dream Effect"),
+                buff_description=self.instance.get("description", "The dream shifts around you."),
+                scope=scope,
+                effect_data=effect_data,
+                duration=duration,
+                target_user_id=target_user_id
+            )
+            applied = self.instance.get("name", "Dream Effect")
+
+        message = "✨ The dream reshapes itself around your party."
+        if applied:
+            message += f"\nApplied effect: **{applied}**"
+
+        await interaction.response.send_message(message, ephemeral=False)
 
         if self.on_complete_callback:
-            await self.on_complete_callback(interaction, "skipped")
+            await self.on_complete_callback(interaction, "proceeded")
 
 
 class StageSelectModal(Modal, title="Choose Dream Rogue Stage"):
@@ -648,7 +817,8 @@ class IndividualInstanceView(View):
             self.bot,
             self.run_id,
             self.instance,
-            self._create_completion_callback(interaction.user.id)
+            self._create_completion_callback(interaction.user.id),
+            origin_channel_id=interaction.channel.id
         )
 
         await interaction.response.send_message(

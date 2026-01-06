@@ -1577,10 +1577,20 @@ class BattleCog(commands.Cog):
         self._unregister_battle(battle)
         # Note: Don't cleanup music here - let it play the victory theme naturally
 
+        dream_callback_registry = getattr(self.bot, "dream_rogue_battle_callbacks", None)
+        if dream_callback_registry and battle.battle_id in dream_callback_registry:
+            callback = dream_callback_registry.pop(battle.battle_id, None)
+            if callback:
+                await callback(battle, result, interaction)
+
         # Check if this is a session encounter (thread name starts with "Encounter -")
         is_session_encounter = (
             isinstance(interaction.channel, discord.Thread) and
             interaction.channel.name.startswith("Encounter -")
+        )
+        is_dream_rogue_encounter = (
+            isinstance(interaction.channel, discord.Thread) and
+            interaction.channel.name.startswith("Dream Rogue -")
         )
 
         if is_session_encounter:
@@ -1609,6 +1619,18 @@ class BattleCog(commands.Cog):
                 await interaction.channel.edit(archived=True, locked=True)
             except Exception as e:
                 print(f"Failed to close session encounter thread: {e}")
+        elif is_dream_rogue_encounter:
+            await asyncio.sleep(3)
+            try:
+                parent_channel = interaction.channel.parent
+                if parent_channel:
+                    await interaction.channel.send(
+                        f"✅ Battle complete! Return to {parent_channel.mention} to rejoin the team."
+                    )
+                await asyncio.sleep(2)
+                await interaction.channel.edit(archived=True, locked=True)
+            except Exception as e:
+                print(f"Failed to close Dream Rogue encounter thread: {e}")
         elif getattr(battle, 'battle_type', None) == BattleType.WILD:
             await self.send_return_to_encounter_prompt(interaction, battle.trainer.battler_id)
 

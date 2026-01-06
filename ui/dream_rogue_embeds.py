@@ -47,7 +47,7 @@ class DreamRogueEmbeds:
         stage_level = run.get("stage_level", 10)
 
         embed = discord.Embed(
-            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Dream Rogue — Level {stage_level} Stage — Floor {floor}/10",
+            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Dream Rogue — Level {stage_level} Stage",
             description="*Now Diving… Please Stand By.*",
             color=DreamRogueEmbeds.DREAM_COLOR
         )
@@ -55,8 +55,8 @@ class DreamRogueEmbeds:
         # Floor info
         min_lvl, max_lvl = floor_level_range
         embed.add_field(
-            name="Floor Information",
-            value=f"**Stage:** Level {stage_level}\n**Floor:** {floor}/10\n**Enemy Level Range:** {min_lvl}-{max_lvl}",
+            name="Stage Information",
+            value=f"**Stage:** {floor}/10\n**Level:** {stage_level}\n**Enemy Level Range:** {min_lvl}-{max_lvl}",
             inline=False
         )
 
@@ -76,7 +76,7 @@ class DreamRogueEmbeds:
         return embed
 
     @staticmethod
-    def instance_selection(instance: Dict, floor: int) -> discord.Embed:
+    def instance_selection(instance: Dict, stage: int) -> discord.Embed:
         """
         Instance encounter embed
 
@@ -147,7 +147,7 @@ class DreamRogueEmbeds:
             inline=False
         )
 
-        embed.set_footer(text=f"Floor {floor}")
+        embed.set_footer(text=f"Stage {stage}")
         return embed
 
     @staticmethod
@@ -483,6 +483,27 @@ class DreamRogueEmbeds:
             embed.description += "\n\n⚠️ **Boss Floor Ahead** ⚠️"
             embed.color = DreamRogueEmbeds.WARNING_COLOR
 
+        return embed
+
+    @staticmethod
+    def stage_travel(current_stage: int, next_stage: int) -> discord.Embed:
+        """Stage transition embed"""
+        embed = discord.Embed(
+            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Traversing the Dream World",
+            description=f"*Traveling to Stage {next_stage}...*\n\nStage {current_stage} fades into the mist.",
+            color=DreamRogueEmbeds.INFO_COLOR
+        )
+        embed.set_footer(text="Hold tight...")
+        return embed
+
+    @staticmethod
+    def stage_intro(stage: int) -> discord.Embed:
+        """Stage arrival embed"""
+        embed = discord.Embed(
+            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Arrived at Stage {stage}",
+            description="*The dream shifts around you.*",
+            color=DreamRogueEmbeds.DREAM_COLOR
+        )
         return embed
 
     @staticmethod
