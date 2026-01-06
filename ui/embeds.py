@@ -360,6 +360,7 @@ class EmbedBuilder:
         wild_area_manager=None,
         wild_area_state: Optional[Dict] = None,
         weather_manager=None,
+        dreamlites: Optional[int] = None,
     ) -> discord.Embed:
         """Create the main menu embed."""
         embed = discord.Embed(
@@ -375,6 +376,13 @@ class EmbedBuilder:
             value=f"₱{trainer.money:,}",
             inline=True
         )
+
+        if dreamlites is not None:
+            embed.add_field(
+                name="💎 Dreamlites",
+                value=f"{dreamlites:,}",
+                inline=True
+            )
 
         # Location
         location_value = EmbedBuilder._format_location_name(

@@ -225,7 +225,7 @@ class DreamRogueEmbeds:
         victory: bool,
         dreamlites_gained: int,
         exp_gained: int,
-        buffs_applied: List[str] = None
+        buffs_applied: List[Dict[str, str]] = None
     ) -> discord.Embed:
         """
         Battle completion reward embed
@@ -261,7 +261,9 @@ class DreamRogueEmbeds:
 
         if buffs_applied:
             for buff in buffs_applied:
-                rewards.append(f"{DreamRogueEmbeds.BUFF_EMOJI} {buff}")
+                name = buff.get("name", "Dream Blessing")
+                description = buff.get("description", "A gentle boon from the dream.")
+                rewards.append(f"{DreamRogueEmbeds.BUFF_EMOJI} **{name}** — {description}")
 
         if rewards:
             embed.add_field(
@@ -388,7 +390,11 @@ class DreamRogueEmbeds:
                 elif duration != "permanent":
                     duration_text = f" ({duration})"
 
-                lines.append(f"{emoji} **{name}**{duration_text}")
+                description = buff.get("buff_description", "")
+                line = f"{emoji} **{name}**{duration_text}"
+                if description:
+                    line = f"{line}\n{description}"
+                lines.append(line)
 
             embed.add_field(
                 name="Team Effects",
@@ -411,7 +417,11 @@ class DreamRogueEmbeds:
                 elif duration != "permanent":
                     duration_text = f" ({duration})"
 
-                lines.append(f"{emoji} **{name}**{duration_text}")
+                description = buff.get("buff_description", "")
+                line = f"{emoji} **{name}**{duration_text}"
+                if description:
+                    line = f"{line}\n{description}"
+                lines.append(line)
 
             embed.add_field(
                 name="Your Effects",

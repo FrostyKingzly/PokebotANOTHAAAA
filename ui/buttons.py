@@ -421,6 +421,7 @@ def _apply_party_exp_boost(bot, trainer, percent: int) -> List[Dict[str, Any]]:
 async def _show_main_menu(interaction: discord.Interaction, bot, user_id: int):
     """Re-render the main menu in the existing ephemeral message."""
     from ui.embeds import EmbedBuilder
+    from dream_rogue_manager import DreamRogueManager
 
     player_data = bot.player_manager.get_player(user_id)
     rank_manager = getattr(bot, "rank_manager", None)
@@ -428,6 +429,12 @@ async def _show_main_menu(interaction: discord.Interaction, bot, user_id: int):
     wild_area_manager = getattr(bot, "wild_area_manager", None)
     weather_manager = getattr(bot, "weather_manager", None)
     wild_area_state = wild_area_manager.get_wild_area_state(user_id) if wild_area_manager else None
+    dreamlites = None
+    if interaction.guild_id:
+        dream_manager = DreamRogueManager()
+        run = dream_manager.get_active_run_for_user(interaction.guild_id, user_id)
+        if run:
+            dreamlites = dream_manager.get_dreamlites(run["run_id"], user_id)
     embed = EmbedBuilder.main_menu(
         player_data,
         rank_manager=rank_manager,
@@ -435,8 +442,9 @@ async def _show_main_menu(interaction: discord.Interaction, bot, user_id: int):
         wild_area_manager=wild_area_manager,
         wild_area_state=wild_area_state,
         weather_manager=weather_manager,
+        dreamlites=dreamlites,
     )
-    view = MainMenuView(bot, user_id=user_id)
+    view = MainMenuView(bot, user_id=user_id, guild_id=interaction.guild_id)
 
     await interaction.response.edit_message(embed=embed, view=view)
 
@@ -549,6 +557,16 @@ class AlertDetailView(View):
 
         alerts_back.callback = _back
         self.add_item(alerts_back)
+
+
+class DreamEffectsView(View):
+    """View for listing Dream Rogue effects with a back button."""
+
+    def __init__(self, bot, user_id: int):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+        _add_back_button(self, lambda i: _show_main_menu(i, self.bot, self.user_id))
 
         _add_back_button(self, lambda i: _show_main_menu(i, self.bot, self.user_id), row=4)
 
@@ -891,10 +909,12 @@ class BattleThemeModal(discord.ui.Modal, title="Set Your Battle Theme"):
 class MainMenuView(View):
     """Main menu button interface"""
 
-    def __init__(self, bot, user_id: int = None):
+    def __init__(self, bot, user_id: int = None, guild_id: int = None):
         super().__init__(timeout=300)  # 5 minute timeout
         self.bot = bot
         self.user_id = user_id
+        self.guild_id = guild_id
+        self.dream_run_id = None
 
         # Update Alerts button label with unread count
         if user_id and hasattr(self, "alerts_button"):
@@ -929,6 +949,14 @@ class MainMenuView(View):
                 # Add exit button dynamically
                 self._add_exit_button()
 
+        if user_id and guild_id:
+            from dream_rogue_manager import DreamRogueManager
+            dream_manager = DreamRogueManager()
+            run = dream_manager.get_active_run_for_user(guild_id, user_id)
+            if run:
+                self.dream_run_id = run["run_id"]
+                self._add_dream_effects_button()
+
     async def _deny_if_in_battle(self, interaction: discord.Interaction) -> bool:
         battle_cog = self.bot.get_cog("BattleCog")
         if battle_cog and interaction.user.id in getattr(battle_cog, "user_battles", {}):
@@ -938,6 +966,35 @@ class MainMenuView(View):
             )
             return True
         return False
+
+    def _add_dream_effects_button(self):
+        """Add a button to view active Dream Rogue effects."""
+        effects_button = Button(
+            label="🌀 Dream Effects",
+            style=discord.ButtonStyle.secondary,
+            row=3
+        )
+
+        async def _effects_callback(interaction: discord.Interaction):
+            if not self.dream_run_id:
+                await interaction.response.send_message(
+                    "❌ No active dream run found.",
+                    ephemeral=True
+                )
+                return
+            from dream_rogue_manager import DreamRogueManager
+            from ui.dream_rogue_embeds import DreamRogueEmbeds
+
+            manager = DreamRogueManager()
+            buffs = manager.get_active_buffs(self.dream_run_id, user_id=interaction.user.id)
+            embed = DreamRogueEmbeds.active_buffs(buffs, user_name=interaction.user.display_name)
+            await interaction.response.edit_message(
+                embed=embed,
+                view=DreamEffectsView(self.bot, interaction.user.id),
+            )
+
+        effects_button.callback = _effects_callback
+        self.add_item(effects_button)
     
     @discord.ui.button(label="👥 Party", style=discord.ButtonStyle.primary, row=0)
     async def party_button(self, interaction: discord.Interaction, button: Button):
@@ -1535,7 +1592,7 @@ class MainMenuView(View):
         await interaction.followup.edit_message(
             interaction.message.id,
             embed=complete_embed,
-            view=MainMenuView(self.bot, user_id=trainer.discord_user_id),
+            view=MainMenuView(self.bot, user_id=trainer.discord_user_id, guild_id=interaction.guild_id),
         )
 
     async def _start_party_training(self, interaction, trainer, activity: Dict[str, Any]):
@@ -1600,7 +1657,7 @@ class MainMenuView(View):
         await interaction.followup.edit_message(
             interaction.message.id,
             embed=complete_embed,
-            view=MainMenuView(self.bot, user_id=trainer.discord_user_id),
+            view=MainMenuView(self.bot, user_id=trainer.discord_user_id, guild_id=interaction.guild_id),
         )
 
     async def _start_dojo_training(self, interaction, trainer, activity: Dict[str, Any]):
@@ -1723,7 +1780,7 @@ class MainMenuView(View):
         await interaction.followup.edit_message(
             interaction.message.id,
             embed=complete_embed,
-            view=MainMenuView(self.bot, user_id=trainer.discord_user_id),
+            view=MainMenuView(self.bot, user_id=trainer.discord_user_id, guild_id=interaction.guild_id),
         )
 
     async def _start_dream_rogue(self, interaction, trainer, activity: Dict[str, Any]):
