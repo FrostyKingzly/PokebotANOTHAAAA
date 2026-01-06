@@ -1422,12 +1422,20 @@ class BattleCog(commands.Cog):
             # Fall back to old logic
             is_volt_switch = battle.phase == 'VOLT_SWITCH'
 
+        switch_info = battle.pending_switches.get(battler_id, {})
+        switch_position = switch_info.get("position")
+        active_pokemon = battler.get_active_pokemon()
+        active_target = None
+        if switch_position is not None and switch_position < len(active_pokemon):
+            active_target = active_pokemon[switch_position]
+        elif active_pokemon:
+            active_target = active_pokemon[0]
+
         if is_volt_switch:
             # U-turn/Volt Switch case
-            active_mon = battler.get_active_pokemon()[0] if battler.get_active_pokemon() else None
-            if active_mon:
+            if active_target:
                 desc = (
-                    f"**{self._format_pokemon_name(active_mon, include_level=False)}** will switch out!\n\n"
+                    f"**{self._format_pokemon_name(active_target, include_level=False)}** will switch out!\n\n"
                     "Select another Pokémon to switch in."
                 )
             else:
@@ -1435,10 +1443,9 @@ class BattleCog(commands.Cog):
             embed = discord.Embed(title="Switch Required!", description=desc, color=discord.Color.blue())
         else:
             # Fainted Pokemon case
-            fainted = battler.get_active_pokemon()[0] if battler.get_active_pokemon() else None
-            if fainted:
+            if active_target:
                 desc = (
-                    f"**{self._format_pokemon_name(fainted, include_level=False)}** can no longer fight!\n\n"
+                    f"**{self._format_pokemon_name(active_target, include_level=False)}** can no longer fight!\n\n"
                     "Select another healthy Pokémon to continue the battle."
                 )
             else:
