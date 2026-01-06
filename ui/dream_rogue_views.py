@@ -417,6 +417,8 @@ class InstanceActionView(View):
         battle_format_raw = effect_data.get("battle_format", "singles")
         num_opponents = max(1, int(effect_data.get("num_opponents", 1)))
         instance_type = effect_data.get("type")
+        if battle_format_raw == "wild":
+            battle_format_raw = "singles"
         if instance_type == "gauntlet":
             battle_format_raw = "singles"
             num_opponents = max(1, int(effect_data.get("num_battles", num_opponents)))
@@ -426,6 +428,8 @@ class InstanceActionView(View):
             battle_format = BattleFormat.DOUBLES
         elif battle_format_raw == "multi":
             battle_format = BattleFormat.MULTI
+        elif battle_format_raw == "raid":
+            battle_format = BattleFormat.RAID
         else:
             battle_format = BattleFormat.SINGLES
 
@@ -448,14 +452,13 @@ class InstanceActionView(View):
             return
 
         created_threads = []
-        self._pending_battles = {p["discord_user_id"] for p in participants}
 
-        def _create_wild_opponents():
+        def _create_wild_opponents(target_count: int):
             opponents = []
             all_species = species_db.get_all_species()
             non_legendary = [s for s in all_species if not s.get("is_legendary", False)]
             candidates = non_legendary or all_species
-            for _ in range(num_opponents):
+            for _ in range(target_count):
                 species_data = random.choice(candidates)
                 level = random.randint(min_lvl, max_lvl)
                 if "boss" in categories:
@@ -467,17 +470,7 @@ class InstanceActionView(View):
                 ))
             return opponents
 
-        for participant in participants:
-            user_id = participant["discord_user_id"]
-            user = interaction.guild.get_member(user_id)
-            if not user:
-                self._pending_battles.discard(user_id)
-                continue
-
-            if user_id in battle_cog.user_battles:
-                self._pending_battles.discard(user_id)
-                continue
-
+        def _build_trainer_party(user_id: int):
             party_data = player_db.get_trainer_party(user_id)
             trainer_pokemon = []
             for poke_data in party_data:
@@ -485,36 +478,9 @@ class InstanceActionView(View):
                 if not species_data:
                     continue
                 trainer_pokemon.append(reconstruct_pokemon_from_data(poke_data, species_data))
+            return trainer_pokemon
 
-            if not trainer_pokemon:
-                self._pending_battles.discard(user_id)
-                continue
-
-            opponent_pokemon = _create_wild_opponents()
-            if not opponent_pokemon:
-                self._pending_battles.discard(user_id)
-                continue
-
-            opponent_name = opponent_pokemon[0].species_name
-
-            battle_id = battle_cog.battle_engine.start_trainer_battle(
-                trainer_id=user_id,
-                trainer_name=user.display_name,
-                trainer_party=trainer_pokemon,
-                npc_party=opponent_pokemon,
-                npc_name=opponent_name,
-                npc_class="dream_rogue",
-                prize_money=0,
-                battle_format=battle_format
-            )
-
-            thread_name = f"Dream Rogue - {user.display_name}"
-            thread = await parent_channel.create_thread(
-                name=thread_name,
-                auto_archive_duration=60,
-                reason=f"Dream Rogue battle for {user.display_name}"
-            )
-
+        def _create_thread_interaction(thread: discord.Thread, user: discord.Member):
             class MockInteraction:
                 def __init__(self, thread, user):
                     self.channel = thread
@@ -547,27 +513,218 @@ class InstanceActionView(View):
 
                     return Followup(self)
 
-            mock_interaction = MockInteraction(thread, user)
+            return MockInteraction(thread, user)
 
+        if battle_format == BattleFormat.RAID:
+            eligible = []
+            for participant in participants:
+                user_id = participant["discord_user_id"]
+                user = interaction.guild.get_member(user_id)
+                if not user or user_id in battle_cog.user_battles:
+                    continue
+                trainer_pokemon = _build_trainer_party(user_id)
+                if not trainer_pokemon:
+                    continue
+                eligible.append((user, trainer_pokemon))
+
+            if not eligible:
+                await interaction.followup.send("❌ No eligible participants for this raid battle.")
+                return
+
+            raid_boss = _create_wild_opponents(1)[0]
+            raid_boss.is_raid_boss = True
+            raid_boss.raid_stat_multiplier = float(effect_data.get("raid_stat_multiplier", 2.0))
+            raid_boss.raid_hp_multiplier = float(effect_data.get("raid_hp_multiplier", 5.0))
+            raid_boss._calculate_stats()
+            raid_boss.current_hp = raid_boss.max_hp
+
+            raid_entries = [
+                {"user_id": user.id, "trainer_name": user.display_name, "party": party}
+                for user, party in eligible
+            ]
+
+            battle_id = battle_cog.battle_engine.start_battle(
+                trainer_id=raid_entries[0]["user_id"],
+                trainer_name=", ".join([entry["trainer_name"] for entry in raid_entries]) or "Raid Team",
+                trainer_party=raid_entries[0]["party"],
+                opponent_party=[raid_boss],
+                battle_type=BattleType.TRAINER,
+                opponent_is_ai=True,
+                opponent_name=f"Dream Rogue {raid_boss.species_name}",
+                battle_format=BattleFormat.RAID,
+                raid_participants=raid_entries,
+            )
+
+            battle = battle_cog.battle_engine.get_battle(battle_id)
+            if battle:
+                battle.raid_participants = raid_entries
+
+            for entry in raid_entries:
+                battle_cog.user_battles[entry["user_id"]] = battle_id
+
+            thread = await parent_channel.create_thread(
+                name="Dream Rogue - Raid Battle",
+                auto_archive_duration=60,
+                reason="Dream Rogue raid battle"
+            )
+            created_threads.append(thread.mention)
+
+            mock_interaction = _create_thread_interaction(thread, interaction.user)
             await battle_cog.prompt_and_start_battle_ui(
                 interaction=mock_interaction,
                 battle_id=battle_id,
-                battle_type=BattleType.WILD
+                battle_type=BattleType.TRAINER
             )
 
             if not hasattr(self.bot, "dream_rogue_battle_callbacks"):
                 self.bot.dream_rogue_battle_callbacks = {}
 
-            async def _battle_done_callback(battle, result, battle_interaction, participant_id=user_id):
-                self._pending_battles.discard(participant_id)
-                if not self._pending_battles and self.on_complete_callback:
+            async def _battle_done_callback(battle, result, battle_interaction):
+                if self.on_complete_callback:
                     await self.on_complete_callback(
                         self._create_channel_interaction(parent_channel),
                         completion_result
                     )
 
             self.bot.dream_rogue_battle_callbacks[battle_id] = _battle_done_callback
+        elif battle_format == BattleFormat.MULTI:
+            eligible = []
+            for participant in participants:
+                user_id = participant["discord_user_id"]
+                user = interaction.guild.get_member(user_id)
+                if not user or user_id in battle_cog.user_battles:
+                    continue
+                trainer_pokemon = _build_trainer_party(user_id)
+                if not trainer_pokemon:
+                    continue
+                eligible.append((user, trainer_pokemon))
+
+            if len(eligible) < 2:
+                await interaction.followup.send("❌ Need at least two ready participants for a multi battle.")
+                return
+
+            player_pair = random.sample(eligible, 2)
+            trainer1, trainer1_party = player_pair[0]
+            trainer2, trainer2_party = player_pair[1]
+
+            opponent_pool = _create_wild_opponents(max(2, num_opponents))
+            npc1_party = opponent_pool[::2] or opponent_pool[:1]
+            npc2_party = opponent_pool[1::2] or opponent_pool[:1]
+            npc1_name = npc1_party[0].species_name
+            npc2_name = npc2_party[0].species_name
+
+            battle_id = battle_cog.battle_engine.start_multi_battle(
+                trainer1_id=trainer1.id,
+                trainer1_name=trainer1.display_name,
+                trainer1_party=trainer1_party,
+                partner1_id=trainer2.id,
+                partner1_name=trainer2.display_name,
+                partner1_party=trainer2_party,
+                partner1_is_ai=False,
+                trainer2_id=-10000,
+                trainer2_name=npc1_name,
+                trainer2_party=npc1_party,
+                partner2_id=-10001,
+                partner2_name=f"{npc2_name}'s Partner",
+                partner2_party=npc2_party,
+                partner2_is_ai=True,
+                partner1_class=None,
+                partner2_class="dream_rogue",
+                is_pve=True
+            )
+
+            battle_cog.user_battles[trainer1.id] = battle_id
+            battle_cog.user_battles[trainer2.id] = battle_id
+
+            thread = await parent_channel.create_thread(
+                name=f"Dream Rogue - {trainer1.display_name} & {trainer2.display_name}",
+                auto_archive_duration=60,
+                reason="Dream Rogue multi battle"
+            )
             created_threads.append(thread.mention)
+
+            mock_interaction = _create_thread_interaction(thread, interaction.user)
+            await battle_cog.prompt_and_start_battle_ui(
+                interaction=mock_interaction,
+                battle_id=battle_id,
+                battle_type=BattleType.TRAINER
+            )
+
+            if not hasattr(self.bot, "dream_rogue_battle_callbacks"):
+                self.bot.dream_rogue_battle_callbacks = {}
+
+            async def _battle_done_callback(battle, result, battle_interaction):
+                if self.on_complete_callback:
+                    await self.on_complete_callback(
+                        self._create_channel_interaction(parent_channel),
+                        completion_result
+                    )
+
+            self.bot.dream_rogue_battle_callbacks[battle_id] = _battle_done_callback
+        else:
+            self._pending_battles = {p["discord_user_id"] for p in participants}
+            for participant in participants:
+                user_id = participant["discord_user_id"]
+                user = interaction.guild.get_member(user_id)
+                if not user:
+                    self._pending_battles.discard(user_id)
+                    continue
+
+                if user_id in battle_cog.user_battles:
+                    self._pending_battles.discard(user_id)
+                    continue
+
+                trainer_pokemon = _build_trainer_party(user_id)
+                if not trainer_pokemon:
+                    self._pending_battles.discard(user_id)
+                    continue
+
+                opponent_pokemon = _create_wild_opponents(num_opponents)
+                if not opponent_pokemon:
+                    self._pending_battles.discard(user_id)
+                    continue
+
+                opponent_name = opponent_pokemon[0].species_name
+
+                battle_id = battle_cog.battle_engine.start_trainer_battle(
+                    trainer_id=user_id,
+                    trainer_name=user.display_name,
+                    trainer_party=trainer_pokemon,
+                    npc_party=opponent_pokemon,
+                    npc_name=opponent_name,
+                    npc_class="dream_rogue",
+                    prize_money=0,
+                    battle_format=battle_format
+                )
+
+                thread_name = f"Dream Rogue - {user.display_name}"
+                thread = await parent_channel.create_thread(
+                    name=thread_name,
+                    auto_archive_duration=60,
+                    reason=f"Dream Rogue battle for {user.display_name}"
+                )
+
+                mock_interaction = _create_thread_interaction(thread, user)
+
+                await battle_cog.prompt_and_start_battle_ui(
+                    interaction=mock_interaction,
+                    battle_id=battle_id,
+                    battle_type=BattleType.WILD
+                )
+
+                if not hasattr(self.bot, "dream_rogue_battle_callbacks"):
+                    self.bot.dream_rogue_battle_callbacks = {}
+
+                async def _battle_done_callback(battle, result, battle_interaction, participant_id=user_id):
+                    self._pending_battles.discard(participant_id)
+                    if not self._pending_battles and self.on_complete_callback:
+                        await self.on_complete_callback(
+                            self._create_channel_interaction(parent_channel),
+                            completion_result
+                        )
+
+                self.bot.dream_rogue_battle_callbacks[battle_id] = _battle_done_callback
+                created_threads.append(thread.mention)
 
         if created_threads:
             await interaction.followup.send(
@@ -576,11 +733,12 @@ class InstanceActionView(View):
         else:
             await interaction.followup.send("❌ No battle threads could be created.")
 
-        if not self._pending_battles and self.on_complete_callback:
-            await self.on_complete_callback(
-                self._create_channel_interaction(parent_channel),
-                completion_result
-            )
+        if battle_format not in {BattleFormat.RAID, BattleFormat.MULTI}:
+            if not self._pending_battles and self.on_complete_callback:
+                await self.on_complete_callback(
+                    self._create_channel_interaction(parent_channel),
+                    completion_result
+                )
 
     def _create_channel_interaction(self, channel: discord.TextChannel):
         class ChannelInteraction:

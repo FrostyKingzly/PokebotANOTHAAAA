@@ -85,6 +85,9 @@ class BattleCog(commands.Cog):
         if not battle:
             return
         self.user_battles.pop(getattr(battle.trainer, 'battler_id', None), None)
+        if getattr(battle, 'battle_format', None) == BattleFormat.MULTI:
+            self.user_battles.pop(getattr(battle.trainer_partner, 'battler_id', None), None)
+            self.user_battles.pop(getattr(battle.opponent_partner, 'battler_id', None), None)
         if getattr(battle, 'battle_type', None) == BattleType.PVP:
             self.user_battles.pop(getattr(battle.opponent, 'battler_id', None), None)
         if getattr(battle, 'battle_format', None) == BattleFormat.RAID:
