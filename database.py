@@ -69,6 +69,10 @@ class SpeciesDatabase:
 
         return None
 
+    def get_all_species(self) -> List[Dict]:
+        """Return all species entries."""
+        return list(self.data.values())
+
     def _normalize_name(self, name: str) -> str:
         """Normalize species names (removes punctuation, accents, spacing)"""
         normalized = unicodedata.normalize('NFKD', name)
