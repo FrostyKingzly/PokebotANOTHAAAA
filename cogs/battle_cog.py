@@ -2036,6 +2036,22 @@ class BattleActionView(discord.ui.View):
             await interaction.response.send_message("❌ All your Pokémon have fainted! You can no longer battle.", ephemeral=True)
             return
 
+        # Handle doubles switch flow with action collector
+        if battle.battle_format == BattleFormat.DOUBLES:
+            collector = DoublesActionCollector(battle, battler_id, self.engine)
+            battler = _get_battler_by_id(battle, battler_id)
+            first_mon = battler.get_active_pokemon()[0] if battler else None
+            first_name = _format_battle_pokemon_name(first_mon) if first_mon else "your Pokémon"
+            await interaction.response.send_message(
+                f"Choose a Pokémon to switch into Slot 1 for **{first_name}**:",
+                view=DoublesPartySelectView(
+                    battle, battler_id, self.engine,
+                    0, collector, forced=False
+                ),
+                ephemeral=True,
+            )
+            return
+
         await interaction.response.send_message(
             "Choose a Pokémon to switch in:",
             view=PartySelectView(battle, battler_id, self.engine, forced=False),

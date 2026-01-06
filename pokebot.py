@@ -188,6 +188,14 @@ async def phone_command(interaction: discord.Interaction):
         else None
     )
 
+    dreamlites = None
+    if interaction.guild_id:
+        from dream_rogue_manager import DreamRogueManager
+        dream_manager = DreamRogueManager()
+        run = dream_manager.get_active_run_for_user(interaction.guild_id, interaction.user.id)
+        if run:
+            dreamlites = dream_manager.get_dreamlites(run["run_id"], interaction.user.id)
+
     embed = EmbedBuilder.main_menu(
         player_data,
         rank_manager=rank_manager,
@@ -195,10 +203,11 @@ async def phone_command(interaction: discord.Interaction):
         wild_area_manager=wild_area_manager,
         wild_area_state=wild_area_state,
         weather_manager=weather_manager,
+        dreamlites=dreamlites,
     )
 
     # Create main menu view with buttons (pass user_id for wild area detection)
-    view = MainMenuView(interaction.client, user_id=interaction.user.id)
+    view = MainMenuView(interaction.client, user_id=interaction.user.id, guild_id=interaction.guild_id)
 
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 

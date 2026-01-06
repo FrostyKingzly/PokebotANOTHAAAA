@@ -435,8 +435,8 @@ class DreamRogueManager:
 
         return instances[:1]
 
-    def grant_positive_buffs(self, run_id: str, count: int = 2) -> List[str]:
-        """Grant positive buffs to the team and return their names."""
+    def grant_positive_buffs(self, run_id: str, count: int = 2) -> List[Dict[str, str]]:
+        """Grant positive buffs to the team and return their display data."""
         positive_templates = []
         for category_group, templates in self.instance_templates.items():
             for template_id, template in templates.items():
@@ -448,7 +448,7 @@ class DreamRogueManager:
             return []
 
         selected = random.sample(positive_templates, min(count, len(positive_templates)))
-        buff_names = []
+        buff_summaries: List[Dict[str, str]] = []
 
         for _, template_id, template in selected:
             buff_name = template.get("name", "Dream Blessing")
@@ -465,9 +465,34 @@ class DreamRogueManager:
                 effect_data=effect_data,
                 duration=duration
             )
-            buff_names.append(buff_name)
+            buff_summaries.append({
+                "name": buff_name,
+                "description": buff_description,
+            })
 
-        return buff_names
+        return buff_summaries
+
+    def get_active_run_for_user(self, guild_id: int, user_id: int) -> Optional[Dict]:
+        """Get the currently active Dream Rogue run for a specific user in a guild."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT r.*
+            FROM dream_rogue_runs r
+            JOIN dream_rogue_participants p ON r.run_id = p.run_id
+            WHERE r.guild_id = ? AND r.is_active = 1 AND p.discord_user_id = ?
+            ORDER BY r.created_at DESC
+            LIMIT 1
+        """, (guild_id, user_id))
+
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return dict(row)
+        return None
 
     def _get_instances_by_category(self, categories: List[str], count: int) -> List[Dict]:
         """Get random instances matching categories"""

@@ -9,6 +9,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional
 import asyncio
+import random
 
 from dream_rogue_manager import DreamRogueManager
 from database import PlayerDatabase
@@ -325,7 +326,7 @@ class DreamRogueCog(commands.Cog):
                 self.bot,
                 run_id,
                 instance,
-                lambda i, result: self._on_instance_complete(i, run_id, result, remaining_instances),
+                lambda i, result: self._on_instance_complete(i, run_id, instance, result, remaining_instances),
                 origin_channel_id=interaction.channel.id
             )
 
@@ -347,7 +348,7 @@ class DreamRogueCog(commands.Cog):
                 run_id,
                 instance,
                 [p["discord_user_id"] for p in participants],
-                lambda i, result: self._on_instance_complete(i, run_id, result, remaining_instances)
+                lambda i, result: self._on_instance_complete(i, run_id, instance, result, remaining_instances)
             )
 
             notice_embed = discord.Embed(
@@ -365,6 +366,7 @@ class DreamRogueCog(commands.Cog):
         self,
         interaction: discord.Interaction,
         run_id: str,
+        instance: dict,
         result: str,
         remaining_instances: list
     ):
@@ -373,11 +375,36 @@ class DreamRogueCog(commands.Cog):
         if remaining_instances:
             remaining_instances = remaining_instances[1:]
 
+        run = self.dream_manager.get_run(run_id)
+        floor = run["current_floor"]
+
+        if result in {"battle_complete", "boss_defeated"}:
+            participants = self.dream_manager.get_participants(run_id)
+            effect_data = instance.get("effect_data", {})
+            multiplier = max(1, int(effect_data.get("dreamlite_multiplier", 1)))
+            dreamlites_gained = random.randint(20, 40) * multiplier
+
+            for participant in participants:
+                self.dream_manager.add_dreamlites(
+                    run_id,
+                    participant["discord_user_id"],
+                    dreamlites_gained
+                )
+
+            buffs = []
+            if floor == 1 and result == "battle_complete":
+                buffs = self.dream_manager.grant_positive_buffs(run_id, count=2)
+
+            reward_embed = DreamRogueEmbeds.battle_reward(
+                victory=True,
+                dreamlites_gained=dreamlites_gained,
+                exp_gained=0,
+                buffs_applied=buffs
+            )
+            await interaction.followup.send(embed=reward_embed)
+
         if not remaining_instances:
             # Floor complete!
-            run = self.dream_manager.get_run(run_id)
-            floor = run["current_floor"]
-
             # Check if boss defeated or regular floor
             if floor == 10 and "boss" in result.lower():
                 # Boss defeated - run complete!
@@ -391,17 +418,6 @@ class DreamRogueCog(commands.Cog):
                 await interaction.followup.send(embed=embed)
 
             else:
-                if floor == 1 and result == "battle_complete":
-                    buffs = self.dream_manager.grant_positive_buffs(run_id, count=2)
-                    if buffs:
-                        reward_embed = DreamRogueEmbeds.battle_reward(
-                            victory=True,
-                            dreamlites_gained=0,
-                            exp_gained=0,
-                            buffs_applied=buffs
-                        )
-                        await interaction.followup.send(embed=reward_embed)
-
                 # Advance to next floor
                 new_floor = self.dream_manager.advance_floor(run_id)
 

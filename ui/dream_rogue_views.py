@@ -416,6 +416,10 @@ class InstanceActionView(View):
         effect_data = self.instance.get("effect_data", {})
         battle_format_raw = effect_data.get("battle_format", "singles")
         num_opponents = max(1, int(effect_data.get("num_opponents", 1)))
+        instance_type = effect_data.get("type")
+        if instance_type == "gauntlet":
+            battle_format_raw = "singles"
+            num_opponents = max(1, int(effect_data.get("num_battles", num_opponents)))
         completion_result = "boss_defeated" if "boss" in categories else "battle_complete"
 
         if battle_format_raw == "doubles":
