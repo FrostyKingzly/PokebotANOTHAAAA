@@ -399,46 +399,75 @@ class DreamRogueManager:
         instances = []
 
         if floor == 1:
-            # Floor 1: Easy setup floor
-            # 1-2 battles, 1 economy, 1 buff/trial
-            instances.extend(self._get_instances_by_category(["battle"], 2))
-            instances.extend(self._get_instances_by_category(["economy", "reward"], 1))
-            instances.extend(self._get_instances_by_category(["buff", "trial"], 1))
-            instances.extend(self._get_instances_by_category(["rest"], 1))
-
+            # Stage 1: Always start with a battle
+            instances.extend(self._get_instances_by_category(["battle"], 1))
         elif floor == 10:
-            # Floor 10: Boss floor
-            # Safe room, then boss raid
-            instances.append(self._create_instance("rest", "safe_camp"))
+            # Stage 10: Boss battle
             instances.append(self._create_boss_instance(floor))
-
-        else:
-            # Floors 2-9: Mix of instance types
-            # 40% battle, 20% gambling/risk, 20% buff/curse, 20% economy/reward
-            num_instances = random.randint(4, 6)
-
-            # At least 2 battles
-            battle_count = max(2, int(num_instances * 0.4))
-            instances.extend(self._get_instances_by_category(["battle"], battle_count))
-
-            remaining = num_instances - battle_count
-
-            # Mix other types
-            if remaining > 0:
-                other_categories = ["gambling", "trial", "buff", "economy", "reward", "social"]
-                for _ in range(remaining):
-                    category = random.choice(other_categories)
-                    inst = self._get_instances_by_category([category], 1)
-                    if inst:
-                        instances.extend(inst)
-
-            # Always add 1 rest/safe room
+        elif floor == 5:
+            # Middle stage always a rest
             instances.extend(self._get_instances_by_category(["rest"], 1))
+        else:
+            # Small chance to roll a rest stage elsewhere
+            if random.random() <= 0.08:
+                instances.extend(self._get_instances_by_category(["rest"], 1))
+            else:
+                # Weighted pick: mostly battles, with occasional rewards/buffs/trials
+                category_pool = [
+                    (["battle"], 0.65),
+                    (["economy", "reward"], 0.15),
+                    (["buff"], 0.12),
+                    (["trial", "gambling", "social", "domain"], 0.08),
+                ]
+                roll = random.random()
+                cumulative = 0.0
+                chosen = ["battle"]
+                for categories, weight in category_pool:
+                    cumulative += weight
+                    if roll <= cumulative:
+                        chosen = categories
+                        break
+                instances.extend(self._get_instances_by_category(chosen, 1))
 
-        # Shuffle so order is random
-        random.shuffle(instances)
+        # Ensure we always return a single instance per stage
+        if not instances:
+            instances.extend(self._get_instances_by_category(["battle"], 1))
 
-        return instances
+        return instances[:1]
+
+    def grant_positive_buffs(self, run_id: str, count: int = 2) -> List[str]:
+        """Grant positive buffs to the team and return their names."""
+        positive_templates = []
+        for category_group, templates in self.instance_templates.items():
+            for template_id, template in templates.items():
+                categories = template.get("categories", [])
+                if "buff" in categories and "curse" not in categories and "nightmare" not in categories:
+                    positive_templates.append((category_group, template_id, template))
+
+        if not positive_templates:
+            return []
+
+        selected = random.sample(positive_templates, min(count, len(positive_templates)))
+        buff_names = []
+
+        for _, template_id, template in selected:
+            buff_name = template.get("name", "Dream Blessing")
+            buff_description = template.get("description", "A gentle boon from the dream.")
+            effect_data = template.get("effect_data", {})
+            duration = template.get("duration", "floor")
+
+            self.apply_buff(
+                run_id=run_id,
+                buff_type="buff",
+                buff_name=buff_name,
+                buff_description=buff_description,
+                scope="team",
+                effect_data=effect_data,
+                duration=duration
+            )
+            buff_names.append(buff_name)
+
+        return buff_names
 
     def _get_instances_by_category(self, categories: List[str], count: int) -> List[Dict]:
         """Get random instances matching categories"""

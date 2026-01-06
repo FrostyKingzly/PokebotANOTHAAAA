@@ -289,6 +289,9 @@ class DreamRogueCog(commands.Cog):
         run = self.dream_manager.get_run(run_id)
         floor = run["current_floor"]
 
+        stage_embed = DreamRogueEmbeds.stage_intro(floor)
+        await self._send_embed(interaction, stage_embed)
+
         # Generate instances for floor
         instances = self.dream_manager.generate_floor_instances(run_id, floor)
 
@@ -322,7 +325,8 @@ class DreamRogueCog(commands.Cog):
                 self.bot,
                 run_id,
                 instance,
-                lambda i, result: self._on_instance_complete(i, run_id, result, remaining_instances)
+                lambda i, result: self._on_instance_complete(i, run_id, result, remaining_instances),
+                origin_channel_id=interaction.channel.id
             )
 
             # Use followup if response already sent, otherwise response
@@ -387,10 +391,21 @@ class DreamRogueCog(commands.Cog):
                 await interaction.followup.send(embed=embed)
 
             else:
+                if floor == 1 and result == "battle_complete":
+                    buffs = self.dream_manager.grant_positive_buffs(run_id, count=2)
+                    if buffs:
+                        reward_embed = DreamRogueEmbeds.battle_reward(
+                            victory=True,
+                            dreamlites_gained=0,
+                            exp_gained=0,
+                            buffs_applied=buffs
+                        )
+                        await interaction.followup.send(embed=reward_embed)
+
                 # Advance to next floor
                 new_floor = self.dream_manager.advance_floor(run_id)
 
-                embed = DreamRogueEmbeds.floor_complete(floor, new_floor)
+                embed = DreamRogueEmbeds.stage_travel(floor, new_floor)
 
                 await interaction.followup.send(embed=embed)
 
@@ -401,6 +416,12 @@ class DreamRogueCog(commands.Cog):
         else:
             # More instances on this floor
             await self._show_instance(interaction, run_id, remaining_instances[0], remaining_instances)
+
+    async def _send_embed(self, interaction: discord.Interaction, embed: discord.Embed):
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot):
