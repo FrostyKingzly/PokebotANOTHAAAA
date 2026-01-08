@@ -39,6 +39,26 @@ class DreamRogueCog(commands.Cog):
             "description": "Risk it all on a gambling encounter.",
             "categories": ["gambling"],
         },
+        {
+            "name": "Social Path",
+            "description": "Encounter mysterious beings and make choices together.",
+            "categories": ["social"],
+        },
+        {
+            "name": "Reward Path",
+            "description": "Find treasure and buffs with minimal risk.",
+            "categories": ["reward", "buff"],
+        },
+        {
+            "name": "Rest Path",
+            "description": "Take a breather and restore your team.",
+            "categories": ["rest", "recovery"],
+        },
+        {
+            "name": "Shop Path",
+            "description": "Trade Dreamlites for powerful buffs.",
+            "categories": ["shop", "economy"],
+        },
     )
 
     def __init__(self, bot):
@@ -429,24 +449,114 @@ class DreamRogueCog(commands.Cog):
             multiplier = max(1, int(effect_data.get("dreamlite_multiplier", 1)))
             dreamlites_gained = random.randint(20, 40) * multiplier
 
-            for participant in participants:
-                self.dream_manager.add_dreamlites(
-                    run_id,
-                    participant["discord_user_id"],
-                    dreamlites_gained
+            # Check if we have battle results tracked (for individual battles)
+            battle_results = getattr(interaction, '_battle_results', {})
+
+            winners = []
+            losers = []
+
+            if battle_results:
+                # Individual battles - track wins and losses
+                for participant in participants:
+                    user_id = participant["discord_user_id"]
+                    participant_result = battle_results.get(user_id, 'trainer')
+                    if participant_result == 'trainer':
+                        winners.append(participant)
+                    else:
+                        losers.append(participant)
+
+                # Check if all won or all lost or mixed
+                all_won = len(winners) == len(participants)
+                all_lost = len(losers) == len(participants)
+                mixed_results = not all_won and not all_lost
+
+                if all_won:
+                    # Everyone wins - full rewards
+                    for participant in participants:
+                        self.dream_manager.add_dreamlites(
+                            run_id,
+                            participant["discord_user_id"],
+                            dreamlites_gained
+                        )
+                    buffs = []
+                    if floor == 1 and result == "battle_complete":
+                        buffs = self.dream_manager.grant_positive_buffs(run_id, count=2)
+
+                    reward_embed = DreamRogueEmbeds.battle_reward(
+                        victory=True,
+                        dreamlites_gained=dreamlites_gained,
+                        exp_gained=0,
+                        buffs_applied=buffs
+                    )
+                    await interaction.followup.send(embed=reward_embed)
+                elif mixed_results:
+                    # Mixed results - winners get rewards, losers lose dreamlites
+                    for winner in winners:
+                        self.dream_manager.add_dreamlites(
+                            run_id,
+                            winner["discord_user_id"],
+                            dreamlites_gained
+                        )
+
+                    dreamlites_lost = random.randint(10, 20)
+                    for loser in losers:
+                        self.dream_manager.add_dreamlites(
+                            run_id,
+                            loser["discord_user_id"],
+                            -dreamlites_lost
+                        )
+
+                    # Send message about mixed results
+                    winner_names = ", ".join([f"<@{w['discord_user_id']}>" for w in winners])
+                    loser_names = ", ".join([f"<@{l['discord_user_id']}>" for l in losers])
+
+                    embed = discord.Embed(
+                        title="⚔️ Mixed Results",
+                        description=f"**Victors:** {winner_names}\n**Defeated:** {loser_names}",
+                        color=discord.Color.gold()
+                    )
+                    embed.add_field(
+                        name="Rewards",
+                        value=f"✅ Winners gained **{dreamlites_gained}** Dreamlites\n❌ Losers lost **{dreamlites_lost}** Dreamlites"
+                    )
+                    await interaction.followup.send(embed=embed)
+                else:
+                    # All lost - show defeat
+                    dreamlites_lost = random.randint(10, 20)
+                    for participant in participants:
+                        self.dream_manager.add_dreamlites(
+                            run_id,
+                            participant["discord_user_id"],
+                            -dreamlites_lost
+                        )
+
+                    reward_embed = DreamRogueEmbeds.battle_reward(
+                        victory=False,
+                        dreamlites_gained=-dreamlites_lost,
+                        exp_gained=0,
+                        buffs_applied=[]
+                    )
+                    await interaction.followup.send(embed=reward_embed)
+            else:
+                # Raid/multi battles or no tracking - assume all won if this callback is triggered
+                for participant in participants:
+                    self.dream_manager.add_dreamlites(
+                        run_id,
+                        participant["discord_user_id"],
+                        dreamlites_gained
+                    )
+
+                buffs = []
+                if floor == 1 and result == "battle_complete":
+                    buffs = self.dream_manager.grant_positive_buffs(run_id, count=2)
+
+                reward_embed = DreamRogueEmbeds.battle_reward(
+                    victory=True,
+                    dreamlites_gained=dreamlites_gained,
+                    exp_gained=0,
+                    buffs_applied=buffs
                 )
-
-            buffs = []
-            if floor == 1 and result == "battle_complete":
-                buffs = self.dream_manager.grant_positive_buffs(run_id, count=2)
-
-            reward_embed = DreamRogueEmbeds.battle_reward(
-                victory=True,
-                dreamlites_gained=dreamlites_gained,
-                exp_gained=0,
-                buffs_applied=buffs
-            )
-            await interaction.followup.send(embed=reward_embed)
+                await interaction.followup.send(embed=reward_embed)
 
         if not remaining_instances:
             # Floor complete!

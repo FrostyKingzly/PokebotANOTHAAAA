@@ -14,7 +14,7 @@ class DiveStartView(View):
     """View for starting a Dream Dive dive"""
 
     def __init__(self, bot, run_id: str, initiator_id: int, callback):
-        super().__init__(timeout=300)
+        super().__init__(timeout=900)  # 15 minute timeout (max allowed by Discord)
         self.bot = bot
         self.run_id = run_id
         self.initiator_id = initiator_id
@@ -109,7 +109,7 @@ class FloorNavigationView(View):
     """View for navigating floor instances"""
 
     def __init__(self, bot, run_id: str, instances: List[Dict], on_select_callback):
-        super().__init__(timeout=600)  # 10 minute timeout
+        super().__init__(timeout=900)  # 15 minute timeout (max allowed by Discord)
         self.bot = bot
         self.run_id = run_id
         self.instances = instances
@@ -260,7 +260,7 @@ class VotingView(View):
     """View for team voting"""
 
     def __init__(self, bot, vote_id: str, run_id: str, on_complete_callback=None):
-        super().__init__(timeout=120)  # 2 minute timeout for votes
+        super().__init__(timeout=900)  # 15 minute timeout (max allowed by Discord)
         self.bot = bot
         self.vote_id = vote_id
         self.run_id = run_id
@@ -338,7 +338,7 @@ class InstanceActionView(View):
     """View for instance-specific actions"""
 
     def __init__(self, bot, run_id: str, instance: Dict, on_complete_callback, origin_channel_id: Optional[int] = None):
-        super().__init__(timeout=300)
+        super().__init__(timeout=900)  # 15 minute timeout (max allowed by Discord)
         self.bot = bot
         self.run_id = run_id
         self.instance = instance
@@ -670,6 +670,7 @@ class InstanceActionView(View):
             self.bot.dream_rogue_battle_callbacks[battle_id] = _battle_done_callback
         else:
             self._pending_battles = {p["discord_user_id"] for p in participants}
+            self._battle_results = {}  # Track win/loss for each participant
             for participant in participants:
                 user_id = participant["discord_user_id"]
                 user = interaction.guild.get_member(user_id)
@@ -723,10 +724,15 @@ class InstanceActionView(View):
                     self.bot.dream_rogue_battle_callbacks = {}
 
                 async def _battle_done_callback(battle, result, battle_interaction, participant_id=user_id):
+                    # Track battle result for this participant
+                    self._battle_results[participant_id] = result
                     self._pending_battles.discard(participant_id)
                     if not self._pending_battles and self.on_complete_callback:
+                        # Pass battle results along with completion
+                        interaction_with_results = self._create_channel_interaction(parent_channel)
+                        interaction_with_results._battle_results = self._battle_results
                         await self.on_complete_callback(
-                            self._create_channel_interaction(parent_channel),
+                            interaction_with_results,
                             completion_result
                         )
 

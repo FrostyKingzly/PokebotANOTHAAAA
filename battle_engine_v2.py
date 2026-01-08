@@ -1605,16 +1605,9 @@ class BattleEngine:
                 for idx, mon in enumerate(opp.get_active_pokemon()):
                     active_opponents.append((opp, idx, mon))
 
-            def bulk_score(p):
-                return (
-                    max(0, getattr(p, "current_hp", 0))
-                    + getattr(p, "defense", 0)
-                    + getattr(p, "sp_defense", 0)
-                )
-
             if active_opponents and target_type == 'single':
-                # Prefer the bulkiest target
-                target_battler, target_pos, _ = max(active_opponents, key=lambda tup: bulk_score(tup[2]))
+                # Pick random target for more varied battles
+                target_battler, target_pos, _ = random.choice(active_opponents)
                 target_battler_id = target_battler.battler_id
             elif active_opponents:
                 # Spread moves don't need explicit targeting; just pick first for reference

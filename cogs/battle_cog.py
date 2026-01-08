@@ -567,7 +567,12 @@ class BattleCog(commands.Cog):
         # 1) Opening embed: differentiate wild encounters vs trainer battles
         if battle_mode == BattleType.WILD:
             enc_title = f"{SWORD} Encounter!"
-            enc_description = f"You encountered a wild **{opponent_active[0].species_name}**!"
+            # Show all wild pokemon for doubles/multi battles
+            if len(opponent_active) > 1:
+                pokemon_names = " and ".join([f"**{mon.species_name}**" for mon in opponent_active])
+                enc_description = f"You encountered wild {pokemon_names}!"
+            else:
+                enc_description = f"You encountered a wild **{opponent_active[0].species_name}**!"
         elif battle.battle_format == BattleFormat.MULTI:
             enc_title = f"{SWORD} Multi Battle Start!"
             # Show team composition
@@ -1565,9 +1570,29 @@ class BattleCog(commands.Cog):
                 title = 'The Battle Has Been Decided!'
                 color = discord.Color.red()
         else:
-            desc = f"All of {loser_name}'s Pokémon have fainted! {winner_name} wins!"
-            title = 'The Battle Has Been Decided!'
-            color = discord.Color.gold() if result == 'trainer' else discord.Color.red()
+            # Check if this is a Dream Dive battle (dream_rogue NPC class)
+            is_dream_rogue = getattr(battle.opponent, 'npc_class', None) == 'dream_rogue'
+
+            if is_dream_rogue and result == 'trainer':
+                # Player won against dream dive wild pokemon
+                opponent_party = battle.opponent.party
+                if len(opponent_party) > 1:
+                    desc = "The opposing Pokémon have all vanished into the mist…\n\n**You win!**"
+                else:
+                    pokemon_name = opponent_party[0].species_name if opponent_party else "Pokémon"
+                    desc = f"The opposing **{pokemon_name}** vanishes into the mist…\n\n**You win!**"
+                title = 'Victory!'
+                color = discord.Color.gold()
+            elif is_dream_rogue and result == 'opponent':
+                # Player lost against dream dive wild pokemon
+                desc = f"Your Pokémon have all fainted…\n\n**Defeat.**"
+                title = 'Defeat'
+                color = discord.Color.red()
+            else:
+                # Standard battle message
+                desc = f"All of {loser_name}'s Pokémon have fainted! {winner_name} wins!"
+                title = 'The Battle Has Been Decided!'
+                color = discord.Color.gold() if result == 'trainer' else discord.Color.red()
 
         # Play victory music if enabled
         if result in ['trainer', 'opponent']:
