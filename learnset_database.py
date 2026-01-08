@@ -33,8 +33,8 @@ class LearnsetDatabase:
         Returns:
             Learnset dictionary or None if not found
         """
-        # Convert to lowercase for lookup
-        pokemon_id = pokemon_name.lower().replace(' ', '').replace('-', '')
+        # Convert to a normalized alphanumeric key for lookup
+        pokemon_id = "".join(ch for ch in pokemon_name.lower() if ch.isalnum())
         return self.data.get(pokemon_id)
     
     def get_moves_at_level(self, pokemon_name: str, level: int, gen: int = 9) -> List[str]:

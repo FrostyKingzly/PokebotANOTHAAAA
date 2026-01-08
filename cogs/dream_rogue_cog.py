@@ -330,7 +330,22 @@ class DreamRogueCog(commands.Cog):
             await interaction.followup.send("❌ Failed to generate floor instances!")
             return
 
-        # Show first instance
+        if len(instances) > 1:
+            embed = DreamRogueEmbeds.instance_selection(instances[0], floor)
+            view = FloorNavigationView(
+                self.bot,
+                run_id,
+                instances,
+                lambda i, chosen: self._show_instance(i, run_id, chosen, [chosen])
+            )
+
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=embed, view=view)
+            else:
+                await interaction.response.send_message(embed=embed, view=view)
+            return
+
+        # Show single instance
         await self._show_instance(interaction, run_id, instances[0], instances)
 
     async def _show_instance(

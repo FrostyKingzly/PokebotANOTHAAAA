@@ -481,32 +481,68 @@ class DreamRogueManager:
             # Middle stage always a rest
             instances.extend(self._get_instances_by_category(["rest"], 1))
         else:
-            # Small chance to roll a rest stage elsewhere
-            if random.random() <= 0.08:
-                instances.extend(self._get_instances_by_category(["rest"], 1))
-            else:
-                # Weighted pick: mostly battles, with occasional rewards/buffs/trials
-                category_pool = [
-                    (["battle"], 0.65),
-                    (["economy", "reward"], 0.15),
-                    (["buff"], 0.12),
-                    (["trial", "gambling", "social", "domain"], 0.08),
-                ]
+            option_count = 3 if random.random() <= 0.35 else 2
+
+            room_weights = [
+                (["battle"], 0.30),
+                (["gambling"], 0.10),
+                (["social"], 0.10),
+                (["trial"], 0.10),
+                (["domain"], 0.10),
+                (["buff"], 0.10),
+                (["nightmare", "curse"], 0.10),
+                (["economy", "reward"], 0.05),
+                (["rest"], 0.05),
+            ]
+
+            def _roll_room_category() -> List[str]:
                 roll = random.random()
                 cumulative = 0.0
                 chosen = ["battle"]
-                for categories, weight in category_pool:
+                for categories, weight in room_weights:
                     cumulative += weight
                     if roll <= cumulative:
                         chosen = categories
                         break
-                instances.extend(self._get_instances_by_category(chosen, 1))
+                return chosen
 
-        # Ensure we always return a single instance per stage
+            def _pick_instance(categories: List[str], used_templates: set) -> Optional[Dict]:
+                matching = []
+                for category_group, templates in self.instance_templates.items():
+                    for template_id, template in templates.items():
+                        template_categories = template.get("categories", [])
+                        if any(cat in template_categories for cat in categories):
+                            instance = template.copy()
+                            instance["template_id"] = f"{category_group}.{template_id}"
+                            matching.append(instance)
+
+                if not matching:
+                    return None
+
+                random.shuffle(matching)
+                for instance in matching:
+                    if instance["template_id"] not in used_templates:
+                        return instance
+                return random.choice(matching)
+
+            used_templates = set()
+            for _ in range(option_count):
+                categories = _roll_room_category()
+                instance = _pick_instance(categories, used_templates)
+                if not instance:
+                    continue
+                used_templates.add(instance["template_id"])
+                instances.append(instance)
+
+            template_ids = [instance.get("template_id") for instance in instances if instance.get("template_id")]
+            if template_ids and len(set(template_ids)) < len(template_ids):
+                instances = instances[:1]
+
+        # Ensure we always return at least one instance per stage
         if not instances:
             instances.extend(self._get_instances_by_category(["battle"], 1))
 
-        return instances[:1]
+        return instances
 
     def grant_positive_buffs(self, run_id: str, count: int = 2) -> List[Dict[str, str]]:
         """Grant positive buffs to the team and return their display data."""
