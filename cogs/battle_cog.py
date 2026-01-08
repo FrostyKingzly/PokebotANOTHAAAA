@@ -1600,7 +1600,7 @@ class BattleCog(commands.Cog):
         )
         is_dream_rogue_encounter = (
             isinstance(interaction.channel, discord.Thread) and
-            interaction.channel.name.startswith("Dream Rogue -")
+            interaction.channel.name.startswith("Dream Dive -")
         )
 
         if is_session_encounter:
@@ -1640,7 +1640,7 @@ class BattleCog(commands.Cog):
                 await asyncio.sleep(2)
                 await interaction.channel.edit(archived=True, locked=True)
             except Exception as e:
-                print(f"Failed to close Dream Rogue encounter thread: {e}")
+                print(f"Failed to close Dream Dive encounter thread: {e}")
         elif getattr(battle, 'battle_type', None) == BattleType.WILD:
             await self.send_return_to_encounter_prompt(interaction, battle.trainer.battler_id)
 

@@ -1,7 +1,7 @@
 """
-Dream Rogue Cog
+Dream Dive Cog
 
-Commands and orchestration for the Dream Rogue roguelike gamemode
+Commands and orchestration for the Dream Dive roguelike gamemode
 """
 
 import discord
@@ -25,7 +25,7 @@ from ui.dream_rogue_views import (
 
 
 class DreamRogueCog(commands.Cog):
-    """Dream Rogue gamemode commands"""
+    """Dream Dive gamemode commands"""
 
     PATH_CHOICE_CHANCE = 0.65
     PATH_OPTIONS = (
@@ -47,9 +47,9 @@ class DreamRogueCog(commands.Cog):
         self.player_db = PlayerDatabase()
         self.session_manager = SessionManager(self.player_db)
 
-    @app_commands.command(name="dream_stats", description="View your Dream Rogue statistics")
+    @app_commands.command(name="dream_stats", description="View your Dream Dive statistics")
     async def dream_stats(self, interaction: discord.Interaction):
-        """View Dream Rogue stats"""
+        """View Dream Dive stats"""
         user_id = interaction.user.id
 
         # Get persistent Dreamlites
@@ -83,7 +83,7 @@ class DreamRogueCog(commands.Cog):
 
         # Build embed
         embed = discord.Embed(
-            title=f"{DreamRogueEmbeds.DREAMLITE_EMOJI} Dream Rogue Statistics",
+            title=f"{DreamRogueEmbeds.DREAMLITE_EMOJI} Dream Dive Statistics",
             description=f"**{interaction.user.display_name}**'s dream journey",
             color=DreamRogueEmbeds.DREAM_COLOR
         )
@@ -137,7 +137,7 @@ class DreamRogueCog(commands.Cog):
         # Check if user is session admin
         if interaction.user.id != session["admin_id"]:
             await interaction.response.send_message(
-                "❌ Only the session admin can start a Dream Rogue dive!",
+                "❌ Only the session admin can start a Dream Dive dive!",
                 ephemeral=True
             )
             return
@@ -157,7 +157,7 @@ class DreamRogueCog(commands.Cog):
             self.session_manager.move_session_to_location(
                 session["session_id"],
                 "residential_district_dreamyard",
-                stamina_cost=0  # No cost for Dream Rogue entry
+                stamina_cost=0  # No cost for Dream Dive entry
             )
         except Exception as e:
             await interaction.response.send_message(
@@ -166,7 +166,7 @@ class DreamRogueCog(commands.Cog):
             )
             return
 
-        # Create Dream Rogue run
+        # Create Dream Dive run
         run_id = self.dream_manager.create_run(
             guild_id=interaction.guild_id,
             initiator_id=interaction.user.id,
@@ -179,6 +179,11 @@ class DreamRogueCog(commands.Cog):
         for participant in participants:
             if participant["discord_user_id"] != interaction.user.id:
                 self.dream_manager.add_participant(run_id, participant["discord_user_id"])
+
+        snapshot_users = {interaction.user.id} | {p["discord_user_id"] for p in participants}
+        for user_id in snapshot_users:
+            party = self.player_db.get_trainer_party(user_id)
+            self.dream_manager.record_party_snapshot(run_id, user_id, party)
 
         # Show dive start embed
         participants_list = [interaction.user.id] + [p["discord_user_id"] for p in participants if p["discord_user_id"] != interaction.user.id]
@@ -232,6 +237,8 @@ class DreamRogueCog(commands.Cog):
             stage_level=stage_level,
             starting_floor=1  # Always start at floor 1
         )
+        party = self.player_db.get_trainer_party(interaction.user.id)
+        self.dream_manager.record_party_snapshot(run_id, interaction.user.id, party)
 
         # Show join/start embed
         participants = self.dream_manager.get_participants(run_id)
@@ -431,12 +438,32 @@ class DreamRogueCog(commands.Cog):
             # Check if boss defeated or regular floor
             if floor == 10 and "boss" in result.lower():
                 # Boss defeated - run complete!
+                from dream_dive_rewards import (
+                    calculate_dream_dive_exp,
+                    apply_dream_dive_exp,
+                    restore_dream_dive_party_levels,
+                )
+
                 participants = self.dream_manager.get_participants(run_id)
                 total_dreamlites = sum(p["dreamlites"] for p in participants)
 
+                exp_rewards = {}
+                for participant in participants:
+                    user_id = participant["discord_user_id"]
+                    restore_dream_dive_party_levels(self.bot, run_id, user_id)
+                    exp_amount = calculate_dream_dive_exp(run["stage_level"], participant["dreamlites"])
+                    apply_dream_dive_exp(self.bot, user_id, exp_amount)
+                    exp_rewards[user_id] = exp_amount
+
                 self.dream_manager.end_run(run_id, extracted=True)
 
-                embed = DreamRogueEmbeds.extraction_summary(run, participants, floor, total_dreamlites)
+                embed = DreamRogueEmbeds.extraction_summary(
+                    run,
+                    participants,
+                    floor,
+                    total_dreamlites,
+                    exp_rewards=exp_rewards,
+                )
 
                 await interaction.followup.send(embed=embed)
 

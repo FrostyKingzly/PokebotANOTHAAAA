@@ -1,7 +1,7 @@
--- Dream Rogue Gamemode Database Schema
--- This file contains all table definitions for the Dream Rogue roguelike mode
+-- Dream Dive Gamemode Database Schema
+-- This file contains all table definitions for the Dream Dive roguelike mode
 
--- Main runs table - tracks each Dream Rogue run
+-- Main runs table - tracks each Dream Dive run
 CREATE TABLE IF NOT EXISTS dream_rogue_runs (
     run_id TEXT PRIMARY KEY,
     session_id TEXT,  -- If started from session mode
@@ -38,6 +38,21 @@ CREATE TABLE IF NOT EXISTS dream_rogue_participants (
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (run_id, discord_user_id),
+    FOREIGN KEY (run_id) REFERENCES dream_rogue_runs(run_id) ON DELETE CASCADE,
+    FOREIGN KEY (discord_user_id) REFERENCES trainers(discord_user_id)
+);
+
+-- Snapshot of party levels/EXP for temporary dive buffs
+CREATE TABLE IF NOT EXISTS dream_rogue_party_snapshots (
+    run_id TEXT NOT NULL,
+    discord_user_id INTEGER NOT NULL,
+    pokemon_id TEXT NOT NULL,
+    original_level INTEGER NOT NULL,
+    original_exp INTEGER NOT NULL,
+    original_stored_exp INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (run_id, pokemon_id),
     FOREIGN KEY (run_id) REFERENCES dream_rogue_runs(run_id) ON DELETE CASCADE,
     FOREIGN KEY (discord_user_id) REFERENCES trainers(discord_user_id)
 );

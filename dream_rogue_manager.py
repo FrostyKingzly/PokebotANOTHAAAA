@@ -1,7 +1,7 @@
 """
-Dream Rogue Gamemode Manager
+Dream Dive Gamemode Manager
 
-Handles all Dream Rogue roguelike mode operations including:
+Handles all Dream Dive roguelike mode operations including:
 - Run creation and management
 - Floor progression and instance selection
 - Voting system for team decisions
@@ -20,7 +20,7 @@ from datetime import datetime
 
 
 class DreamRogueManager:
-    """Manages Dream Rogue roguelike runs"""
+    """Manages Dream Dive roguelike runs"""
 
     def __init__(self, db_path: str = "data/players.db"):
         self.db_path = db_path
@@ -28,7 +28,7 @@ class DreamRogueManager:
         self._load_instance_templates()
 
     def _init_database(self):
-        """Initialize Dream Rogue tables from schema"""
+        """Initialize Dream Dive tables from schema"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
@@ -63,7 +63,7 @@ class DreamRogueManager:
         session_id: Optional[str] = None
     ) -> str:
         """
-        Create a new Dream Rogue run
+        Create a new Dream Dive run
 
         Args:
             guild_id: Discord guild ID
@@ -142,6 +142,71 @@ class DreamRogueManager:
         conn.close()
         return True
 
+    def record_party_snapshot(self, run_id: str, discord_user_id: int, party: List[Dict]):
+        """Store party level/EXP snapshots for temporary dive effects."""
+        if not party:
+            return
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        rows = []
+        for pokemon in party:
+            pokemon_id = pokemon.get("pokemon_id")
+            if not pokemon_id:
+                continue
+            rows.append((
+                run_id,
+                discord_user_id,
+                pokemon_id,
+                int(pokemon.get("level", 1)),
+                int(pokemon.get("exp", 0)),
+                int(pokemon.get("stored_exp", 0)),
+            ))
+
+        cursor.executemany("""
+            INSERT OR IGNORE INTO dream_rogue_party_snapshots (
+                run_id, discord_user_id, pokemon_id,
+                original_level, original_exp, original_stored_exp
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        """, rows)
+
+        conn.commit()
+        conn.close()
+
+    def get_party_snapshots(self, run_id: str, discord_user_id: int) -> List[Dict]:
+        """Fetch stored party level/EXP snapshots for a user in a run."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT *
+            FROM dream_rogue_party_snapshots
+            WHERE run_id = ? AND discord_user_id = ?
+        """, (run_id, discord_user_id))
+
+        snapshots = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return snapshots
+
+    def clear_party_snapshots(self, run_id: str, discord_user_id: Optional[int] = None):
+        """Clear stored party snapshots for a run or specific user."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        if discord_user_id is None:
+            cursor.execute("""
+                DELETE FROM dream_rogue_party_snapshots
+                WHERE run_id = ?
+            """, (run_id,))
+        else:
+            cursor.execute("""
+                DELETE FROM dream_rogue_party_snapshots
+                WHERE run_id = ? AND discord_user_id = ?
+            """, (run_id, discord_user_id))
+        conn.commit()
+        conn.close()
+
     def get_run(self, run_id: str) -> Optional[Dict]:
         """Get run data"""
         conn = sqlite3.connect(self.db_path)
@@ -194,7 +259,7 @@ class DreamRogueManager:
 
     def end_run(self, run_id: str, extracted: bool = False):
         """
-        End a Dream Rogue run
+        End a Dream Dive run
 
         Args:
             run_id: Run to end
@@ -481,7 +546,7 @@ class DreamRogueManager:
         return buff_summaries
 
     def get_active_run_for_user(self, guild_id: int, user_id: int) -> Optional[Dict]:
-        """Get the currently active Dream Rogue run for a specific user in a guild."""
+        """Get the currently active Dream Dive run for a specific user in a guild."""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
