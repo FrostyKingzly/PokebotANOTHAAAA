@@ -126,6 +126,25 @@ class BattleCog(commands.Cog):
         if not user_voice_channel:
             return False
 
+        if getattr(self.music_manager, "session_override_active", False):
+            message = "⚠️ Session music override is active, so battle music is currently disabled."
+            if not interaction.response.is_done():
+                await interaction.response.send_message(message, ephemeral=True)
+            else:
+                await interaction.followup.send(message, ephemeral=True)
+            return False
+
+        session_manager = getattr(self.bot, "session_manager", None)
+        if session_manager:
+            session = session_manager.get_active_session_by_guild(interaction.guild_id)
+            if session and interaction.user.id != session["admin_id"]:
+                message = "❌ Music can only be started by the session admin while a session is active."
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(message, ephemeral=True)
+                else:
+                    await interaction.followup.send(message, ephemeral=True)
+                return False
+
         # Create opt-in prompt
         opt_in_embed = create_music_opt_in_embed()
 

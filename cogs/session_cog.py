@@ -839,6 +839,12 @@ class SessionControlsView(discord.ui.View):
         self.bot = bot
         self.session_id = session_id
 
+    def _get_music_manager(self):
+        battle_cog = self.bot.get_cog("BattleCog")
+        if not battle_cog:
+            return None
+        return getattr(battle_cog, "music_manager", None)
+
     @discord.ui.button(label="Move", style=discord.ButtonStyle.primary, emoji="🗺️", row=0)
     async def move_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Open move location menu"""
@@ -875,6 +881,26 @@ class SessionControlsView(discord.ui.View):
             view=view,
             ephemeral=True
         )
+
+    @discord.ui.button(label="Music", style=discord.ButtonStyle.primary, emoji="🎵", row=1)
+    async def music_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Open session music controls"""
+        music_manager = self._get_music_manager()
+        if not music_manager:
+            await interaction.response.send_message(
+                "❌ Music system not available!",
+                ephemeral=True
+            )
+            return
+
+        view = SessionMusicView(self.bot, self.session_id, music_manager)
+        embed = view.build_embed()
+        await interaction.response.send_message(
+            embed=embed,
+            view=view,
+            ephemeral=True
+        )
+        view.message = await interaction.original_response()
 
     @discord.ui.button(label="Dive", style=discord.ButtonStyle.primary, emoji="🌀", row=0)
     async def dive_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -926,6 +952,126 @@ class SessionControlsView(discord.ui.View):
                 "❌ Failed to end session.",
                 ephemeral=True
             )
+
+
+class SessionMusicLinkModal(discord.ui.Modal):
+    """Modal for adding session music links."""
+
+    def __init__(self, view: "SessionMusicView"):
+        super().__init__(title="Add Session Music")
+        self.view = view
+        self.url_input = discord.ui.TextInput(
+            label="YouTube Link",
+            placeholder="https://www.youtube.com/watch?v=...",
+            required=True,
+            max_length=300
+        )
+        self.add_item(self.url_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        music_manager = self.view.music_manager
+        session = self.view.bot.session_manager.get_session(self.view.session_id)
+        if not session:
+            await interaction.response.send_message(
+                "❌ Session not found.",
+                ephemeral=True
+            )
+            return
+
+        if interaction.user.id != session["admin_id"]:
+            await interaction.response.send_message(
+                "❌ Only the session admin can control music.",
+                ephemeral=True
+            )
+            return
+
+        if not interaction.user.voice or not interaction.user.voice.channel:
+            await interaction.response.send_message(
+                "❌ Join a voice channel first to play music.",
+                ephemeral=True
+            )
+            return
+
+        url = self.url_input.value.strip()
+        await music_manager.queue_session_track(interaction.user.voice.channel.id, url)
+        await interaction.response.send_message(
+            "✅ Added to the session music queue.",
+            ephemeral=True
+        )
+        await self.view.refresh_message()
+
+
+class SessionMusicView(discord.ui.View):
+    """Controls for session music playback."""
+
+    def __init__(self, bot, session_id: str, music_manager):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.session_id = session_id
+        self.music_manager = music_manager
+        self.message: Optional[discord.Message] = None
+
+    def build_embed(self) -> discord.Embed:
+        status = self.music_manager.get_session_queue_status()
+        self._update_loop_label(status["loop"])
+        embed = discord.Embed(
+            title="🎵 Session Music Player",
+            description="Admins can queue and control music while the session is active.",
+            color=discord.Color.blue()
+        )
+        current = status["current"] or "Nothing playing yet."
+        embed.add_field(name="Now Playing", value=current, inline=False)
+        if status["queue"]:
+            queue_lines = "\n".join(f"{idx + 1}. {item}" for idx, item in enumerate(status["queue"]))
+        else:
+            queue_lines = "Queue is empty."
+        embed.add_field(name="Up Next", value=queue_lines, inline=False)
+        embed.add_field(name="Loop", value="On" if status["loop"] else "Off", inline=True)
+        return embed
+
+    def _update_loop_label(self, loop_enabled: bool):
+        for item in self.children:
+            if isinstance(item, discord.ui.Button) and item.label and item.label.startswith("Loop"):
+                item.label = "Loop: On" if loop_enabled else "Loop: Off"
+
+    async def refresh_message(self):
+        if self.message:
+            await self.message.edit(embed=self.build_embed(), view=self)
+
+    @discord.ui.button(label="Add Track", style=discord.ButtonStyle.success, emoji="➕", row=0)
+    async def add_track_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(SessionMusicLinkModal(self))
+
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.secondary, emoji="⏮️", row=0)
+    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        moved = await self.music_manager.skip_session_previous()
+        if not moved:
+            await interaction.response.send_message(
+                "ℹ️ No previous track in history.",
+                ephemeral=True
+            )
+            return
+        await interaction.response.defer(ephemeral=True)
+        await self.refresh_message()
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary, emoji="⏭️", row=0)
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        moved = await self.music_manager.skip_session_next()
+        if not moved:
+            await interaction.response.send_message(
+                "ℹ️ No next track in queue.",
+                ephemeral=True
+            )
+            return
+        await interaction.response.defer(ephemeral=True)
+        await self.refresh_message()
+
+    @discord.ui.button(label="Loop: Off", style=discord.ButtonStyle.secondary, emoji="🔁", row=1)
+    async def loop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        loop_enabled = self.music_manager.toggle_session_loop()
+        button.label = "Loop: On" if loop_enabled else "Loop: Off"
+        await interaction.response.defer(ephemeral=True)
+        await self.refresh_message()
 
 
 class SessionCog(commands.Cog):
@@ -1073,6 +1219,12 @@ class SessionCog(commands.Cog):
         embed.add_field(
             name="🎁 Reward",
             value="Give rewards to participants",
+            inline=True
+        )
+
+        embed.add_field(
+            name="🎵 Music",
+            value="Queue or override music for the session",
             inline=True
         )
 
