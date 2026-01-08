@@ -352,16 +352,46 @@
       "duration": "floor",
       "visibility": "private"
     },
-    "veil_psychic": {
-      "name": "Veil (Psychic)",
-      "description": "First Psychic-type attack each battle is negated.",
-      "categories": ["buff", "type"],
+    "veil_physical": {
+      "name": "Veil (Physical)",
+      "description": "The first Physical move used against you each battle is negated.",
+      "categories": ["buff"],
       "scope": "individual",
       "risk_level": "low",
       "dreamlite_cost": 70,
       "effect_data": {
-        "type": "type_veil",
-        "pokemon_type": "psychic",
+        "type": "category_veil",
+        "move_category": "physical",
+        "negate_first": true
+      },
+      "duration": "floor",
+      "visibility": "private"
+    },
+    "veil_special": {
+      "name": "Veil (Special)",
+      "description": "The first Special move used against you each battle is negated.",
+      "categories": ["buff"],
+      "scope": "individual",
+      "risk_level": "low",
+      "dreamlite_cost": 70,
+      "effect_data": {
+        "type": "category_veil",
+        "move_category": "special",
+        "negate_first": true
+      },
+      "duration": "floor",
+      "visibility": "private"
+    },
+    "veil_status": {
+      "name": "Veil (Status)",
+      "description": "The first Status move used against you each battle is negated.",
+      "categories": ["buff"],
+      "scope": "individual",
+      "risk_level": "low",
+      "dreamlite_cost": 70,
+      "effect_data": {
+        "type": "category_veil",
+        "move_category": "status",
         "negate_first": true
       },
       "duration": "floor",

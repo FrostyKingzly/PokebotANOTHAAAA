@@ -307,49 +307,31 @@ class VotingView(View):
                 ephemeral=True
             )
 
+            participants = manager.get_participants(self.run_id)
+            participant_ids = {str(p["discord_user_id"]) for p in participants}
+            voted_ids = set(vote["votes"].keys())
+
+            if participant_ids and participant_ids.issubset(voted_ids):
+                result_index = manager.resolve_vote(self.vote_id)
+                vote_result = manager.get_vote(self.vote_id)
+                result_embed = DreamRogueEmbeds.vote_result(vote_result, result_index)
+
+                await interaction.followup.send(
+                    "🗳️ All votes are in! Resolving now...",
+                    ephemeral=True
+                )
+
+                await interaction.message.edit(embed=result_embed, view=None)
+
+                if self.on_complete_callback:
+                    if "Extract" in vote_result["vote_options"][result_index]["name"]:
+                        await self.on_complete_callback(interaction, True)
+                    else:
+                        await self.on_complete_callback(interaction, result_index)
+
+                self.stop()
+
         return callback
-
-    @discord.ui.button(label="Resolve Vote", style=discord.ButtonStyle.success, emoji="✅", row=4)
-    async def resolve_button(self, interaction: discord.Interaction, button: Button):
-        """Resolve the vote"""
-        from dream_rogue_manager import DreamRogueManager
-        from ui.dream_rogue_embeds import DreamRogueEmbeds
-
-        manager = DreamRogueManager()
-
-        # Check if all participants voted
-        participants = manager.get_participants(self.run_id)
-        vote = manager.get_vote(self.vote_id)
-        votes = vote["votes"]
-
-        participant_ids = {str(p["discord_user_id"]) for p in participants}
-        voted_ids = set(votes.keys())
-
-        if not voted_ids:
-            await interaction.response.send_message(
-                "❌ No votes cast yet!",
-                ephemeral=True
-            )
-            return
-
-        # Resolve vote
-        result_index = manager.resolve_vote(self.vote_id)
-
-        # Show result
-        vote = manager.get_vote(self.vote_id)
-        embed = DreamRogueEmbeds.vote_result(vote, result_index)
-
-        await interaction.response.edit_message(embed=embed, view=None)
-
-        # Call completion callback
-        if self.on_complete_callback:
-            # Check if this was an extraction vote
-            if "Extract" in vote["vote_options"][result_index]["name"]:
-                await self.on_complete_callback(interaction, True)
-            else:
-                await self.on_complete_callback(interaction, result_index)
-
-        self.stop()
 
 
 class InstanceActionView(View):
@@ -838,11 +820,208 @@ class InstanceActionView(View):
 
     async def _challenge(self, interaction: discord.Interaction):
         """Accept a challenge/trial/gambling instance"""
-        # For now, placeholder
-        await interaction.response.send_message(
-            "🎲 Challenge accepted! (Implementation in progress)",
-            ephemeral=False
+        from dream_rogue_manager import DreamRogueManager
+        from social_stats import (
+            SOCIAL_STAT_ORDER,
+            POINTS_PER_RANK,
+            clamp_points,
+            points_to_rank,
+            calculate_max_stamina,
         )
+        import random
+
+        manager = DreamRogueManager()
+        effect_data = self.instance.get("effect_data", {})
+        challenge_type = effect_data.get("type")
+        participants = manager.get_participants(self.run_id)
+
+        def _weighted_choice(outcomes: List[Dict[str, object]]) -> Optional[Dict[str, object]]:
+            if not outcomes:
+                return None
+            total = sum(float(o.get("weight", 1)) for o in outcomes)
+            roll = random.uniform(0, total)
+            cumulative = 0.0
+            for outcome in outcomes:
+                cumulative += float(outcome.get("weight", 1))
+                if roll <= cumulative:
+                    return outcome
+            return outcomes[-1]
+
+        def _pick_template(match_fn) -> Optional[Dict[str, object]]:
+            candidates = []
+            for category_group, templates in manager.instance_templates.items():
+                for template_id, template in templates.items():
+                    categories = template.get("categories", [])
+                    if match_fn(categories):
+                        instance = template.copy()
+                        instance["template_id"] = f"{category_group}.{template_id}"
+                        candidates.append(instance)
+            return random.choice(candidates) if candidates else None
+
+        def _apply_star_delta(user_id: int, stat_key: str, amount: int) -> bool:
+            trainer = self.bot.player_manager.get_player(user_id)
+            if not trainer:
+                return False
+            current_points = int(getattr(trainer, f"{stat_key}_points", 0))
+            cap = trainer.get_stat_cap(stat_key)
+            new_points = clamp_points(current_points + amount * POINTS_PER_RANK, cap)
+            new_rank = points_to_rank(new_points, cap)
+            updates = {
+                f"{stat_key}_points": new_points,
+                f"{stat_key}_rank": new_rank,
+            }
+            if stat_key == "fortitude":
+                new_max = calculate_max_stamina(new_rank)
+                updates["stamina_max"] = new_max
+                updates["stamina_current"] = min(getattr(trainer, "stamina_current", new_max), new_max)
+            self.bot.player_manager.update_player(user_id, **updates)
+            return True
+
+        if challenge_type == "roulette":
+            user_id = interaction.user.id
+            bet_options = sorted(effect_data.get("bet_options", []))
+            affordable = [b for b in bet_options if manager.can_afford(self.run_id, user_id, b)]
+            if not affordable:
+                await interaction.response.send_message(
+                    "❌ You don't have enough Dreamlites to bet right now.",
+                    ephemeral=True
+                )
+                return
+
+            bet_amount = max(affordable)
+            manager.add_dreamlites(self.run_id, user_id, -bet_amount)
+
+            outcome = _weighted_choice(effect_data.get("outcomes", []))
+            outcome_name = outcome.get("name", "Outcome")
+            outcome_effect = outcome.get("effect")
+            result_lines = [f"🎲 **Dream Roulette** — Bet: 💎 {bet_amount}"]
+
+            if outcome_effect == "double_bet":
+                winnings = bet_amount * 2
+                manager.add_dreamlites(self.run_id, user_id, winnings)
+                result_lines.append(f"✅ {outcome_name}: You won 💎 {winnings}!")
+            elif outcome_effect == "random_rare_buff":
+                template = _pick_template(lambda cats: "buff" in cats and "curse" not in cats and "nightmare" not in cats)
+                if template:
+                    manager.apply_buff(
+                        run_id=self.run_id,
+                        buff_type="buff",
+                        buff_name=template.get("name", "Dream Blessing"),
+                        buff_description=template.get("description", "A gentle boon."),
+                        scope="individual",
+                        effect_data=template.get("effect_data", {}),
+                        duration=template.get("duration", "floor"),
+                        target_user_id=user_id,
+                    )
+                    result_lines.append(f"✨ {outcome_name}: {template.get('name')}")
+                else:
+                    result_lines.append(f"✨ {outcome_name}: The dream shimmers, but nothing manifests.")
+            elif outcome_effect == "random_curse":
+                template = _pick_template(lambda cats: "curse" in cats or "nightmare" in cats)
+                if template:
+                    manager.apply_buff(
+                        run_id=self.run_id,
+                        buff_type="curse",
+                        buff_name=template.get("name", "Dream Curse"),
+                        buff_description=template.get("description", "A chilling omen."),
+                        scope="individual",
+                        effect_data=template.get("effect_data", {}),
+                        duration=template.get("duration", "floor"),
+                        target_user_id=user_id,
+                    )
+                    result_lines.append(f"👁️ {outcome_name}: {template.get('name')}")
+                else:
+                    result_lines.append(f"👁️ {outcome_name}: The dream flickers ominously.")
+            elif outcome_effect == "marked":
+                manager.apply_buff(
+                    run_id=self.run_id,
+                    buff_type="curse",
+                    buff_name=outcome_name,
+                    buff_description=outcome.get("description", "The dream marks you."),
+                    scope="individual",
+                    effect_data={"type": "marked"},
+                    duration="run",
+                    target_user_id=user_id,
+                )
+                result_lines.append(f"⚠️ {outcome_name}: The dream marks you for the run.")
+            else:
+                result_lines.append(f"➖ {outcome_name}: Nothing happens this time.")
+
+            await interaction.response.send_message("\n".join(result_lines), ephemeral=False)
+
+        elif challenge_type == "coin_flip":
+            flip = random.choice(["heads", "tails"])
+            if flip == "heads":
+                stat_key = random.choice(SOCIAL_STAT_ORDER)
+                amount = int(effect_data.get("heads", {}).get("amount", 1))
+                for participant in participants:
+                    _apply_star_delta(participant["discord_user_id"], stat_key, amount)
+                stat_name = stat_key.title()
+                await interaction.response.send_message(
+                    f"🪙 **Heads!** Everyone gains +{amount} {stat_name} star rank.",
+                    ephemeral=False
+                )
+            else:
+                manager.apply_buff(
+                    run_id=self.run_id,
+                    buff_type="curse",
+                    buff_name="Enemy Hidden Passive",
+                    buff_description="Enemies gain a hidden passive this floor.",
+                    scope="team",
+                    effect_data=effect_data.get("tails", {}),
+                    duration="floor",
+                )
+                await interaction.response.send_message(
+                    "🪙 **Tails!** Enemies gain a hidden passive this floor.",
+                    ephemeral=False
+                )
+
+        elif challenge_type == "star_trade":
+            user_id = interaction.user.id
+            trainer = self.bot.player_manager.get_player(user_id)
+            if not trainer:
+                await interaction.response.send_message(
+                    "❌ Could not load your trainer data.",
+                    ephemeral=True
+                )
+                return
+
+            eligible_stats = [key for key in SOCIAL_STAT_ORDER if trainer.get_stat_rank(key) > 0]
+            if not eligible_stats:
+                await interaction.response.send_message(
+                    "❌ You don't have any star ranks to trade yet.",
+                    ephemeral=True
+                )
+                return
+
+            stat_key = random.choice(eligible_stats)
+            _apply_star_delta(user_id, stat_key, -1)
+
+            options = effect_data.get("options", [])
+            chosen = random.choice(options) if options else {"name": "Dream Boon", "effect": "unknown"}
+
+            manager.apply_buff(
+                run_id=self.run_id,
+                buff_type="buff",
+                buff_name=chosen.get("name", "Dream Boon"),
+                buff_description="A permanent boon from the dealer.",
+                scope="individual",
+                effect_data={"type": chosen.get("effect"), "value": chosen.get("value")},
+                duration="permanent",
+                target_user_id=user_id,
+            )
+
+            await interaction.response.send_message(
+                f"🃏 You traded 1 {stat_key.title()} star rank for **{chosen.get('name')}**.",
+                ephemeral=False
+            )
+
+        else:
+            await interaction.response.send_message(
+                "❌ This challenge cannot be resolved yet.",
+                ephemeral=True
+            )
+            return
 
         if self.on_complete_callback:
             await self.on_complete_callback(interaction, "challenge_accepted")

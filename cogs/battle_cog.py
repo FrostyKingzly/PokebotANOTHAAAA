@@ -1667,6 +1667,11 @@ class BattleCog(commands.Cog):
         if not self.exp_handler:
             return None
 
+        if interaction:
+            channel = interaction.channel
+            if isinstance(channel, discord.Thread) and channel.name.startswith("Dream Dive -"):
+                return None
+
         trainer = getattr(battle, 'trainer', None)
         if not trainer or not getattr(trainer, 'party', None):
             return None
