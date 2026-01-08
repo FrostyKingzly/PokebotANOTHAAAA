@@ -43,6 +43,12 @@ class BattleMusicManager:
         self.victory_theme_url: Optional[str] = None
         self._fade_task: Optional[asyncio.Task] = None
         self.volume: float = 0.8  # Audio volume (0.0 to 1.0)
+        self.session_queue: List[Dict[str, Optional[str]]] = []
+        self.session_history: List[Dict[str, Optional[str]]] = []
+        self.session_current_track: Optional[Dict[str, Optional[str]]] = None
+        self.session_loop: bool = False
+        self.session_voice_channel_id: Optional[int] = None
+        self.session_override_active: bool = False
 
         # Check if FFmpeg is available
         if not shutil.which('ffmpeg'):
@@ -129,6 +135,10 @@ class BattleMusicManager:
         print(f"   Battle theme: {battle_theme_url}")
         print(f"   Victory theme: {victory_theme_url}")
 
+        if self.session_override_active:
+            print("⚠️ Session music override active; skipping battle music.")
+            return False
+
         if not self.current_session:
             print(f"❌ No current session!")
             return False
@@ -169,6 +179,140 @@ class BattleMusicManager:
             import traceback
             traceback.print_exc()
             return False
+
+    async def queue_session_track(self, voice_channel_id: int, url: str) -> int:
+        """Queue a track for session music playback."""
+        track = {"url": url, "title": None}
+        self.session_queue.append(track)
+        if not self.session_voice_channel_id:
+            self.session_voice_channel_id = voice_channel_id
+        if not self.session_current_track:
+            await self._start_next_session_track()
+        return len(self.session_queue)
+
+    async def skip_session_next(self) -> bool:
+        """Skip to the next track in the session queue."""
+        if not self.session_queue:
+            await self._stop_session_music()
+            return False
+        if self.session_current_track:
+            self.session_history.append(self.session_current_track)
+        await self._start_next_session_track()
+        return True
+
+    async def skip_session_previous(self) -> bool:
+        """Return to the previous track in the session history."""
+        if not self.session_history:
+            return False
+        if self.session_current_track:
+            self.session_queue.insert(0, self.session_current_track)
+        self.session_current_track = self.session_history.pop()
+        await self._play_session_track(self.session_current_track)
+        return True
+
+    def toggle_session_loop(self) -> bool:
+        """Toggle looping for the current session track."""
+        self.session_loop = not self.session_loop
+        return self.session_loop
+
+    def get_session_queue_status(self) -> Dict[str, Optional[str]]:
+        """Get current session music status for display."""
+        current_title = None
+        if self.session_current_track:
+            current_title = self.session_current_track.get("title") or self.session_current_track.get("url")
+        return {
+            "current": current_title,
+            "queue": [
+                track.get("title") or track.get("url") for track in self.session_queue
+            ],
+            "loop": self.session_loop,
+            "active": self.session_override_active
+        }
+
+    async def _start_next_session_track(self):
+        if not self.session_queue:
+            await self._stop_session_music()
+            return
+        self.session_current_track = self.session_queue.pop(0)
+        await self._play_session_track(self.session_current_track)
+
+    async def _play_session_track(self, track: Dict[str, Optional[str]]):
+        """Play a queued session track and advance as needed."""
+        url = track.get("url")
+        if not url:
+            return
+
+        if not self.session_voice_channel_id:
+            return
+
+        channel = self.bot.get_channel(self.session_voice_channel_id)
+        if not channel or not isinstance(channel, discord.VoiceChannel):
+            print(f"❌ Session voice channel not found: {self.session_voice_channel_id}")
+            return
+
+        try:
+            self.session_override_active = True
+            self.current_phase = None
+
+            if self.voice_client and self.voice_client.is_connected():
+                await self.voice_client.move_to(channel)
+            else:
+                self.voice_client = await channel.connect()
+
+            if self.voice_client.is_playing():
+                self.voice_client.stop()
+
+            event_loop = asyncio.get_event_loop()
+            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
+                info = await event_loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+
+            if 'url' not in info:
+                print(f"❌ No audio URL found in video info")
+                return
+
+            track["title"] = info.get("title") or track.get("url")
+            audio_url = info['url']
+
+            source = discord.FFmpegPCMAudio(audio_url, **self.FFMPEG_OPTIONS)
+            source = discord.PCMVolumeTransformer(source, volume=self.volume)
+
+            def after_playing(error):
+                if error:
+                    print(f"❌ Session music error: {error}")
+                if self.session_loop and self.session_current_track:
+                    asyncio.run_coroutine_threadsafe(
+                        self._play_session_track(self.session_current_track),
+                        self.bot.loop
+                    )
+                    return
+                asyncio.run_coroutine_threadsafe(
+                    self._start_next_session_track(),
+                    self.bot.loop
+                )
+
+            self.voice_client.play(source, after=after_playing)
+
+        except Exception as e:
+            print(f"❌ Error playing session track: {e}")
+            import traceback
+            traceback.print_exc()
+
+    async def _stop_session_music(self):
+        """Stop session music and clear override state."""
+        self.session_override_active = False
+        self.session_current_track = None
+        self.session_queue = []
+        self.session_history = []
+        self.session_loop = False
+        self.session_voice_channel_id = None
+        if self.voice_client:
+            if self.voice_client.is_playing():
+                self.voice_client.stop()
+            try:
+                await self.voice_client.disconnect()
+            except Exception:
+                pass
+            self.voice_client = None
 
     async def play_victory_music(self):
         """Switch to victory music after battle ends"""
