@@ -878,7 +878,7 @@ class SessionControlsView(discord.ui.View):
 
     @discord.ui.button(label="Dive", style=discord.ButtonStyle.primary, emoji="🌀", row=0)
     async def dive_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """Start Dream Rogue dive"""
+        """Start Dream Dive dive"""
         from ui.dream_rogue_views import StageSelectModal
 
         # Show stage selection modal
@@ -892,7 +892,7 @@ class SessionControlsView(discord.ui.View):
 
         if not dream_cog:
             await interaction.response.send_message(
-                "❌ Dream Rogue system not available!",
+                "❌ Dream Dive system not available!",
                 ephemeral=True
             )
             return

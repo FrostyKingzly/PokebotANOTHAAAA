@@ -1,7 +1,7 @@
 """
-Dream Rogue UI Views
+Dream Dive UI Views
 
-Discord UI components (buttons, modals, selects) for Dream Rogue gamemode
+Discord UI components (buttons, modals, selects) for Dream Dive gamemode
 """
 
 import discord
@@ -11,7 +11,7 @@ import asyncio
 
 
 class DiveStartView(View):
-    """View for starting a Dream Rogue dive"""
+    """View for starting a Dream Dive dive"""
 
     def __init__(self, bot, run_id: str, initiator_id: int, callback):
         super().__init__(timeout=300)
@@ -24,6 +24,7 @@ class DiveStartView(View):
     async def join_button(self, interaction: discord.Interaction, button: Button):
         """Join the dive"""
         from dream_rogue_manager import DreamRogueManager
+        from database import PlayerDatabase
 
         manager = DreamRogueManager()
 
@@ -31,6 +32,9 @@ class DiveStartView(View):
         success = manager.add_participant(self.run_id, interaction.user.id)
 
         if success:
+            player_db = PlayerDatabase()
+            party = player_db.get_trainer_party(interaction.user.id)
+            manager.record_party_snapshot(self.run_id, interaction.user.id, party)
             await interaction.response.send_message(
                 f"✅ You've joined the dive into the dream world!",
                 ephemeral=True
@@ -84,8 +88,12 @@ class DiveStartView(View):
             return
 
         from dream_rogue_manager import DreamRogueManager
+        from dream_dive_rewards import restore_dream_dive_party_levels
 
         manager = DreamRogueManager()
+        participants = manager.get_participants(self.run_id)
+        for participant in participants:
+            restore_dream_dive_party_levels(self.bot, self.run_id, participant["discord_user_id"])
         manager.end_run(self.run_id, extracted=False)
 
         self.stop()
@@ -212,6 +220,11 @@ class FloorNavigationView(View):
             # End run and show summary
             from dream_rogue_manager import DreamRogueManager
             from ui.dream_rogue_embeds import DreamRogueEmbeds
+            from dream_dive_rewards import (
+                calculate_dream_dive_exp,
+                apply_dream_dive_exp,
+                restore_dream_dive_party_levels,
+            )
 
             manager = DreamRogueManager()
             run = manager.get_run(self.run_id)
@@ -219,10 +232,22 @@ class FloorNavigationView(View):
 
             total_dreamlites = sum(p["dreamlites"] for p in participants)
 
+            exp_rewards = {}
+            for participant in participants:
+                user_id = participant["discord_user_id"]
+                restore_dream_dive_party_levels(self.bot, self.run_id, user_id)
+                exp_amount = calculate_dream_dive_exp(run["stage_level"], participant["dreamlites"])
+                apply_dream_dive_exp(self.bot, user_id, exp_amount)
+                exp_rewards[user_id] = exp_amount
+
             manager.end_run(self.run_id, extracted=True)
 
             embed = DreamRogueEmbeds.extraction_summary(
-                run, participants, run["current_floor"], total_dreamlites
+                run,
+                participants,
+                run["current_floor"],
+                total_dreamlites,
+                exp_rewards=exp_rewards,
             )
 
             await interaction.edit_original_response(embed=embed, view=None)
@@ -550,7 +575,7 @@ class InstanceActionView(View):
                 opponent_party=[raid_boss],
                 battle_type=BattleType.TRAINER,
                 opponent_is_ai=True,
-                opponent_name=f"Dream Rogue {raid_boss.species_name}",
+                opponent_name=f"Dream Dive {raid_boss.species_name}",
                 battle_format=BattleFormat.RAID,
                 raid_participants=raid_entries,
             )
@@ -563,9 +588,9 @@ class InstanceActionView(View):
                 battle_cog.user_battles[entry["user_id"]] = battle_id
 
             thread = await parent_channel.create_thread(
-                name="Dream Rogue - Raid Battle",
+                name="Dream Dive - Raid Battle",
                 auto_archive_duration=60,
-                reason="Dream Rogue raid battle"
+                reason="Dream Dive raid battle"
             )
             created_threads.append(thread.mention)
 
@@ -637,9 +662,9 @@ class InstanceActionView(View):
             battle_cog.user_battles[trainer2.id] = battle_id
 
             thread = await parent_channel.create_thread(
-                name=f"Dream Rogue - {trainer1.display_name} & {trainer2.display_name}",
+                name=f"Dream Dive - {trainer1.display_name} & {trainer2.display_name}",
                 auto_archive_duration=60,
-                reason="Dream Rogue multi battle"
+                reason="Dream Dive multi battle"
             )
             created_threads.append(thread.mention)
 
@@ -697,11 +722,11 @@ class InstanceActionView(View):
                     battle_format=battle_format
                 )
 
-                thread_name = f"Dream Rogue - {user.display_name}"
+                thread_name = f"Dream Dive - {user.display_name}"
                 thread = await parent_channel.create_thread(
                     name=thread_name,
                     auto_archive_duration=60,
-                    reason=f"Dream Rogue battle for {user.display_name}"
+                    reason=f"Dream Dive battle for {user.display_name}"
                 )
 
                 mock_interaction = _create_thread_interaction(thread, user)
@@ -889,7 +914,7 @@ class InstanceActionView(View):
             await self.on_complete_callback(interaction, "proceeded")
 
 
-class StageSelectModal(Modal, title="Choose Dream Rogue Stage"):
+class StageSelectModal(Modal, title="Choose Dream Dive Stage"):
     """Modal for selecting stage level"""
 
     stage_input = TextInput(

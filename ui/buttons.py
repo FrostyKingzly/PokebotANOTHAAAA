@@ -226,7 +226,7 @@ LOCATION_ACTIVITY_DEFINITIONS = {
         "emoji": "🌀",
         "stamina_cost": 1,
         "description": "Delve into the dream world in a roguelike adventure.",
-        "reward_lines": ["Enter Dream Rogue mode"],
+        "reward_lines": ["Enter Dream Dive mode"],
         "type": "dream_rogue",
     },
 }
@@ -560,7 +560,7 @@ class AlertDetailView(View):
 
 
 class DreamEffectsView(View):
-    """View for listing Dream Rogue effects with a back button."""
+    """View for listing Dream Dive effects with a back button."""
 
     def __init__(self, bot, user_id: int):
         super().__init__(timeout=300)
@@ -968,7 +968,7 @@ class MainMenuView(View):
         return False
 
     def _add_dream_effects_button(self):
-        """Add a button to view active Dream Rogue effects."""
+        """Add a button to view active Dream Dive effects."""
         effects_button = Button(
             label="🌀 Dream Effects",
             style=discord.ButtonStyle.secondary,
@@ -1784,7 +1784,7 @@ class MainMenuView(View):
         )
 
     async def _start_dream_rogue(self, interaction, trainer, activity: Dict[str, Any]):
-        """Start Dream Rogue dive from Dreamyard location"""
+        """Start Dream Dive dive from Dreamyard location"""
         from ui.dream_rogue_views import StageSelectModal
 
         # Show stage selection modal
@@ -1792,12 +1792,12 @@ class MainMenuView(View):
         await interaction.response.send_modal(modal)
 
     async def _on_dream_stage_selected(self, interaction: discord.Interaction, stage_level: int, trainer):
-        """Handle stage selection for Dream Rogue"""
+        """Handle stage selection for Dream Dive"""
         dream_cog = self.bot.get_cog("DreamRogueCog")
 
         if not dream_cog:
             await interaction.response.send_message(
-                "❌ Dream Rogue system not available!",
+                "❌ Dream Dive system not available!",
                 ephemeral=True
             )
             return

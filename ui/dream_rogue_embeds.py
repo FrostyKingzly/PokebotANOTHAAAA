@@ -1,7 +1,7 @@
 """
-Dream Rogue Embed Builders
+Dream Dive Embed Builders
 
-Provides formatted Discord embeds for the Dream Rogue gamemode
+Provides formatted Discord embeds for the Dream Dive gamemode
 """
 
 import discord
@@ -9,7 +9,7 @@ from typing import List, Dict, Optional
 
 
 class DreamRogueEmbeds:
-    """Static methods for building Dream Rogue embeds"""
+    """Static methods for building Dream Dive embeds"""
 
     # Colors
     DREAM_COLOR = discord.Color.from_rgb(138, 43, 226)  # Blue-Violet
@@ -47,7 +47,7 @@ class DreamRogueEmbeds:
         stage_level = run.get("stage_level", 10)
 
         embed = discord.Embed(
-            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Dream Rogue — Level {stage_level} Stage",
+            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Dream Dive — Level {stage_level} Stage",
             description="*Now Diving… Please Stand By.*",
             color=DreamRogueEmbeds.DREAM_COLOR
         )
@@ -300,7 +300,8 @@ class DreamRogueEmbeds:
         run: Dict,
         participants: List[Dict],
         floor_reached: int,
-        total_dreamlites: int
+        total_dreamlites: int,
+        exp_rewards: Optional[Dict[int, int]] = None
     ) -> discord.Embed:
         """
         Extraction completion summary
@@ -344,6 +345,22 @@ class DreamRogueEmbeds:
             value=f"{DreamRogueEmbeds.DREAMLITE_EMOJI} **{total_dreamlites}** Dreamlites",
             inline=False
         )
+
+        if exp_rewards:
+            reward_lines = []
+            for participant in participants:
+                user_id = participant["discord_user_id"]
+                reward = exp_rewards.get(user_id)
+                if reward is None:
+                    continue
+                reward_lines.append(f"<@{user_id}>: **{reward:,}** EXP")
+
+            if reward_lines:
+                embed.add_field(
+                    name="Dream Dive EXP",
+                    value="\n".join(reward_lines),
+                    inline=False
+                )
 
         embed.set_footer(text="Dreamlites have been added to your collection")
         return embed
