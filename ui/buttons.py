@@ -4624,7 +4624,7 @@ class EncounterSelectView(View):
     """Wild encounter selection from rolled encounters"""
 
     def __init__(self, bot, encounters: list, location: dict, player_id: int, location_id: str):
-        super().__init__(timeout=300)
+        super().__init__(timeout=900)  # Maximum Discord timeout: 15 minutes
         self.bot = bot
         self.encounters = encounters
         self.location = location
@@ -4801,10 +4801,14 @@ class EncounterSelectView(View):
             current_location_id
         )
 
-        await interaction.edit_original_response(
+        # Edit the message directly to allow unlimited rerolls
+        await interaction.message.edit(
             embed=embed,
             view=new_view,
         )
+
+        # Delete the deferred response to clean up
+        await interaction.delete_original_response()
 
         self.stop()
 
