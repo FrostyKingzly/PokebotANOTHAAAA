@@ -1,6 +1,7 @@
 import asyncio
 import re
 import discord
+from discord import app_commands
 from discord.ext import commands
 from pathlib import Path
 from typing import Optional, Any
@@ -1420,6 +1421,33 @@ class BattleCog(commands.Cog):
 
         await send_switch_events(auto_switch_events)
 
+    async def _show_rp_mode_execution_prompt(self, interaction: discord.Interaction, battle):
+        """Show the 'Both players have chosen their actions. Awaiting execution.' embed with Go button."""
+        # Only show once - check if we already have an execution message
+        if battle.rp_mode_execution_message_id:
+            # Message already exists, don't create a new one
+            return
+
+        embed = discord.Embed(
+            title="🎭 Actions Chosen - Ready to Execute!",
+            description="Both trainers have chosen their actions!\n\n"
+                       "**Take your time to roleplay the turn!**\n"
+                       "When both players are ready to see the results, press the **Go!** button below.\n\n"
+                       "⏰ *Tip: Use `/rp_go` command if the button expires*",
+            color=discord.Color.gold()
+        )
+
+        view = RPModeExecutionView(battle.battle_id, self.battle_engine, self)
+
+        # Send to the channel (not ephemeral, so both players can see it)
+        try:
+            msg = await interaction.channel.send(embed=embed, view=view)
+            battle.rp_mode_execution_message_id = msg.id
+        except Exception:
+            # Fallback to followup if channel send fails
+            msg = await interaction.followup.send(embed=embed, view=view)
+            battle.rp_mode_execution_message_id = msg.id
+
     async def _prompt_forced_switch(self, interaction: discord.Interaction, battle, battler_id: int):
         # Always refresh the battle state to avoid stale active slots or parties
         fresh_battle = self.battle_engine.get_battle(getattr(battle, 'battle_id', None)) or battle
@@ -2030,6 +2058,71 @@ class BattleCog(commands.Cog):
             view=self._create_battle_view(battle)
         )
 
+    @app_commands.command(name="rp_go", description="Execute the turn in RP mode (use if button expires)")
+    async def rp_go_command(self, interaction: discord.Interaction):
+        """Slash command to execute RP mode turn when the button expires."""
+        # Check if user is in a battle
+        battle_id = self.user_battles.get(interaction.user.id)
+        if not battle_id:
+            await interaction.response.send_message("❌ You are not currently in a battle!", ephemeral=True)
+            return
+
+        battle = self.battle_engine.get_battle(battle_id)
+        if not battle:
+            await interaction.response.send_message("❌ Battle not found!", ephemeral=True)
+            return
+
+        # Check if RP mode is active
+        if not battle.rp_mode_active:
+            await interaction.response.send_message("❌ RP mode is not active in this battle!", ephemeral=True)
+            return
+
+        # Check if there are pending actions to execute
+        if not battle.pending_actions:
+            await interaction.response.send_message("❌ No actions have been chosen yet!", ephemeral=True)
+            return
+
+        # Add this battler to the ready set
+        battle.rp_mode_go_ready.add(interaction.user.id)
+
+        # Check if both players are ready
+        required_battler_ids = {battle.trainer.battler_id, battle.opponent.battler_id}
+        all_ready = required_battler_ids.issubset(battle.rp_mode_go_ready)
+
+        if not all_ready:
+            await interaction.response.send_message(
+                "✅ Ready! Waiting for the other player to use `/rp_go`...",
+                ephemeral=True
+            )
+            return
+
+        # Both players are ready - execute the turn!
+        await interaction.response.defer()
+
+        # Clear the ready set for the next turn
+        battle.rp_mode_go_ready.clear()
+
+        # Process the turn
+        turn = await self.battle_engine.process_turn(battle_id)
+        await self._send_turn_resolution(interaction, turn)
+
+        # Update the execution message if it exists
+        if battle.rp_mode_execution_message_id and interaction.channel:
+            try:
+                execution_msg = await interaction.channel.fetch_message(battle.rp_mode_execution_message_id)
+                executed_embed = discord.Embed(
+                    title="⚡ Turn Executed!",
+                    description="Both players are ready! The turn has been executed.\n"
+                               "Choose your next actions and use `/rp_go` when ready!",
+                    color=discord.Color.green()
+                )
+                await execution_msg.edit(embed=executed_embed, view=None)
+            except Exception:
+                pass
+
+        battle.rp_mode_execution_message_id = None
+        await self._handle_post_turn(interaction, battle_id)
+
 class ForfeitConfirmView(discord.ui.View):
     def __init__(self, action_view: 'BattleActionView'):
         super().__init__(timeout=None)
@@ -2056,6 +2149,132 @@ class ForfeitConfirmView(discord.ui.View):
             except Exception:
                 pass
         self.stop()
+
+class RPModeExecutionView(discord.ui.View):
+    """View with the 'Go!' button for executing RP mode turns."""
+    def __init__(self, battle_id: str, engine: BattleEngine, battle_cog: 'BattleCog'):
+        super().__init__(timeout=None)
+        self.battle_id = battle_id
+        self.engine = engine
+        self.battle_cog = battle_cog
+
+    @discord.ui.button(label="⚡ Go!", style=discord.ButtonStyle.success, custom_id="rp_mode_go")
+    async def go_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        battle = self.engine.get_battle(self.battle_id)
+        if not battle:
+            await interaction.response.send_message("Battle not found.", ephemeral=True)
+            return
+
+        # Check if the user is a participant
+        battler_id = None
+        for battler in battle.get_all_battlers():
+            if battler.battler_id == interaction.user.id:
+                battler_id = battler.battler_id
+                break
+
+        if battler_id is None:
+            await interaction.response.send_message("❌ You are not a participant in this battle.", ephemeral=True)
+            return
+
+        # Add this battler to the ready set
+        battle.rp_mode_go_ready.add(battler_id)
+
+        # Check if both players are ready (for PvP, we need both trainer and opponent)
+        required_battler_ids = {battle.trainer.battler_id, battle.opponent.battler_id}
+        all_ready = required_battler_ids.issubset(battle.rp_mode_go_ready)
+
+        if not all_ready:
+            # Not all players ready yet
+            await interaction.response.send_message(
+                "✅ Ready! Waiting for the other player to press Go...",
+                ephemeral=True
+            )
+            return
+
+        # Both players are ready - execute the turn!
+        await interaction.response.defer()
+
+        # Clear the ready set for the next turn
+        battle.rp_mode_go_ready.clear()
+
+        # Process the turn
+        cog = self.battle_cog or interaction.client.get_cog("BattleCog")
+        if cog:
+            turn = await self.engine.process_turn(self.battle_id)
+            await cog._send_turn_resolution(interaction, turn)
+
+            # Update the execution message to show turn has been executed
+            if battle.rp_mode_execution_message_id and interaction.channel:
+                try:
+                    execution_msg = await interaction.channel.fetch_message(battle.rp_mode_execution_message_id)
+                    executed_embed = discord.Embed(
+                        title="⚡ Turn Executed!",
+                        description="Both players pressed Go! The turn has been executed.\n"
+                                   "Choose your next actions and press Go when ready!",
+                        color=discord.Color.green()
+                    )
+                    await execution_msg.edit(embed=executed_embed, view=None)
+                except Exception:
+                    pass
+
+            battle.rp_mode_execution_message_id = None
+            await cog._handle_post_turn(interaction, self.battle_id)
+
+
+class RPModeRequestView(discord.ui.View):
+    def __init__(self, battle_id: str, other_battler_id: int, requester_id: int, engine: BattleEngine, battle_cog: 'BattleCog'):
+        super().__init__(timeout=None)
+        self.battle_id = battle_id
+        self.other_battler_id = other_battler_id  # The player who needs to accept
+        self.requester_id = requester_id  # The player who requested RP mode
+        self.engine = engine
+        self.battle_cog = battle_cog
+
+    @discord.ui.button(label="✅ Accept", style=discord.ButtonStyle.success)
+    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Only the other player can accept
+        if interaction.user.id != self.other_battler_id:
+            await interaction.response.send_message("❌ Only the challenged player can respond to this request!", ephemeral=True)
+            return
+
+        battle = self.engine.get_battle(self.battle_id)
+        if not battle:
+            await interaction.response.send_message("Battle not found.", ephemeral=True)
+            return
+
+        # Activate RP mode
+        battle.rp_mode_active = True
+
+        # Update the message to show RP mode is active
+        embed = discord.Embed(
+            title="🎭 RP Mode Activated!",
+            description=f"**{interaction.user.display_name}** has accepted the RP Mode request!\n\n"
+                       "From now on, both players must press 'Go!' after selecting their actions to execute the turn.\n"
+                       "This gives you unlimited time for roleplay between turns!",
+            color=discord.Color.green()
+        )
+
+        await interaction.response.edit_message(embed=embed, view=None)
+        self.stop()
+
+    @discord.ui.button(label="❌ Decline", style=discord.ButtonStyle.danger)
+    async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Only the other player can decline
+        if interaction.user.id != self.other_battler_id:
+            await interaction.response.send_message("❌ Only the challenged player can respond to this request!", ephemeral=True)
+            return
+
+        # Update the message to show RP mode was declined
+        embed = discord.Embed(
+            title="🎭 RP Mode Declined",
+            description=f"**{interaction.user.display_name}** has declined the RP Mode request.\n\n"
+                       "The battle will continue normally.",
+            color=discord.Color.red()
+        )
+
+        await interaction.response.edit_message(embed=embed, view=None)
+        self.stop()
+
 
 class BattleActionView(discord.ui.View):
     def __init__(self, battle_id: str, battler_id: int, engine: BattleEngine, battle, battle_cog: 'BattleCog'):
@@ -2250,6 +2469,49 @@ class BattleActionView(discord.ui.View):
             await cog._finish_battle(interaction, battle)
         else:
             self.engine.end_battle(self.battle_id)
+
+    @discord.ui.button(label="🎭 RP Mode", style=discord.ButtonStyle.secondary, row=1, custom_id="rp_mode_toggle")
+    async def rp_mode_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        battle = self.engine.get_battle(self.battle_id) or self.battle
+        if not battle:
+            await interaction.response.send_message("Battle not found.", ephemeral=True)
+            return
+
+        # Only available for PvP battles
+        if battle.battle_type != BattleType.PVP:
+            await interaction.response.send_message("❌ RP Mode is only available in PvP battles!", ephemeral=True)
+            return
+
+        battler_id = self._resolve_battler_id(interaction, battle)
+        if battler_id is None:
+            await interaction.response.send_message("You are not a participant in this battle.", ephemeral=True)
+            return
+
+        # Check if RP mode is already active
+        if battle.rp_mode_active:
+            await interaction.response.send_message("✅ RP Mode is already active!", ephemeral=True)
+            return
+
+        # Get the other player
+        other_battler_id = battle.opponent.battler_id if battler_id == battle.trainer.battler_id else battle.trainer.battler_id
+        requester_name = interaction.user.display_name
+
+        # Send RP mode request embed to the channel
+        embed = discord.Embed(
+            title="🎭 RP Mode Request",
+            description=f"**{requester_name}** wants to activate **RP Mode** for this battle!\n\n"
+                       "**What is RP Mode?**\n"
+                       "• Both players choose their actions normally\n"
+                       "• Actions pause before execution\n"
+                       "• Both players must press 'Go!' to continue\n"
+                       "• Gives unlimited time for roleplay posts between turns!\n\n"
+                       "Do you accept?",
+            color=discord.Color.purple()
+        )
+
+        view = RPModeRequestView(self.battle_id, other_battler_id, requester_id=battler_id, engine=self.engine, battle_cog=self.cog)
+        await interaction.response.send_message(embed=embed, view=view)
+
 
 def _build_revival_target_options(battle, battler_id: int) -> tuple[list[discord.SelectOption], dict[str, tuple[int, int]]]:
     """Build select options for Revival Blessing targets."""
@@ -2488,6 +2750,18 @@ class MoveButton(discord.ui.Button):
         res = self.engine.register_action(self.battle_id, self.battler_id, action)
         cog = interaction.client.get_cog("BattleCog")
 
+        # Check if RP mode is waiting for both players to press "Go"
+        if res.get("rp_mode_waiting") and cog:
+            await interaction.followup.send(
+                "Move selected! Both players have chosen their actions.",
+                ephemeral=True,
+            )
+            # Show the "awaiting execution" embed
+            battle = self.engine.get_battle(self.battle_id)
+            if battle:
+                await cog._show_rp_mode_execution_prompt(interaction, battle)
+            return
+
         # If the other trainer hasn't chosen yet, just notify this user and stop.
         if not res.get("ready_to_resolve"):
             waiting_for = res.get("waiting_for", [])
@@ -2620,6 +2894,17 @@ class PartySelect(discord.ui.Select):
 
         action = BattleAction(action_type='switch', battler_id=self.battler_id, switch_to_position=idx)
         res = parent_view.engine.register_action(parent_view.battle_id, self.battler_id, action)
+
+        # Check if RP mode is waiting for both players to press "Go"
+        if res.get("rp_mode_waiting") and cog:
+            await interaction.followup.send(
+                "Switch selected! Both players have chosen their actions.",
+                ephemeral=True,
+            )
+            battle = parent_view.engine.get_battle(parent_view.battle_id)
+            if battle:
+                await cog._show_rp_mode_execution_prompt(interaction, battle)
+            return
 
         # Handle volt switch completion specially
         if res.get("volt_switch_complete") and cog:
@@ -3095,6 +3380,17 @@ class RevivalTargetSelectView(discord.ui.View):
         res = self.engine.register_action(self.battle_id, self.battler_id, action)
         cog = interaction.client.get_cog("BattleCog")
 
+        # Check if RP mode is waiting for both players to press "Go"
+        if res.get("rp_mode_waiting") and cog:
+            await interaction.followup.send(
+                "Move selected! Both players have chosen their actions.",
+                ephemeral=True,
+            )
+            battle = self.engine.get_battle(self.battle_id)
+            if battle:
+                await cog._show_rp_mode_execution_prompt(interaction, battle)
+            return
+
         if not res.get("ready_to_resolve"):
             waiting_for = res.get("waiting_for", [])
             trainer_word = "trainers" if len(waiting_for) > 1 else "trainer"
@@ -3386,8 +3682,17 @@ class TargetSelectView(discord.ui.View):
                     )
                     return
 
-            # Process turn
+            # Check for RP mode
             cog = interaction.client.get_cog("BattleCog")
+            if battle.rp_mode_active and battle.battle_type == BattleType.PVP and cog:
+                await interaction.followup.send(
+                    "Actions submitted! Both players have chosen their actions.",
+                    ephemeral=True,
+                )
+                await cog._show_rp_mode_execution_prompt(interaction, battle)
+                return
+
+            # Process turn
             if res.get("ready_to_resolve") and cog:
                 turn = await self.engine.process_turn(self.battle_id)
                 await cog._send_turn_resolution(interaction, turn)
@@ -3396,6 +3701,17 @@ class TargetSelectView(discord.ui.View):
             # Singles battle path
             res = self.engine.register_action(self.battle_id, self.battler_id, action)
             cog = interaction.client.get_cog("BattleCog")
+
+            # Check if RP mode is waiting for both players to press "Go"
+            if res.get("rp_mode_waiting") and cog:
+                await interaction.followup.send(
+                    "Move selected! Both players have chosen their actions.",
+                    ephemeral=True,
+                )
+                battle = self.engine.get_battle(self.battle_id)
+                if battle:
+                    await cog._show_rp_mode_execution_prompt(interaction, battle)
+                return
 
             if not res.get("ready_to_resolve"):
                 waiting_for = res.get("waiting_for", [])
