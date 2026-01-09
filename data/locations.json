@@ -2822,5 +2822,131 @@
     "type": "civilian_zone",
     "encounters": [],
     "npc_trainers": []
+  },
+  "lights_district_strip_mall": {
+    "name": "Lights District - Strip Mall",
+    "description": "A large, stretching mall filled with every kind of shop you could probably want to find. If you need it, this'll have it. It's got quite a few cafes and restaurants, too!",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "lights_district_night_club": {
+    "name": "Lights District - Night Club",
+    "description": "The biggest Night club in Reverie City! Is the City itself not enough of a party for you, no place to sit and chill? Then this is where you'll wanna be. A place to celebrate with your friends after a long day (or night) of battling!",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "lights_district_research_lab": {
+    "name": "Lights District - Research Lab",
+    "description": "Pokemon research is what makes this world spin, and it's just the same here if not more! After all, the spectacle in the night wouldn't even be sustainable without all the work done on the energy, which is only growing day by day.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "lights_district_starlight_restaurant": {
+    "name": "Lights District - Starlight Restaurant",
+    "description": "A quiet spot to eat, for the most part. Most people coming to dine here are respectful and speak amongst themselves without being too loud, and the food is top notch- as expected of most dedicated restaurants in the city.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "lights_district_moonveil_hotel": {
+    "name": "Lights District - Moonveil Hotel",
+    "description": "One of the few hotels where most competitors are taking up residence. Not quite as tall as the apartment suites, but the day-to-day prices are very low with most booking out a long period of time for the entire competition.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "lights_district_penthouse_suite": {
+    "name": "Lights District - Penthouse Suite",
+    "description": "The apartment with the most enviable view in the entire city. At the very top of a luxury apartment building, a large team of scientists used to live here working on something important to the cities energy. It's empty now, though, and has been for a while; the amount of rooms make it very unideal for most browsing occupants.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "lights_district_gardens": {
+    "name": "Lights District - Gardens",
+    "description": "The Lights District Gardens. A little life existing amongst the glass, concrete and metal towers, vibrant green grass with an assortment of flowers from across the world accompanied by a few trees. With the abundance of Pokemon coming into the city, a few wild were bound to find and make this place there home. To ensure their safety, the City took inspiration from another project in Kalos. Thus, the first Wild Area was formed.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "lights_district_fountain": {
+    "name": "Lights District - Fountain",
+    "description": "A large fountain that became a frequent spot for Wild Pokemon. It was quickly turned into a Wild Area after the first to prevent heavy foot-traffic and reduce littering into the water.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "residential_district_central_street": {
+    "name": "Residential District - Central Street",
+    "description": "The busiest street in the residential district, though nothing as busy as the Lights district gets. Lots of people come here to stock up on groceries or hang out with their friends at various small cafes. At night, the various lit up signs and lamps provide a much cosier experience than the light-show over in the other district.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "residential_district_cafe": {
+    "name": "Residential District - Cafe",
+    "description": "A small, quiet cafe with very little amounts of customers, tended to only be visited by regulars. The owners are friendly and generous, with a warm atmosphere assisted by the aroma of coffee and various freshly-made foods.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "residential_district_daycare": {
+    "name": "Residential District - Daycare",
+    "description": "A large day-care for looking after Pokemon. The day-care assistants all provide training and outdoor environments to the Pokemon left here, allowing for a still and steady amount of training while the Trainer focuses on their other Pokemon.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "residential_district_boardwalk": {
+    "name": "Residential District - Boardwalk",
+    "description": "A long pier stretching out a bit into the water with sea-side cafes and small attractions to spend money and earn prizes for yourself or a friend.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "residential_district_school": {
+    "name": "Residential District - School",
+    "description": "A Trainers school, though lots of other topics are also taught here. Adult trainers are also welcome to take up specific tutoring here on more intense battling topics they need assistance on.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
+  },
+  "residential_district_temple_of_twilight": {
+    "name": "Residential District - Temple of Twilight",
+    "description": "A small temple on the outskirts of the city. In the center is a large statue of the Wish Pokémon, Jirachi. People from all over come to pray for their wishes to come true.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": []
   }
 }
