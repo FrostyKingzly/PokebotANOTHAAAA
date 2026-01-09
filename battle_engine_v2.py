@@ -152,6 +152,11 @@ class BattleState:
     ranked_context: Dict[str, Any] = field(default_factory=dict)
     mega_evolution_used: set[int] = field(default_factory=set)
 
+    # RP Mode for PvP battles
+    rp_mode_active: bool = False  # Whether RP mode is currently enabled
+    rp_mode_go_ready: set[int] = field(default_factory=set)  # Battler IDs who have pressed "Go"
+    rp_mode_execution_message_id: Optional[int] = None  # Message ID of the "awaiting execution" embed
+
     def get_all_battlers(self) -> List[Battler]:
         """Get all battlers in this battle (2 for singles/doubles, 4 for multi)"""
         battlers = [self.trainer, self.opponent]
@@ -1507,6 +1512,16 @@ class BattleEngine:
 
             all_actions_ready = all(str(rid) in battle.pending_actions for rid in required_actions)
             waiting_for = [rid for rid in required_actions if str(rid) not in battle.pending_actions]
+
+        # Check if RP mode is active for PvP battles
+        if all_actions_ready and battle.rp_mode_active and battle.battle_type == BattleType.PVP:
+            # In RP mode, don't resolve immediately - wait for both players to press "Go"
+            return {
+                "success": True,
+                "waiting_for": waiting_for,
+                "ready_to_resolve": False,
+                "rp_mode_waiting": True  # Signal that we're waiting for RP mode execution
+            }
 
         return {
             "success": True,
