@@ -112,6 +112,9 @@ class BattleState:
     terrain: Optional[str] = None  # 'electric', 'grassy', 'psychic', 'misty'
     terrain_turns: int = 0
 
+    # Overworld weather (persists indefinitely, restored when temporary weather ends)
+    overworld_weather: Optional[str] = None  # Weather from the overworld at battle start
+
     # Rogue Pokemon permanent weather/terrain (returns when override expires)
     rogue_weather: Optional[str] = None
     rogue_terrain: Optional[str] = None
@@ -693,7 +696,47 @@ class BattleEngine:
         # Active battles
         self.active_battles: Dict[str, BattleState] = {}
         self.player_manager = None
-    
+
+    @staticmethod
+    def map_overworld_weather_to_battle(overworld_weather: Optional[str]) -> Optional[str]:
+        """
+        Maps overworld weather types to battle weather effects.
+
+        Mapping:
+        - Cloudy, Gentle Skies: No weather (None)
+        - Heatwave, Sunshine: Harsh sunlight ('sun')
+        - Rain, Thunderstorm: Rain ('rain')
+        - Sandstorm: Sandstorm ('sandstorm')
+        - Snowing, Blizzard: Snow ('snow')
+
+        Args:
+            overworld_weather: The weather type from the overworld
+
+        Returns:
+            Battle weather string or None if no weather effect
+        """
+        if not overworld_weather:
+            return None
+
+        weather_map = {
+            # No effects
+            'cloudy': None,
+            'gentle_skies': None,
+            # Sun
+            'heatwave': 'sun',
+            'sunshine': 'sun',
+            # Rain
+            'rain': 'rain',
+            'thunder_storm': 'rain',
+            # Sandstorm
+            'sandstorm': 'sandstorm',
+            # Snow
+            'snowing': 'snow',
+            'blizzard': 'snow',
+        }
+
+        return weather_map.get(overworld_weather.lower())
+
     # ========================
     # Battle Initialization
     # ========================
@@ -711,6 +754,9 @@ class BattleEngine:
         opponent_is_ai: bool = True,
         is_ranked: bool = False,
         ranked_context: Optional[Dict[str, Any]] = None,
+        weather_manager: Optional[Any] = None,
+        location_id: Optional[str] = None,
+        wild_area_state: Optional[Dict[str, Any]] = None,
         **kwargs
     ) -> str:
         """Universal battle starter"""
@@ -830,6 +876,23 @@ class BattleEngine:
             is_ranked=is_ranked,
             ranked_context=ranked_context or {}
         )
+
+        # Set overworld weather if weather manager and location are provided
+        if weather_manager and location_id:
+            try:
+                overworld_weather = weather_manager.get_weather_for_context(
+                    location_id=location_id,
+                    wild_area_state=wild_area_state
+                )
+                battle_weather = self.map_overworld_weather_to_battle(overworld_weather)
+                if battle_weather:
+                    battle.weather = battle_weather
+                    battle.overworld_weather = battle_weather
+                    battle.weather_turns = 0  # Indefinite duration for overworld weather
+                    battle.turn_log.append(f"The battle is affected by {battle_weather}!")
+            except Exception as e:
+                # Don't let weather errors crash battle initialization
+                print(f"Warning: Failed to set overworld weather: {e}")
 
         for battler in battle.get_all_battlers():
             for mon in battler.get_active_pokemon():
@@ -1005,8 +1068,16 @@ class BattleEngine:
             'trainer_battler_id': trainer_battler_id
         })
 
-    def start_wild_battle(self, trainer_id: int, trainer_name: str, 
-                         trainer_party: List[Any], wild_pokemon: Any) -> str:
+    def start_wild_battle(
+        self,
+        trainer_id: int,
+        trainer_name: str,
+        trainer_party: List[Any],
+        wild_pokemon: Any,
+        weather_manager: Optional[Any] = None,
+        location_id: Optional[str] = None,
+        wild_area_state: Optional[Dict[str, Any]] = None
+    ) -> str:
         """Convenience method for wild battles"""
         return self.start_battle(
             trainer_id=trainer_id,
@@ -1014,7 +1085,10 @@ class BattleEngine:
             trainer_party=trainer_party,
             opponent_party=[wild_pokemon],
             battle_type=BattleType.WILD,
-            opponent_name=f"Wild {wild_pokemon.species_name}"
+            opponent_name=f"Wild {wild_pokemon.species_name}",
+            weather_manager=weather_manager,
+            location_id=location_id,
+            wild_area_state=wild_area_state
         )
     
     def start_trainer_battle(
@@ -1028,7 +1102,10 @@ class BattleEngine:
         prize_money: int,
         battle_format: BattleFormat = BattleFormat.SINGLES,
         is_ranked: bool = False,
-        ranked_context: Optional[Dict[str, Any]] = None
+        ranked_context: Optional[Dict[str, Any]] = None,
+        weather_manager: Optional[Any] = None,
+        location_id: Optional[str] = None,
+        wild_area_state: Optional[Dict[str, Any]] = None
     ) -> str:
         """Convenience method for NPC trainer battles"""
         return self.start_battle(
@@ -1042,7 +1119,10 @@ class BattleEngine:
             trainer_class=npc_class,
             prize_money=prize_money,
             is_ranked=is_ranked,
-            ranked_context=ranked_context
+            ranked_context=ranked_context,
+            weather_manager=weather_manager,
+            location_id=location_id,
+            wild_area_state=wild_area_state
         )
     
     def start_pvp_battle(
@@ -3377,18 +3457,30 @@ class BattleEngine:
             # Check for battle end and mark eliminated battlers
             self._check_battle_end(battle)
 
-            # Decrement weather
-            battle.weather_turns -= 1
-            if battle.weather_turns <= 0:
-                # If rogue weather exists and current weather is not rogue weather, restore it
-                if battle.rogue_weather and battle.weather != battle.rogue_weather:
-                    messages.append(f"The {battle.weather} subsided!")
-                    battle.weather = battle.rogue_weather
-                    battle.weather_turns = 999
-                    messages.append(f"The {battle.rogue_weather} returned!")
-                else:
-                    messages.append(f"The {battle.weather} subsided!")
-                    battle.weather = None
+            # Decrement weather (only if it has a turn count)
+            if battle.weather_turns > 0:
+                battle.weather_turns -= 1
+                if battle.weather_turns <= 0:
+                    # If rogue weather exists and current weather is not rogue weather, restore it
+                    if battle.rogue_weather and battle.weather != battle.rogue_weather:
+                        messages.append(f"The {battle.weather} subsided!")
+                        battle.weather = battle.rogue_weather
+                        battle.weather_turns = 999
+                        messages.append(f"The {battle.rogue_weather} returned!")
+                    # If overworld weather exists, restore it (or keep it active if it's the same)
+                    elif battle.overworld_weather:
+                        if battle.weather == battle.overworld_weather:
+                            # Same weather type - just make it indefinite again
+                            battle.weather_turns = 0
+                        else:
+                            # Different weather - restore overworld weather
+                            messages.append(f"The {battle.weather} subsided!")
+                            battle.weather = battle.overworld_weather
+                            battle.weather_turns = 0  # Indefinite duration
+                            messages.append(f"The {battle.overworld_weather} returned!")
+                    else:
+                        messages.append(f"The {battle.weather} subsided!")
+                        battle.weather = None
 
         # Terrain effects
         if battle.terrain:

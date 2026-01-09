@@ -4728,12 +4728,19 @@ class EncounterSelectView(View):
                 ephemeral=True
             )
             return
-        
+
+        # Get trainer's wild area state for weather
+        trainer_profile = self.bot.player_manager.get_player(interaction.user.id)
+        wild_area_state = getattr(trainer_profile, 'wild_area_state', None)
+
         battle_id = battle_cog.battle_engine.start_wild_battle(
             trainer_id=interaction.user.id,
             trainer_name=interaction.user.display_name,
             trainer_party=trainer_pokemon,
-            wild_pokemon=wild_pokemon
+            wild_pokemon=wild_pokemon,
+            weather_manager=self.bot.weather_manager,
+            location_id=self.location_id,
+            wild_area_state=wild_area_state
         )
         
         # Start battle UI
@@ -6041,6 +6048,10 @@ class PromotionMatchView(View):
             if extra_context:
                 ranked_context.update(extra_context)
 
+        # Get trainer's wild area state for weather
+        trainer_profile = self.bot.player_manager.get_player(interaction.user.id)
+        wild_area_state = getattr(trainer_profile, 'wild_area_state', None)
+
         battle_id = battle_cog.battle_engine.start_trainer_battle(
             trainer_id=interaction.user.id,
             trainer_name=interaction.user.display_name,
@@ -6051,7 +6062,10 @@ class PromotionMatchView(View):
             prize_money=self.npc_data.get('prize_money', 0),
             battle_format=battle_format,
             is_ranked=True,
-            ranked_context=ranked_context
+            ranked_context=ranked_context,
+            weather_manager=self.bot.weather_manager,
+            location_id=self.location_id,
+            wild_area_state=wild_area_state
         )
 
         battle_cog.user_battles[interaction.user.id] = battle_id
@@ -7434,6 +7448,11 @@ class NpcTrainerSelectView(View):
             from battle_engine_v2 import BattleFormat
             battle_format = BattleFormat.SINGLES
 
+        # Get location_id and wild area state for weather
+        trainer_profile = self.bot.player_manager.get_player(interaction.user.id)
+        location_id = getattr(trainer_profile, 'current_location_id', None)
+        wild_area_state = getattr(trainer_profile, 'wild_area_state', None)
+
         battle_id = battle_cog.battle_engine.start_trainer_battle(
             trainer_id=interaction.user.id,
             trainer_name=interaction.user.display_name,
@@ -7444,7 +7463,10 @@ class NpcTrainerSelectView(View):
             prize_money=npc_data.get('prize_money', 0),
             battle_format=battle_format,
             is_ranked=self.ranked,
-            ranked_context=ranked_context
+            ranked_context=ranked_context,
+            weather_manager=self.bot.weather_manager,
+            location_id=location_id,
+            wild_area_state=wild_area_state
         )
         
         # Register battle
