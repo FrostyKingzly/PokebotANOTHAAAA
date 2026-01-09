@@ -1604,11 +1604,8 @@ class BattleCog(commands.Cog):
             embed=discord.Embed(title=title, description=desc, color=color)
         )
 
-        exp_embed = None
-        if result == 'trainer':
-            exp_embed = await self._create_exp_embed(battle, interaction)
-        if exp_embed:
-            await self._safe_followup_send(interaction, embed=exp_embed)
+        # Exp is now awarded after each faint (in _award_exp_for_new_faints), not at battle end
+        # This ensures Pokemon get exp even if they faint later in the battle
 
         ranked_embed = self._build_ranked_result_embed(battle)
         if ranked_embed:
@@ -1687,6 +1684,80 @@ class BattleCog(commands.Cog):
                 print(f"Failed to close Dream Dive encounter thread: {e}")
         elif getattr(battle, 'battle_type', None) == BattleType.WILD:
             await self.send_return_to_encounter_prompt(interaction, battle.trainer.battler_id)
+
+    async def _award_exp_for_new_faints(self, battle, interaction: Optional[discord.Interaction] = None):
+        """
+        Award experience for any new faints that haven't been processed yet.
+        This is called after each turn to ensure Pokemon get exp immediately after defeating an opponent.
+        """
+        if not self.exp_handler:
+            return
+
+        # Skip Dream Dive battles
+        if interaction:
+            channel = interaction.channel
+            if isinstance(channel, discord.Thread) and channel.name.startswith("Dream Dive -"):
+                return
+
+        trainer = getattr(battle, 'trainer', None)
+        if not trainer or not getattr(trainer, 'party', None):
+            return
+
+        # Check for fainted opponents tracked during battle
+        fainted_opponents = getattr(battle, 'fainted_opponents', [])
+        if not fainted_opponents:
+            return
+
+        # Track which faints have been processed
+        if not hasattr(battle, 'exp_processed_faint_count'):
+            battle.exp_processed_faint_count = 0
+
+        # Get new faints that haven't been processed
+        new_faints = fainted_opponents[battle.exp_processed_faint_count:]
+        if not new_faints:
+            return
+
+        # Award exp for each new faint
+        exp_multiplier = 2.0 if battle.battle_format == BattleFormat.RAID else 1.0
+
+        for faint_data in new_faints:
+            defeated_pokemon = faint_data['pokemon']
+            active_index = faint_data['active_trainer_index']
+            trainer_battler_id = faint_data['trainer_battler_id']
+
+            # Find the appropriate trainer battler (for multi-battles/raids)
+            current_trainer = trainer
+            if trainer_battler_id != trainer.battler_id:
+                # Look for this trainer in raid allies or partner
+                for ally in getattr(battle, 'raid_allies', []):
+                    if ally.battler_id == trainer_battler_id:
+                        current_trainer = ally
+                        break
+                if getattr(battle, 'trainer_partner', None) and battle.trainer_partner.battler_id == trainer_battler_id:
+                    current_trainer = battle.trainer_partner
+
+            try:
+                results = await self.exp_handler.award_battle_exp(
+                    trainer_id=current_trainer.battler_id,
+                    party=current_trainer.party,
+                    defeated_pokemon=defeated_pokemon,
+                    active_pokemon_index=active_index,
+                    is_trainer_battle=(battle.battle_type == BattleType.TRAINER),
+                    exp_multiplier=exp_multiplier
+                )
+
+                # Send exp embed for this faint
+                if results and results.get('exp_gains'):
+                    embed = self.exp_handler.create_exp_embed(results, current_trainer.party, defeated_pokemon)
+                    if embed and interaction:
+                        await self._safe_followup_send(interaction, embed=embed)
+
+            except Exception as exc:
+                print(f"[BattleCog] Failed to award EXP for {defeated_pokemon.species_name}: {exc}")
+                continue
+
+        # Update the count of processed faints
+        battle.exp_processed_faint_count = len(fainted_opponents)
 
     async def _create_exp_embed(self, battle, interaction: Optional[discord.Interaction] = None) -> Optional[discord.Embed]:
         if not self.exp_handler:
@@ -1920,6 +1991,9 @@ class BattleCog(commands.Cog):
         if battle.battle_type == BattleType.WILD and getattr(battle, "wild_dazed", False) and not battle.is_over:
             await self._send_dazed_prompt(interaction, battle)
             return
+
+        # Award exp for any new faints that occurred this turn (before battle ends)
+        await self._award_exp_for_new_faints(battle, interaction)
 
         if battle.is_over:
             await self._finish_battle(interaction, battle)
