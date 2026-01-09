@@ -475,8 +475,15 @@ class DreamRogueManager:
         elif category_override:
             instances.extend(self._get_instances_by_category(category_override, 1))
         elif floor == 1:
-            # Stage 1: Always start with a battle
-            instances.extend(self._get_instances_by_category(["battle"], 1))
+            # Stage 1: Randomize battle type (singles, doubles, multi, raid)
+            # Generate multiple battle options with different formats
+            battle_instances = self._get_instances_by_category(["battle"], 10)  # Get all battle types
+            if battle_instances:
+                # Pick a random battle type for the first floor
+                instances.append(random.choice(battle_instances))
+            else:
+                # Fallback to standard battle
+                instances.extend(self._get_instances_by_category(["battle"], 1))
         elif floor == 5:
             # Middle stage always a rest
             instances.extend(self._get_instances_by_category(["rest"], 1))
@@ -484,15 +491,16 @@ class DreamRogueManager:
             option_count = 3 if random.random() <= 0.35 else 2
 
             room_weights = [
-                (["battle"], 0.30),
+                (["battle"], 0.25),
                 (["gambling"], 0.10),
-                (["social"], 0.10),
+                (["social"], 0.15),
                 (["trial"], 0.10),
-                (["domain"], 0.10),
-                (["buff"], 0.10),
-                (["nightmare", "curse"], 0.10),
-                (["economy", "reward"], 0.05),
-                (["rest"], 0.05),
+                (["domain"], 0.08),
+                (["buff"], 0.08),
+                (["nightmare", "curse"], 0.08),
+                (["economy", "reward"], 0.08),
+                (["rest"], 0.03),
+                (["shop"], 0.05),
             ]
 
             def _roll_room_category() -> List[str]:
@@ -525,18 +533,29 @@ class DreamRogueManager:
                         return instance
                 return random.choice(matching)
 
-            used_templates = set()
+            # Allow multiple instances of same type, but ensure variety where possible
+            category_counts = {}
             for _ in range(option_count):
                 categories = _roll_room_category()
+
+                # Track how many of this category type we've added
+                category_key = tuple(sorted(categories))
+                count = category_counts.get(category_key, 0)
+                category_counts[category_key] = count + 1
+
+                # For repeated categories, try to get different instances
+                # but allow same instance if that's all that's available
+                used_templates = set()
+                for existing in instances:
+                    if existing.get("template_id"):
+                        existing_cats = existing.get("categories", [])
+                        if any(cat in existing_cats for cat in categories):
+                            used_templates.add(existing["template_id"])
+
                 instance = _pick_instance(categories, used_templates)
                 if not instance:
                     continue
-                used_templates.add(instance["template_id"])
                 instances.append(instance)
-
-            template_ids = [instance.get("template_id") for instance in instances if instance.get("template_id")]
-            if template_ids and len(set(template_ids)) < len(template_ids):
-                instances = instances[:1]
 
         # Ensure we always return at least one instance per stage
         if not instances:

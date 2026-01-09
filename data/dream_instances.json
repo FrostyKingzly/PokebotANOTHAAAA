@@ -141,17 +141,19 @@
     },
     "coin_of_lucidity": {
       "name": "Coin of Lucidity",
-      "description": "Flip a coin. Heads: All players gain +1 Star in a random stat. Tails: Enemies gain a hidden passive this floor.",
+      "description": "Team votes on Heads or Tails. If correct: gain +1 Star in a random stat. If wrong: enemies gain a buff this floor.",
       "categories": ["gambling", "social", "risk"],
       "scope": "team",
       "risk_level": "medium",
       "effect_data": {
-        "type": "coin_flip",
-        "heads": {
+        "type": "coin_flip_voted",
+        "team_votes_choice": true,
+        "choices": ["Heads", "Tails"],
+        "correct": {
           "effect": "random_star_gain",
           "amount": 1
         },
-        "tails": {
+        "incorrect": {
           "effect": "enemy_buff",
           "buff_type": "hidden_passive"
         }
@@ -437,6 +439,88 @@
         "effect_multiplier": 2.0
       },
       "visibility": "public"
+    },
+    "visage_negotiation": {
+      "name": "Visage Negotiation",
+      "description": "A spectral figure offers a bargain. Team votes on who approaches. That player rolls Insight. Success: gain rare buff. Failure: minor curse.",
+      "categories": ["social", "trial", "risk"],
+      "scope": "team",
+      "risk_level": "medium",
+      "star_stat_required": "insight",
+      "effect_data": {
+        "type": "stat_check_voted",
+        "stat": "insight",
+        "team_votes_player": true,
+        "success": {
+          "effect": "random_rare_buff"
+        },
+        "failure": {
+          "effect": "random_curse"
+        }
+      },
+      "visibility": "public"
+    },
+    "pokemon_plea": {
+      "name": "Pokémon Plea",
+      "description": "A wounded dream Pokémon begs for help. Team votes on who helps. That player rolls Heart. Success: heal 30% HP/PP and gain buff. Failure: lose 10 Dreamlites.",
+      "categories": ["social", "trial", "recovery"],
+      "scope": "team",
+      "risk_level": "low",
+      "star_stat_required": "heart",
+      "effect_data": {
+        "type": "stat_check_voted",
+        "stat": "heart",
+        "team_votes_player": true,
+        "success": {
+          "heal_hp_percent": 0.30,
+          "heal_pp_percent": 0.30,
+          "effect": "random_buff"
+        },
+        "failure": {
+          "dreamlites_loss": 10
+        }
+      },
+      "visibility": "public"
+    },
+    "strength_challenge": {
+      "name": "Strength Challenge",
+      "description": "A towering stone blocks the path. Team votes on who attempts to move it. That player rolls Fortitude. Success: gain +20 Dreamlites. Failure: take 15% damage.",
+      "categories": ["social", "trial", "economy"],
+      "scope": "team",
+      "risk_level": "medium",
+      "star_stat_required": "fortitude",
+      "effect_data": {
+        "type": "stat_check_voted",
+        "stat": "fortitude",
+        "team_votes_player": true,
+        "success": {
+          "dreamlites_gain": 20
+        },
+        "failure": {
+          "damage_hp_percent": 0.15
+        }
+      },
+      "visibility": "public"
+    },
+    "memory_echo": {
+      "name": "Memory Echo",
+      "description": "Echoes of past battles swirl around. Team votes on who interprets them. That player rolls Insight. Success: reveal next floor options. Failure: next floor has hidden options.",
+      "categories": ["social", "trial"],
+      "scope": "team",
+      "risk_level": "low",
+      "star_stat_required": "insight",
+      "effect_data": {
+        "type": "stat_check_voted",
+        "stat": "insight",
+        "team_votes_player": true,
+        "success": {
+          "effect": "reveal_next_floor"
+        },
+        "failure": {
+          "effect": "hide_next_floor"
+        }
+      },
+      "visibility": "public"
     }
   },
   "rest": {
@@ -501,7 +585,7 @@
       "risk_level": "medium",
       "effect_data": {
         "type": "battle",
-        "battle_format": "wild",
+        "battle_format": "singles",
         "num_opponents": 1
       },
       "visibility": "public"
@@ -559,6 +643,75 @@
         "dreamlite_multiplier": 3
       },
       "visibility": "public"
+    }
+  },
+  "shop": {
+    "dream_merchant": {
+      "name": "Dream Merchant",
+      "description": "A mysterious merchant offers powerful buffs for Dreamlites.",
+      "categories": ["shop", "economy", "buff"],
+      "scope": "individual",
+      "risk_level": "low",
+      "effect_data": {
+        "type": "shop",
+        "items": [
+          {
+            "name": "Veil of Protection",
+            "description": "Negate the first damaging move each battle this floor",
+            "cost": 40,
+            "effect": "damage_veil"
+          },
+          {
+            "name": "Dream Boost",
+            "description": "+20% damage dealt this floor",
+            "cost": 50,
+            "effect": "damage_boost",
+            "value": 0.20
+          },
+          {
+            "name": "Fortune's Favor",
+            "description": "+15% crit rate this floor",
+            "cost": 45,
+            "effect": "crit_boost",
+            "value": 0.15
+          }
+        ]
+      },
+      "visibility": "private"
+    },
+    "buff_bazaar": {
+      "name": "Buff Bazaar",
+      "description": "Trade Dreamlites for temporary power. Choose wisely.",
+      "categories": ["shop", "economy", "buff"],
+      "scope": "individual",
+      "risk_level": "low",
+      "effect_data": {
+        "type": "shop",
+        "items": [
+          {
+            "name": "Resilient Shell",
+            "description": "+25% defense and sp. defense this floor",
+            "cost": 35,
+            "effect": "defense_boost",
+            "value": 0.25
+          },
+          {
+            "name": "Swift Current",
+            "description": "+30% speed this floor",
+            "cost": 30,
+            "effect": "speed_boost",
+            "value": 0.30
+          },
+          {
+            "name": "Healing Aura",
+            "description": "Restore 5% HP after each move this floor",
+            "cost": 55,
+            "effect": "gradual_heal",
+            "value": 0.05
+          }
+        ]
+      },
+      "visibility": "private"
     }
   },
   "rewards": {
