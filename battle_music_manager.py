@@ -420,6 +420,11 @@ class BattleMusicManager:
             print("⏹️ Stopping current audio...")
             self.voice_client.stop()
 
+        # Cancel any existing fade task
+        if self._fade_task:
+            self._fade_task.cancel()
+            self._fade_task = None
+
         try:
             print(f"🎵 Extracting audio from: {url}")
 
@@ -433,7 +438,9 @@ class BattleMusicManager:
                 return
 
             audio_url = info['url']
+            duration = info.get('duration', 0)  # Get track duration in seconds
             print(f"✅ Audio URL extracted: {audio_url[:100]}...")
+            print(f"🎵 Track duration: {duration} seconds")
 
             print(f"🎵 Creating FFmpeg audio source...")
             # Create audio source with PCMVolumeTransformer for volume control
@@ -466,6 +473,11 @@ class BattleMusicManager:
             print(f"▶️ Starting playback (loop={loop}, disconnect_after={disconnect_after})...")
             self.voice_client.play(source, after=after_playing)
 
+            # If this is a victory theme and it's longer than 2 minutes, fade out after 2 minutes
+            if disconnect_after and duration > 120:
+                print(f"🎵 Victory theme is {duration}s long, will fade out after 2 minutes")
+                self._fade_task = asyncio.create_task(self._fade_victory_theme())
+
             # Verify playback started
             if self.voice_client.is_playing():
                 print(f"✅ Playback confirmed!")
@@ -476,6 +488,34 @@ class BattleMusicManager:
             print(f"❌ Error playing theme: {e}")
             import traceback
             traceback.print_exc()
+
+    async def _fade_victory_theme(self):
+        """Fade out victory theme after 2 minutes of playback"""
+        try:
+            await asyncio.sleep(120)  # Play for 2 minutes
+
+            # Fade out over 5 seconds
+            if self.voice_client and self.voice_client.source:
+                print("🎵 Fading out victory theme after 2 minutes...")
+                initial_volume = self.voice_client.source.volume
+                steps = 50
+                for i in range(steps):
+                    if self.voice_client and self.voice_client.source:
+                        self.voice_client.source.volume = initial_volume * (1 - i / steps)
+                        await asyncio.sleep(0.1)
+
+            # Stop playback and disconnect
+            if self.voice_client and self.voice_client.is_playing():
+                self.voice_client.stop()
+
+            print("🎵 Victory theme faded out, disconnecting...")
+            await self._end_session()
+
+        except asyncio.CancelledError:
+            print("🎵 Victory theme fade cancelled")
+            pass
+        except Exception as e:
+            print(f"❌ Error during victory theme fade: {e}")
 
     async def _fade_and_disconnect(self):
         """Fade out music over 60 seconds and disconnect"""

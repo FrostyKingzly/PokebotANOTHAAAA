@@ -1774,9 +1774,9 @@ class BattleCog(commands.Cog):
                     exp_multiplier=exp_multiplier
                 )
 
-                # Send exp embed for this faint
+                # Send exp embed for this faint (mid-battle K.O.)
                 if results and results.get('exp_gains'):
-                    embed = self.exp_handler.create_exp_embed(results, current_trainer.party, defeated_pokemon)
+                    embed = self.exp_handler.create_exp_embed(results, current_trainer.party, defeated_pokemon, is_final_victory=False)
                     if embed and interaction:
                         await self._safe_followup_send(interaction, embed=embed)
 
@@ -1841,7 +1841,7 @@ class BattleCog(commands.Cog):
                 print(f"[BattleCog] Failed to award EXP: {exc}")
                 return None
 
-            return self.exp_handler.create_exp_embed(results, trainer.party, defeated_pokemon)
+            return self.exp_handler.create_exp_embed(results, trainer.party, defeated_pokemon, is_final_victory=True)
 
         # New behavior: Award EXP for each fainted opponent
         exp_multiplier = 2.0 if battle.battle_format == BattleFormat.RAID else 1.0
