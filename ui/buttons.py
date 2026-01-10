@@ -4763,18 +4763,16 @@ class EncounterSelectView(View):
             )
             return
 
-        await interaction.response.defer()
-        
         # Get current location
         trainer = self.bot.player_manager.get_player(interaction.user.id)
         if not trainer:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 "❌ Trainer profile not found. Please `/register` first.",
                 ephemeral=True,
             )
             return
         current_location_id = trainer.current_location_id
-        
+
         # Roll new encounters
         # Determine spawn count based on location type
         location_type = self.location.get('type', '')
@@ -4790,14 +4788,14 @@ class EncounterSelectView(View):
             spawn_count,
             self.bot.species_db
         )
-        
+
         if not new_encounters:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 "❌ Failed to generate encounters. Try again!",
                 ephemeral=True
             )
             return
-        
+
         # Update view with new encounters
         embed = EmbedBuilder.encounter_roll(new_encounters, self.location)
         new_view = EncounterSelectView(
@@ -4808,8 +4806,8 @@ class EncounterSelectView(View):
             current_location_id
         )
 
-        # Edit the deferred response with new encounters
-        await interaction.edit_original_response(
+        # Edit the message directly without deferring (allows unlimited rerolls)
+        await interaction.response.edit_message(
             embed=embed,
             view=new_view,
         )
