@@ -935,6 +935,11 @@ class SessionControlsView(discord.ui.View):
         success = self.bot.session_manager.end_session(self.session_id)
 
         if success:
+            # Stop session music and disconnect from VC
+            music_manager = self._get_music_manager()
+            if music_manager:
+                await music_manager._stop_session_music()
+
             participant_mentions = " ".join([f"<@{uid}>" for uid in participants])
 
             await interaction.response.send_message(
@@ -978,9 +983,9 @@ class SessionMusicLinkModal(discord.ui.Modal):
             )
             return
 
-        if interaction.user.id != session["admin_id"]:
+        if not is_admin(interaction):
             await interaction.response.send_message(
-                "❌ Only the session admin can control music.",
+                "❌ Only admins can control session music.",
                 ephemeral=True
             )
             return
