@@ -989,7 +989,13 @@ class SessionControlsView(discord.ui.View):
             # Disable all buttons
             for item in self.children:
                 item.disabled = True
-            await interaction.message.edit(view=self)
+
+            # Try to edit the message, but ignore if it no longer exists
+            try:
+                await interaction.message.edit(view=self)
+            except discord.errors.NotFound:
+                # Message was deleted, nothing to update
+                pass
         else:
             await interaction.response.send_message(
                 "❌ Failed to end session.",

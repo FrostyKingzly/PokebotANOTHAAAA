@@ -100,7 +100,10 @@ class MusicQueueView(discord.ui.View):
             self.joined_queue = True
             # Disable the button
             button.disabled = True
-            await interaction.message.edit(view=self)
+            try:
+                await interaction.message.edit(view=self)
+            except discord.errors.NotFound:
+                pass  # Message was deleted
         elif "already" in message.lower():
             await interaction.response.send_message(
                 message,
@@ -114,7 +117,10 @@ class MusicQueueView(discord.ui.View):
             self.joined_queue = True
             # Disable the button
             button.disabled = True
-            await interaction.message.edit(view=self)
+            try:
+                await interaction.message.edit(view=self)
+            except discord.errors.NotFound:
+                pass  # Message was deleted
 
     @discord.ui.button(label="Battle Without Music", style=discord.ButtonStyle.gray, emoji="▶️")
     async def skip_music_button(self, interaction: discord.Interaction, button: discord.ui.Button):
