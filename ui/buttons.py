@@ -1323,8 +1323,8 @@ class MainMenuView(View):
             )
             return
 
-        # Defer response for rolling encounters
-        await interaction.response.defer(ephemeral=True)
+        # Defer response for rolling encounters (public so reroll button works properly)
+        await interaction.response.defer()
 
         # Determine spawn count based on location type
         location_type = location.get('type', '')
