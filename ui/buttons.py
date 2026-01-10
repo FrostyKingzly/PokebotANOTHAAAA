@@ -4763,10 +4763,13 @@ class EncounterSelectView(View):
             )
             return
 
+        # Defer to prevent timeout while rolling encounters
+        await interaction.response.defer()
+
         # Get current location
         trainer = self.bot.player_manager.get_player(interaction.user.id)
         if not trainer:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ Trainer profile not found. Please `/register` first.",
                 ephemeral=True,
             )
@@ -4790,7 +4793,7 @@ class EncounterSelectView(View):
         )
 
         if not new_encounters:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ Failed to generate encounters. Try again!",
                 ephemeral=True
             )
@@ -4806,8 +4809,9 @@ class EncounterSelectView(View):
             current_location_id
         )
 
-        # Edit the message directly without deferring (allows unlimited rerolls)
-        await interaction.response.edit_message(
+        # Edit the ACTUAL MESSAGE (not the deferred response) - allows unlimited rerolls
+        await interaction.followup.edit_message(
+            interaction.message.id,
             embed=embed,
             view=new_view,
         )
