@@ -20,6 +20,7 @@ from player_manager import PlayerManager
 from encounter_system import EncounterSystem
 from location_manager import LocationManager
 from raid_manager import RaidManager
+from learnset_database import LearnsetDatabase
 from ui.embeds import EmbedBuilder
 from ui.buttons import MainMenuView
 from database import (SpeciesDatabase, MovesDatabase, AbilitiesDatabase,
@@ -63,6 +64,7 @@ class PokemonBot(commands.Bot):
         self.items_db = None
         self.natures_db = None
         self.type_chart = None
+        self.learnset_db = None
         
         # Temp storage for registration flow
         self.temp_registration_data = {}
@@ -114,6 +116,12 @@ class PokemonBot(commands.Bot):
             self.items_db = ItemsDatabase("data/items.json")
             self.natures_db = NaturesDatabase("data/natures.json")
             self.type_chart = TypeChart("data/type_chart.json")
+            learnset_path = Path("data/learnsets.json")
+            if learnset_path.exists():
+                try:
+                    self.learnset_db = LearnsetDatabase(str(learnset_path))
+                except Exception as exc:
+                    print(f"⚠️ Failed to load learnsets: {exc}")
             print("✅ All databases loaded!")
         except Exception as e:
             print(f"❌ Error loading databases: {e}")
