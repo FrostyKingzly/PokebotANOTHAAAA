@@ -934,7 +934,7 @@ class RewardModal(discord.ui.Modal, title="Give Rewards"):
                             pokemon,
                             party_exp_amount,
                             self.bot.species_db,
-                            getattr(self.bot, "moves_db", None),
+                            getattr(self.bot, "learnset_db", None),
                             level_cap=level_cap,
                         )
 
