@@ -183,21 +183,29 @@ class BattleExpHandler:
         self,
         results: Dict,
         party: List,
-        defeated_pokemon
+        defeated_pokemon,
+        is_final_victory: bool = True
     ) -> discord.Embed:
         """
         Create a Discord embed showing EXP gains and level-ups (NO PROGRESS BARS)
-        
+
         Args:
             results: Results from award_battle_exp()
             party: List of Pokemon objects
             defeated_pokemon: The defeated Pokemon
-        
+            is_final_victory: If True, shows "Battle Victory!", if False shows "K.O.!"
+
         Returns:
             Discord Embed (simple, clean format)
         """
+        # Use different title based on whether this is final victory or mid-battle K.O.
+        if is_final_victory:
+            title = "⭐ Battle Victory!"
+        else:
+            title = "💥 K.O.!"
+
         embed = discord.Embed(
-            title="⭐ Battle Victory!",
+            title=title,
             description=f"Defeated {defeated_pokemon.species_name} (Lv. {defeated_pokemon.level})!",
             color=discord.Color.gold()
         )
