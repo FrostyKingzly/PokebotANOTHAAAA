@@ -5,7 +5,6 @@ Pokemon Management Cog - Commands for managing party and boxes
 import asyncio
 import discord
 from discord import Forbidden, NotFound
-from discord import app_commands
 from discord.ext import commands
 from discord.ui import Button, View, Select, Modal
 from typing import Optional
@@ -40,7 +39,6 @@ class PokemonManagementCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
-    @app_commands.command(name="party", description="View and manage your party Pokemon")
     async def party_command(self, interaction: discord.Interaction):
         """Show party with management options"""
         party = self.bot.player_manager.get_party(interaction.user.id)
@@ -58,7 +56,6 @@ class PokemonManagementCog(commands.Cog):
         
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
     
-    @app_commands.command(name="boxes", description="View and manage your stored Pokemon")
     async def boxes_command(self, interaction: discord.Interaction):
         """Show storage boxes"""
         boxes = self.bot.player_manager.get_boxes(interaction.user.id)
@@ -76,8 +73,6 @@ class PokemonManagementCog(commands.Cog):
         
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
     
-    @app_commands.command(name="pokemon", description="View detailed information about a Pokemon")
-    @app_commands.describe(pokemon_id="The ID of the Pokemon to view")
     async def pokemon_detail_command(self, interaction: discord.Interaction, pokemon_id: str):
         """Show detailed Pokemon information"""
         pokemon = self.bot.player_manager.get_pokemon(pokemon_id)

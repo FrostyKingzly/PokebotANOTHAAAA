@@ -5,11 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional, List, Dict, Any
 
-from rank_manager import (
-    GIMMICK_OPTIONS,
-    get_rank_tier_definition,
-)
-from ui.embeds import EmbedBuilder
+from rank_manager import get_rank_tier_definition
 from guild_config import get_rank_announcement_channel_id
 
 
@@ -49,89 +45,6 @@ class RankCog(commands.Cog):
             current_lower = current.lower()
             names = [name for name in names if current_lower in name.lower()]
         return [app_commands.Choice(name=name, value=name) for name in names[:25]]
-
-    # ------------------------------------------------------------------
-    # Public commands
-    # ------------------------------------------------------------------
-    @app_commands.command(name="rankings", description="Show the current Challenger leaderboard")
-    async def rankings(self, interaction: discord.Interaction):
-        manager = self._get_manager()
-        if not manager:
-            await interaction.response.send_message("⚠️ Ranked ladder is still booting.", ephemeral=True)
-            return
-        rows = manager.get_leaderboard(limit=15)
-        description_lines: List[str] = []
-        for idx, row in enumerate(rows, start=1):
-            tier_number = row.get("rank_tier_number") or 1
-            tier_name = get_rank_tier_definition(tier_number)["name"]
-            ticket = " 🎟️" if row.get("has_promotion_ticket") else ""
-            description_lines.append(
-                f"**{idx}. {row['trainer_name']}** — {tier_name} · {row['ladder_points']} pts{ticket}"
-            )
-        if not description_lines:
-            description_lines.append("No ranked data yet. Win some ranked battles to appear here!")
-
-        embed = discord.Embed(
-            title="🏆 League Leaderboard",
-            description="\n".join(description_lines),
-            color=discord.Color.gold(),
-        )
-        embed.set_footer(text=f"Highest unlocked tier: {manager.get_highest_unlocked_tier()}/8")
-        await interaction.response.send_message(embed=embed)
-
-    @app_commands.command(name="rank_info", description="Check your ranked progress")
-    async def rank_info(self, interaction: discord.Interaction):
-        trainer = self.bot.player_manager.get_player(interaction.user.id)
-        if not trainer:
-            await interaction.response.send_message("You need to `/register` before battling ranked!", ephemeral=True)
-            return
-        manager = self._get_manager()
-        if not manager:
-            await interaction.response.send_message("⚠️ Ranked ladder is unavailable right now.", ephemeral=True)
-            return
-        tier_number = trainer.rank_tier_number or 1
-        definition = get_rank_tier_definition(tier_number)
-        threshold = definition.get("ticket_threshold", 0)
-        progress = EmbedBuilder.format_rank_progress(trainer) if 'EmbedBuilder' in globals() else f"{trainer.ladder_points} pts"
-        info_lines = [
-            f"**Tier:** {definition['name']} (#{tier_number})",
-            f"**Points:** {trainer.ladder_points} / {threshold or '—'}",
-            f"**Ticket:** {'🎟️ Ready' if trainer.has_promotion_ticket else 'Not earned'}",
-        ]
-        if trainer.rank_pending_tier:
-            info_lines.append(f"**Pending Promotion:** Tier {trainer.rank_pending_tier}")
-        elif trainer.has_promotion_ticket:
-            info_lines.append("Awaiting promotion match assignment.")
-        if getattr(trainer, "omni_ring_gimmicks", None):
-            readable = ", ".join(GIMMICK_OPTIONS.get(g, g.title()) for g in trainer.omni_ring_gimmicks)
-            info_lines.append(f"**Omni Ring:** {readable}")
-        elif trainer.has_omni_ring:
-            info_lines.append("**Omni Ring:** Unconfigured. Choose a power from your Alerts menu.")
-
-        embed = discord.Embed(
-            title=f"{trainer.trainer_name}'s Ranked Profile",
-            description="\n".join(info_lines),
-            color=discord.Color.blurple(),
-        )
-        embed.add_field(name="Progress", value=progress, inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    @app_commands.command(name="rank_select_gimmick", description="Assign a gimmick to your Omni Ring")
-    @app_commands.describe(gimmick="Which battle gimmick to unlock (mega/zmove/dynamax/terastal)")
-    async def rank_select_gimmick(self, interaction: discord.Interaction, gimmick: str):
-        trainer = self.bot.player_manager.get_player(interaction.user.id)
-        if not trainer:
-            await interaction.response.send_message("You need to register first!", ephemeral=True)
-            return
-        manager = self._get_manager()
-        if not manager:
-            await interaction.response.send_message("Ranked ladder unavailable.", ephemeral=True)
-            return
-        success, message = manager.select_gimmick(trainer, gimmick)
-        if success:
-            await interaction.response.send_message(f"✅ {message}", ephemeral=True)
-        else:
-            await interaction.response.send_message(f"❌ {message}", ephemeral=True)
 
     # ------------------------------------------------------------------
     # Admin commands

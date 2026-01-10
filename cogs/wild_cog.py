@@ -1,12 +1,10 @@
 """
 Wild Encounters Cog - Simplified Version (No /wild command)
 All wild encounters now go through the menu buttons!
-Only keeps the /catch command for catching wild Pokémon during battles.
 """
 
 import discord
 from discord.ext import commands
-from discord import app_commands
 import random
 from typing import Optional
 
@@ -24,9 +22,11 @@ class WildCog(commands.Cog):
         self.species_db = species_db
         self.battle_cog = battle_cog  # Reference to unified battle cog
     
-    @app_commands.command(name="catch", description="Attempt to catch a wild Pokémon!")
-    async def catch_wild(self, interaction: discord.Interaction, 
-                         ball_type: Optional[str] = "poke_ball"):
+    async def catch_wild(
+        self,
+        interaction: discord.Interaction,
+        ball_type: Optional[str] = "poke_ball",
+    ):
         """
         Attempt to catch the wild Pokemon in current battle
         

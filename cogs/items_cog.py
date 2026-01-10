@@ -3,7 +3,6 @@ Items Cog - Commands for using items on Pokemon
 """
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 from discord.ui import Button, View, Select
 from typing import Optional
@@ -15,11 +14,6 @@ class ItemsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="use", description="Use an item on a Pokemon")
-    @app_commands.describe(
-        item_name="The name of the item to use (e.g., 'Rare Candy', 'TM01', 'Fire Stone')",
-        pokemon_slot="The party slot of the Pokemon (1-6)"
-    )
     async def use_command(
         self,
         interaction: discord.Interaction,
@@ -97,7 +91,6 @@ class ItemsCog(commands.Cog):
 
         await interaction.response.send_message(message, ephemeral=True)
 
-    @app_commands.command(name="inventory", description="View your item inventory")
     async def inventory_command(self, interaction: discord.Interaction):
         """View player's inventory"""
         # Check player exists

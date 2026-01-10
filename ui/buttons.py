@@ -231,6 +231,15 @@ LOCATION_ACTIVITY_DEFINITIONS = {
     },
 }
 
+DISABLED_LOCATION_ACTIVITY_IDS = {
+    "study",
+    "gym_train",
+    "dojo_train",
+    "dream_dive",
+}
+
+DREAM_DIVE_ENABLED = False
+
 # Allow newer Residential District location IDs to reuse the same activity settings
 LOCATION_ACTIVITY_ALIASES = {
     "residential_district_library": "lights_district_library",
@@ -255,7 +264,12 @@ def _get_location_activity(location_id: Optional[str]) -> Optional[Dict[str, Any
         return None
 
     canonical_id = LOCATION_ACTIVITY_ALIASES.get(location_id, location_id)
-    return LOCATION_ACTIVITY_DEFINITIONS.get(canonical_id)
+    activity = LOCATION_ACTIVITY_DEFINITIONS.get(canonical_id)
+    if not activity:
+        return None
+    if activity.get("id") in DISABLED_LOCATION_ACTIVITY_IDS:
+        return None
+    return activity
 
 
 def _apply_social_points(bot, trainer, stat_key: str, amount: int) -> Dict[str, Any]:
@@ -949,7 +963,7 @@ class MainMenuView(View):
                 # Add exit button dynamically
                 self._add_exit_button()
 
-        if user_id and guild_id:
+        if user_id and guild_id and DREAM_DIVE_ENABLED:
             from dream_rogue_manager import DreamRogueManager
             dream_manager = DreamRogueManager()
             run = dream_manager.get_active_run_for_user(guild_id, user_id)
@@ -1102,38 +1116,12 @@ class MainMenuView(View):
         """Travel to new location"""
         if await self._deny_if_in_battle(interaction):
             return
-        from ui.embeds import EmbedBuilder
-        from wild_area_manager import WildAreaManager
-
         # Get player's current location
         trainer = self.bot.player_manager.get_player(interaction.user.id)
         current_location_id = trainer.current_location_id
 
         # Get all regular locations
-        all_locations = self.bot.location_manager.get_all_locations()
-
-        # Get wild area zones (only those with Pokemon stations as entry points)
-        wild_area_manager = WildAreaManager(self.bot.player_manager.db)
-        all_areas = wild_area_manager.get_all_wild_areas()
-
-        wild_zones = {}
-        for area in all_areas:
-            zones = wild_area_manager.get_zones_in_area(area['area_id'])
-            for zone in zones:
-                # Only include zones with Pokemon stations as entry points
-                if zone['has_pokemon_station']:
-                    wild_zones[zone['zone_id']] = {
-                        'name': f"{area['name']} - {zone['name']}",
-                        'description': zone.get('description', area.get('description', '')),
-                        'is_wild_area': True,
-                        'area_id': area['area_id'],
-                        'zone_id': zone['zone_id']
-                    }
-
-        # Combine locations
-        combined_locations = {**all_locations}
-        for zone_id, zone_data in wild_zones.items():
-            combined_locations[zone_id] = zone_data
+        combined_locations = self.bot.location_manager.get_all_locations()
 
         if not combined_locations or len(combined_locations) <= 1:
             await interaction.response.send_message(
@@ -1213,56 +1201,6 @@ class MainMenuView(View):
             return
 
         await _show_alerts_menu(interaction, self.bot, interaction.user.id)
-
-    @discord.ui.button(label="🤝 Team Up", style=discord.ButtonStyle.success, row=2)
-    async def party_up_button(self, interaction: discord.Interaction, button: Button):
-        """Party/Team system for Wild Areas"""
-        if await self._deny_if_in_battle(interaction):
-            return
-        from wild_area_manager import WildAreaManager, PartyManager
-
-        wild_area_manager = WildAreaManager(self.bot.player_manager.db)
-        party_manager = PartyManager(self.bot.player_manager.db)
-
-        # Check if player is in a wild area
-        if not wild_area_manager.is_in_wild_area(interaction.user.id):
-            await interaction.response.send_message(
-                "❌ You must be in a Wild Area to use the team system!",
-                ephemeral=True
-            )
-            return
-
-        # Check if already in a party
-        current_party = party_manager.get_player_party(interaction.user.id)
-
-        if current_party:
-            # Show party info
-            from ui.embeds import EmbedBuilder
-            party_members = party_manager.get_party_members(current_party['party_id'])
-
-            embed = EmbedBuilder.party_info(current_party, party_members, self.bot.player_manager)
-            view = PartyActionsView(
-                self.bot,
-                current_party,
-                is_leader=(current_party['leader_discord_id'] == interaction.user.id),
-                back_callback=lambda i: _show_main_menu(i, self.bot, interaction.user.id),
-            )
-
-            await interaction.response.edit_message(embed=embed, view=view)
-        else:
-            # Show party creation/join menu
-            from ui.embeds import EmbedBuilder
-            wild_area_state = wild_area_manager.get_wild_area_state(interaction.user.id)
-            available_parties = party_manager.get_parties_in_area(wild_area_state['area_id'])
-
-            embed = EmbedBuilder.party_menu(wild_area_state, available_parties)
-            view = PartyJoinCreateView(
-                self.bot,
-                wild_area_state,
-                back_callback=lambda i: _show_main_menu(i, self.bot, interaction.user.id),
-            )
-
-            await interaction.response.edit_message(embed=embed, view=view)
 
     @discord.ui.button(label="⚔️ Wild Encounter", style=discord.ButtonStyle.success, row=2)
     async def encounter_button(self, interaction: discord.Interaction, button: Button):
