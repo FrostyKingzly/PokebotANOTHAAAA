@@ -8,10 +8,13 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional, List
 import re
+import json
 
 from models import Pokemon
 from sprite_helper import PokemonSpriteHelper
 from ui.embeds import EmbedBuilder
+from exp_system import ExpSystem
+from ui.buttons import _ensure_pokemon_instance
 
 def is_admin(interaction: discord.Interaction) -> bool:
     """Return True when the invoking user has administrator permissions."""
@@ -912,14 +915,40 @@ class RewardModal(discord.ui.Modal, title="Give Rewards"):
 
             # Give party EXP
             if party_exp_amount > 0:
-                party = self.bot.player_manager.db.get_trainer_party(user_id)
-                if party:
-                    for pokemon in party:
-                        current_exp = pokemon.get('exp', 0)
-                        self.bot.player_manager.db.update_pokemon(
-                            pokemon['pokemon_id'],
-                            {'exp': current_exp + party_exp_amount}
+                party_data = self.bot.player_manager.db.get_trainer_party(user_id)
+                if party_data:
+                    trainer = self.bot.player_manager.get_player(user_id)
+                    level_cap = self.bot.player_manager.get_level_cap_for_trainer(trainer) if trainer else None
+
+                    for pokemon_dict in party_data:
+                        pokemon = _ensure_pokemon_instance(self.bot, pokemon_dict)
+                        if pokemon is None:
+                            continue
+
+                        pokemon_id = getattr(pokemon, "pokemon_id", None)
+                        if not pokemon_id:
+                            continue
+
+                        # Apply EXP and check for level-ups
+                        ExpSystem.apply_exp_and_check_levelup(
+                            pokemon,
+                            party_exp_amount,
+                            self.bot.species_db,
+                            getattr(self.bot, "moves_db", None),
+                            level_cap=level_cap,
                         )
+
+                        # Update Pokemon in database with all changes
+                        updates = {
+                            "exp": pokemon.exp,
+                            "level": pokemon.level,
+                            "current_hp": getattr(pokemon, "current_hp", pokemon.max_hp),
+                            "max_hp": getattr(pokemon, "max_hp", pokemon.max_hp),
+                            "moves": json.dumps(pokemon.moves),
+                            "stored_exp": getattr(pokemon, "stored_exp", 0),
+                        }
+                        self.bot.player_manager.db.update_pokemon(pokemon_id, updates)
+
                     user_results.append(f"+{party_exp_amount} EXP (party)")
 
             # Give star points
@@ -1616,14 +1645,40 @@ class SessionCog(commands.Cog):
 
             # Give party EXP
             if party_exp and party_exp > 0:
-                party = self.bot.player_manager.db.get_trainer_party(user_id)
-                if party:
-                    for pokemon in party:
-                        current_exp = pokemon.get('exp', 0)
-                        self.bot.player_manager.db.update_pokemon(
-                            pokemon['pokemon_id'],
-                            {'exp': current_exp + party_exp}
+                party_data = self.bot.player_manager.db.get_trainer_party(user_id)
+                if party_data:
+                    trainer = self.bot.player_manager.get_player(user_id)
+                    level_cap = self.bot.player_manager.get_level_cap_for_trainer(trainer) if trainer else None
+
+                    for pokemon_dict in party_data:
+                        pokemon = _ensure_pokemon_instance(self.bot, pokemon_dict)
+                        if pokemon is None:
+                            continue
+
+                        pokemon_id = getattr(pokemon, "pokemon_id", None)
+                        if not pokemon_id:
+                            continue
+
+                        # Apply EXP and check for level-ups
+                        ExpSystem.apply_exp_and_check_levelup(
+                            pokemon,
+                            party_exp,
+                            self.bot.species_db,
+                            getattr(self.bot, "moves_db", None),
+                            level_cap=level_cap,
                         )
+
+                        # Update Pokemon in database with all changes
+                        updates = {
+                            "exp": pokemon.exp,
+                            "level": pokemon.level,
+                            "current_hp": getattr(pokemon, "current_hp", pokemon.max_hp),
+                            "max_hp": getattr(pokemon, "max_hp", pokemon.max_hp),
+                            "moves": json.dumps(pokemon.moves),
+                            "stored_exp": getattr(pokemon, "stored_exp", 0),
+                        }
+                        self.bot.player_manager.db.update_pokemon(pokemon_id, updates)
+
                     user_results.append(f"+{party_exp} EXP (party)")
 
             # Give star points
