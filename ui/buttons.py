@@ -4688,7 +4688,7 @@ class EncounterSelectView(View):
 
         # Add back button to return to phone
         back_button = Button(
-            label="◀️ Back to Phone",
+            label="Back",
             style=discord.ButtonStyle.secondary,
             custom_id="back_to_phone_button",
             row=1
