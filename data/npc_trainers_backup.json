@@ -1,0 +1,1309 @@
+{
+  "lights_district_central_plaza": {
+    "npc_trainers": [
+      {
+        "name": "Poké Maniac Lochs",
+        "class": "Poké Maniac",
+        "prize_money": 6000,
+        "party": [
+          {
+            "species_dex_number": 417,
+            "level": 45,
+            "moves": [
+              "thunderbolt",
+              "nuzzle",
+              "super_fang",
+              "u_turn"
+            ]
+          },
+          {
+            "species_dex_number": 197,
+            "level": 50,
+            "moves": [
+              "foul_play",
+              "moonlight",
+              "snarl",
+              "protect"
+            ]
+          },
+          {
+            "species_dex_number": 635,
+            "level": 55,
+            "moves": [
+              "dark_pulse",
+              "dragon_pulse",
+              "flamethrower",
+              "flash_cannon"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Freddy",
+        "class": "Plaza Emcee",
+        "prize_money": 2200,
+        "party": [
+          {
+            "species_dex_number": 133,
+            "level": 13
+          },
+          {
+            "species_dex_number": 404,
+            "level": 16
+          },
+          {
+            "species_dex_number": 633,
+            "level": 18
+          }
+        ]
+      },
+      {
+        "name": "Rain Maestro Kairo",
+        "class": "Rain Specialist",
+        "prize_money": 9000,
+        "party": [
+          {
+            "species_dex_number": 279,
+            "level": 50,
+            "moves": [
+              "scald",
+              "hurricane",
+              "roost",
+              "protect"
+            ]
+          },
+          {
+            "species_dex_number": 272,
+            "level": 50,
+            "moves": [
+              "fake_out",
+              "scald",
+              "giga_drain",
+              "ice_beam"
+            ]
+          },
+          {
+            "species_dex_number": 26,
+            "level": 50,
+            "moves": [
+              "fake_out",
+              "thunderbolt",
+              "volt_switch",
+              "grass_knot"
+            ]
+          },
+          {
+            "species_dex_number": 230,
+            "level": 50,
+            "moves": [
+              "muddy_water",
+              "dragon_pulse",
+              "ice_beam",
+              "protect"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Sand Captain Lyra",
+        "class": "Tactician",
+        "prize_money": 9000,
+        "party": [
+          {
+            "species_dex_number": 248,
+            "level": 50,
+            "moves": [
+              "rock_slide",
+              "crunch",
+              "protect",
+              "earthquake"
+            ]
+          },
+          {
+            "species_dex_number": 530,
+            "level": 50,
+            "moves": [
+              "iron_head",
+              "earthquake",
+              "rock_slide",
+              "swords_dance"
+            ]
+          },
+          {
+            "species_dex_number": 423,
+            "level": 50,
+            "moves": [
+              "muddy_water",
+              "earth_power",
+              "ice_beam",
+              "recover"
+            ]
+          },
+          {
+            "species_dex_number": 468,
+            "level": 50,
+            "moves": [
+              "air_slash",
+              "follow_me",
+              "aura_sphere",
+              "roost"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Trick Room Master Trent",
+        "class": "Ace Trainer",
+        "prize_money": 5000,
+        "battle_format": "doubles",
+        "party": [
+          {
+            "species_dex_number": 356,
+            "level": 50,
+            "nature": "relaxed",
+            "ability": "pressure",
+            "moves": [
+              "trick_room",
+              "helping_hand",
+              "pain_split",
+              "night_shade"
+            ]
+          },
+          {
+            "species_dex_number": 464,
+            "level": 50,
+            "nature": "brave",
+            "ability": "solid_rock",
+            "moves": [
+              "earthquake",
+              "rock_slide",
+              "stone_edge",
+              "megahorn"
+            ]
+          },
+          {
+            "species_dex_number": 534,
+            "level": 50,
+            "nature": "brave",
+            "ability": "guts",
+            "moves": [
+              "drain_punch",
+              "mach_punch",
+              "ice_punch",
+              "knock_off"
+            ]
+          },
+          {
+            "species_dex_number": 324,
+            "level": 50,
+            "nature": "quiet",
+            "ability": "drought",
+            "moves": [
+              "eruption",
+              "heat_wave",
+              "earth_power",
+              "protect"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Multi Battle Partner Alex",
+        "class": "Multi Battle Duo",
+        "prize_money": 6000,
+        "battle_format": "multi",
+        "party": [
+          {
+            "species_dex_number": 380,
+            "level": 50,
+            "nature": "timid",
+            "ability": "levitate",
+            "moves": [
+              "dragon_pulse",
+              "psychic",
+              "thunderbolt",
+              "protect"
+            ]
+          },
+          {
+            "species_dex_number": 257,
+            "level": 50,
+            "nature": "jolly",
+            "ability": "blaze",
+            "moves": [
+              "close_combat",
+              "flare_blitz",
+              "stone_edge",
+              "protect"
+            ]
+          },
+          {
+            "species_dex_number": 445,
+            "level": 50,
+            "nature": "jolly",
+            "ability": "rough_skin",
+            "moves": [
+              "earthquake",
+              "dragon_claw",
+              "rock_slide",
+              "swords_dance"
+            ]
+          },
+          {
+            "species_dex_number": 376,
+            "level": 50,
+            "nature": "adamant",
+            "ability": "clear_body",
+            "moves": [
+              "meteor_mash",
+              "earthquake",
+              "zen_headbutt",
+              "bullet_punch"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Multi Battle Partner Riley",
+        "class": "Multi Battle Duo",
+        "prize_money": 6000,
+        "battle_format": "multi",
+        "party": [
+          {
+            "species_dex_number": 658,
+            "level": 50,
+            "nature": "jolly",
+            "ability": "protean",
+            "moves": [
+              "ice_beam",
+              "water_shuriken",
+              "u_turn",
+              "dark_pulse"
+            ]
+          },
+          {
+            "species_dex_number": 637,
+            "level": 50,
+            "nature": "timid",
+            "ability": "flame_body",
+            "moves": [
+              "bug_buzz",
+              "fire_blast",
+              "quiver_dance",
+              "giga_drain"
+            ]
+          },
+          {
+            "species_dex_number": 450,
+            "level": 50,
+            "nature": "adamant",
+            "ability": "sand_stream",
+            "moves": [
+              "earthquake",
+              "stone_edge",
+              "crunch",
+              "ice_fang"
+            ]
+          },
+          {
+            "species_dex_number": 212,
+            "level": 50,
+            "nature": "adamant",
+            "ability": "technician",
+            "moves": [
+              "bullet_punch",
+              "u_turn",
+              "swords_dance",
+              "superpower"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Street Kid Riko",
+        "class": "Street Kid",
+        "prize_money": 500,
+        "party": [
+          {
+            "species_dex_number": 519,
+            "level": 5,
+            "moves": [
+              "gust",
+              "growl",
+              "leer"
+            ]
+          },
+          {
+            "species_dex_number": 396,
+            "level": 5,
+            "moves": [
+              "tackle",
+              "growl",
+              "quick_attack"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": [
+      {
+        "name": "League Scout Avery",
+        "class": "League Scout",
+        "rank_tier_number": 1,
+        "prize_money": 4500,
+        "party": [
+          {
+            "species_dex_number": 310,
+            "level": 28,
+            "moves": [
+              "thunder_punch",
+              "shock_wave",
+              "quick_attack",
+              "howl"
+            ]
+          },
+          {
+            "species_dex_number": 135,
+            "level": 30,
+            "moves": [
+              "thunderbolt",
+              "volt_switch",
+              "shadow_ball",
+              "wish"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Circuit Ace Rina",
+        "class": "Ace Trainer",
+        "rank_tier_number": 2,
+        "prize_money": 7000,
+        "party": [
+          {
+            "species_dex_number": 405,
+            "level": 45,
+            "moves": [
+              "wild_charge",
+              "iron_tail",
+              "volt_switch",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 596,
+            "level": 47,
+            "moves": [
+              "bug_buzz",
+              "discharge",
+              "sticky_web",
+              "energy_ball"
+            ]
+          },
+          {
+            "species_dex_number": 448,
+            "level": 48,
+            "moves": [
+              "close_combat",
+              "meteor_mash",
+              "bullet_punch",
+              "nasty_plot"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Backpacker Lyn",
+        "class": "Backpacker",
+        "rank_tier_number": 1,
+        "prize_money": 700,
+        "party": [
+          {
+            "species_dex_number": 43,
+            "level": 7,
+            "moves": [
+              "acid",
+              "absorb",
+              "growth"
+            ]
+          },
+          {
+            "species_dex_number": 163,
+            "level": 7,
+            "moves": [
+              "echoed_voice",
+              "tackle",
+              "growl",
+              "peck"
+            ]
+          },
+          {
+            "species_dex_number": 919,
+            "level": 8,
+            "moves": [
+              "astonish",
+              "struggle_bug",
+              "leer",
+              "tackle"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Youngster Caleb",
+        "class": "Youngster",
+        "rank_tier_number": 1,
+        "prize_money": 600,
+        "party": [
+          {
+            "species_dex_number": 261,
+            "level": 6,
+            "moves": [
+              "howl",
+              "tackle"
+            ]
+          },
+          {
+            "species_dex_number": 396,
+            "level": 6,
+            "moves": [
+              "quick_attack",
+              "growl",
+              "tackle"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Schoolgirl Mina",
+        "class": "Schoolgirl",
+        "rank_tier_number": 1,
+        "prize_money": 900,
+        "party": [
+          {
+            "species_dex_number": 928,
+            "level": 9,
+            "moves": [
+              "growth",
+              "absorb",
+              "sweet_scent",
+              "tackle"
+            ]
+          },
+          {
+            "species_dex_number": 926,
+            "level": 9,
+            "moves": [
+              "covet",
+              "tail_whip",
+              "lick",
+              "growl"
+            ]
+          },
+          {
+            "species_dex_number": 179,
+            "level": 10,
+            "moves": [
+              "thunder_shock",
+              "thunder_wave",
+              "growl",
+              "tackle"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Bug Catcher Rowan",
+        "class": "Bug Catcher",
+        "rank_tier_number": 1,
+        "prize_money": 1100,
+        "party": [
+          {
+            "species_dex_number": 824,
+            "level": 10,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          },
+          {
+            "species_dex_number": 167,
+            "level": 11,
+            "moves": [
+              "infestation",
+              "absorb",
+              "poison_sting",
+              "string_shot"
+            ]
+          },
+          {
+            "species_dex_number": 290,
+            "level": 11,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          },
+          {
+            "species_dex_number": 543,
+            "level": 12,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Lass Tori",
+        "class": "Lass",
+        "rank_tier_number": 1,
+        "prize_money": 1200,
+        "party": [
+          {
+            "species_dex_number": 661,
+            "level": 12,
+            "moves": [
+              "ember",
+              "quick_attack",
+              "growl",
+              "peck"
+            ]
+          },
+          {
+            "species_dex_number": 572,
+            "level": 12,
+            "moves": [
+              "sing",
+              "echoed_voice",
+              "helping_hand",
+              "baby_doll_eyes"
+            ]
+          },
+          {
+            "species_dex_number": 172,
+            "level": 13,
+            "moves": [
+              "nuzzle",
+              "sweet_kiss",
+              "play_nice",
+              "tail_whip"
+            ]
+          },
+          {
+            "species_dex_number": 280,
+            "level": 13,
+            "moves": [
+              "draining_kiss",
+              "hypnosis",
+              "confusion",
+              "double_team"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Hiker Brent",
+        "class": "Hiker",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "party": [
+          {
+            "species_dex_number": 74,
+            "level": 14,
+            "moves": [
+              "bulldoze",
+              "rollout",
+              "rock_polish",
+              "defense_curl"
+            ]
+          },
+          {
+            "species_dex_number": 524,
+            "level": 14,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          },
+          {
+            "species_dex_number": 194,
+            "level": 15,
+            "moves": [
+              "haze",
+              "mist",
+              "mud_shot",
+              "rain_dance"
+            ]
+          },
+          {
+            "species_dex_number": 66,
+            "level": 15,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Rising Star Elio",
+        "class": "Rising Star",
+        "rank_tier_number": 1,
+        "prize_money": 1600,
+        "party": [
+          {
+            "species_dex_number": 935,
+            "level": 15,
+            "moves": [
+              "fire_spin",
+              "clear_smog",
+              "astonish",
+              "ember"
+            ]
+          },
+          {
+            "species_dex_number": 921,
+            "level": 15,
+            "moves": [
+              "dig",
+              "nuzzle",
+              "charge",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 940,
+            "level": 16,
+            "moves": [
+              "spark",
+              "pluck",
+              "quick_attack",
+              "thunder_shock"
+            ]
+          },
+          {
+            "species_dex_number": 924,
+            "level": 16,
+            "moves": [
+              "double_hit",
+              "super_fang",
+              "helping_hand",
+              "echoed_voice"
+            ]
+          },
+          {
+            "species_dex_number": 971,
+            "level": 16,
+            "moves": [
+              "dig",
+              "headbutt",
+              "roar",
+              "bite"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Ace Trainer Naomi",
+        "class": "Ace Trainer",
+        "rank_tier_number": 1,
+        "prize_money": 1800,
+        "party": [
+          {
+            "species_dex_number": 447,
+            "level": 17,
+            "moves": [
+              "work_up",
+              "counter",
+              "metal_claw",
+              "feint"
+            ]
+          },
+          {
+            "species_dex_number": 996,
+            "level": 17,
+            "moves": [
+              "dragon_breath",
+              "icy_wind",
+              "dragon_tail",
+              "leer"
+            ]
+          },
+          {
+            "species_dex_number": 957,
+            "level": 18,
+            "moves": [
+              "draining_kiss",
+              "rock_smash",
+              "covet",
+              "metal_claw"
+            ]
+          },
+          {
+            "species_dex_number": 443,
+            "level": 18,
+            "moves": [
+              "bulldoze",
+              "dragon_breath",
+              "sand_attack",
+              "sand_tomb"
+            ]
+          },
+          {
+            "species_dex_number": 58,
+            "level": 18,
+            "moves": [
+              "helping_hand",
+              "flame_wheel",
+              "bite",
+              "howl"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Veteran Kai",
+        "class": "Veteran",
+        "rank_tier_number": 1,
+        "prize_money": 1900,
+        "party": [
+          {
+            "species_dex_number": 246,
+            "level": 19,
+            "moves": [
+              "stomping_tantrum",
+              "rock_slide",
+              "scary_face",
+              "bite"
+            ]
+          },
+          {
+            "species_dex_number": 885,
+            "level": 19,
+            "moves": [
+              "astonish",
+              "bite",
+              "infestation",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 56,
+            "level": 20,
+            "moves": [
+              "swagger",
+              "seismic_toss",
+              "low_kick",
+              "fury_swipes"
+            ]
+          },
+          {
+            "species_dex_number": 529,
+            "level": 20,
+            "moves": [
+              "sandstorm",
+              "metal_claw",
+              "fury_swipes",
+              "hone_claws"
+            ]
+          },
+          {
+            "species_dex_number": 215,
+            "level": 20,
+            "moves": [
+              "metal_claw",
+              "quick_attack",
+              "taunt",
+              "leer"
+            ]
+          },
+          {
+            "species_dex_number": 63,
+            "level": 19,
+            "moves": [
+              "tackle",
+              "growl"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      }
+    ]
+  },
+  "lights_district_art_studio": {
+    "npc_trainers": [
+      {
+        "name": "Art Master Monkaé",
+        "class": "Art Master",
+        "prize_money": 6200,
+        "party": [
+          {
+            "species_dex_number": 3,
+            "level": 45,
+            "moves": [
+              "giga_drain",
+              "sludge_bomb",
+              "sleep_powder",
+              "earth_power"
+            ]
+          },
+          {
+            "species_dex_number": 700,
+            "level": 50,
+            "moves": [
+              "moonblast",
+              "mystical_fire",
+              "calm_mind",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 94,
+            "level": 55,
+            "moves": [
+              "shadow_ball",
+              "sludge_wave",
+              "thunderbolt",
+              "focus_blast"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": [
+      {
+        "name": "Curator Selene",
+        "class": "League Curator",
+        "rank_tier_number": 1,
+        "prize_money": 5000,
+        "party": [
+          {
+            "species_dex_number": 281,
+            "level": 30,
+            "moves": [
+              "psyshock",
+              "dazzling_gleam",
+              "calm_mind",
+              "teleport"
+            ]
+          },
+          {
+            "species_dex_number": 765,
+            "level": 33,
+            "moves": [
+              "psychic",
+              "focus_blast",
+              "trick_room",
+              "thunder_wave"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      },
+      {
+        "name": "Master Painter Jules",
+        "class": "League Proctor",
+        "rank_tier_number": 3,
+        "prize_money": 8500,
+        "party": [
+          {
+            "species_dex_number": 700,
+            "level": 48,
+            "moves": [
+              "moonblast",
+              "calm_mind",
+              "psychic",
+              "draining_kiss"
+            ]
+          },
+          {
+            "species_dex_number": 282,
+            "level": 50,
+            "moves": [
+              "psychic",
+              "shadow_ball",
+              "focus_blast",
+              "calm_mind"
+            ]
+          },
+          {
+            "species_dex_number": 350,
+            "level": 50,
+            "moves": [
+              "surf",
+              "ice_beam",
+              "recover",
+              "toxic"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      }
+    ]
+  },
+  "lights_district_crossings": {
+    "npc_trainers": [
+      {
+        "name": "Commuter Nina",
+        "class": "Commuter",
+        "prize_money": 500,
+        "party": [
+          {
+            "species_dex_number": 300,
+            "level": 5,
+            "moves": [
+              "tackle",
+              "growl",
+              "tail_whip"
+            ]
+          },
+          {
+            "species_dex_number": 940,
+            "level": 5,
+            "moves": [
+              "peck",
+              "thunder_shock",
+              "growl"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": []
+  },
+  "lights_district_streets": {
+    "npc_trainers": [
+      {
+        "name": "Courier Jett",
+        "class": "Courier",
+        "prize_money": 900,
+        "party": [
+          {
+            "species_dex_number": 519,
+            "level": 8,
+            "moves": [
+              "gust",
+              "growl",
+              "leer",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 940,
+            "level": 9,
+            "moves": [
+              "peck",
+              "water_gun",
+              "thunder_shock",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 587,
+            "level": 10,
+            "moves": [
+              "nuzzle",
+              "quick_attack",
+              "thunder_shock",
+              "tail_whip"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": []
+  },
+  "lights_district_alleyways": {
+    "npc_trainers": [
+      {
+        "name": "Punk Rocco",
+        "class": "Punk",
+        "prize_money": 1100,
+        "party": [
+          {
+            "species_dex_number": 263,
+            "level": 10,
+            "moves": [
+              "tackle",
+              "lick",
+              "snarl",
+              "sand_attack"
+            ]
+          },
+          {
+            "species_dex_number": 261,
+            "level": 11,
+            "moves": [
+              "tackle",
+              "howl",
+              "bite",
+              "sand_attack"
+            ]
+          },
+          {
+            "species_dex_number": 198,
+            "level": 12,
+            "moves": [
+              "peck",
+              "astonish",
+              "wing_attack",
+              "haze"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": []
+  },
+  "lights_district_wild_zone_1": {
+    "npc_trainers": [
+      {
+        "name": "Gardener Lila",
+        "class": "Gardener",
+        "prize_money": 1300,
+        "party": [
+          {
+            "species_dex_number": 540,
+            "level": 12,
+            "moves": [
+              "tackle",
+              "bug_bite",
+              "razor_leaf",
+              "string_shot"
+            ]
+          },
+          {
+            "species_dex_number": 406,
+            "level": 13,
+            "moves": [
+              "absorb",
+              "growth",
+              "stun_spore",
+              "poison_sting"
+            ]
+          },
+          {
+            "species_dex_number": 133,
+            "level": 14,
+            "moves": [
+              "quick_attack",
+              "swift",
+              "bite",
+              "sand_attack"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": []
+  },
+  "lights_district_wild_zone_2": {
+    "npc_trainers": [
+      {
+        "name": "Fisher Roan",
+        "class": "Fisher",
+        "prize_money": 1400,
+        "party": [
+          {
+            "species_dex_number": 60,
+            "level": 13,
+            "moves": [
+              "bubble",
+              "water_gun",
+              "hypnosis",
+              "mud_shot"
+            ]
+          },
+          {
+            "species_dex_number": 580,
+            "level": 14,
+            "moves": [
+              "water_gun",
+              "wing_attack",
+              "feather_dance",
+              "water_pulse"
+            ]
+          },
+          {
+            "species_dex_number": 656,
+            "level": 15,
+            "moves": [
+              "water_pulse",
+              "quick_attack",
+              "bubble",
+              "lick"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": []
+  },
+  "residential_district_beach": {
+    "npc_trainers": [
+      {
+        "name": "Beachgoer Kai",
+        "class": "Beachgoer",
+        "prize_money": 500,
+        "party": [
+          {
+            "species_dex_number": 98,
+            "level": 5,
+            "moves": [
+              "bubble",
+              "vice_grip"
+            ]
+          },
+          {
+            "species_dex_number": 963,
+            "level": 5,
+            "moves": [
+              "water_gun",
+              "astonish",
+              "aqua_jet"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": []
+  },
+  "residential_district_dreamyard": {
+    "npc_trainers": [
+      {
+        "name": "Dream Researcher Emi",
+        "class": "Dream Researcher",
+        "prize_money": 1600,
+        "party": [
+          {
+            "species_dex_number": 517,
+            "level": 15,
+            "moves": [
+              "psybeam",
+              "defense_curl",
+              "yawn",
+              "hypnosis"
+            ]
+          },
+          {
+            "species_dex_number": 280,
+            "level": 16,
+            "moves": [
+              "confusion",
+              "double_team",
+              "disarming_voice",
+              "lucky_chant"
+            ]
+          },
+          {
+            "species_dex_number": 577,
+            "level": 17,
+            "moves": [
+              "psybeam",
+              "reflect",
+              "light_screen",
+              "recover"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": []
+  },
+  "residential_district_wild_zone_3": {
+    "npc_trainers": [
+      {
+        "name": "Tidewatcher Glen",
+        "class": "Tidewatcher",
+        "prize_money": 1800,
+        "party": [
+          {
+            "species_dex_number": 278,
+            "level": 17,
+            "moves": [
+              "air_cutter",
+              "water_pulse",
+              "supersonic",
+              "quick_attack"
+            ]
+          },
+          {
+            "species_dex_number": 222,
+            "level": 18,
+            "moves": [
+              "ancient_power",
+              "hex",
+              "confuse_ray",
+              "recover"
+            ]
+          },
+          {
+            "species_dex_number": 871,
+            "level": 19,
+            "moves": [
+              "spark",
+              "water_gun",
+              "curse",
+              "recover"
+            ]
+          }
+        ]
+      }
+    ],
+    "ranked_npc_trainers": []
+  },
+  "residential_district_wild_zone_4": {
+    "npc_trainers": [],
+    "ranked_npc_trainers": [
+      {
+        "name": "Occultist Mira",
+        "class": "Occultist",
+        "prize_money": 2000,
+        "party": [
+          {
+            "species_dex_number": 479,
+            "level": 20,
+            "moves": [
+              "thunderbolt",
+              "shadow_ball",
+              "confuse_ray",
+              "charge"
+            ]
+          },
+          {
+            "species_dex_number": 200,
+            "level": 20,
+            "moves": [
+              "hex",
+              "shadow_ball",
+              "confuse_ray",
+              "power_gem"
+            ]
+          },
+          {
+            "species_dex_number": 607,
+            "level": 20,
+            "moves": [
+              "flame_burst",
+              "hex",
+              "will-o-wisp",
+              "confuse_ray"
+            ]
+          }
+        ],
+        "has_promotion_ticket": true
+      }
+    ]
+  }
+}
