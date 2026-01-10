@@ -84,6 +84,51 @@ class BattleMusicManager:
             }],
         }
 
+    def _get_optimal_bitrate(self, guild: discord.Guild) -> int:
+        """
+        Determine the optimal audio bitrate based on server boost level.
+
+        Discord bitrate limits:
+        - No boost: 96 kbps
+        - Boost Level 1: 128 kbps
+        - Boost Level 2: 256 kbps
+        - Boost Level 3: 384 kbps
+
+        Returns bitrate in bits per second (bps) for the encoder.
+        """
+        if not guild:
+            return 96000  # Default to 96 kbps
+
+        boost_level = guild.premium_tier
+        bitrate_map = {
+            0: 96000,   # 96 kbps - no boost
+            1: 128000,  # 128 kbps - boost level 1
+            2: 256000,  # 256 kbps - boost level 2
+            3: 384000,  # 384 kbps - boost level 3
+        }
+
+        bitrate = bitrate_map.get(boost_level, 96000)
+        print(f"🎵 Server boost level {boost_level}: using {bitrate // 1000} kbps bitrate")
+        return bitrate
+
+    async def _configure_voice_quality(self, voice_client: discord.VoiceClient, guild: discord.Guild):
+        """
+        Configure voice client for optimal audio quality based on server capabilities.
+        """
+        if not voice_client or not voice_client.is_connected():
+            return
+
+        try:
+            optimal_bitrate = self._get_optimal_bitrate(guild)
+
+            # Configure the Opus encoder for high-quality audio
+            if hasattr(voice_client, 'encoder') and voice_client.encoder:
+                voice_client.encoder.set_bitrate(optimal_bitrate)
+                print(f"✅ Voice encoder configured to {optimal_bitrate // 1000} kbps")
+        except Exception as e:
+            print(f"⚠️ Could not configure voice quality: {e}")
+            # Continue anyway - will use default settings
+
     async def request_music(self, battle_id: str, user_id: int, username: str,
                            voice_channel_id: int, battle_type: str,
                            generation: Optional[int] = None) -> Tuple[bool, str, int]:
@@ -166,6 +211,9 @@ class BattleMusicManager:
                 self.voice_client = await channel.connect()
 
             print(f"✅ Connected to voice channel!")
+
+            # Configure optimal audio quality based on server boost level
+            await self._configure_voice_quality(self.voice_client, channel.guild)
 
             # Start playing battle theme
             print(f"▶️ Starting battle theme playback...")
@@ -280,6 +328,9 @@ class BattleMusicManager:
                 await self.voice_client.move_to(channel)
             else:
                 self.voice_client = await channel.connect()
+
+            # Configure optimal audio quality based on server boost level
+            await self._configure_voice_quality(self.voice_client, channel.guild)
 
             if self.voice_client.is_playing():
                 self.voice_client.stop()
