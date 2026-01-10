@@ -670,6 +670,26 @@ class EncounterParticipantView(discord.ui.View):
             )
             return
 
+        # Check bot permissions
+        bot_member = interaction.guild.me
+        permissions = channel.permissions_for(bot_member)
+
+        if not permissions.create_public_threads:
+            await interaction.followup.send(
+                "❌ I don't have permission to create threads in this channel!\n"
+                "Please grant me the **Create Public Threads** permission.",
+                ephemeral=True
+            )
+            return
+
+        if not permissions.send_messages_in_threads:
+            await interaction.followup.send(
+                "❌ I don't have permission to send messages in threads!\n"
+                "Please grant me the **Send Messages in Threads** permission.",
+                ephemeral=True
+            )
+            return
+
         # Group participants for multi battles if needed
         if self.selected_format == "multi":
             # For multi battles, pair up participants
@@ -683,13 +703,31 @@ class EncounterParticipantView(discord.ui.View):
             if not user:
                 continue
 
-            # Create thread for this participant
-            thread_name = f"Encounter - {user.display_name}"
-            thread = await channel.create_thread(
-                name=thread_name,
-                auto_archive_duration=60,
-                reason=f"Session encounter created by {interaction.user.display_name}"
-            )
+            try:
+                # Create thread for this participant
+                thread_name = f"Encounter - {user.display_name}"
+                thread = await channel.create_thread(
+                    name=thread_name,
+                    auto_archive_duration=60,
+                    reason=f"Session encounter created by {interaction.user.display_name}"
+                )
+            except discord.Forbidden as e:
+                # Permission error - this shouldn't happen after our checks, but just in case
+                await interaction.followup.send(
+                    f"❌ Failed to create thread for {user.mention}: Missing permissions.\n"
+                    f"Error: {e}",
+                    ephemeral=True
+                )
+                print(f"Permission error creating thread: {e}")
+                continue
+            except Exception as e:
+                # Other error creating thread
+                await interaction.followup.send(
+                    f"❌ Failed to create thread for {user.mention}: {e}",
+                    ephemeral=True
+                )
+                print(f"Error creating thread: {e}")
+                continue
 
             # Start the battle automatically
             try:
