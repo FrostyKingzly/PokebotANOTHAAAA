@@ -5,7 +5,6 @@ Commands and orchestration for the Dream Dive roguelike gamemode
 """
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 from typing import Optional, List
 import asyncio
@@ -66,75 +65,6 @@ class DreamRogueCog(commands.Cog):
         self.dream_manager = DreamRogueManager()
         self.player_db = PlayerDatabase()
         self.session_manager = SessionManager(self.player_db)
-
-    @app_commands.command(name="dream_stats", description="View your Dream Dive statistics")
-    async def dream_stats(self, interaction: discord.Interaction):
-        """View Dream Dive stats"""
-        user_id = interaction.user.id
-
-        # Get persistent Dreamlites
-        total_dreamlites = self.dream_manager.get_persistent_dreamlites(user_id)
-
-        # Get stats
-        import sqlite3
-        conn = sqlite3.connect(self.dream_manager.db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT * FROM dream_rogue_stats
-            WHERE discord_user_id = ?
-        """, (user_id,))
-
-        stats_row = cursor.fetchone()
-        conn.close()
-
-        if stats_row:
-            stats = dict(stats_row)
-        else:
-            stats = {
-                "total_runs": 0,
-                "successful_extractions": 0,
-                "bosses_defeated": 0,
-                "highest_floor": 0,
-                "total_battles_won": 0,
-                "total_battles_lost": 0
-            }
-
-        # Build embed
-        embed = discord.Embed(
-            title=f"{DreamRogueEmbeds.DREAMLITE_EMOJI} Dream Dive Statistics",
-            description=f"**{interaction.user.display_name}**'s dream journey",
-            color=DreamRogueEmbeds.DREAM_COLOR
-        )
-
-        embed.add_field(
-            name="Dreamlites",
-            value=f"{DreamRogueEmbeds.DREAMLITE_EMOJI} **{total_dreamlites}**",
-            inline=False
-        )
-
-        embed.add_field(
-            name="Runs",
-            value=f"**Total:** {stats['total_runs']}\n**Successful:** {stats['successful_extractions']}",
-            inline=True
-        )
-
-        embed.add_field(
-            name="Progress",
-            value=f"**Highest Floor:** {stats['highest_floor']}\n**Bosses Defeated:** {stats['bosses_defeated']}",
-            inline=True
-        )
-
-        if stats['total_battles_won'] + stats['total_battles_lost'] > 0:
-            win_rate = (stats['total_battles_won'] / (stats['total_battles_won'] + stats['total_battles_lost'])) * 100
-            embed.add_field(
-                name="Battles",
-                value=f"**Won:** {stats['total_battles_won']}\n**Lost:** {stats['total_battles_lost']}\n**Win Rate:** {win_rate:.1f}%",
-                inline=True
-            )
-
-        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     async def start_dive_from_session(self, interaction: discord.Interaction, stage_level: int):
         """

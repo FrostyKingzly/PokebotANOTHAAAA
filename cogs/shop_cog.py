@@ -617,33 +617,5 @@ class ShopCog(commands.Cog, name="ShopCog"):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    # ------------------------------------------------------------
-    # Optional slash commands
-    # ------------------------------------------------------------
-
-    @app_commands.command(name="shop", description="View the PokeMart for your current location.")
-    async def shop(self, interaction: discord.Interaction) -> None:
-        await self.open_shop_for_user(interaction)
-
-    @app_commands.command(name="buy", description="Buy an item from the local PokeMart.")
-    @app_commands.describe(
-        item="Item ID or name (e.g., 'potion', 'poke_ball')",
-        quantity="How many to buy (default: 1)",
-        shop="Optional shop ID if multiple are present (e.g., 'berry_stall')",
-    )
-    async def buy(
-        self,
-        interaction: discord.Interaction,
-        item: str,
-        quantity: int = 1,
-        shop: Optional[str] = None,
-    ) -> None:
-        item_id = item.lower().replace(" ", "_")
-        shop_id = shop.lower().replace(" ", "_") if shop else None
-        await self._handle_purchase(
-            interaction, item_id=item_id, quantity=quantity, shop_id=shop_id
-        )
-
-
 async def setup(bot: commands.Bot):
     await bot.add_cog(ShopCog(bot))

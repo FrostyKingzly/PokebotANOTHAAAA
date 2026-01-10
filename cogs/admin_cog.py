@@ -593,7 +593,6 @@ class AdminCog(commands.Cog):
     # SHOWDOWN FORMAT HELP
     # ============================================================
     
-    @app_commands.command(name="help_showdown", description="Show Pokemon Showdown format examples")
     async def help_showdown(self, interaction: discord.Interaction):
         """Show examples of Showdown format"""
         
@@ -1797,8 +1796,6 @@ Modest Nature
                 ephemeral=True
             )
     
-    @app_commands.command(name="list_locations", description="[ADMIN] List all locations and their channels")
-    @app_commands.check(is_admin)
     async def list_locations(
         self,
         interaction: discord.Interaction
@@ -1849,13 +1846,6 @@ Modest Nature
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-    @app_commands.command(name="create_wild_area", description="[ADMIN] Create a new wild area")
-    @app_commands.describe(
-        area_id="Unique ID for the area (e.g., 'viridian_forest')",
-        name="Display name of the area",
-        description="Description of the wild area"
-    )
-    @app_commands.check(is_admin)
     async def create_wild_area(
         self,
         interaction: discord.Interaction,
@@ -1882,16 +1872,6 @@ Modest Nature
                 ephemeral=True
             )
 
-    @app_commands.command(name="create_zone", description="[ADMIN] Create a zone in a wild area")
-    @app_commands.describe(
-        zone_id="Unique ID for the zone",
-        area_id="Wild area ID this zone belongs to",
-        name="Display name of the zone",
-        description="Description of the zone",
-        has_station="Whether this zone has a Pokemon station",
-        travel_cost="Stamina cost to travel to this zone (default: 5)"
-    )
-    @app_commands.check(is_admin)
     async def create_zone(
         self,
         interaction: discord.Interaction,
@@ -1930,13 +1910,6 @@ Modest Nature
                 ephemeral=True
             )
 
-    @app_commands.command(name="enter_wild_area", description="[ADMIN] Enter a player into a wild area")
-    @app_commands.describe(
-        user="The player to enter",
-        area_id="Wild area ID",
-        zone_id="Starting zone ID"
-    )
-    @app_commands.check(is_admin)
     async def enter_wild_area(
         self,
         interaction: discord.Interaction,
@@ -1971,12 +1944,6 @@ Modest Nature
                 ephemeral=True
             )
 
-    @app_commands.command(name="exit_wild_area", description="[ADMIN] Remove a player from wild area")
-    @app_commands.describe(
-        user="The player to exit",
-        success="Whether the exit was successful (true) or player blacked out (false)"
-    )
-    @app_commands.check(is_admin)
     async def exit_wild_area(
         self,
         interaction: discord.Interaction,
@@ -2198,8 +2165,6 @@ Modest Nature
         else:
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="list_wild_areas", description="[ADMIN] List all wild areas")
-    @app_commands.check(is_admin)
     async def list_wild_areas(self, interaction: discord.Interaction):
         """List all wild areas"""
         from wild_area_manager import WildAreaManager
