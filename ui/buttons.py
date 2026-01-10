@@ -4685,6 +4685,16 @@ class EncounterSelectView(View):
         )
         reroll_button.callback = self.reroll_callback
         self.add_item(reroll_button)
+
+        # Add back button to return to phone
+        back_button = Button(
+            label="◀️ Back to Phone",
+            style=discord.ButtonStyle.secondary,
+            custom_id="back_to_phone_button",
+            row=1
+        )
+        back_button.callback = self.back_to_phone_callback
+        self.add_item(back_button)
     
     async def encounter_callback(self, interaction: discord.Interaction):
         """Handle encounter selection - start battle"""
@@ -4815,6 +4825,64 @@ class EncounterSelectView(View):
             embed=embed,
             view=new_view,
         )
+
+        self.stop()
+
+    async def back_to_phone_callback(self, interaction: discord.Interaction):
+        """Return to the phone menu"""
+        from ui.embeds import EmbedBuilder
+
+        if interaction.user.id != self.player_id:
+            await interaction.response.send_message(
+                "❌ This isn't your encounter menu!",
+                ephemeral=True,
+            )
+            return
+
+        # Get player data
+        player_data = self.bot.player_manager.get_player(interaction.user.id)
+        if not player_data:
+            await interaction.response.send_message(
+                "❌ Player data not found!",
+                ephemeral=True
+            )
+            return
+
+        # Get managers for main menu
+        rank_manager = getattr(self.bot, "rank_manager", None)
+        location_manager = getattr(self.bot, "location_manager", None)
+        wild_area_manager = getattr(self.bot, "wild_area_manager", None)
+        weather_manager = getattr(self.bot, "weather_manager", None)
+        wild_area_state = (
+            wild_area_manager.get_wild_area_state(interaction.user.id)
+            if wild_area_manager
+            else None
+        )
+
+        dreamlites = None
+        if interaction.guild_id:
+            from dream_rogue_manager import DreamRogueManager
+            dream_manager = DreamRogueManager()
+            run = dream_manager.get_active_run_for_user(interaction.guild_id, interaction.user.id)
+            if run:
+                dreamlites = dream_manager.get_dreamlites(run["run_id"], interaction.user.id)
+
+        # Create main menu embed
+        embed = EmbedBuilder.main_menu(
+            player_data,
+            rank_manager=rank_manager,
+            location_manager=location_manager,
+            wild_area_manager=wild_area_manager,
+            wild_area_state=wild_area_state,
+            weather_manager=weather_manager,
+            dreamlites=dreamlites,
+        )
+
+        # Create main menu view
+        view = MainMenuView(self.bot, user_id=interaction.user.id, guild_id=interaction.guild_id)
+
+        # Edit message to show phone menu
+        await interaction.response.edit_message(embed=embed, view=view)
 
         self.stop()
 
