@@ -4808,14 +4808,11 @@ class EncounterSelectView(View):
             current_location_id
         )
 
-        # Edit the message directly to allow unlimited rerolls
-        await interaction.message.edit(
+        # Edit the deferred response with new encounters
+        await interaction.edit_original_response(
             embed=embed,
             view=new_view,
         )
-
-        # Delete the deferred response to clean up
-        await interaction.delete_original_response()
 
         self.stop()
 
