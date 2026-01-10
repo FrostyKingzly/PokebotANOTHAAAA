@@ -76,13 +76,19 @@ class LocationManager:
             try:
                 with open(self.channel_map_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
+                legacy_to_residential = {
+                    "lights_district_library": "residential_district_library",
+                    "lights_district_gym": "residential_district_gym",
+                    "lights_district_dojo": "residential_district_dojo",
+                }
                 for channel_id, location_id in data.items():
                     try:
                         chan_int = int(channel_id)
                     except (TypeError, ValueError):
                         continue
-                    if location_id in self.locations:
-                        self.channel_to_location[chan_int] = location_id
+                    mapped_location = legacy_to_residential.get(location_id, location_id)
+                    if mapped_location in self.locations:
+                        self.channel_to_location[chan_int] = mapped_location
             except (json.JSONDecodeError, OSError):
                 print("⚠️ Failed to load channel mapping file, continuing with in-memory data")
         self._sync_channel_lists()

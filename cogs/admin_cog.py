@@ -80,15 +80,33 @@ class ChannelLocationSelectView(discord.ui.View):
         self.bot = bot
         self.channel_id = channel_id
         self.current_mapping = current_mapping
+        self.page_size = 25
 
         # Discord selects support up to 25 options
-        sorted_locations = sorted(
+        self.sorted_locations = sorted(
             locations.items(),
             key=lambda item: item[1].get('name', item[0].replace('_', ' ').title())
-        )[:25]
+        )
+        self.total_pages = max(1, math.ceil(len(self.sorted_locations) / self.page_size))
+        self.current_page = self._find_starting_page()
+        self._refresh_items()
 
+    def _find_starting_page(self) -> int:
+        if not self.current_mapping:
+            return 0
+        for index, (location_id, _) in enumerate(self.sorted_locations):
+            if location_id == self.current_mapping:
+                return index // self.page_size
+        return 0
+
+    def _get_page_slice(self):
+        start = self.current_page * self.page_size
+        end = start + self.page_size
+        return self.sorted_locations[start:end]
+
+    def _build_select(self) -> discord.ui.Select:
         options = []
-        for location_id, location_data in sorted_locations:
+        for location_id, location_data in self._get_page_slice():
             label = location_data.get('name', location_id.replace('_', ' ').title())
             description = location_data.get('description', '')[:100]
             options.append(
@@ -96,16 +114,47 @@ class ChannelLocationSelectView(discord.ui.View):
                     label=label[:100],
                     value=location_id,
                     description=description,
-                    default=(location_id == current_mapping)
+                    default=(location_id == self.current_mapping)
                 )
             )
 
+        page_label = f" (Page {self.current_page + 1}/{self.total_pages})" if self.total_pages > 1 else ""
         select = discord.ui.Select(
-            placeholder="Choose a location for this channel...",
+            placeholder=f"Choose a location for this channel...{page_label}",
             options=options
         )
         select.callback = self.location_selected
-        self.add_item(select)
+        return select
+
+    def _refresh_items(self):
+        self.clear_items()
+        self.add_item(self._build_select())
+
+        if self.total_pages > 1:
+            prev_button = discord.ui.Button(
+                label="Previous",
+                style=discord.ButtonStyle.secondary,
+                disabled=self.current_page == 0
+            )
+            next_button = discord.ui.Button(
+                label="Next",
+                style=discord.ButtonStyle.secondary,
+                disabled=self.current_page >= self.total_pages - 1
+            )
+            prev_button.callback = self._go_previous
+            next_button.callback = self._go_next
+            self.add_item(prev_button)
+            self.add_item(next_button)
+
+    async def _go_previous(self, interaction: discord.Interaction):
+        self.current_page = max(0, self.current_page - 1)
+        self._refresh_items()
+        await interaction.response.edit_message(view=self)
+
+    async def _go_next(self, interaction: discord.Interaction):
+        self.current_page = min(self.total_pages - 1, self.current_page + 1)
+        self._refresh_items()
+        await interaction.response.edit_message(view=self)
 
     async def location_selected(self, interaction: discord.Interaction):
         """Handle selection of a location for this channel"""
@@ -1749,7 +1798,7 @@ Modest Nature
             )
 
         if len(all_locations) > 25:
-            embed.set_footer(text="Showing the first 25 locations. Update data/locations.json to reorder if needed.")
+            embed.set_footer(text="Use the Previous/Next buttons to page through locations.")
 
         view = ChannelLocationSelectView(
             bot=self.bot,
