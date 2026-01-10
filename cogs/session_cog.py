@@ -777,6 +777,19 @@ class RewardModal(discord.ui.Modal, title="Give Rewards"):
         required=False
     )
 
+    party_exp = discord.ui.TextInput(
+        label="Party-wide EXP",
+        placeholder="Amount of EXP for all party Pokemon (optional)",
+        required=False
+    )
+
+    star_points = discord.ui.TextInput(
+        label="Star Points (Social Stats)",
+        placeholder="heart:10, insight:5, charisma:3 (optional)",
+        style=discord.TextStyle.paragraph,
+        required=False
+    )
+
     def __init__(self, bot, session_id: str, target_users: Optional[List[int]] = None):
         super().__init__()
         self.bot = bot
@@ -811,12 +824,71 @@ class RewardModal(discord.ui.Modal, title="Give Rewards"):
                     item_str = item_str.strip()
                     if ':' in item_str:
                         item_id, quantity = item_str.split(':', 1)
-                        items_to_give.append((item_id.strip(), int(quantity.strip())))
+                        item_id = item_id.strip()
+                        quantity = int(quantity.strip())
+
+                        # Validate item exists
+                        item_data = self.bot.items_db.get_item(item_id)
+                        if not item_data:
+                            await interaction.followup.send(
+                                f"❌ Invalid item: '{item_id}' not found in database!",
+                                ephemeral=True
+                            )
+                            return
+                        items_to_give.append((item_id, quantity))
                     else:
-                        items_to_give.append((item_str, 1))
-            except Exception as e:
+                        item_id = item_str.strip()
+                        # Validate item exists
+                        item_data = self.bot.items_db.get_item(item_id)
+                        if not item_data:
+                            await interaction.followup.send(
+                                f"❌ Invalid item: '{item_id}' not found in database!",
+                                ephemeral=True
+                            )
+                            return
+                        items_to_give.append((item_id, 1))
+            except ValueError as e:
                 await interaction.followup.send(
                     f"❌ Invalid item format: {e}",
+                    ephemeral=True
+                )
+                return
+
+        # Parse party EXP
+        party_exp_amount = 0
+        if self.party_exp.value:
+            try:
+                party_exp_amount = int(self.party_exp.value)
+            except ValueError:
+                await interaction.followup.send(
+                    "❌ Invalid party EXP amount!",
+                    ephemeral=True
+                )
+                return
+
+        # Parse star points (social stats)
+        star_points_to_give = []
+        if self.star_points.value:
+            from social_stats import SOCIAL_STAT_ORDER
+            try:
+                for stat_str in self.star_points.value.split(','):
+                    stat_str = stat_str.strip()
+                    if ':' in stat_str:
+                        stat_name, points = stat_str.split(':', 1)
+                        stat_name = stat_name.strip().lower()
+                        points = int(points.strip())
+
+                        # Validate stat name
+                        if stat_name not in SOCIAL_STAT_ORDER:
+                            await interaction.followup.send(
+                                f"❌ Invalid stat: '{stat_name}'! Valid stats: {', '.join(SOCIAL_STAT_ORDER)}",
+                                ephemeral=True
+                            )
+                            return
+                        star_points_to_give.append((stat_name, points))
+            except ValueError as e:
+                await interaction.followup.send(
+                    f"❌ Invalid star points format: {e}",
                     ephemeral=True
                 )
                 return
@@ -837,6 +909,30 @@ class RewardModal(discord.ui.Modal, title="Give Rewards"):
             for item_id, quantity in items_to_give:
                 self.bot.player_manager.db.add_item(user_id, item_id, quantity)
                 user_results.append(f"+{quantity}x {item_id}")
+
+            # Give party EXP
+            if party_exp_amount > 0:
+                party = self.bot.player_manager.db.get_trainer_party(user_id)
+                if party:
+                    for pokemon in party:
+                        current_exp = pokemon.get('exp', 0)
+                        self.bot.player_manager.db.update_pokemon(
+                            pokemon['pokemon_id'],
+                            {'exp': current_exp + party_exp_amount}
+                        )
+                    user_results.append(f"+{party_exp_amount} EXP (party)")
+
+            # Give star points
+            for stat_name, points in star_points_to_give:
+                trainer = self.bot.player_manager.get_player(user_id)
+                if trainer:
+                    current_points = getattr(trainer, f"{stat_name}_points", 0)
+                    new_points = current_points + points
+                    self.bot.player_manager.db.update_trainer(
+                        user_id,
+                        **{f"{stat_name}_points": new_points}
+                    )
+                    user_results.append(f"+{points} {stat_name.title()} points")
 
             if user_results:
                 results.append(f"<@{user_id}>: {', '.join(user_results)}")
@@ -1403,6 +1499,163 @@ class SessionCog(commands.Cog):
             await interaction.response.send_message(
                 "❌ Failed to leave session.",
                 ephemeral=True
+            )
+
+    async def item_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> List[app_commands.Choice[str]]:
+        """Autocomplete for item IDs"""
+        items_db = self.bot.items_db
+        all_items = items_db.data  # Dict of item_id -> item_data
+
+        # Filter items by current input
+        current_lower = current.lower()
+        matches = []
+
+        for item_id, item_data in all_items.items():
+            if isinstance(item_data, dict):
+                item_name = item_data.get('name', item_id)
+
+                # Match against item_id or name
+                if current_lower in item_id.lower() or current_lower in item_name.lower():
+                    matches.append((item_id, item_name))
+
+        # Sort by relevance (exact matches first, then alphabetical)
+        matches.sort(key=lambda x: (
+            not x[0].lower().startswith(current_lower),  # Prioritize starts-with matches
+            x[1].lower()  # Then alphabetical by name
+        ))
+
+        # Return up to 25 choices (Discord's limit)
+        return [
+            app_commands.Choice(name=f"{name} ({item_id})", value=item_id)
+            for item_id, name in matches[:25]
+        ]
+
+    @app_commands.command(name="session_reward", description="[ADMIN] Give rewards to session participants")
+    @app_commands.describe(
+        money="Amount of money to give",
+        item1="First item to give",
+        item1_qty="Quantity of first item",
+        item2="Second item to give",
+        item2_qty="Quantity of second item",
+        item3="Third item to give",
+        item3_qty="Quantity of third item",
+        party_exp="Party-wide EXP to give",
+        heart="Heart stat points",
+        insight="Insight stat points",
+        charisma="Charisma stat points",
+        fortitude="Fortitude stat points",
+        will="Will/Clarity stat points",
+        target_all="Give to all participants (default: True)"
+    )
+    @app_commands.autocomplete(item1=item_autocomplete, item2=item_autocomplete, item3=item_autocomplete)
+    @app_commands.check(is_admin)
+    async def session_reward(
+        self,
+        interaction: discord.Interaction,
+        money: Optional[int] = None,
+        item1: Optional[str] = None,
+        item1_qty: Optional[int] = 1,
+        item2: Optional[str] = None,
+        item2_qty: Optional[int] = 1,
+        item3: Optional[str] = None,
+        item3_qty: Optional[int] = 1,
+        party_exp: Optional[int] = None,
+        heart: Optional[int] = None,
+        insight: Optional[int] = None,
+        charisma: Optional[int] = None,
+        fortitude: Optional[int] = None,
+        will: Optional[int] = None,
+        target_all: bool = True
+    ):
+        """Give rewards to session participants with autocomplete"""
+
+        # Check if user is admin of an active session
+        session = None
+        for sess in self.bot.session_manager.db.get_connection().cursor().execute(
+            "SELECT * FROM sessions WHERE admin_id = ? AND is_active = 1",
+            (interaction.user.id,)
+        ).fetchall():
+            session = dict(sess)
+            break
+
+        if not session:
+            await interaction.response.send_message(
+                "❌ You don't have an active session!",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        session_id = session['session_id']
+        participants = self.bot.session_manager.get_session_participants(session_id)
+
+        results = []
+
+        # Process each participant
+        for user_id in participants:
+            user_results = []
+
+            # Give money
+            if money and money > 0:
+                trainer = self.bot.player_manager.get_player(user_id)
+                if trainer:
+                    new_money = trainer.money + money
+                    self.bot.player_manager.db.update_trainer(user_id, money=new_money)
+                    user_results.append(f"+${money}")
+
+            # Give items
+            for item_id, qty in [(item1, item1_qty), (item2, item2_qty), (item3, item3_qty)]:
+                if item_id:
+                    self.bot.player_manager.db.add_item(user_id, item_id, qty)
+                    user_results.append(f"+{qty}x {item_id}")
+
+            # Give party EXP
+            if party_exp and party_exp > 0:
+                party = self.bot.player_manager.db.get_trainer_party(user_id)
+                if party:
+                    for pokemon in party:
+                        current_exp = pokemon.get('exp', 0)
+                        self.bot.player_manager.db.update_pokemon(
+                            pokemon['pokemon_id'],
+                            {'exp': current_exp + party_exp}
+                        )
+                    user_results.append(f"+{party_exp} EXP (party)")
+
+            # Give star points
+            for stat_name, points in [
+                ('heart', heart),
+                ('insight', insight),
+                ('charisma', charisma),
+                ('fortitude', fortitude),
+                ('will', will)
+            ]:
+                if points and points > 0:
+                    trainer = self.bot.player_manager.get_player(user_id)
+                    if trainer:
+                        current_points = getattr(trainer, f"{stat_name}_points", 0)
+                        new_points = current_points + points
+                        self.bot.player_manager.db.update_trainer(
+                            user_id,
+                            **{f"{stat_name}_points": new_points}
+                        )
+                        user_results.append(f"+{points} {stat_name.title()} points")
+
+            if user_results:
+                results.append(f"<@{user_id}>: {', '.join(user_results)}")
+
+        if results:
+            await interaction.followup.send(
+                "✅ Rewards distributed:\n" + "\n".join(results),
+                allowed_mentions=discord.AllowedMentions.none()
+            )
+        else:
+            await interaction.followup.send(
+                "ℹ️ No rewards given (nothing was specified)."
             )
 
 
