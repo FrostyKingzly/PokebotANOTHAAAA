@@ -4306,47 +4306,114 @@ class PaginatedTravelView(View):
         self.current_page = 0
         self.back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None
 
-        # Define pages with area groupings
-        self.pages = [
-            {
-                "title": "Reverie City - Lights District",
-                "locations": [
-                    'lights_district_central_plaza',
-                    'lights_district_moonwake_port',
-                    'lights_district_crossings',
-                    'lights_district_streets',
-                    'lights_district_alleyways'
-                ]
-            },
-            {
-                "title": "Reverie City - Residential District",
-                "locations": [
-                    'residential_district_beach',
-                    'residential_district_dreamyard',
-                    'residential_district_library',
-                    'residential_district_gym',
-                    'residential_district_dojo'
-                ]
-            },
-            {
-                "title": "Wild Area α - Forest",
-                "locations": ['wild_area_forest_meadow_path']
-            },
-            {
-                "title": "Wild Area β - Canyon",
-                "locations": ['wild_area_canyon_redstone_canyon']
-            },
-            {
-                "title": "Wild Area γ - Desert",
-                "locations": ['wild_area_desert_sunbaked_path']
-            },
-            {
-                "title": "Wild Area δ - Tundra",
-                "locations": ['wild_area_tundra_snowdust_crossing']
-            }
-        ]
+        # Dynamically build pages by grouping locations by district
+        self.pages = self._build_pages_from_locations()
 
         self.update_view()
+
+    def _build_pages_from_locations(self):
+        """Dynamically build pages organized by district from all available locations"""
+        # Group locations by district prefix
+        district_groups = {
+            'lights_district': {'title': 'Reverie City - Lights District', 'locations': [], 'wild_zones': []},
+            'residential_district': {'title': 'Reverie City - Residential District', 'locations': [], 'wild_zones': []},
+            'wild_area': {'title': 'Wild Areas', 'locations': []}
+        }
+
+        # Categorize all locations
+        for location_id in self.all_locations:
+            location_data = self.all_locations.get(location_id, {})
+
+            # Skip regular locations without channel assignments
+            # But allow wild area zones (which don't use channel_ids)
+            is_wild_area = location_data.get('is_wild_area', False)
+            if not is_wild_area:
+                channel_ids = location_data.get('channel_ids', [])
+                if not channel_ids:
+                    continue
+
+            # Group by district prefix
+            if location_id.startswith('lights_district_'):
+                if 'wild_zone' in location_id:
+                    district_groups['lights_district']['wild_zones'].append(location_id)
+                else:
+                    district_groups['lights_district']['locations'].append(location_id)
+            elif location_id.startswith('residential_district_'):
+                if 'wild_zone' in location_id:
+                    district_groups['residential_district']['wild_zones'].append(location_id)
+                else:
+                    district_groups['residential_district']['locations'].append(location_id)
+            elif location_id.startswith('wild_area_'):
+                district_groups['wild_area']['locations'].append(location_id)
+
+        # Build pages array
+        pages = []
+
+        # Lights District civilian zones
+        if district_groups['lights_district']['locations']:
+            pages.append({
+                'title': district_groups['lights_district']['title'],
+                'locations': sorted(district_groups['lights_district']['locations'])
+            })
+
+        # Lights District wild zones
+        if district_groups['lights_district']['wild_zones']:
+            pages.append({
+                'title': 'Reverie City - Lights District (Wild Zones)',
+                'locations': sorted(district_groups['lights_district']['wild_zones'])
+            })
+
+        # Residential District civilian zones
+        if district_groups['residential_district']['locations']:
+            pages.append({
+                'title': district_groups['residential_district']['title'],
+                'locations': sorted(district_groups['residential_district']['locations'])
+            })
+
+        # Residential District wild zones
+        if district_groups['residential_district']['wild_zones']:
+            pages.append({
+                'title': 'Reverie City - Residential District (Wild Zones)',
+                'locations': sorted(district_groups['residential_district']['wild_zones'])
+            })
+
+        # Wild Areas (organized by type)
+        wild_area_locs = district_groups['wild_area']['locations']
+        if wild_area_locs:
+            # Group wild areas by their specific type (forest, canyon, desert, tundra)
+            wild_area_types = {}
+            for loc_id in wild_area_locs:
+                # Extract the area type from the location ID (e.g., 'forest' from 'wild_area_forest_...')
+                parts = loc_id.split('_')
+                if len(parts) >= 3:
+                    area_type = parts[2]  # 'forest', 'canyon', 'desert', 'tundra'
+                    if area_type not in wild_area_types:
+                        wild_area_types[area_type] = []
+                    wild_area_types[area_type].append(loc_id)
+
+            # Create a page for each wild area type
+            type_symbols = {
+                'forest': 'α',
+                'canyon': 'β',
+                'desert': 'γ',
+                'tundra': 'δ'
+            }
+            for area_type in sorted(wild_area_types.keys()):
+                symbol = type_symbols.get(area_type, area_type[0].upper())
+                title_type = area_type.capitalize()
+                pages.append({
+                    'title': f'Wild Area {symbol} - {title_type}',
+                    'locations': sorted(wild_area_types[area_type])
+                })
+
+        # If no pages were created (no locations with channels), create a placeholder
+        if not pages:
+            pages.append({
+                'title': 'No Travel Locations Available',
+                'locations': []
+            })
+
+        return pages
 
     def update_view(self):
         """Update the view with current page"""
