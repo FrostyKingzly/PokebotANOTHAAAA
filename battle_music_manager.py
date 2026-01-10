@@ -215,6 +215,21 @@ class BattleMusicManager:
         self.session_loop = not self.session_loop
         return self.session_loop
 
+    def remove_session_track(self, index: int) -> bool:
+        """
+        Remove a track from the session queue by index.
+
+        Args:
+            index: The 0-based index of the track to remove
+
+        Returns:
+            True if track was removed, False if index was invalid
+        """
+        if 0 <= index < len(self.session_queue):
+            self.session_queue.pop(index)
+            return True
+        return False
+
     def get_session_queue_status(self) -> Dict[str, Optional[str]]:
         """Get current session music status for display."""
         current_title = None

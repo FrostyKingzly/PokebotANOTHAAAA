@@ -1001,6 +1001,76 @@ class SessionMusicLinkModal(discord.ui.Modal):
         await self.view.refresh_message()
 
 
+class RemoveTrackSelect(discord.ui.Select):
+    """Select menu for choosing which track to remove from queue."""
+
+    def __init__(self, music_manager, parent_view):
+        self.music_manager = music_manager
+        self.parent_view = parent_view
+
+        status = music_manager.get_session_queue_status()
+        queue = status["queue"]
+
+        # Create options from queue
+        options = []
+        if queue:
+            for idx, track in enumerate(queue):
+                # Truncate long titles for display
+                display_title = track if len(track) <= 90 else track[:87] + "..."
+                options.append(
+                    discord.SelectOption(
+                        label=f"{idx + 1}. {display_title}",
+                        value=str(idx),
+                        description=f"Remove track #{idx + 1}"
+                    )
+                )
+        else:
+            options.append(
+                discord.SelectOption(
+                    label="Queue is empty",
+                    value="empty",
+                    description="No tracks to remove"
+                )
+            )
+
+        super().__init__(
+            placeholder="Select a track to remove...",
+            options=options,
+            disabled=len(queue) == 0
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        if self.values[0] == "empty":
+            await interaction.response.send_message(
+                "❌ Queue is empty.",
+                ephemeral=True
+            )
+            return
+
+        track_index = int(self.values[0])
+        removed = self.music_manager.remove_session_track(track_index)
+
+        if removed:
+            await interaction.response.send_message(
+                f"✅ Removed track #{track_index + 1} from queue.",
+                ephemeral=True
+            )
+            await self.parent_view.refresh_message()
+        else:
+            await interaction.response.send_message(
+                "❌ Failed to remove track. Invalid index.",
+                ephemeral=True
+            )
+
+
+class RemoveTrackView(discord.ui.View):
+    """View containing the remove track select menu."""
+
+    def __init__(self, music_manager, parent_view):
+        super().__init__(timeout=60)
+        self.add_item(RemoveTrackSelect(music_manager, parent_view))
+
+
 class SessionMusicView(discord.ui.View):
     """Controls for session music playback."""
 
@@ -1072,6 +1142,23 @@ class SessionMusicView(discord.ui.View):
         button.label = "Loop: On" if loop_enabled else "Loop: Off"
         await interaction.response.defer(ephemeral=True)
         await self.refresh_message()
+
+    @discord.ui.button(label="Remove Track", style=discord.ButtonStyle.danger, emoji="🗑️", row=1)
+    async def remove_track_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        status = self.music_manager.get_session_queue_status()
+        if not status["queue"]:
+            await interaction.response.send_message(
+                "❌ Queue is empty. No tracks to remove.",
+                ephemeral=True
+            )
+            return
+
+        view = RemoveTrackView(self.music_manager, self)
+        await interaction.response.send_message(
+            "Select a track to remove from the queue:",
+            view=view,
+            ephemeral=True
+        )
 
 
 class SessionCog(commands.Cog):
