@@ -193,7 +193,12 @@ class BattleMusicManager:
     async def skip_session_next(self) -> bool:
         """Skip to the next track in the session queue."""
         if not self.session_queue:
-            await self._stop_session_music()
+            # No more tracks - stop current track but stay connected
+            if self.voice_client and self.voice_client.is_playing():
+                self.voice_client.stop()
+            if self.session_current_track:
+                self.session_history.append(self.session_current_track)
+            self.session_current_track = None
             return False
         if self.session_current_track:
             self.session_history.append(self.session_current_track)
@@ -215,6 +220,21 @@ class BattleMusicManager:
         self.session_loop = not self.session_loop
         return self.session_loop
 
+    def remove_session_track(self, index: int) -> bool:
+        """
+        Remove a track from the session queue by index.
+
+        Args:
+            index: The 0-based index of the track to remove
+
+        Returns:
+            True if track was removed, False if index was invalid
+        """
+        if 0 <= index < len(self.session_queue):
+            self.session_queue.pop(index)
+            return True
+        return False
+
     def get_session_queue_status(self) -> Dict[str, Optional[str]]:
         """Get current session music status for display."""
         current_title = None
@@ -231,7 +251,9 @@ class BattleMusicManager:
 
     async def _start_next_session_track(self):
         if not self.session_queue:
-            await self._stop_session_music()
+            # Don't disconnect - just clear current track and wait for more tracks
+            # The bot will stay in VC as long as the session is active
+            self.session_current_track = None
             return
         self.session_current_track = self.session_queue.pop(0)
         await self._play_session_track(self.session_current_track)
