@@ -835,7 +835,7 @@ class RewardModal(discord.ui.Modal, title="Give Rewards"):
 
             # Give items
             for item_id, quantity in items_to_give:
-                self.bot.player_manager.db.add_item_to_inventory(user_id, item_id, quantity)
+                self.bot.player_manager.db.add_item(user_id, item_id, quantity)
                 user_results.append(f"+{quantity}x {item_id}")
 
             if user_results:
