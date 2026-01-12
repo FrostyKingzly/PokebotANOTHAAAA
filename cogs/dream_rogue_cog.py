@@ -6,7 +6,7 @@ Commands and orchestration for the Dream Dive roguelike gamemode
 
 import discord
 from discord.ext import commands
-from typing import Optional, List
+from typing import List
 import asyncio
 import random
 
@@ -19,46 +19,11 @@ from ui.dream_rogue_views import (
     FloorNavigationView,
     VotingView,
     InstanceActionView,
-    FloorSelectModal
 )
 
 
 class DreamRogueCog(commands.Cog):
     """Dream Dive gamemode commands"""
-
-    PATH_CHOICE_CHANCE = 0.65
-    PATH_OPTIONS = (
-        {
-            "name": "Battle Path",
-            "description": "Seek out the next battle encounter.",
-            "categories": ["battle"],
-        },
-        {
-            "name": "Gambling Path",
-            "description": "Risk it all on a gambling encounter.",
-            "categories": ["gambling"],
-        },
-        {
-            "name": "Social Path",
-            "description": "Encounter mysterious beings and make choices together.",
-            "categories": ["social"],
-        },
-        {
-            "name": "Reward Path",
-            "description": "Find treasure and buffs with minimal risk.",
-            "categories": ["reward", "buff"],
-        },
-        {
-            "name": "Rest Path",
-            "description": "Take a breather and restore your team.",
-            "categories": ["rest", "recovery"],
-        },
-        {
-            "name": "Shop Path",
-            "description": "Trade Dreamlites for powerful buffs.",
-            "categories": ["shop", "economy"],
-        },
-    )
 
     def __init__(self, bot):
         self.bot = bot
@@ -142,9 +107,9 @@ class DreamRogueCog(commands.Cog):
 
         await interaction.response.send_message(embed=embed)
 
-        # Start first floor
+        # Start first node selection
         await asyncio.sleep(2)
-        await self._start_floor(interaction, run_id)
+        await self._offer_next_nodes(interaction, run_id)
 
     async def start_dive_solo(self, interaction: discord.Interaction, stage_level: int):
         """
@@ -235,20 +200,20 @@ class DreamRogueCog(commands.Cog):
 
             # Show dive start
             embed = DreamRogueEmbeds.dive_start(
-                run["starting_floor"],
+                run["stage_level"],
                 [p["discord_user_id"] for p in participants]
             )
 
             await interaction.response.edit_message(embed=embed, view=None)
 
-            # Start first floor
+            # Start first node selection
             await asyncio.sleep(2)
-            await self._start_floor(interaction, run_id)
+            await self._offer_next_nodes(interaction, run_id)
 
         else:
             # Just update lobby
             participants = self.dream_manager.get_participants(run_id)
-            floor_range = self.dream_manager.get_floor_level_range(run["starting_floor"])
+            floor_range = self.dream_manager.get_floor_level_range(run["stage_level"], run["starting_floor"])
 
             embed = DreamRogueEmbeds.run_status(run, participants, floor_range)
             embed.description += "\n\n*Waiting for participants... Click 'Start Dive' when ready.*"
@@ -256,37 +221,111 @@ class DreamRogueCog(commands.Cog):
             # Don't change view
             await interaction.response.defer()
 
-    async def _start_floor(
+    async def _offer_next_nodes(self, interaction: discord.Interaction, run_id: str):
+        """Prompt the team to choose the next node."""
+        run = self.dream_manager.get_run(run_id)
+        if not run:
+            return
+
+        current_node = self.dream_manager.get_current_node(run_id)
+        next_nodes = self.dream_manager.get_next_nodes(run_id)
+        if not current_node or not next_nodes:
+            return
+
+        if len(next_nodes) == 1:
+            await self._enter_node(interaction, run_id, next_nodes[0])
+            return
+
+        vote_id = self.dream_manager.create_vote(
+            run_id,
+            "Choose the next node:",
+            [
+                {
+                    "name": self._node_option_name(node),
+                    "description": self._node_option_description(node),
+                }
+                for node in next_nodes
+            ],
+        )
+
+        vote = self.dream_manager.get_vote(vote_id)
+        percentages = self.dream_manager.get_vote_percentages(vote_id)
+        embed = DreamRogueEmbeds.node_selection(current_node, next_nodes, run["stage_level"])
+
+        view = VotingView(
+            self.bot,
+            vote_id,
+            run_id,
+            lambda i, result: self._on_node_vote_complete(i, run_id, next_nodes, result)
+        )
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, view=view)
+        else:
+            await interaction.response.send_message(embed=embed, view=view)
+
+    def _node_option_name(self, node: dict) -> str:
+        node_type = node.get("node_type", "event")
+        label_map = {
+            "combat": "Combat",
+            "event": "Event",
+            "rest": "Rest",
+            "mini_boss": "Mini Boss",
+            "boss": "Boss",
+        }
+        name = label_map.get(node_type, "Unknown")
+        if node.get("has_shop"):
+            name += " + Shop"
+        return name
+
+    def _node_option_description(self, node: dict) -> str:
+        node_type = node.get("node_type", "event")
+        description_map = {
+            "combat": "A battle against roaming foes.",
+            "event": "A mysterious encounter with choices.",
+            "rest": "Recover some HP at the campfire.",
+            "mini_boss": "A tougher fight with better rewards.",
+            "boss": "The floor guardian awaits.",
+        }
+        return description_map.get(node_type, "An unknown path.")
+
+    async def _on_node_vote_complete(
         self,
         interaction: discord.Interaction,
         run_id: str,
-        category_override: Optional[List[str]] = None
+        next_nodes: List[dict],
+        result_index: int
     ):
-        """Start a new floor"""
-        run = self.dream_manager.get_run(run_id)
-        floor = run["current_floor"]
+        """Handle node vote resolution."""
+        if not isinstance(result_index, int) or result_index >= len(next_nodes):
+            return
+        await self._enter_node(interaction, run_id, next_nodes[result_index])
 
-        stage_embed = DreamRogueEmbeds.stage_intro(floor)
+    async def _enter_node(self, interaction: discord.Interaction, run_id: str, node: dict):
+        """Advance into the selected node and start its instances."""
+        self.dream_manager.set_current_node(run_id, node["node_id"])
+        run = self.dream_manager.get_run(run_id)
+
+        stage_embed = DreamRogueEmbeds.stage_intro(node.get("depth", run["current_floor"]))
         await self._send_embed(interaction, stage_embed)
 
-        # Generate instances for floor
-        instances = self.dream_manager.generate_floor_instances(
-            run_id,
-            floor,
-            category_override=category_override
-        )
+        if node.get("node_type") == "boss":
+            boss_embed = DreamRogueEmbeds.boss_intro(node.get("depth", run["current_floor"]))
+            await self._send_embed(interaction, boss_embed)
+
+        instances = self.dream_manager.generate_node_instances(run_id, node)
 
         if not instances:
-            await interaction.followup.send("❌ Failed to generate floor instances!")
+            await self._offer_next_nodes(interaction, run_id)
             return
 
         if len(instances) > 1:
-            embed = DreamRogueEmbeds.instance_selection(instances[0], floor)
+            embed = DreamRogueEmbeds.instance_selection(instances[0], node.get("depth", run["current_floor"]))
             view = FloorNavigationView(
                 self.bot,
                 run_id,
                 instances,
-                lambda i, chosen: self._show_instance(i, run_id, chosen, [chosen])
+                lambda i, chosen: self._show_instance(i, run_id, node, chosen, [chosen])
             )
 
             if interaction.response.is_done():
@@ -295,13 +334,13 @@ class DreamRogueCog(commands.Cog):
                 await interaction.response.send_message(embed=embed, view=view)
             return
 
-        # Show single instance
-        await self._show_instance(interaction, run_id, instances[0], instances)
+        await self._show_instance(interaction, run_id, node, instances[0], instances)
 
     async def _show_instance(
         self,
         interaction: discord.Interaction,
         run_id: str,
+        node: dict,
         instance: dict,
         remaining_instances: list
     ):
@@ -321,7 +360,7 @@ class DreamRogueCog(commands.Cog):
                 self.bot,
                 run_id,
                 instance,
-                lambda i, result: self._on_instance_complete(i, run_id, instance, result, remaining_instances),
+                lambda i, result: self._on_instance_complete(i, run_id, node, instance, result, remaining_instances),
                 origin_channel_id=interaction.channel.id
             )
 
@@ -343,7 +382,7 @@ class DreamRogueCog(commands.Cog):
                 run_id,
                 instance,
                 [p["discord_user_id"] for p in participants],
-                lambda i, result: self._on_instance_complete(i, run_id, instance, result, remaining_instances)
+                lambda i, result: self._on_instance_complete(i, run_id, node, instance, result, remaining_instances)
             )
 
             notice_embed = discord.Embed(
@@ -361,6 +400,7 @@ class DreamRogueCog(commands.Cog):
         self,
         interaction: discord.Interaction,
         run_id: str,
+        node: dict,
         instance: dict,
         result: str,
         remaining_instances: list
@@ -409,7 +449,7 @@ class DreamRogueCog(commands.Cog):
                             dreamlites_gained
                         )
                     buffs = []
-                    if floor == 1 and result == "battle_complete":
+                    if node.get("depth", floor) <= 2 and result == "battle_complete":
                         buffs = self.dream_manager.grant_positive_buffs(run_id, count=2)
 
                     reward_embed = DreamRogueEmbeds.battle_reward(
@@ -477,7 +517,7 @@ class DreamRogueCog(commands.Cog):
                     )
 
                 buffs = []
-                if floor == 1 and result == "battle_complete":
+                if node.get("depth", floor) <= 2 and result == "battle_complete":
                     buffs = self.dream_manager.grant_positive_buffs(run_id, count=2)
 
                 reward_embed = DreamRogueEmbeds.battle_reward(
@@ -488,10 +528,19 @@ class DreamRogueCog(commands.Cog):
                 )
                 await interaction.followup.send(embed=reward_embed)
 
+        if "rest" not in instance.get("categories", []) and "battle" not in instance.get("categories", []):
+            participants = self.dream_manager.get_participants(run_id)
+            dreamlites_gained = random.randint(10, 25)
+            for participant in participants:
+                self.dream_manager.add_dreamlites(run_id, participant["discord_user_id"], dreamlites_gained)
+            await interaction.followup.send(
+                f"💎 The dream rewards your progress. Everyone gains **{dreamlites_gained}** Dreamlites."
+            )
+
         if not remaining_instances:
             # Floor complete!
             # Check if boss defeated or regular floor
-            if floor == 10 and "boss" in result.lower():
+            if node.get("node_type") == "boss" and "boss" in result.lower():
                 # Boss defeated - run complete!
                 from dream_dive_rewards import (
                     calculate_dream_dive_exp,
@@ -523,96 +572,11 @@ class DreamRogueCog(commands.Cog):
                 await interaction.followup.send(embed=embed)
 
             else:
-                await self._handle_floor_transition(interaction, run_id, floor)
+                await self._offer_next_nodes(interaction, run_id)
 
         else:
             # More instances on this floor
-            await self._show_instance(interaction, run_id, remaining_instances[0], remaining_instances)
-
-    async def _handle_floor_transition(
-        self,
-        interaction: discord.Interaction,
-        run_id: str,
-        current_floor: int
-    ):
-        """Handle path selection and travel to the next floor."""
-        run = self.dream_manager.get_run(run_id)
-        if not run or current_floor >= 10:
-            return
-
-        next_floor = current_floor + 1
-        if next_floor in {5, 10}:
-            await self._advance_to_next_floor(interaction, run_id, current_floor)
-            return
-
-        use_path_choice = random.random() <= self.PATH_CHOICE_CHANCE
-
-        if not use_path_choice:
-            await self._advance_to_next_floor(interaction, run_id, current_floor)
-            return
-
-        vote_id = self.dream_manager.create_vote(
-            run_id,
-            "Choose the path ahead:",
-            [
-                {"name": option["name"], "description": option["description"]}
-                for option in self.PATH_OPTIONS
-            ],
-        )
-
-        vote = self.dream_manager.get_vote(vote_id)
-        percentages = self.dream_manager.get_vote_percentages(vote_id)
-
-        embed = DreamRogueEmbeds.voting(vote, percentages)
-        view = VotingView(
-            self.bot,
-            vote_id,
-            run_id,
-            lambda i, result: self._on_path_vote_complete(i, run_id, current_floor, result)
-        )
-
-        if interaction.response.is_done():
-            await interaction.followup.send(embed=embed, view=view)
-        else:
-            await interaction.response.send_message(embed=embed, view=view)
-
-    async def _on_path_vote_complete(
-        self,
-        interaction: discord.Interaction,
-        run_id: str,
-        current_floor: int,
-        result_index: int
-    ):
-        """Apply the voted path and advance."""
-        if not isinstance(result_index, int):
-            await self._advance_to_next_floor(interaction, run_id, current_floor)
-            return
-
-        option = self.PATH_OPTIONS[result_index] if result_index < len(self.PATH_OPTIONS) else None
-        categories = option["categories"] if option else None
-
-        await self._advance_to_next_floor(
-            interaction,
-            run_id,
-            current_floor,
-            category_override=categories
-        )
-
-    async def _advance_to_next_floor(
-        self,
-        interaction: discord.Interaction,
-        run_id: str,
-        current_floor: int,
-        category_override: Optional[List[str]] = None
-    ):
-        """Advance the run and start the next floor."""
-        new_floor = self.dream_manager.advance_floor(run_id)
-
-        embed = DreamRogueEmbeds.stage_travel(current_floor, new_floor)
-        await interaction.followup.send(embed=embed)
-
-        await asyncio.sleep(3)
-        await self._start_floor(interaction, run_id, category_override=category_override)
+            await self._show_instance(interaction, run_id, node, remaining_instances[0], remaining_instances)
 
     async def _send_embed(self, interaction: discord.Interaction, embed: discord.Embed):
         if interaction.response.is_done():

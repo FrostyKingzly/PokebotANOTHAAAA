@@ -76,6 +76,46 @@ class DreamRogueEmbeds:
         return embed
 
     @staticmethod
+    def node_selection(current_node: Dict, next_nodes: List[Dict], stage_level: int) -> discord.Embed:
+        """Embed for selecting the next node in the map."""
+        def _node_display(node: Dict) -> str:
+            node_type = node.get("node_type", "event")
+            emoji_map = {
+                "combat": DreamRogueEmbeds.BATTLE_EMOJI,
+                "event": "❓",
+                "rest": "🔥",
+                "mini_boss": "🟣",
+                "boss": DreamRogueEmbeds.BOSS_EMOJI,
+            }
+            label_map = {
+                "combat": "Combat Encounter",
+                "event": "Dream Event",
+                "rest": "Rest Area",
+                "mini_boss": "Mini Boss",
+                "boss": "Floor Boss",
+            }
+            emoji = emoji_map.get(node_type, "❓")
+            label = label_map.get(node_type, "Unknown")
+            shop = " 🛍️" if node.get("has_shop") else ""
+            return f"{emoji} **{label}**{shop}"
+
+        embed = discord.Embed(
+            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Choose the Next Node",
+            description=f"*Stage Level {stage_level} — Current Depth {current_node.get('depth', 1)}*",
+            color=DreamRogueEmbeds.DREAM_COLOR
+        )
+
+        for idx, node in enumerate(next_nodes, start=1):
+            embed.add_field(
+                name=f"Option {idx}",
+                value=_node_display(node),
+                inline=False
+            )
+
+        embed.set_footer(text="Team vote decides the path forward.")
+        return embed
+
+    @staticmethod
     def instance_selection(instance: Dict, stage: int) -> discord.Embed:
         """
         Instance encounter embed
@@ -97,9 +137,15 @@ class DreamRogueEmbeds:
         elif "domain" in categories:
             color = DreamRogueEmbeds.DREAM_COLOR
             emoji = DreamRogueEmbeds.DOMAIN_EMOJI
+        elif "mini_boss" in categories:
+            color = DreamRogueEmbeds.WARNING_COLOR
+            emoji = "🟣"
         elif "battle" in categories or "boss" in categories:
             color = DreamRogueEmbeds.DANGER_COLOR
             emoji = DreamRogueEmbeds.BOSS_EMOJI if "boss" in categories else DreamRogueEmbeds.BATTLE_EMOJI
+        elif "event" in categories:
+            color = DreamRogueEmbeds.INFO_COLOR
+            emoji = "❓"
         elif "buff" in categories:
             color = DreamRogueEmbeds.SUCCESS_COLOR
             emoji = DreamRogueEmbeds.BUFF_EMOJI
