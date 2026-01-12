@@ -22,6 +22,10 @@ CREATE TABLE IF NOT EXISTS dream_rogue_runs (
     current_instance_id TEXT,  -- Current instance being processed
     floor_instances_remaining INTEGER DEFAULT 0,  -- Instances left on floor
 
+    -- Map state
+    map_data TEXT,  -- JSON map definition for the run
+    current_node_id TEXT,  -- Active node in the map
+
     -- Boss state
     boss_defeated INTEGER DEFAULT 0,
 

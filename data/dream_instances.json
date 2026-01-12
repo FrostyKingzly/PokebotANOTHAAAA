@@ -523,32 +523,138 @@
       "visibility": "public"
     }
   },
+  "events": {
+    "raider_scavenge": {
+      "name": "Raiders at the Roadside",
+      "description": "A band of raiders scavenges a fallen traveler. The dream awaits your response.",
+      "categories": ["event"],
+      "scope": "team",
+      "risk_level": "low",
+      "effect_data": {
+        "prompt": "How will you respond?",
+        "options": [
+          {
+            "name": "Move On",
+            "description": "Leave quietly and gather 100 Dreamlites.",
+            "effects": {
+              "dreamlites_gain": 100
+            }
+          },
+          {
+            "name": "Intervene",
+            "description": "Roll a d20 for a blessing. Fail and lose 25 Dreamlites.",
+            "effects": {
+              "roll_d20": {
+                "success_threshold": 12,
+                "success": {
+                  "random_buff": true
+                },
+                "failure": {
+                  "dreamlites_loss": 25
+                }
+              }
+            }
+          }
+        ]
+      },
+      "visibility": "public"
+    },
+    "cryptic_negotiation": {
+      "name": "Cryptic Negotiation",
+      "description": "A cloaked emissary offers knowledge in exchange for trust.",
+      "categories": ["event"],
+      "scope": "team",
+      "risk_level": "medium",
+      "effect_data": {
+        "prompt": "Who do you trust?",
+        "options": [
+          {
+            "name": "Decline",
+            "description": "Collect 60 Dreamlites and move on.",
+            "effects": {
+              "dreamlites_gain": 60
+            }
+          },
+          {
+            "name": "Negotiate",
+            "description": "Roll a d20. Success grants a blessing and Dreamlites. Failure brings a curse.",
+            "effects": {
+              "roll_d20": {
+                "success_threshold": 14,
+                "success": {
+                  "dreamlites_gain": 150,
+                  "random_buff": true
+                },
+                "failure": {
+                  "dreamlites_loss": 30,
+                  "random_curse": true
+                }
+              }
+            }
+          }
+        ]
+      },
+      "visibility": "public"
+    },
+    "abandoned_cache": {
+      "name": "Abandoned Cache",
+      "description": "A shimmering cache hums with dreamlight energy.",
+      "categories": ["event"],
+      "scope": "team",
+      "risk_level": "low",
+      "effect_data": {
+        "prompt": "Do you take the risk?",
+        "options": [
+          {
+            "name": "Loot the Cache",
+            "description": "Gain 80 Dreamlites immediately.",
+            "effects": {
+              "dreamlites_gain": 80
+            }
+          },
+          {
+            "name": "Probe Deeper",
+            "description": "Roll a d20 for greater reward. Failure costs 20 Dreamlites.",
+            "effects": {
+              "roll_d20": {
+                "success_threshold": 11,
+                "success": {
+                  "dreamlites_gain": 120,
+                  "random_buff": true
+                },
+                "failure": {
+                  "dreamlites_loss": 20
+                }
+              }
+            }
+          }
+        ]
+      },
+      "visibility": "public"
+    }
+  },
   "rest": {
     "safe_camp": {
       "name": "Safe Camp",
-      "description": "Restore HP and PP fully. Extract and return later.",
+      "description": "Rest by the campfire and restore 20% HP.",
       "categories": ["rest", "recovery"],
       "scope": "team",
       "risk_level": "low",
       "effect_data": {
         "type": "rest",
-        "heal_hp_percent": 1.0,
-        "heal_pp_percent": 1.0,
-        "allow_extraction": true
+        "heal_hp_percent": 0.2
       },
       "visibility": "public"
     },
     "unstable_camp": {
       "name": "Unstable Camp",
-      "description": "Restore HP and PP partially (50%).",
+      "description": "Restore a small amount of HP (20%).",
       "categories": ["rest", "recovery"],
       "scope": "team",
       "risk_level": "low",
       "effect_data": {
         "type": "rest",
-        "heal_hp_percent": 0.5,
-        "heal_pp_percent": 0.5,
-        "allow_extraction": false
+        "heal_hp_percent": 0.2
       },
       "visibility": "public"
     },

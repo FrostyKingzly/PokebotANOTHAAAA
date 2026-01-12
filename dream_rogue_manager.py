@@ -37,6 +37,12 @@ class DreamRogueManager:
             with open("dream_rogue_schema.sql", "r", encoding="utf-8") as f:
                 schema = f.read()
                 cursor.executescript(schema)
+            cursor.execute("PRAGMA table_info(dream_rogue_runs)")
+            columns = {row[1] for row in cursor.fetchall()}
+            if "map_data" not in columns:
+                cursor.execute("ALTER TABLE dream_rogue_runs ADD COLUMN map_data TEXT")
+            if "current_node_id" not in columns:
+                cursor.execute("ALTER TABLE dream_rogue_runs ADD COLUMN current_node_id TEXT")
             conn.commit()
         except FileNotFoundError:
             print("Warning: dream_rogue_schema.sql not found, skipping schema init")
@@ -92,6 +98,18 @@ class DreamRogueManager:
             INSERT INTO dream_rogue_participants (run_id, discord_user_id, dreamlites)
             VALUES (?, ?, ?)
         """, (run_id, initiator_id, starting_dreamlites))
+
+        map_data = self._generate_dive_map(stage_level)
+        cursor.execute("""
+            UPDATE dream_rogue_runs
+            SET map_data = ?, current_node_id = ?, current_floor = ?
+            WHERE run_id = ?
+        """, (
+            json.dumps(map_data),
+            map_data["start_node_id"],
+            map_data["nodes"][map_data["start_node_id"]]["depth"],
+            run_id,
+        ))
 
         conn.commit()
         conn.close()
@@ -450,6 +468,168 @@ class DreamRogueManager:
 
         return (min_level, max_level)
 
+    # ===== MAP GENERATION =====
+
+    def _generate_dive_map(self, stage_level: int, total_depth: int = 10) -> Dict[str, Any]:
+        """Generate a branching map for the run."""
+        def _node_id(depth: int, index: int) -> str:
+            return f"node_{depth}_{index}"
+
+        def _node_type_for_depth(depth: int) -> str:
+            if depth == 1:
+                return "start"
+            if depth == 2:
+                return "combat"
+            if depth == total_depth - 1:
+                return "mini_boss"
+            if depth == total_depth:
+                return "boss"
+            roll = random.random()
+            if roll < 0.5:
+                return "combat"
+            if roll < 0.75:
+                return "event"
+            return "rest"
+
+        nodes: Dict[str, Dict[str, Any]] = {}
+        edges: List[Dict[str, str]] = []
+
+        layer_counts = {1: 1, 2: 3, total_depth - 1: 2, total_depth: 1}
+        for depth in range(3, total_depth - 1):
+            layer_counts[depth] = random.choice([2, 3])
+
+        rest_depth = 5 if total_depth >= 6 else 3
+        rest_assigned = False
+
+        for depth in range(1, total_depth + 1):
+            count = layer_counts.get(depth, 1)
+            for index in range(1, count + 1):
+                node_id = _node_id(depth, index)
+                node_type = _node_type_for_depth(depth)
+
+                if depth == rest_depth and not rest_assigned and node_type not in {"boss", "mini_boss", "start"}:
+                    node_type = "rest"
+                    rest_assigned = True
+
+                nodes[node_id] = {
+                    "node_id": node_id,
+                    "depth": depth,
+                    "node_type": node_type,
+                    "has_shop": node_type == "rest" and random.random() < 0.08,
+                }
+
+        for depth in range(1, total_depth):
+            current_nodes = [n for n in nodes.values() if n["depth"] == depth]
+            next_nodes = [n for n in nodes.values() if n["depth"] == depth + 1]
+            if not next_nodes:
+                continue
+
+            for node in current_nodes:
+                connections = random.sample(next_nodes, k=random.randint(1, min(2, len(next_nodes))))
+                for next_node in connections:
+                    edges.append({"from": node["node_id"], "to": next_node["node_id"]})
+
+            for next_node in next_nodes:
+                if not any(edge["to"] == next_node["node_id"] for edge in edges):
+                    source = random.choice(current_nodes)
+                    edges.append({"from": source["node_id"], "to": next_node["node_id"]})
+
+        start_node_id = _node_id(1, 1)
+        final_node_id = _node_id(total_depth, 1)
+
+        return {
+            "map_type": "random",
+            "stage_level": stage_level,
+            "start_node_id": start_node_id,
+            "final_node_id": final_node_id,
+            "nodes": nodes,
+            "edges": edges,
+            "total_depth": total_depth,
+        }
+
+    def get_map(self, run_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch the stored map for a run."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT map_data FROM dream_rogue_runs WHERE run_id = ?", (run_id,))
+        result = cursor.fetchone()
+        conn.close()
+        if not result or not result[0]:
+            return None
+        return json.loads(result[0])
+
+    def get_current_node(self, run_id: str) -> Optional[Dict[str, Any]]:
+        """Get the current node in the map."""
+        run = self.get_run(run_id)
+        if not run:
+            return None
+        node_id = run.get("current_node_id")
+        if not node_id:
+            return None
+        map_data = self.get_map(run_id)
+        if not map_data:
+            return None
+        return map_data["nodes"].get(node_id)
+
+    def set_current_node(self, run_id: str, node_id: str) -> None:
+        """Update the run to the selected node."""
+        map_data = self.get_map(run_id)
+        if not map_data or node_id not in map_data["nodes"]:
+            return
+        node_depth = map_data["nodes"][node_id]["depth"]
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE dream_rogue_runs
+            SET current_node_id = ?, current_floor = ?
+            WHERE run_id = ?
+        """, (node_id, node_depth, run_id))
+        conn.commit()
+        conn.close()
+
+    def get_next_nodes(self, run_id: str) -> List[Dict[str, Any]]:
+        """Get available next nodes from the current node."""
+        run = self.get_run(run_id)
+        map_data = self.get_map(run_id)
+        if not run or not map_data:
+            return []
+        current_node_id = run.get("current_node_id")
+        if not current_node_id:
+            return []
+        next_node_ids = [
+            edge["to"] for edge in map_data.get("edges", [])
+            if edge.get("from") == current_node_id
+        ]
+        return [map_data["nodes"][node_id] for node_id in next_node_ids if node_id in map_data["nodes"]]
+
+    def generate_node_instances(self, run_id: str, node: Dict[str, Any]) -> List[Dict]:
+        """Generate instances for a specific node."""
+        node_type = node.get("node_type")
+        if node_type == "start":
+            return []
+        if node_type == "boss":
+            return [self._create_boss_instance(node.get("depth", 10))]
+        if node_type == "mini_boss":
+            return [self._create_miniboss_instance(node.get("depth", 9))]
+        if node_type == "rest":
+            instance = self._create_instance("rest", "safe_camp")
+            if node.get("has_shop"):
+                shop_instance = self._get_instances_by_category(["shop"], 1)
+                return [instance] + shop_instance
+            return [instance]
+        if node_type == "event":
+            event_instances = self._get_instances_by_category(["event"], 1)
+            if event_instances:
+                return event_instances
+            return self._get_instances_by_category(["social", "trial", "gambling", "reward", "economy"], 1)
+        if node_type == "combat":
+            battle_instances = self._get_instances_by_category(["battle"], 3)
+            filtered = [b for b in battle_instances if "raid" not in b.get("categories", [])]
+            if filtered:
+                return [random.choice(filtered)]
+            return self._get_instances_by_category(["battle"], 1)
+        return self._get_instances_by_category(["battle"], 1)
+
     def generate_floor_instances(
         self,
         run_id: str,
@@ -650,6 +830,25 @@ class DreamRogueManager:
 
         # Fallback
         return {"template_id": template_id, "name": "Unknown Instance"}
+
+    def _create_miniboss_instance(self, floor: int) -> Dict:
+        """Create a mini-boss instance."""
+        return {
+            "template_id": "mini_boss",
+            "name": f"Mini Boss — Floor {floor}",
+            "description": "A tougher foe stands in your way.",
+            "categories": ["battle", "mini_boss"],
+            "scope": "team",
+            "risk_level": "high",
+            "effect_data": {
+                "type": "battle",
+                "floor": floor,
+                "battle_format": "doubles",
+                "num_opponents": 2,
+                "dreamlite_multiplier": 2,
+                "miniboss": True
+            }
+        }
 
     def _create_boss_instance(self, floor: int) -> Dict:
         """Create boss raid instance"""

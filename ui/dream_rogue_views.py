@@ -7,7 +7,6 @@ Discord UI components (buttons, modals, selects) for Dream Dive gamemode
 import discord
 from discord.ui import Button, View, Select, Modal, TextInput
 from typing import Optional, List, Dict, Any, Callable
-import asyncio
 
 
 class DiveStartView(View):
@@ -143,6 +142,8 @@ class FloorNavigationView(View):
 
     def _get_instance_emoji(self, categories: List[str]) -> str:
         """Get emoji for instance based on categories"""
+        if "mini_boss" in categories:
+            return "🟣"
         if "battle" in categories or "boss" in categories:
             return "⚔️"
         elif "rest" in categories:
@@ -155,6 +156,8 @@ class FloorNavigationView(View):
             return "💎"
         elif "gambling" in categories:
             return "🎲"
+        elif "event" in categories:
+            return "❓"
         elif "domain" in categories:
             return "🌌"
         else:
@@ -376,6 +379,14 @@ class InstanceActionView(View):
                 custom_id="challenge"
             ))
             self.children[0].callback = self._challenge
+        elif "shop" in categories:
+            self.add_item(Button(
+                label="Open Shop",
+                style=discord.ButtonStyle.secondary,
+                emoji="🛍️",
+                custom_id="shop"
+            ))
+            self.children[0].callback = self._open_shop
 
         elif "reward" in categories or "economy" in categories:
             self.add_item(Button(
@@ -385,6 +396,14 @@ class InstanceActionView(View):
                 custom_id="reward"
             ))
             self.children[0].callback = self._claim_reward
+        elif "event" in categories:
+            self.add_item(Button(
+                label="Resolve Event",
+                style=discord.ButtonStyle.primary,
+                emoji="❓",
+                custom_id="event"
+            ))
+            self.children[0].callback = self._resolve_event
         else:
             # Fallback action for domains/buffs/curses/etc.
             self.add_item(Button(
@@ -470,6 +489,8 @@ class InstanceActionView(View):
                 level = random.randint(min_lvl, max_lvl)
                 if "boss" in categories:
                     level = max_lvl + 10
+                elif "mini_boss" in categories:
+                    level = max_lvl + 5
                 opponents.append(Pokemon(
                     species_data=species_data,
                     level=level,
@@ -796,6 +817,8 @@ class InstanceActionView(View):
         player_db = PlayerDatabase()
 
         participants = manager.get_participants(self.run_id)
+        effect_data = self.instance.get("effect_data", {})
+        heal_percent = float(effect_data.get("heal_hp_percent", 0.2))
 
         # Restore all participants' Pokemon
         for p in participants:
@@ -803,21 +826,17 @@ class InstanceActionView(View):
             party = player_db.get_trainer_party(user_id)
 
             for pokemon in party:
-                # Restore HP and PP
+                max_hp = int(pokemon.get("max_hp", 1))
+                current_hp = int(pokemon.get("current_hp", max_hp))
+                heal_amount = max(1, int(round(max_hp * heal_percent)))
+                new_hp = min(max_hp, current_hp + heal_amount)
                 player_db.update_pokemon(
                     pokemon["pokemon_id"],
-                    {"current_hp": pokemon["max_hp"], "status_condition": None}
+                    {"current_hp": new_hp}
                 )
 
-                # Restore PP for all moves
-                moves = pokemon.get("moves", [])
-                for move in moves:
-                    move["pp"] = move["max_pp"]
-
-                player_db.update_pokemon_moves(pokemon["pokemon_id"], moves)
-
         await interaction.response.send_message(
-            "🛌 Your team has rested. All Pokémon are fully restored!",
+            "🛌 Your team rests by the campfire. Each Pokémon recovers some HP.",
             ephemeral=False
         )
 
@@ -1055,6 +1074,149 @@ class InstanceActionView(View):
         if self.on_complete_callback:
             await self.on_complete_callback(interaction, "reward_claimed")
 
+    async def _open_shop(self, interaction: discord.Interaction):
+        """Open a Dream Shop for the user."""
+        from dream_rogue_manager import DreamRogueManager
+        from ui.dream_rogue_embeds import DreamRogueEmbeds
+
+        manager = DreamRogueManager()
+        effect_data = self.instance.get("effect_data", {})
+        items = effect_data.get("items", [])
+        if not items:
+            await interaction.response.send_message(
+                "❌ The dream merchant has nothing to offer right now.",
+                ephemeral=True
+            )
+            return
+
+        shop_items = []
+        for item in items:
+            shop_items.append({
+                "name": item.get("name", "Dream Item"),
+                "description": item.get("description", ""),
+                "dreamlite_cost": item.get("cost", 0),
+                "effect": item.get("effect"),
+                "value": item.get("value"),
+            })
+
+        user_dreamlites = manager.get_dreamlites(self.run_id, interaction.user.id)
+        embed = DreamRogueEmbeds.shop(shop_items, user_dreamlites)
+        view = DreamShopView(self.bot, self.run_id, shop_items)
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+    async def _resolve_event(self, interaction: discord.Interaction):
+        """Resolve an event choice."""
+        from dream_rogue_manager import DreamRogueManager
+        from ui.dream_rogue_embeds import DreamRogueEmbeds
+        import random
+
+        manager = DreamRogueManager()
+        effect_data = self.instance.get("effect_data", {})
+        options = effect_data.get("options", [])
+        if not options:
+            await interaction.response.send_message(
+                "❌ This event has no choices to resolve.",
+                ephemeral=True
+            )
+            return
+
+        vote_id = manager.create_vote(
+            self.run_id,
+            effect_data.get("prompt", self.instance.get("name", "Dream Event")),
+            [
+                {
+                    "name": option.get("name", "Option"),
+                    "description": option.get("description", "A path through the dream."),
+                }
+                for option in options
+            ],
+        )
+
+        vote = manager.get_vote(vote_id)
+        percentages = manager.get_vote_percentages(vote_id)
+        embed = DreamRogueEmbeds.voting(vote, percentages)
+
+        async def _on_event_vote_complete(vote_interaction: discord.Interaction, result_index: int):
+            chosen = options[result_index]
+            participants = manager.get_participants(self.run_id)
+            effects = chosen.get("effects", {})
+
+            def _pick_template(match_fn):
+                candidates = []
+                for category_group, templates in manager.instance_templates.items():
+                    for template_id, template in templates.items():
+                        categories = template.get("categories", [])
+                        if match_fn(categories):
+                            instance = template.copy()
+                            instance["template_id"] = f"{category_group}.{template_id}"
+                            candidates.append(instance)
+                return random.choice(candidates) if candidates else None
+
+            dreamlites_gain = int(effects.get("dreamlites_gain", 0))
+            dreamlites_loss = int(effects.get("dreamlites_loss", 0))
+
+            if "roll_d20" in effects:
+                roll = random.randint(1, 20)
+                threshold = int(effects["roll_d20"].get("success_threshold", 11))
+                outcome = effects["roll_d20"]["success"] if roll >= threshold else effects["roll_d20"]["failure"]
+                dreamlites_gain += int(outcome.get("dreamlites_gain", 0))
+                dreamlites_loss += int(outcome.get("dreamlites_loss", 0))
+
+                if outcome.get("random_buff"):
+                    template = _pick_template(lambda cats: "buff" in cats and "curse" not in cats and "nightmare" not in cats)
+                    if template:
+                        manager.apply_buff(
+                            run_id=self.run_id,
+                            buff_type="buff",
+                            buff_name=template.get("name", "Dream Blessing"),
+                            buff_description=template.get("description", "A gentle boon."),
+                            scope="team",
+                            effect_data=template.get("effect_data", {}),
+                            duration=template.get("duration", "floor"),
+                        )
+                if outcome.get("random_curse"):
+                    template = _pick_template(lambda cats: "curse" in cats or "nightmare" in cats)
+                    if template:
+                        manager.apply_buff(
+                            run_id=self.run_id,
+                            buff_type="curse",
+                            buff_name=template.get("name", "Dream Curse"),
+                            buff_description=template.get("description", "A chilling omen."),
+                            scope="team",
+                            effect_data=template.get("effect_data", {}),
+                            duration=template.get("duration", "floor"),
+                        )
+
+            if dreamlites_gain:
+                for participant in participants:
+                    manager.add_dreamlites(self.run_id, participant["discord_user_id"], dreamlites_gain)
+            if dreamlites_loss:
+                for participant in participants:
+                    manager.add_dreamlites(self.run_id, participant["discord_user_id"], -dreamlites_loss)
+
+            outcome_lines = []
+            if dreamlites_gain:
+                outcome_lines.append(f"💎 Everyone gained **{dreamlites_gain}** Dreamlites.")
+            if dreamlites_loss:
+                outcome_lines.append(f"💎 Everyone lost **{dreamlites_loss}** Dreamlites.")
+
+            if outcome_lines:
+                await vote_interaction.followup.send("\n".join(outcome_lines))
+
+            if self.on_complete_callback:
+                await self.on_complete_callback(vote_interaction, "event_resolved")
+
+        view = VotingView(self.bot, vote_id, self.run_id, _on_event_vote_complete)
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, view=view)
+        else:
+            await interaction.response.send_message(embed=embed, view=view)
+
     async def _proceed(self, interaction: discord.Interaction):
         """Proceed through non-interactive instances (domain/buff/curse/etc.)"""
         from dream_rogue_manager import DreamRogueManager
@@ -1097,6 +1259,69 @@ class InstanceActionView(View):
 
         if self.on_complete_callback:
             await self.on_complete_callback(interaction, "proceeded")
+
+
+class DreamShopView(View):
+    """View for purchasing Dream Shop items."""
+
+    def __init__(self, bot, run_id: str, items: List[Dict[str, object]]):
+        super().__init__(timeout=600)
+        self.bot = bot
+        self.run_id = run_id
+        self.items = items
+
+        options = []
+        for idx, item in enumerate(items[:25]):
+            name = item.get("name", "Dream Item")
+            description = item.get("description", "")[:100]
+            cost = item.get("dreamlite_cost", 0)
+            options.append(discord.SelectOption(
+                label=f"{name} ({cost} 💎)",
+                value=str(idx),
+                description=description
+            ))
+
+        select = Select(
+            placeholder="Choose an item to purchase...",
+            options=options
+        )
+        select.callback = self._on_purchase
+        self.add_item(select)
+
+    async def _on_purchase(self, interaction: discord.Interaction):
+        from dream_rogue_manager import DreamRogueManager
+
+        manager = DreamRogueManager()
+        item = self.items[int(interaction.values[0])]
+        cost = int(item.get("dreamlite_cost", 0))
+
+        if not manager.can_afford(self.run_id, interaction.user.id, cost):
+            await interaction.response.send_message(
+                "❌ You don't have enough Dreamlites for that item.",
+                ephemeral=True
+            )
+            return
+
+        manager.add_dreamlites(self.run_id, interaction.user.id, -cost)
+        manager.apply_buff(
+            run_id=self.run_id,
+            buff_type="buff",
+            buff_name=item.get("name", "Dream Blessing"),
+            buff_description=item.get("description", "A boon from the merchant."),
+            scope="individual",
+            effect_data={
+                "type": item.get("effect"),
+                "value": item.get("value")
+            },
+            duration="floor",
+            target_user_id=interaction.user.id,
+        )
+
+        await interaction.response.send_message(
+            f"✅ You purchased **{item.get('name', 'Dream Item')}**.",
+            ephemeral=True
+        )
+        self.stop()
 
 
 class StageSelectModal(Modal, title="Choose Dream Dive Stage"):
