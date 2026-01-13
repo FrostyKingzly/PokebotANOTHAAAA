@@ -545,6 +545,19 @@ class InstanceActionView(View):
             return MockInteraction(thread, user)
 
         if battle_format == BattleFormat.RAID:
+            # Clean up any stale battle states before checking eligibility
+            for participant in participants:
+                user_id = participant["discord_user_id"]
+                if user_id in battle_cog.user_battles:
+                    battle_id = battle_cog.user_battles.get(user_id)
+                    battle = battle_cog.battle_engine.get_battle(battle_id) if battle_id else None
+                    if battle_id:
+                        battle_cog.battle_engine.end_battle(battle_id)
+                    if battle:
+                        battle_cog._unregister_battle(battle)
+                    else:
+                        battle_cog.user_battles.pop(user_id, None)
+
             eligible = []
             for participant in participants:
                 user_id = participant["discord_user_id"]
@@ -617,6 +630,19 @@ class InstanceActionView(View):
 
             self.bot.dream_rogue_battle_callbacks[battle_id] = _battle_done_callback
         elif battle_format == BattleFormat.MULTI:
+            # Clean up any stale battle states before checking eligibility
+            for participant in participants:
+                user_id = participant["discord_user_id"]
+                if user_id in battle_cog.user_battles:
+                    battle_id = battle_cog.user_battles.get(user_id)
+                    battle = battle_cog.battle_engine.get_battle(battle_id) if battle_id else None
+                    if battle_id:
+                        battle_cog.battle_engine.end_battle(battle_id)
+                    if battle:
+                        battle_cog._unregister_battle(battle)
+                    else:
+                        battle_cog.user_battles.pop(user_id, None)
+
             eligible = []
             for participant in participants:
                 user_id = participant["discord_user_id"]
@@ -691,6 +717,19 @@ class InstanceActionView(View):
 
             self.bot.dream_rogue_battle_callbacks[battle_id] = _battle_done_callback
         else:
+            # Clean up any stale battle states before starting individual battles
+            for participant in participants:
+                user_id = participant["discord_user_id"]
+                if user_id in battle_cog.user_battles:
+                    battle_id = battle_cog.user_battles.get(user_id)
+                    battle = battle_cog.battle_engine.get_battle(battle_id) if battle_id else None
+                    if battle_id:
+                        battle_cog.battle_engine.end_battle(battle_id)
+                    if battle:
+                        battle_cog._unregister_battle(battle)
+                    else:
+                        battle_cog.user_battles.pop(user_id, None)
+
             self._pending_battles = {p["discord_user_id"] for p in participants}
             self._battle_results = {}  # Track win/loss for each participant
             for participant in participants:
