@@ -684,13 +684,10 @@ class DreamRogueCog(commands.Cog):
 
         if area_index == 2:
             if action_index == 0:
-                await self._send_embed(
-                    interaction,
-                    DreamRogueEmbeds.test_path_action(
-                        "🎬 Action 1 — Enraged Aipom Pack",
-                        "A group of enraged Aipom swarm the area, ready for a group battle."
-                    )
-                )
+                # Defer the interaction first
+                if not interaction.response.is_done():
+                    await interaction.response.defer()
+
                 battle_id = await self._start_test_path_raid(
                     interaction,
                     session,
@@ -702,16 +699,15 @@ class DreamRogueCog(commands.Cog):
                 if battle_id:
                     state["action_index"] = 1
                     self.dream_manager.update_script_state(run["run_id"], state)
+                else:
+                    await interaction.followup.send("❌ Failed to start battle - check logs for details")
                 return
 
             if action_index == 1:
-                await self._send_embed(
-                    interaction,
-                    DreamRogueEmbeds.test_path_action(
-                        "🎬 Action 2 — Ambipom's Rally",
-                        "An Ambipom charges in with a commanding cry, daring the party to respond."
-                    )
-                )
+                # Defer the interaction first
+                if not interaction.response.is_done():
+                    await interaction.response.defer()
+
                 battle_id = await self._start_test_path_raid(
                     interaction,
                     session,
@@ -723,6 +719,8 @@ class DreamRogueCog(commands.Cog):
                 if battle_id:
                     state["action_index"] = 2
                     self.dream_manager.update_script_state(run["run_id"], state)
+                else:
+                    await interaction.followup.send("❌ Failed to start battle - check logs for details")
                 return
 
             if action_index == 2:
