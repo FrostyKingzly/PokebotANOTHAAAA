@@ -637,3 +637,51 @@ class DreamRogueEmbeds:
 
         embed.set_footer(text="Good luck, dreamers.")
         return embed
+
+    @staticmethod
+    def test_path_area(area_index: int) -> discord.Embed:
+        """Embed describing the scripted test path area."""
+        titles = {
+            1: "🌀 Test Path — Area 1",
+            2: "🌀 Test Path — Area 2",
+            3: "🌀 Test Path — Area 3",
+        }
+        descriptions = {
+            1: (
+                "A wide, empty stretch of Somnia Prima sprawls ahead. There are no buffs, battles, "
+                "rewards, or Dreamlites here — just a place to breathe and roleplay.\n\n"
+                "*Note: Dreamlites will only appear once a dedicated key item is obtained.*"
+            ),
+            2: (
+                "At first glance, this space feels just as quiet as the last. Nothing stirs until the "
+                "session leader chooses to act."
+            ),
+            3: (
+                "The final chamber is still and weightless. The air hangs in suspense, "
+                "awaiting the next cue."
+            ),
+        }
+        embed = discord.Embed(
+            title=titles.get(area_index, "🌀 Test Path"),
+            description=descriptions.get(area_index, "The dream stretches onward."),
+            color=DreamRogueEmbeds.DREAM_COLOR
+        )
+        return embed
+
+    @staticmethod
+    def test_path_action(title: str, description: str) -> discord.Embed:
+        """Embed describing a scripted action."""
+        return discord.Embed(
+            title=title,
+            description=description,
+            color=DreamRogueEmbeds.WARNING_COLOR
+        )
+
+    @staticmethod
+    def test_path_loss() -> discord.Embed:
+        """Embed shown after a scripted loss."""
+        return discord.Embed(
+            title="🕳️ Defeat",
+            description="Your mind sinks into the abyss of dreams…",
+            color=DreamRogueEmbeds.DANGER_COLOR
+        )

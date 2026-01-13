@@ -1343,24 +1343,35 @@ class DiveConfigModal(Modal, title="Choose Dream Dive Layer & Intensity"):
         max_length=2
     )
 
-    def __init__(self, callback):
+    def __init__(self, callback, allow_test_path: bool = False):
         super().__init__()
         self.callback = callback
+        self.allow_test_path = allow_test_path
 
-    @staticmethod
-    def _normalize_layer(value: str) -> Optional[str]:
+    def _normalize_layer(self, value: str) -> Optional[str]:
         allowed_layers = {
             "somnia prima": "Somnia Prima",
             "somnia": "Somnia Prima",
         }
+        if self.allow_test_path:
+            allowed_layers.update({
+                "somnia prima test path": "Somnia Prima - Test Path",
+                "somnia prima - test path": "Somnia Prima - Test Path",
+                "test path": "Somnia Prima - Test Path",
+            })
         normalized = value.strip().lower()
         return allowed_layers.get(normalized)
 
     async def on_submit(self, interaction: discord.Interaction):
         layer_name = self._normalize_layer(self.layer_input.value)
         if not layer_name:
+            error_message = "❌ Only **Somnia Prima** is available right now."
+            if self.allow_test_path:
+                error_message = (
+                    "❌ Available layers: **Somnia Prima** or **Somnia Prima - Test Path**."
+                )
             await interaction.response.send_message(
-                "❌ Only **Somnia Prima** is available right now.",
+                error_message,
                 ephemeral=True
             )
             return

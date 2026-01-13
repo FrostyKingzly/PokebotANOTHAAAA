@@ -948,40 +948,63 @@ class BattleCog(commands.Cog):
         return "\n".join(bars)
 
     def _create_raid_status_embed(self, battle) -> discord.Embed:
-        raid_mon = (battle.opponent.get_active_pokemon() or [None])[0]
-        if not raid_mon:
+        active_raids = battle.opponent.get_active_pokemon() or []
+        if not active_raids:
             return discord.Embed(title="Raid Battle", description="Prepare for battle!", color=discord.Color.dark_red())
 
-        hp_bars = self._build_raid_hp_bars(raid_mon)
-        type_list = getattr(raid_mon, "species_data", {}).get("types", [])
-        type_emojis = " / ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
+        if len(active_raids) == 1:
+            raid_mon = active_raids[0]
+            hp_bars = self._build_raid_hp_bars(raid_mon)
+            type_list = getattr(raid_mon, "species_data", {}).get("types", [])
+            type_emojis = " / ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
+
+            embed = discord.Embed(
+                title=f"{self._format_pokemon_name(raid_mon)}",
+                description=(
+                    f"**HP** {type_emojis}\n{hp_bars}\n"
+                    f"**{max(0, int(getattr(raid_mon, 'current_hp', 0)))}/{int(getattr(raid_mon, 'max_hp', 1))}**"
+                ),
+                color=discord.Color.dark_red(),
+            )
+
+            sprite_url = PokemonSpriteHelper.get_sprite(
+                getattr(raid_mon, "species_name", None),
+                getattr(raid_mon, "species_dex_number", None),
+                style='animated',
+                gender=getattr(raid_mon, 'gender', None),
+                shiny=getattr(raid_mon, 'is_shiny', False),
+                use_fallback=False
+            )
+            if sprite_url:
+                embed.set_thumbnail(url=sprite_url)
+
+            return embed
 
         embed = discord.Embed(
-            title=f"{self._format_pokemon_name(raid_mon)}",
-            description=(
-                f"**HP** {type_emojis}\n{hp_bars}\n"
-                f"**{max(0, int(getattr(raid_mon, 'current_hp', 0)))}/{int(getattr(raid_mon, 'max_hp', 1))}**"
-            ),
+            title="Raid Enemies",
+            description=f"**Turn {battle.turn_number}**",
             color=discord.Color.dark_red(),
         )
 
-        sprite_url = PokemonSpriteHelper.get_sprite(
-            getattr(raid_mon, "species_name", None),
-            getattr(raid_mon, "species_dex_number", None),
-            style='animated',
-            gender=getattr(raid_mon, 'gender', None),
-            shiny=getattr(raid_mon, 'is_shiny', False),
-            use_fallback=False
-        )
-        if sprite_url:
-            embed.set_thumbnail(url=sprite_url)
+        for raid_mon in active_raids:
+            hp_bars = self._build_raid_hp_bars(raid_mon)
+            type_list = getattr(raid_mon, "species_data", {}).get("types", [])
+            type_emojis = " / ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
+            embed.add_field(
+                name=self._format_pokemon_name(raid_mon),
+                value=(
+                    f"**HP** {type_emojis}\n{hp_bars}\n"
+                    f"**{max(0, int(getattr(raid_mon, 'current_hp', 0)))}/{int(getattr(raid_mon, 'max_hp', 1))}**"
+                ),
+                inline=False,
+            )
 
         return embed
 
     def _create_raid_party_embed(self, battle) -> discord.Embed:
         embed = discord.Embed(
-            title="Raid Party",
-            description="Trainers, choose your actions!",
+            title="Allies",
+            description=f"**Turn {battle.turn_number}**",
             color=discord.Color.blurple(),
         )
 
@@ -1016,21 +1039,6 @@ class BattleCog(commands.Cog):
 
             if (idx + 1) % 4 == 0:
                 embed.add_field(name="\u200b", value="\u200b", inline=False)
-
-        # Add weather and terrain information
-        field_conditions = []
-        if getattr(battle, "weather", None):
-            weather_turns = getattr(battle, "weather_turns", 0)
-            # Only show turn count for player-set weather (5-8 turns), not permanent rogue weather (99+ turns)
-            turns_text = f" ({weather_turns} turns left)" if weather_turns > 0 and weather_turns < 99 else ""
-            field_conditions.append(f"Weather: **{battle.weather.title()}**{turns_text}")
-        if getattr(battle, "terrain", None):
-            terrain_turns = getattr(battle, "terrain_turns", 0)
-            turns_text = f" ({terrain_turns} turns left)" if terrain_turns > 0 else ""
-            field_conditions.append(f"Terrain: **{battle.terrain.title()}**{turns_text}")
-
-        if field_conditions:
-            embed.add_field(name="🌤️ Field Effects", value="\n".join(field_conditions), inline=False)
 
         return embed
 
@@ -1193,7 +1201,14 @@ class BattleCog(commands.Cog):
 
             if action_msgs:
                 event_type = event.get("type")
-                if event_type == "end_of_turn":
+                custom_title = event.get("title")
+                custom_color = event.get("color")
+                description_override = event.get("description_override")
+
+                if custom_title:
+                    title = custom_title
+                    color = custom_color or discord.Color.orange()
+                elif event_type == "end_of_turn":
                     title = "End of Turn"
                     color = discord.Color.orange()
                 elif event_type == "omni_ring":
@@ -1241,6 +1256,7 @@ class BattleCog(commands.Cog):
                         title=title,
                         color=color,
                         pokemon=event.get("actor"),
+                        description_override=description_override,
                     )
                 if embed:
                     embeds.append(embed)
@@ -1718,6 +1734,8 @@ class BattleCog(commands.Cog):
         Award experience for any new faints that haven't been processed yet.
         This is called after each turn to ensure Pokemon get exp immediately after defeating an opponent.
         """
+        if getattr(battle, "no_exp", False):
+            return
         if not self.exp_handler:
             return
 
@@ -1788,7 +1806,7 @@ class BattleCog(commands.Cog):
         battle.exp_processed_faint_count = len(fainted_opponents)
 
     async def _create_exp_embed(self, battle, interaction: Optional[discord.Interaction] = None) -> Optional[discord.Embed]:
-        if not self.exp_handler:
+        if not self.exp_handler or getattr(battle, "no_exp", False):
             return None
 
         if interaction:

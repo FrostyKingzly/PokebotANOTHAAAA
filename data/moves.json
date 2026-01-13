@@ -19699,5 +19699,33 @@
     "crit_rate": 1,
     "description": "No description available.",
     "generation": 3
+  },
+  "rally_cry": {
+    "id": "rally_cry",
+    "name": "Rally Cry",
+    "type": "normal",
+    "category": "status",
+    "power": null,
+    "accuracy": null,
+    "pp": 5,
+    "priority": 0,
+    "target": "self",
+    "crit_rate": 1,
+    "description": "Calls an ally to the raid and boosts the user's stats.",
+    "generation": 9
+  },
+  "nidoking_wait": {
+    "id": "nidoking_wait",
+    "name": "Nidoking Wait",
+    "type": "normal",
+    "category": "status",
+    "power": null,
+    "accuracy": null,
+    "pp": 1,
+    "priority": 0,
+    "target": "self",
+    "crit_rate": 1,
+    "description": "Nidoking pauses to watch.",
+    "generation": 9
   }
 }

@@ -773,6 +773,7 @@ class BattleEngine:
             raise ValueError("Opponent must have at least one Pokémon to battle.")
 
         raid_participants = kwargs.get('raid_participants') or []
+        raid_opponent_slots = int(kwargs.get("raid_opponent_slots") or 1) if battle_format == BattleFormat.RAID else None
 
         # In multi battles, each trainer sends out 1 Pokemon (2 total per team)
         # In doubles battles, each trainer sends out 2 Pokemon
@@ -803,7 +804,8 @@ class BattleEngine:
         for i, mon in enumerate(opponent_party):
             if getattr(mon, 'current_hp', 0) > 0:
                 opponent_active_positions.append(i)
-                if len(opponent_active_positions) >= active_slot_count:
+                opponent_slot_cap = raid_opponent_slots if raid_opponent_slots is not None else active_slot_count
+                if len(opponent_active_positions) >= opponent_slot_cap:
                     break
         if not opponent_active_positions:
             opponent_active_positions = [0]  # Fallback if all fainted
@@ -881,6 +883,8 @@ class BattleEngine:
             is_ranked=is_ranked,
             ranked_context=ranked_context or {}
         )
+        if raid_opponent_slots is not None:
+            battle.raid_opponent_slots = raid_opponent_slots
 
         # Set overworld weather if weather manager and location are provided
         if weather_manager and location_id:
@@ -1414,6 +1418,9 @@ class BattleEngine:
         battle = self.active_battles.get(battle_id)
         if not battle:
             return {"error": "Battle not found"}
+
+        if getattr(battle, "scripted_locked", False):
+            return {"error": "The dream holds you in place."}
         
         # NEW CODE: Check if forced switch is required
         if battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH']:
@@ -1553,6 +1560,9 @@ class BattleEngine:
             return None
 
         active_pokemon = active_pokemon_list[pokemon_position]
+
+        if getattr(active_pokemon, "scripted_ai", None) == "ambipom_raid":
+            return self._generate_ambipom_ai_action(battle, battler_id, pokemon_position, active_pokemon)
 
         # Smarter AI: Categorize moves and choose strategically
         usable_moves = [m for m in active_pokemon.moves if m['pp'] > 0]
@@ -1718,6 +1728,68 @@ class BattleEngine:
             target_position=target_pos,
             target_battler_id=target_battler_id,
             pokemon_position=pokemon_position
+        )
+
+    def _generate_ambipom_ai_action(
+        self,
+        battle: BattleState,
+        battler_id: int,
+        pokemon_position: int,
+        active_pokemon,
+    ) -> BattleAction:
+        preferred_attacks = ["double_hit", "dual_chop"]
+        rally_move = "rally_cry"
+
+        if battle.turn_number <= 2:
+            attack_move = next((m for m in preferred_attacks if any(move["move_id"] == m for move in active_pokemon.moves)), None)
+            if attack_move:
+                return BattleAction(
+                    action_type='move',
+                    battler_id=battler_id,
+                    move_id=attack_move,
+                    target_position=0,
+                    pokemon_position=pokemon_position,
+                )
+
+        battler = self._get_battler_by_id(battle, battler_id)
+        active_allies = battler.get_active_pokemon()
+        aipom_count = sum(1 for mon in active_allies if getattr(mon, "species_name", "").lower() == "aipom")
+
+        should_rally = False
+        if aipom_count == 0:
+            should_rally = True
+        elif aipom_count == 1:
+            should_rally = random.random() < 0.5
+
+        if should_rally and any(move["move_id"] == rally_move for move in active_pokemon.moves):
+            return BattleAction(
+                action_type='move',
+                battler_id=battler_id,
+                move_id=rally_move,
+                target_position=0,
+                pokemon_position=pokemon_position,
+            )
+
+        attack_options = [
+            move["move_id"] for move in active_pokemon.moves
+            if move["move_id"] in preferred_attacks and move.get("pp", 0) > 0
+        ]
+        if attack_options:
+            chosen = random.choice(attack_options)
+            return BattleAction(
+                action_type='move',
+                battler_id=battler_id,
+                move_id=chosen,
+                target_position=0,
+                pokemon_position=pokemon_position,
+            )
+
+        return BattleAction(
+            action_type='move',
+            battler_id=battler_id,
+            move_id=active_pokemon.moves[0]["move_id"],
+            target_position=0,
+            pokemon_position=pokemon_position,
         )
     
     # ========================
@@ -1895,6 +1967,9 @@ class BattleEngine:
             else:
                 battle.turn_log.extend(messages)
                 action_events.append({"type": action.action_type, "actor": acting_pokemon, "messages": messages})
+                extra_events = result.get("action_events") or []
+                if extra_events:
+                    action_events.extend(extra_events)
 
             # NOTE: We no longer break the action loop for forced switches or volt switches
             # All remaining actions execute first, THEN players are prompted to switch
@@ -1928,6 +2003,9 @@ class BattleEngine:
         
         # Check for battle end
         self._check_battle_end(battle)
+
+        if getattr(battle, "scripted_sequence", None) == "nidoking_test" and battle.turn_number >= 5:
+            battle.scripted_locked = True
         
         # Clear pending actions
         battle.pending_actions = {}
@@ -2194,17 +2272,26 @@ class BattleEngine:
 
             # Calculate damage
             if ENHANCED_SYSTEMS_AVAILABLE:
-                damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
-                    attacker, defender, action.move_id,
-                    weather=battle.weather,
-                    terrain=battle.terrain,
-                    battle_state=battle
-                )
+                if self._is_status_immune(defender):
+                    damage, is_crit, effectiveness, effect_msgs = self._calculate_damage_no_effects(
+                        attacker, defender, move_data, battle
+                    )
+                else:
+                    damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
+                        attacker, defender, action.move_id,
+                        weather=battle.weather,
+                        terrain=battle.terrain,
+                        battle_state=battle
+                    )
                 damage = min(int(damage * spread_modifier), defender.current_hp)
             else:
                 damage = int(10 * spread_modifier)
                 is_crit = False
                 effectiveness = 1.0
+                effect_msgs = []
+
+            if self._is_damage_immune(defender):
+                damage = 0
                 effect_msgs = []
 
             # Apply damage
@@ -2231,31 +2318,31 @@ class BattleEngine:
                 effectiveness_text = " It's super effective!"
             elif effectiveness < 1 and effectiveness > 0:
                 effectiveness_text = " It's not very effective..."
-            elif effectiveness == 0:
+
+            if effectiveness == 0:
                 messages.append(f"It doesn't affect {defender.species_name}...")
                 continue
 
-        damage_text = f"{defender.species_name} took {damage} damage!{crit_text}{effectiveness_text}"
-        messages.append(damage_text)
-        messages.extend(effect_msgs)
+            messages.append(f"{defender.species_name} took {damage} damage!{crit_text}{effectiveness_text}")
+            messages.extend(effect_msgs)
 
-        # Check for HP-based form changes after the exchange
-        if self.ability_handler:
-            messages.extend(self.ability_handler.update_form_passives(defender))
-            messages.extend(self.ability_handler.update_form_passives(attacker))
+            # Check for HP-based form changes after the exchange
+            if self.ability_handler:
+                messages.extend(self.ability_handler.update_form_passives(defender))
+                messages.extend(self.ability_handler.update_form_passives(attacker))
 
-        # Check for faint
-        if defender.current_hp <= 0:
-            if battle.battle_type == BattleType.WILD and defender_battler == battle.opponent:
-                defender.current_hp = 1
-                battle.wild_dazed = True
-                battle.phase = 'DAZED'
-                messages.append(f"The wild {defender.species_name} is dazed!")
-            else:
-                messages.append(f"{defender.species_name} fainted!")
-                self._record_faint(defender_battler, defender)
-                # Record opponent faint for EXP calculation
-                self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
+            # Check for faint
+            if defender.current_hp <= 0:
+                if battle.battle_type == BattleType.WILD and defender_battler == battle.opponent:
+                    defender.current_hp = 1
+                    battle.wild_dazed = True
+                    battle.phase = 'DAZED'
+                    messages.append(f"The wild {defender.species_name} is dazed!")
+                else:
+                    messages.append(f"{defender.species_name} fainted!")
+                    self._record_faint(defender_battler, defender)
+                    # Record opponent faint for EXP calculation
+                    self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
         return {"messages": messages}
 
@@ -2359,6 +2446,119 @@ class BattleEngine:
         )
         return damage_dealt, is_crit, effectiveness, effects
 
+    def _calculate_damage_no_effects(
+        self,
+        attacker,
+        defender,
+        move_data: Dict,
+        battle: BattleState,
+    ) -> Tuple[int, bool, float, List[str]]:
+        if move_data.get('category') == 'status':
+            return 0, False, 1.0, []
+        if ENHANCED_SYSTEMS_AVAILABLE and hasattr(self.calculator, '_calculate_base_damage'):
+            damage, is_crit, effectiveness = self.calculator._calculate_base_damage(
+                attacker,
+                defender,
+                move_data,
+                False,
+                battle.weather,
+                battle.terrain,
+            )
+            return damage, is_crit, effectiveness, []
+        return 10, False, 1.0, []
+
+    def _is_status_immune(self, defender) -> bool:
+        return bool(getattr(defender, "scripted_immune_status", False))
+
+    def _is_damage_immune(self, defender) -> bool:
+        return bool(getattr(defender, "scripted_immune_damage", False))
+
+    def _ensure_stat_stages(self, pokemon):
+        if not hasattr(pokemon, 'stat_stages'):
+            pokemon.stat_stages = {
+                'attack': 0,
+                'defense': 0,
+                'sp_attack': 0,
+                'sp_defense': 0,
+                'speed': 0,
+                'accuracy': 0,
+                'evasion': 0,
+            }
+
+    def _execute_rally_cry(self, battle: BattleState, attacker, attacker_battler: Battler, move_data: Dict) -> Dict:
+        messages = [f"{attacker.species_name} used {move_data['name']}!"]
+
+        for move in attacker.moves:
+            if move['move_id'] == move_data.get('id'):
+                move['pp'] = max(0, move['pp'] - 1)
+                break
+
+        max_slots = getattr(battle, "raid_opponent_slots", 1)
+        active_allies = attacker_battler.get_active_pokemon()
+        aipom_active = sum(1 for mon in active_allies if getattr(mon, "species_name", "").lower() == "aipom")
+
+        if len(active_allies) >= max_slots or aipom_active >= 2:
+            return {"messages": messages}
+
+        if not self.species_db:
+            return {"messages": messages + ["But nothing answered the call."]}
+
+        species_data = self.species_db.get_species("aipom")
+        if not species_data:
+            return {"messages": messages + ["But nothing answered the call."]}
+
+        from models import Pokemon
+
+        new_aipom = Pokemon(
+            species_data=species_data,
+            level=2,
+            owner_discord_id=None
+        )
+        new_aipom._calculate_stats()
+        new_aipom.current_hp = new_aipom.max_hp
+
+        attacker_battler.party.append(new_aipom)
+        attacker_battler.active_positions.append(len(attacker_battler.party) - 1)
+
+        self._ensure_stat_stages(attacker)
+        for stat in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
+            attacker.stat_stages[stat] = min(6, attacker.stat_stages.get(stat, 0) + 1)
+
+        resonance_messages = [
+            "Attack +1",
+            "Defense +1",
+            "Sp. Attack +1",
+            "Sp. Defense +1",
+            "Speed +1",
+        ]
+
+        action_events = [
+            {
+                "type": "custom",
+                "title": "A wild Aipom answers the call!",
+                "messages": ["A wild Aipom answers the call!"],
+                "actor": new_aipom,
+            },
+            {
+                "type": "custom",
+                "title": "Ambipom and Aipom begin to resonate! Ambipom’s power grows!",
+                "messages": resonance_messages,
+                "actor": attacker,
+            },
+        ]
+
+        return {"messages": messages, "action_events": action_events}
+
+    def _execute_nidoking_wait(self, battle: BattleState, attacker) -> Dict:
+        turn = battle.turn_number
+        if turn <= 2:
+            message = "Nidoking waits, and watches..."
+        elif turn <= 4:
+            message = "Nidoking takes a step forward."
+        else:
+            message = "Nidoking takes its last step. Nidoking is now upon you."
+        return {"messages": [message]}
+
     async def _execute_move(self, battle: BattleState, action: BattleAction) -> Dict:
         """Execute a move action - now supports spread moves hitting multiple targets"""
         # Get attacker and defender
@@ -2391,6 +2591,11 @@ class BattleEngine:
         move_data = self.moves_db.get_move(action.move_id)
         if not move_data:
             return {"messages": [f"{attacker.species_name} tried to use an unknown move!"]}
+
+        if move_data.get('id') == 'rally_cry':
+            return self._execute_rally_cry(battle, attacker, attacker_battler, move_data)
+        if move_data.get('id') == 'nidoking_wait':
+            return self._execute_nidoking_wait(battle, attacker)
 
         # Handle form changes tied to move usage (e.g., Stance Change)
         if self.ability_handler:
@@ -2533,6 +2738,9 @@ class BattleEngine:
             defender_battler_actual = attacker_battler
         defender_battler = defender_battler_actual
 
+        if move_data.get('category') == 'status' and self._is_status_immune(defender):
+            return {"messages": [f"It doesn't affect {defender.species_name}..."]}
+
         # If move hits multiple targets (spread move), handle differently
         if len(targets) > 1:
             return await self._execute_spread_move(
@@ -2619,20 +2827,34 @@ class BattleEngine:
             for hit_index in range(1, hit_count + 1):
                 if ENHANCED_SYSTEMS_AVAILABLE:
                     if hit_index == 1:
-                        damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
-                            attacker, defender, action.move_id,
-                            weather=battle.weather,
-                            terrain=battle.terrain,
-                            battle_state=battle
-                        )
+                        if self._is_status_immune(defender):
+                            damage, is_crit, effectiveness, effect_msgs = self._calculate_damage_no_effects(
+                                attacker, defender, move_data, battle
+                            )
+                        else:
+                            damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
+                                attacker, defender, action.move_id,
+                                weather=battle.weather,
+                                terrain=battle.terrain,
+                                battle_state=battle
+                            )
                     else:
-                        damage, is_crit, effectiveness, effect_msgs = self._calculate_damage_without_accuracy(
-                            attacker, defender, move_data, battle
-                        )
+                        if self._is_status_immune(defender):
+                            damage, is_crit, effectiveness, effect_msgs = self._calculate_damage_no_effects(
+                                attacker, defender, move_data, battle
+                            )
+                        else:
+                            damage, is_crit, effectiveness, effect_msgs = self._calculate_damage_without_accuracy(
+                                attacker, defender, move_data, battle
+                            )
                 else:
                     damage = 10
                     is_crit = False
                     effectiveness = 1.0
+                    effect_msgs = []
+
+                if self._is_damage_immune(defender):
+                    damage = 0
                     effect_msgs = []
 
                 if effectiveness == 0:
@@ -2685,6 +2907,10 @@ class BattleEngine:
                     messages.append(
                         f"Hit {hit_index}: {defender.species_name} took {damage} damage!{crit_text}{effectiveness_text}"
                     )
+                elif effectiveness > 0:
+                    messages.append(
+                        f"Hit {hit_index}: {defender.species_name} took 0 damage!{crit_text}{effectiveness_text}"
+                    )
                 messages.extend(effect_msgs)
 
                 if self.held_item_manager:
@@ -2724,12 +2950,17 @@ class BattleEngine:
 
         # Calculate damage and apply effects
         if ENHANCED_SYSTEMS_AVAILABLE:
-            damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
-                attacker, defender, action.move_id,
-                weather=battle.weather,
-                terrain=battle.terrain,
-                battle_state=battle
-            )
+            if self._is_status_immune(defender):
+                damage, is_crit, effectiveness, effect_msgs = self._calculate_damage_no_effects(
+                    attacker, defender, move_data, battle
+                )
+            else:
+                damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
+                    attacker, defender, action.move_id,
+                    weather=battle.weather,
+                    terrain=battle.terrain,
+                    battle_state=battle
+                )
         else:
             # Basic damage calculation fallback
             damage = 10  # Simplified
@@ -2740,6 +2971,10 @@ class BattleEngine:
         if self.held_item_manager:
             damage, held_msgs = self.held_item_manager.modify_damage(attacker, defender, move_data, damage)
             effect_msgs.extend(held_msgs)
+
+        if self._is_damage_immune(defender):
+            damage = 0
+            effect_msgs = []
 
         damage = min(damage, defender.current_hp)
 
@@ -2797,6 +3032,8 @@ class BattleEngine:
                 if pokemon_key not in battle.ai_ineffective_moves:
                     battle.ai_ineffective_moves[pokemon_key] = set()
                 battle.ai_ineffective_moves[pokemon_key].add(action.move_id)
+        else:
+            messages.append(f"{defender.species_name} took 0 damage!{crit_text}{effectiveness_text}")
 
         messages.extend(effect_msgs)
 
