@@ -1723,11 +1723,16 @@ class MainMenuView(View):
 
     async def _start_dream_rogue(self, interaction, trainer, activity: Dict[str, Any]):
         """Start Dream Dive dive from Dreamyard location"""
-        from ui.dream_rogue_views import DiveConfigModal
+        from ui.dream_rogue_views import DiveConfigView
 
-        # Show stage selection modal
-        modal = DiveConfigModal(lambda i, layer_name, intensity: self._on_dream_stage_selected(i, layer_name, intensity, trainer))
-        await interaction.response.send_modal(modal)
+        view = DiveConfigView(
+            lambda i, layer_name, intensity: self._on_dream_stage_selected(i, layer_name, intensity, trainer)
+        )
+        await interaction.response.send_message(
+            "Select a dream layer, dive type, and intensity:",
+            view=view,
+            ephemeral=True
+        )
 
     async def _on_dream_stage_selected(self, interaction: discord.Interaction, layer_name: str, intensity: int, trainer):
         """Handle layer/intensity selection for Dream Dive"""

@@ -246,6 +246,22 @@ class SessionManager:
 
         return [row['discord_user_id'] for row in rows]
 
+    def get_participants(self, session_id: str) -> List[Dict[str, int]]:
+        """Get participant rows for a session"""
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT discord_user_id FROM session_participants
+            WHERE session_id = ?
+            ORDER BY joined_at
+        """, (session_id,))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        return [dict(row) for row in rows]
+
     def is_in_session(self, discord_user_id: int) -> bool:
         """Check if player is in a session"""
         conn = self.db.get_connection()

@@ -1396,6 +1396,146 @@ class DiveConfigModal(Modal, title="Choose Dream Dive Layer & Intensity"):
             await self.callback(interaction, layer_name, intensity)
 
 
+# New dropdown-based configuration view for Dream Dive
+class DiveConfigView(View):
+    """View for selecting dream layer, dive type, and intensity."""
+
+    def __init__(self, callback, allow_test_path: bool = False):
+        super().__init__(timeout=300)
+        self.callback = callback
+        self.allow_test_path = allow_test_path
+        self.selected_layer: Optional[str] = None
+        self.selected_mode: Optional[str] = None
+        self.selected_intensity: Optional[int] = None
+
+        self.layer_select = Select(
+            placeholder="Select a dream layer...",
+            options=[
+                discord.SelectOption(
+                    label="Somnia Prima",
+                    value="Somnia Prima",
+                    description="The first dream layer."
+                )
+            ],
+        )
+        self.layer_select.callback = self._on_layer_selected
+
+        mode_options = [
+            discord.SelectOption(
+                label="Exploration",
+                value="exploration",
+                description="Standard Dream Dive run."
+            ),
+            discord.SelectOption(
+                label="Domain",
+                value="domain",
+                description="Enter a domain (intensity locked)."
+            ),
+        ]
+        if self.allow_test_path:
+            mode_options.append(
+                discord.SelectOption(
+                    label="Path",
+                    value="path",
+                    description="Follow the scripted test path."
+                )
+            )
+
+        self.mode_select = Select(
+            placeholder="Select dive type...",
+            options=mode_options,
+            disabled=True
+        )
+        self.mode_select.callback = self._on_mode_selected
+
+        self.intensity_select = Select(
+            placeholder="Select intensity (1-10)...",
+            options=[
+                discord.SelectOption(label=str(value), value=str(value))
+                for value in range(1, 11)
+            ],
+            disabled=True
+        )
+        self.intensity_select.callback = self._on_intensity_selected
+
+        self.start_button = Button(
+            label="Start Dive",
+            style=discord.ButtonStyle.primary,
+            disabled=True
+        )
+        self.start_button.callback = self._on_start
+
+        self.add_item(self.layer_select)
+        self.add_item(self.mode_select)
+        self.add_item(self.intensity_select)
+        self.add_item(self.start_button)
+
+    def _update_option_defaults(self, select: Select, selected_value: Optional[str]):
+        for option in select.options:
+            option.default = selected_value == option.value
+
+    def _sync_controls(self):
+        self.mode_select.disabled = self.selected_layer is None
+
+        if self.selected_mode == "exploration":
+            self.intensity_select.disabled = False
+            self.intensity_select.placeholder = "Select intensity (1-10)..."
+        else:
+            self.intensity_select.disabled = True
+            self.intensity_select.placeholder = "Intensity locked to 1"
+
+        can_start = self.selected_layer and self.selected_mode
+        if self.selected_mode == "exploration":
+            can_start = can_start and self.selected_intensity is not None
+        self.start_button.disabled = not can_start
+
+        self._update_option_defaults(self.layer_select, self.selected_layer)
+        self._update_option_defaults(self.mode_select, self.selected_mode)
+        if self.selected_intensity is not None:
+            self._update_option_defaults(self.intensity_select, str(self.selected_intensity))
+        else:
+            self._update_option_defaults(self.intensity_select, None)
+
+    async def _on_layer_selected(self, interaction: discord.Interaction):
+        self.selected_layer = self.layer_select.values[0]
+        self.selected_mode = None
+        self.selected_intensity = None
+        self._sync_controls()
+        await interaction.response.edit_message(view=self)
+
+    async def _on_mode_selected(self, interaction: discord.Interaction):
+        self.selected_mode = self.mode_select.values[0]
+        if self.selected_mode == "exploration":
+            self.selected_intensity = None
+        else:
+            self.selected_intensity = 1
+        self._sync_controls()
+        await interaction.response.edit_message(view=self)
+
+    async def _on_intensity_selected(self, interaction: discord.Interaction):
+        self.selected_intensity = int(self.intensity_select.values[0])
+        self._sync_controls()
+        await interaction.response.edit_message(view=self)
+
+    async def _on_start(self, interaction: discord.Interaction):
+        if not self.callback:
+            await interaction.response.send_message(
+                "❌ Unable to start the dive right now.",
+                ephemeral=True
+            )
+            return
+
+        if self.selected_mode == "path":
+            from dream_rogue_manager import DreamRogueManager
+            layer_name = DreamRogueManager.TEST_PATH_LAYER
+            intensity = 1
+        else:
+            layer_name = self.selected_layer
+            intensity = self.selected_intensity or 1
+
+        await self.callback(interaction, layer_name, intensity)
+
+
 # Keep StageSelectModal for backwards compatibility but redirect to DiveConfigModal
 class StageSelectModal(DiveConfigModal):
     """Deprecated: Use DiveConfigModal instead."""

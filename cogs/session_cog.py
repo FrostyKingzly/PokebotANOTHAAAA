@@ -1098,12 +1098,14 @@ class SessionControlsView(discord.ui.View):
                 return
             await dream_cog.advance_test_path_area(interaction)
             return
-        from ui.dream_rogue_views import DiveConfigModal
+        from ui.dream_rogue_views import DiveConfigView
 
-        # Show stage selection modal
-        modal = DiveConfigModal(self._on_stage_selected, allow_test_path=True)
-        modal.interaction = interaction  # Store for callback
-        await interaction.response.send_modal(modal)
+        view = DiveConfigView(self._on_stage_selected, allow_test_path=True)
+        await interaction.response.send_message(
+            "Select a dream layer, dive type, and intensity:",
+            view=view,
+            ephemeral=True
+        )
 
     async def _on_stage_selected(self, interaction: discord.Interaction, layer_name: str, intensity: int):
         """Handle layer/intensity selection and start dive"""
