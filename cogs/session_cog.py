@@ -57,6 +57,17 @@ class JoinSessionView(discord.ui.View):
                 )
             return
 
+        battle_cog = self.bot.get_cog("BattleCog")
+        if battle_cog and user_id in battle_cog.user_battles:
+            battle_id = battle_cog.user_battles.get(user_id)
+            battle = battle_cog.battle_engine.get_battle(battle_id) if battle_id else None
+            if battle_id:
+                battle_cog.battle_engine.end_battle(battle_id)
+            if battle:
+                battle_cog._unregister_battle(battle)
+            else:
+                battle_cog.user_battles.pop(user_id, None)
+
         # Add to session
         success = self.bot.session_manager.add_participant(self.session_id, user_id)
 
