@@ -958,18 +958,34 @@ class DreamRogueCog(commands.Cog):
                 await interaction.response.send_message("❌ Battles can only start in text channels.", ephemeral=True)
             return None
 
-        thread = await parent_channel.create_thread(
-            name="Dream Dive - Test Path",
-            auto_archive_duration=60,
-            reason="Test Path raid battle"
-        )
+        try:
+            thread = await parent_channel.create_thread(
+                name="Dream Dive - Test Path",
+                auto_archive_duration=60,
+                reason="Test Path raid battle"
+            )
+        except (discord.Forbidden, discord.HTTPException):
+            message = "❌ I couldn't create the Test Path battle thread. Please check channel permissions."
+            if interaction.response.is_done():
+                await interaction.followup.send(message, ephemeral=True)
+            else:
+                await interaction.response.send_message(message, ephemeral=True)
+            return None
 
-        mock_interaction = self._create_thread_interaction(thread, interaction.user)
-        await battle_cog.prompt_and_start_battle_ui(
-            interaction=mock_interaction,
-            battle_id=battle_id,
-            battle_type=BattleType.TRAINER
-        )
+        try:
+            mock_interaction = self._create_thread_interaction(thread, interaction.user)
+            await battle_cog.prompt_and_start_battle_ui(
+                interaction=mock_interaction,
+                battle_id=battle_id,
+                battle_type=BattleType.TRAINER
+            )
+        except Exception:
+            message = "❌ The Test Path battle couldn't start. Please check logs for details."
+            if interaction.response.is_done():
+                await interaction.followup.send(message, ephemeral=True)
+            else:
+                await interaction.response.send_message(message, ephemeral=True)
+            return None
 
         if on_complete:
             if not hasattr(self.bot, "dream_rogue_battle_callbacks"):
