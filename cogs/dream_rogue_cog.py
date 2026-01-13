@@ -31,13 +31,14 @@ class DreamRogueCog(commands.Cog):
         self.player_db = PlayerDatabase()
         self.session_manager = SessionManager(self.player_db)
 
-    async def start_dive_from_session(self, interaction: discord.Interaction, stage_level: int):
+    async def start_dive_from_session(self, interaction: discord.Interaction, layer_name: str, intensity: int):
         """
         Start a dive from session mode (called from session controls)
 
         Args:
             interaction: Discord interaction
-            stage_level: Stage level (10, 20, 30, etc.)
+            layer_name: Dream layer name
+            intensity: Dive intensity (1-10)
         """
         # Get active session
         session = self.session_manager.get_active_session_by_guild(interaction.guild_id)
@@ -85,7 +86,8 @@ class DreamRogueCog(commands.Cog):
         run_id = self.dream_manager.create_run(
             guild_id=interaction.guild_id,
             initiator_id=interaction.user.id,
-            stage_level=stage_level,
+            intensity=intensity,
+            layer_name=layer_name,
             starting_floor=1,  # Always start at floor 1
             session_id=session["session_id"]
         )
@@ -103,7 +105,7 @@ class DreamRogueCog(commands.Cog):
         # Show dive start embed
         participants_list = [interaction.user.id] + [p["discord_user_id"] for p in participants if p["discord_user_id"] != interaction.user.id]
 
-        embed = DreamRogueEmbeds.dive_start(stage_level, participants_list)
+        embed = DreamRogueEmbeds.dive_start(layer_name, intensity, participants_list)
 
         await interaction.response.send_message(embed=embed)
 
@@ -111,13 +113,14 @@ class DreamRogueCog(commands.Cog):
         await asyncio.sleep(2)
         await self._offer_next_nodes(interaction, run_id)
 
-    async def start_dive_solo(self, interaction: discord.Interaction, stage_level: int):
+    async def start_dive_solo(self, interaction: discord.Interaction, layer_name: str, intensity: int):
         """
         Start a solo dive or create invite (from Dreamyard location)
 
         Args:
             interaction: Discord interaction
-            stage_level: Stage level (10, 20, 30, etc.)
+            layer_name: Dream layer name
+            intensity: Dive intensity (1-10)
         """
         # Check location
         trainer = self.player_db.get_trainer(interaction.user.id)
@@ -149,7 +152,8 @@ class DreamRogueCog(commands.Cog):
         run_id = self.dream_manager.create_run(
             guild_id=interaction.guild_id,
             initiator_id=interaction.user.id,
-            stage_level=stage_level,
+            intensity=intensity,
+            layer_name=layer_name,
             starting_floor=1  # Always start at floor 1
         )
         party = self.player_db.get_trainer_party(interaction.user.id)
@@ -158,7 +162,7 @@ class DreamRogueCog(commands.Cog):
         # Show join/start embed
         participants = self.dream_manager.get_participants(run_id)
         run = self.dream_manager.get_run(run_id)
-        floor_range = self.dream_manager.get_floor_level_range(stage_level, 1)
+        floor_range = self.dream_manager.get_floor_level_range(intensity, 1)
 
         embed = DreamRogueEmbeds.run_status(run, participants, floor_range)
         embed.description += "\n\n*Waiting for participants... Click 'Start Dive' when ready.*"
@@ -199,8 +203,11 @@ class DreamRogueCog(commands.Cog):
                 self.session_manager.adjust_participant_stamina(p["discord_user_id"], -1)
 
             # Show dive start
+            intensity = run.get("intensity", run.get("stage_level", 1))
+            layer_name = run.get("layer_name", "Somnia Prima")
             embed = DreamRogueEmbeds.dive_start(
-                run["stage_level"],
+                layer_name,
+                intensity,
                 [p["discord_user_id"] for p in participants]
             )
 
@@ -213,7 +220,8 @@ class DreamRogueCog(commands.Cog):
         else:
             # Just update lobby
             participants = self.dream_manager.get_participants(run_id)
-            floor_range = self.dream_manager.get_floor_level_range(run["stage_level"], run["starting_floor"])
+            intensity = run.get("intensity", run.get("stage_level", 1))
+            floor_range = self.dream_manager.get_floor_level_range(intensity, run["starting_floor"])
 
             embed = DreamRogueEmbeds.run_status(run, participants, floor_range)
             embed.description += "\n\n*Waiting for participants... Click 'Start Dive' when ready.*"
@@ -250,7 +258,9 @@ class DreamRogueCog(commands.Cog):
 
         vote = self.dream_manager.get_vote(vote_id)
         percentages = self.dream_manager.get_vote_percentages(vote_id)
-        embed = DreamRogueEmbeds.node_selection(current_node, next_nodes, run["stage_level"])
+        intensity = run.get("intensity", run.get("stage_level", 1))
+        layer_name = run.get("layer_name", "Somnia Prima")
+        embed = DreamRogueEmbeds.node_selection(current_node, next_nodes, layer_name, intensity)
 
         view = VotingView(
             self.bot,
@@ -555,7 +565,8 @@ class DreamRogueCog(commands.Cog):
                 for participant in participants:
                     user_id = participant["discord_user_id"]
                     restore_dream_dive_party_levels(self.bot, run_id, user_id)
-                    exp_amount = calculate_dream_dive_exp(run["stage_level"], participant["dreamlites"])
+                    intensity = run.get("intensity", run.get("stage_level", 1))
+                    exp_amount = calculate_dream_dive_exp(intensity, participant["dreamlites"])
                     apply_dream_dive_exp(self.bot, user_id, exp_amount)
                     exp_rewards[user_id] = exp_amount
 

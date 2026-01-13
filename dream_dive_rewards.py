@@ -14,9 +14,9 @@ from dream_rogue_manager import DreamRogueManager
 from ui.buttons import _ensure_pokemon_instance
 
 
-def calculate_dream_dive_exp(stage_level: int, dreamlites: int) -> int:
-    """Calculate EXP reward for a Dream Dive based on difficulty and Dreamlites."""
-    base = max(1, int(stage_level) * 10)
+def calculate_dream_dive_exp(intensity: int, dreamlites: int) -> int:
+    """Calculate EXP reward for a Dream Dive based on intensity and Dreamlites."""
+    base = max(1, int(intensity) * 10)
     dreamlite_bonus = max(0, int(dreamlites * 0.5))
     return max(1, base + dreamlite_bonus)
 
