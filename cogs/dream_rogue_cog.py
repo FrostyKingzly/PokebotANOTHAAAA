@@ -863,6 +863,19 @@ class DreamRogueCog(commands.Cog):
             return None
 
         participants = self.session_manager.get_session_participants(session["session_id"])
+
+        # Clean up any stale battle states before checking eligibility
+        for user_id in participants:
+            if user_id in battle_cog.user_battles:
+                battle_id = battle_cog.user_battles.get(user_id)
+                battle = battle_cog.battle_engine.get_battle(battle_id) if battle_id else None
+                if battle_id:
+                    battle_cog.battle_engine.end_battle(battle_id)
+                if battle:
+                    battle_cog._unregister_battle(battle)
+                else:
+                    battle_cog.user_battles.pop(user_id, None)
+
         eligible = []
         skip_missing_member = 0
         skip_in_battle = 0
