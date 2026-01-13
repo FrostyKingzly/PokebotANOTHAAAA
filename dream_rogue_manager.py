@@ -43,6 +43,10 @@ class DreamRogueManager:
                 cursor.execute("ALTER TABLE dream_rogue_runs ADD COLUMN map_data TEXT")
             if "current_node_id" not in columns:
                 cursor.execute("ALTER TABLE dream_rogue_runs ADD COLUMN current_node_id TEXT")
+            if "intensity" not in columns:
+                cursor.execute("ALTER TABLE dream_rogue_runs ADD COLUMN intensity INTEGER DEFAULT 1")
+            if "layer_name" not in columns:
+                cursor.execute("ALTER TABLE dream_rogue_runs ADD COLUMN layer_name TEXT DEFAULT 'Somnia Prima'")
             conn.commit()
         except FileNotFoundError:
             print("Warning: dream_rogue_schema.sql not found, skipping schema init")
@@ -64,7 +68,8 @@ class DreamRogueManager:
         self,
         guild_id: int,
         initiator_id: int,
-        stage_level: int = 10,
+        intensity: int = 1,
+        layer_name: str = "Somnia Prima",
         starting_floor: int = 1,
         session_id: Optional[str] = None
     ) -> str:
@@ -74,7 +79,8 @@ class DreamRogueManager:
         Args:
             guild_id: Discord guild ID
             initiator_id: Discord user ID of initiator
-            stage_level: Base level for this stage (10, 20, 30, etc.)
+            intensity: Dive intensity (1-10)
+            layer_name: Dream layer name
             starting_floor: Which floor to start on (1-10)
             session_id: Optional session ID if started from session mode
 
@@ -88,18 +94,28 @@ class DreamRogueManager:
         cursor.execute("""
             INSERT INTO dream_rogue_runs (
                 run_id, session_id, guild_id, initiator_id,
-                stage_level, current_floor, starting_floor, is_active
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-        """, (run_id, session_id, guild_id, initiator_id, stage_level, starting_floor, starting_floor))
+                stage_level, intensity, layer_name, current_floor, starting_floor, is_active
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        """, (
+            run_id,
+            session_id,
+            guild_id,
+            initiator_id,
+            intensity,
+            intensity,
+            layer_name,
+            starting_floor,
+            starting_floor,
+        ))
 
         # Add initiator as first participant
-        starting_dreamlites = self._calculate_starting_dreamlites(stage_level)
+        starting_dreamlites = self._calculate_starting_dreamlites(intensity)
         cursor.execute("""
             INSERT INTO dream_rogue_participants (run_id, discord_user_id, dreamlites)
             VALUES (?, ?, ?)
         """, (run_id, initiator_id, starting_dreamlites))
 
-        map_data = self._generate_dive_map(stage_level)
+        map_data = self._generate_dive_map(intensity)
         cursor.execute("""
             UPDATE dream_rogue_runs
             SET map_data = ?, current_node_id = ?, current_floor = ?
@@ -115,11 +131,11 @@ class DreamRogueManager:
         conn.close()
         return run_id
 
-    def _calculate_starting_dreamlites(self, stage_level: int) -> int:
-        """Calculate starting Dreamlites based on stage"""
-        # Base 100 + (stage_level * 5)
-        # Level 10 stage = 150, Level 20 stage = 200, etc.
-        return 100 + (stage_level * 5)
+    def _calculate_starting_dreamlites(self, intensity: int) -> int:
+        """Calculate starting Dreamlites based on intensity."""
+        # Base 100 + (intensity * 5)
+        # Intensity 1 = 105, Intensity 2 = 110, etc.
+        return 100 + (intensity * 5)
 
     def add_participant(self, run_id: str, discord_user_id: int) -> bool:
         """
@@ -142,14 +158,18 @@ class DreamRogueManager:
             return False
 
         # Get stage level to calculate Dreamlites
-        cursor.execute("SELECT stage_level FROM dream_rogue_runs WHERE run_id = ?", (run_id,))
+        cursor.execute("""
+            SELECT COALESCE(intensity, stage_level, 1)
+            FROM dream_rogue_runs
+            WHERE run_id = ?
+        """, (run_id,))
         result = cursor.fetchone()
         if not result:
             conn.close()
             return False
 
-        stage_level = result[0]
-        starting_dreamlites = self._calculate_starting_dreamlites(stage_level)
+        intensity = int(result[0] or 1)
+        starting_dreamlites = self._calculate_starting_dreamlites(intensity)
 
         cursor.execute("""
             INSERT INTO dream_rogue_participants (run_id, discord_user_id, dreamlites)
@@ -444,33 +464,30 @@ class DreamRogueManager:
         conn.close()
         return new_floor
 
-    def get_floor_level_range(self, stage_level: int, floor: int) -> Tuple[int, int]:
+    def get_floor_level_range(self, intensity: int, floor: int) -> Tuple[int, int]:
         """
         Get min/max level for a floor based on stage and floor number
 
         Args:
-            stage_level: Base level for the stage (10, 20, 30, etc.)
+            intensity: Dive intensity (1-10)
             floor: Floor number (1-10)
 
         Returns:
             (min_level, max_level) tuple
 
-        Example for Level 10 Stage:
-            Floor 1: 8-12
-            Floor 5: 16-20
-            Floor 10: 26-30
+        Example for Intensity 2:
+            Floor 1: 11-20
+            Floor 5: 11-20
+            Floor 10: 11-20
         """
-        # Each floor adds 2 levels to the range
-        floor_offset = (floor - 1) * 2
-
-        min_level = stage_level - 2 + floor_offset
-        max_level = stage_level + 2 + floor_offset
+        min_level = max(1, (intensity - 1) * 10 + 1)
+        max_level = max(min_level, intensity * 10)
 
         return (min_level, max_level)
 
     # ===== MAP GENERATION =====
 
-    def _generate_dive_map(self, stage_level: int, total_depth: int = 10) -> Dict[str, Any]:
+    def _generate_dive_map(self, intensity: int, total_depth: int = 10) -> Dict[str, Any]:
         """Generate a branching map for the run."""
         def _node_id(depth: int, index: int) -> str:
             return f"node_{depth}_{index}"
@@ -539,7 +556,7 @@ class DreamRogueManager:
 
         return {
             "map_type": "random",
-            "stage_level": stage_level,
+            "intensity": intensity,
             "start_node_id": start_node_id,
             "final_node_id": final_node_id,
             "nodes": nodes,

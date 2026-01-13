@@ -9,7 +9,9 @@ CREATE TABLE IF NOT EXISTS dream_rogue_runs (
     initiator_id INTEGER NOT NULL,
 
     -- Stage and floor progression
-    stage_level INTEGER DEFAULT 10,  -- Base level for this stage (e.g., 10, 20, 30)
+    stage_level INTEGER DEFAULT 10,  -- Legacy: Base level for this stage (e.g., 10, 20, 30)
+    intensity INTEGER DEFAULT 1,  -- Dive intensity (1-10)
+    layer_name TEXT DEFAULT 'Somnia Prima',  -- Dream layer name
     current_floor INTEGER DEFAULT 1,
     starting_floor INTEGER DEFAULT 1,
 

@@ -239,7 +239,8 @@ class FloorNavigationView(View):
             for participant in participants:
                 user_id = participant["discord_user_id"]
                 restore_dream_dive_party_levels(self.bot, self.run_id, user_id)
-                exp_amount = calculate_dream_dive_exp(run["stage_level"], participant["dreamlites"])
+                intensity = run.get("intensity", run.get("stage_level", 1))
+                exp_amount = calculate_dream_dive_exp(intensity, participant["dreamlites"])
                 apply_dream_dive_exp(self.bot, user_id, exp_amount)
                 exp_rewards[user_id] = exp_amount
 
@@ -435,8 +436,8 @@ class InstanceActionView(View):
 
         run = manager.get_run(self.run_id)
         floor = run["current_floor"]
-        stage_level = run["stage_level"]
-        min_lvl, max_lvl = manager.get_floor_level_range(stage_level, floor)
+        intensity = run.get("intensity", run.get("stage_level", 1))
+        min_lvl, max_lvl = manager.get_floor_level_range(intensity, floor)
 
         categories = self.instance.get("categories", [])
         effect_data = self.instance.get("effect_data", {})
@@ -1324,12 +1325,19 @@ class DreamShopView(View):
         self.stop()
 
 
-class StageSelectModal(Modal, title="Choose Dream Dive Stage"):
-    """Modal for selecting stage level"""
+class DiveConfigModal(Modal, title="Choose Dream Dive Layer & Intensity"):
+    """Modal for selecting dream layer and intensity."""
 
-    stage_input = TextInput(
-        label="Stage Level (10, 20, 30, 40, 50)",
-        placeholder="Enter a stage level (e.g., 10 for Level 10 Stage)",
+    layer_input = TextInput(
+        label="Layer (Somnia Prima available)",
+        placeholder="Somnia Prima",
+        style=discord.TextStyle.short,
+        required=True,
+        max_length=30
+    )
+    intensity_input = TextInput(
+        label="Intensity (1-10)",
+        placeholder="Enter an intensity (e.g., 1)",
         style=discord.TextStyle.short,
         required=True,
         max_length=2
@@ -1339,32 +1347,53 @@ class StageSelectModal(Modal, title="Choose Dream Dive Stage"):
         super().__init__()
         self.callback = callback
 
+    @staticmethod
+    def _normalize_layer(value: str) -> Optional[str]:
+        allowed_layers = {
+            "somnia prima": "Somnia Prima",
+            "somnia": "Somnia Prima",
+        }
+        normalized = value.strip().lower()
+        return allowed_layers.get(normalized)
+
     async def on_submit(self, interaction: discord.Interaction):
-        try:
-            stage_level = int(self.stage_input.value)
-
-            # Validate stage level (must be multiple of 10, between 10 and 100)
-            if stage_level < 10 or stage_level > 100 or stage_level % 10 != 0:
-                await interaction.response.send_message(
-                    "❌ Stage level must be 10, 20, 30, 40, 50, 60, 70, 80, 90, or 100!",
-                    ephemeral=True
-                )
-                return
-
-            # Call callback with stage level
-            if self.callback:
-                await self.callback(interaction, stage_level)
-
-        except ValueError:
+        layer_name = self._normalize_layer(self.layer_input.value)
+        if not layer_name:
             await interaction.response.send_message(
-                "❌ Please enter a valid number!",
+                "❌ Only **Somnia Prima** is available right now.",
                 ephemeral=True
             )
+            return
+
+        try:
+            intensity = int(self.intensity_input.value)
+        except ValueError:
+            await interaction.response.send_message(
+                "❌ Please enter a valid intensity between 1 and 10!",
+                ephemeral=True
+            )
+            return
+
+        if intensity < 1 or intensity > 10:
+            await interaction.response.send_message(
+                "❌ Intensity must be between 1 and 10!",
+                ephemeral=True
+            )
+            return
+
+        if self.callback:
+            await self.callback(interaction, layer_name, intensity)
 
 
-# Keep FloorSelectModal for backwards compatibility but redirect to StageSelectModal
-class FloorSelectModal(StageSelectModal):
-    """Deprecated: Use StageSelectModal instead"""
+# Keep StageSelectModal for backwards compatibility but redirect to DiveConfigModal
+class StageSelectModal(DiveConfigModal):
+    """Deprecated: Use DiveConfigModal instead."""
+    pass
+
+
+# Keep FloorSelectModal for backwards compatibility but redirect to DiveConfigModal
+class FloorSelectModal(DiveConfigModal):
+    """Deprecated: Use DiveConfigModal instead."""
     pass
 
 

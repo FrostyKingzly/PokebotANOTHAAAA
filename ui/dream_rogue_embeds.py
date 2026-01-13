@@ -44,10 +44,11 @@ class DreamRogueEmbeds:
             floor_level_range: (min_level, max_level) for current floor
         """
         floor = run["current_floor"]
-        stage_level = run.get("stage_level", 10)
+        intensity = run.get("intensity", run.get("stage_level", 1))
+        layer_name = run.get("layer_name", "Somnia Prima")
 
         embed = discord.Embed(
-            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Dream Dive — Level {stage_level} Stage",
+            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Dream Dive — {layer_name}",
             description="*Now Diving… Please Stand By.*",
             color=DreamRogueEmbeds.DREAM_COLOR
         )
@@ -55,8 +56,13 @@ class DreamRogueEmbeds:
         # Floor info
         min_lvl, max_lvl = floor_level_range
         embed.add_field(
-            name="Stage Information",
-            value=f"**Stage:** {floor}/10\n**Level:** {stage_level}\n**Enemy Level Range:** {min_lvl}-{max_lvl}",
+            name="Dive Information",
+            value=(
+                f"**Layer:** {layer_name}\n"
+                f"**Intensity:** {intensity}\n"
+                f"**Floor:** {floor}/10\n"
+                f"**Enemy Level Range:** {min_lvl}-{max_lvl}"
+            ),
             inline=False
         )
 
@@ -76,7 +82,7 @@ class DreamRogueEmbeds:
         return embed
 
     @staticmethod
-    def node_selection(current_node: Dict, next_nodes: List[Dict], stage_level: int) -> discord.Embed:
+    def node_selection(current_node: Dict, next_nodes: List[Dict], layer_name: str, intensity: int) -> discord.Embed:
         """Embed for selecting the next node in the map."""
         def _node_display(node: Dict) -> str:
             node_type = node.get("node_type", "event")
@@ -101,7 +107,10 @@ class DreamRogueEmbeds:
 
         embed = discord.Embed(
             title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Choose the Next Node",
-            description=f"*Stage Level {stage_level} — Current Depth {current_node.get('depth', 1)}*",
+            description=(
+                f"*Layer {layer_name} — Intensity {intensity} — "
+                f"Current Depth {current_node.get('depth', 1)}*"
+            ),
             color=DreamRogueEmbeds.DREAM_COLOR
         )
 
@@ -597,7 +606,7 @@ class DreamRogueEmbeds:
         return embed
 
     @staticmethod
-    def dive_start(stage_level: int, participants: List[int]) -> discord.Embed:
+    def dive_start(layer_name: str, intensity: int, participants: List[int]) -> discord.Embed:
         """Initial dive embed"""
         embed = discord.Embed(
             title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Diving into the Dream...",
@@ -607,7 +616,12 @@ class DreamRogueEmbeds:
 
         embed.add_field(
             name="Dive Details",
-            value=f"**Stage:** Level {stage_level}\n**Participants:** {len(participants)}\n**Starting Floor:** 1/10",
+            value=(
+                f"**Layer:** {layer_name}\n"
+                f"**Intensity:** {intensity}\n"
+                f"**Participants:** {len(participants)}\n"
+                f"**Starting Floor:** 1/10"
+            ),
             inline=False
         )
 
