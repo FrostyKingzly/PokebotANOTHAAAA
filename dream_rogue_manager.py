@@ -22,6 +22,8 @@ from datetime import datetime
 class DreamRogueManager:
     """Manages Dream Dive roguelike runs"""
 
+    TEST_PATH_LAYER = "Somnia Prima - Test Path"
+
     def __init__(self, db_path: str = "data/players.db"):
         self.db_path = db_path
         self._init_database()
@@ -47,6 +49,8 @@ class DreamRogueManager:
                 cursor.execute("ALTER TABLE dream_rogue_runs ADD COLUMN intensity INTEGER DEFAULT 1")
             if "layer_name" not in columns:
                 cursor.execute("ALTER TABLE dream_rogue_runs ADD COLUMN layer_name TEXT DEFAULT 'Somnia Prima'")
+            if "script_state" not in columns:
+                cursor.execute("ALTER TABLE dream_rogue_runs ADD COLUMN script_state TEXT")
             conn.commit()
         except FileNotFoundError:
             print("Warning: dream_rogue_schema.sql not found, skipping schema init")
@@ -90,6 +94,7 @@ class DreamRogueManager:
         run_id = str(uuid.uuid4())
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
+        is_test_path = layer_name == self.TEST_PATH_LAYER
 
         cursor.execute("""
             INSERT INTO dream_rogue_runs (
@@ -109,21 +114,25 @@ class DreamRogueManager:
         ))
 
         # Add initiator as first participant
-        starting_dreamlites = self._calculate_starting_dreamlites(intensity)
+        starting_dreamlites = 0 if is_test_path else self._calculate_starting_dreamlites(intensity)
         cursor.execute("""
             INSERT INTO dream_rogue_participants (run_id, discord_user_id, dreamlites)
             VALUES (?, ?, ?)
         """, (run_id, initiator_id, starting_dreamlites))
 
-        map_data = self._generate_dive_map(intensity)
+        if is_test_path:
+            map_data = self._generate_test_path_map(intensity)
+        else:
+            map_data = self._generate_dive_map(intensity)
         cursor.execute("""
             UPDATE dream_rogue_runs
-            SET map_data = ?, current_node_id = ?, current_floor = ?
+            SET map_data = ?, current_node_id = ?, current_floor = ?, script_state = ?
             WHERE run_id = ?
         """, (
             json.dumps(map_data),
             map_data["start_node_id"],
             map_data["nodes"][map_data["start_node_id"]]["depth"],
+            json.dumps(self._get_default_script_state() if is_test_path else {}),
             run_id,
         ))
 
@@ -169,7 +178,9 @@ class DreamRogueManager:
             return False
 
         intensity = int(result[0] or 1)
-        starting_dreamlites = self._calculate_starting_dreamlites(intensity)
+        run = self.get_run(run_id) or {}
+        is_test_path = run.get("layer_name") == self.TEST_PATH_LAYER
+        starting_dreamlites = 0 if is_test_path else self._calculate_starting_dreamlites(intensity)
 
         cursor.execute("""
             INSERT INTO dream_rogue_participants (run_id, discord_user_id, dreamlites)
@@ -278,6 +289,61 @@ class DreamRogueManager:
         if row:
             return dict(row)
         return None
+
+    def get_active_run_by_session(self, session_id: str) -> Optional[Dict]:
+        """Get currently active run for a session."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT * FROM dream_rogue_runs
+            WHERE session_id = ? AND is_active = 1
+            ORDER BY created_at DESC
+            LIMIT 1
+        """, (session_id,))
+
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return dict(row)
+        return None
+
+    def _get_default_script_state(self) -> Dict[str, Any]:
+        return {
+            "area_index": 1,
+            "action_index": 0,
+            "nidoking_battle_id": None,
+        }
+
+    def get_script_state(self, run_id: str) -> Dict[str, Any]:
+        """Get scripted state for special runs."""
+        run = self.get_run(run_id)
+        if not run:
+            return self._get_default_script_state()
+        raw_state = run.get("script_state")
+        if not raw_state:
+            return self._get_default_script_state()
+        try:
+            state = json.loads(raw_state)
+        except json.JSONDecodeError:
+            state = {}
+        base = self._get_default_script_state()
+        base.update(state or {})
+        return base
+
+    def update_script_state(self, run_id: str, state: Dict[str, Any]) -> None:
+        """Persist scripted state for special runs."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE dream_rogue_runs
+            SET script_state = ?
+            WHERE run_id = ?
+        """, (json.dumps(state), run_id))
+        conn.commit()
+        conn.close()
 
     def get_participants(self, run_id: str) -> List[Dict]:
         """Get all participants in a run"""
@@ -562,6 +628,27 @@ class DreamRogueManager:
             "nodes": nodes,
             "edges": edges,
             "total_depth": total_depth,
+        }
+
+    def _generate_test_path_map(self, intensity: int) -> Dict[str, Any]:
+        """Generate a linear scripted map for the test path."""
+        nodes = {
+            "area_1": {"node_id": "area_1", "depth": 1, "node_type": "story", "has_shop": False},
+            "area_2": {"node_id": "area_2", "depth": 2, "node_type": "story", "has_shop": False},
+            "area_3": {"node_id": "area_3", "depth": 3, "node_type": "story", "has_shop": False},
+        }
+        edges = [
+            {"from": "area_1", "to": "area_2"},
+            {"from": "area_2", "to": "area_3"},
+        ]
+        return {
+            "map_type": "test_path",
+            "intensity": intensity,
+            "start_node_id": "area_1",
+            "final_node_id": "area_3",
+            "nodes": nodes,
+            "edges": edges,
+            "total_depth": 3,
         }
 
     def get_map(self, run_id: str) -> Optional[Dict[str, Any]]:

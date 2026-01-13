@@ -6,12 +6,13 @@ Commands and orchestration for the Dream Dive roguelike gamemode
 
 import discord
 from discord.ext import commands
-from typing import List
+from typing import List, Optional
 import asyncio
 import random
 
 from dream_rogue_manager import DreamRogueManager
-from database import PlayerDatabase
+from database import PlayerDatabase, SpeciesDatabase
+from models import Pokemon
 from session_manager import SessionManager
 from ui.dream_rogue_embeds import DreamRogueEmbeds
 from ui.dream_rogue_views import (
@@ -83,6 +84,13 @@ class DreamRogueCog(commands.Cog):
             return
 
         # Create Dream Dive run
+        if layer_name == DreamRogueManager.TEST_PATH_LAYER and intensity != 1:
+            await interaction.response.send_message(
+                "❌ Test Path dives must use intensity **1**.",
+                ephemeral=True
+            )
+            return
+
         run_id = self.dream_manager.create_run(
             guild_id=interaction.guild_id,
             initiator_id=interaction.user.id,
@@ -109,9 +117,13 @@ class DreamRogueCog(commands.Cog):
 
         await interaction.response.send_message(embed=embed)
 
-        # Start first node selection
-        await asyncio.sleep(2)
-        await self._offer_next_nodes(interaction, run_id)
+        if layer_name == DreamRogueManager.TEST_PATH_LAYER:
+            await asyncio.sleep(1)
+            await self._send_test_path_area_embed(interaction, run_id, area_index=1)
+        else:
+            # Start first node selection
+            await asyncio.sleep(2)
+            await self._offer_next_nodes(interaction, run_id)
 
     async def start_dive_solo(self, interaction: discord.Interaction, layer_name: str, intensity: int):
         """
@@ -588,6 +600,400 @@ class DreamRogueCog(commands.Cog):
         else:
             # More instances on this floor
             await self._show_instance(interaction, run_id, node, remaining_instances[0], remaining_instances)
+
+    async def _send_test_path_area_embed(self, interaction: discord.Interaction, run_id: str, area_index: int):
+        embed = DreamRogueEmbeds.test_path_area(area_index)
+        state = self.dream_manager.get_script_state(run_id)
+        state["area_index"] = area_index
+        state["action_index"] = 0
+        state["nidoking_battle_id"] = None
+        self.dream_manager.update_script_state(run_id, state)
+        await self._send_embed(interaction, embed)
+
+    async def _get_active_test_path_run(self, interaction: discord.Interaction):
+        session = self.session_manager.get_active_session_by_guild(interaction.guild_id)
+        if not session:
+            await interaction.response.send_message(
+                "❌ No active session found!",
+                ephemeral=True
+            )
+            return None, None
+        if interaction.user.id != session["admin_id"]:
+            await interaction.response.send_message(
+                "❌ Only the session admin can control Test Path actions.",
+                ephemeral=True
+            )
+            return None, None
+
+        run = self.dream_manager.get_active_run_by_session(session["session_id"])
+        if not run or run.get("layer_name") != DreamRogueManager.TEST_PATH_LAYER:
+            await interaction.response.send_message(
+                "❌ No active Test Path dive found for this session.",
+                ephemeral=True
+            )
+            return None, None
+
+        return session, run
+
+    async def advance_test_path_area(self, interaction: discord.Interaction):
+        """Advance to the next Test Path area."""
+        session, run = await self._get_active_test_path_run(interaction)
+        if not run:
+            return
+
+        state = self.dream_manager.get_script_state(run["run_id"])
+        area_index = state.get("area_index", 1)
+        action_index = state.get("action_index", 0)
+
+        if area_index == 1:
+            await self._send_test_path_area_embed(interaction, run["run_id"], area_index=2)
+            return
+
+        if area_index == 2 and action_index < 2:
+            await interaction.response.send_message(
+                "❌ Resolve the pending actions before moving on.",
+                ephemeral=True
+            )
+            return
+
+        if area_index >= 3:
+            await interaction.response.send_message(
+                "ℹ️ The party is already in the final area.",
+                ephemeral=True
+            )
+            return
+
+        await self._send_test_path_area_embed(interaction, run["run_id"], area_index=3)
+
+    async def trigger_test_path_action(self, interaction: discord.Interaction):
+        """Trigger the next scripted Test Path action."""
+        session, run = await self._get_active_test_path_run(interaction)
+        if not run:
+            return
+
+        state = self.dream_manager.get_script_state(run["run_id"])
+        area_index = state.get("area_index", 1)
+        action_index = state.get("action_index", 0)
+
+        if area_index == 1:
+            await interaction.response.send_message(
+                "ℹ️ There is nothing to act on here yet.",
+                ephemeral=True
+            )
+            return
+
+        if area_index == 2:
+            if action_index == 0:
+                await self._send_embed(
+                    interaction,
+                    DreamRogueEmbeds.test_path_action(
+                        "🎬 Action 1 — Enraged Aipom Pack",
+                        "A group of enraged Aipom swarm the area, ready for a group battle."
+                    )
+                )
+                await self._start_test_path_raid(
+                    interaction,
+                    session,
+                    run,
+                    opponents=self._build_test_path_aipom_pack(),
+                    raid_opponent_slots=2,
+                    on_complete=lambda result: self._advance_test_path_action(run["run_id"], 1, result)
+                )
+                return
+
+            if action_index == 1:
+                await self._send_embed(
+                    interaction,
+                    DreamRogueEmbeds.test_path_action(
+                        "🎬 Action 2 — Ambipom's Rally",
+                        "An Ambipom charges in with a commanding cry, daring the party to respond."
+                    )
+                )
+                await self._start_test_path_raid(
+                    interaction,
+                    session,
+                    run,
+                    opponents=self._build_test_path_ambipom(),
+                    raid_opponent_slots=3,
+                    on_complete=lambda result: self._advance_test_path_action(run["run_id"], 2, result)
+                )
+                return
+
+            if action_index == 2:
+                await self._send_test_path_area_embed(interaction, run["run_id"], area_index=3)
+                return
+
+            await interaction.response.send_message(
+                "ℹ️ No further actions remain in this area.",
+                ephemeral=True
+            )
+            return
+
+        if area_index == 3:
+            if action_index == 0:
+                await self._send_embed(
+                    interaction,
+                    DreamRogueEmbeds.test_path_action(
+                        "🎬 Action 3 — The Silent King",
+                        "A towering Nidoking emerges. It does not attack — it only watches."
+                    )
+                )
+                battle_id = await self._start_test_path_raid(
+                    interaction,
+                    session,
+                    run,
+                    opponents=self._build_test_path_nidoking(),
+                    raid_opponent_slots=1,
+                    on_complete=None,
+                    scripted_sequence="nidoking_test",
+                )
+                if battle_id:
+                    state["action_index"] = 1
+                    state["nidoking_battle_id"] = battle_id
+                    self.dream_manager.update_script_state(run["run_id"], state)
+                return
+
+            if action_index == 1:
+                battle_id = state.get("nidoking_battle_id")
+                battle_cog = self.bot.get_cog("BattleCog")
+                battle = battle_cog.battle_engine.get_battle(battle_id) if battle_cog and battle_id else None
+                if not battle or not getattr(battle, "scripted_locked", False):
+                    await interaction.response.send_message(
+                        "ℹ️ Nidoking is still approaching...",
+                        ephemeral=True
+                    )
+                    return
+
+                await self._send_nidoking_horn_drill(interaction, battle)
+                state["action_index"] = 2
+                self.dream_manager.update_script_state(run["run_id"], state)
+                return
+
+            await interaction.response.send_message(
+                "ℹ️ No further actions remain in this area.",
+                ephemeral=True
+            )
+            return
+
+    def _advance_test_path_action(self, run_id: str, next_action_index: int, result: str):
+        state = self.dream_manager.get_script_state(run_id)
+        state["action_index"] = next_action_index
+        self.dream_manager.update_script_state(run_id, state)
+
+    async def _send_nidoking_horn_drill(self, interaction: discord.Interaction, battle):
+        from sprite_helper import PokemonSpriteHelper
+        nidoking = (battle.opponent.get_active_pokemon() or [None])[0]
+        embed = discord.Embed(
+            title="Nidoking used horn drill!",
+            description="",
+            color=discord.Color.dark_red()
+        )
+        sprite_url = PokemonSpriteHelper.get_sprite(
+            getattr(nidoking, "species_name", None),
+            getattr(nidoking, "species_dex_number", None),
+            style="animated",
+            gender=getattr(nidoking, "gender", None),
+            shiny=getattr(nidoking, "is_shiny", False),
+            use_fallback=False
+        )
+        if sprite_url:
+            embed.set_thumbnail(url=sprite_url)
+        await self._send_embed(interaction, embed)
+
+    def _build_test_path_aipom_pack(self) -> List[Pokemon]:
+        species_db = getattr(self.bot, "species_db", SpeciesDatabase("data/pokemon_species.json"))
+        species_data = species_db.get_species("aipom")
+        pack = []
+        for _ in range(4):
+            aipom = Pokemon(species_data=species_data, level=2, owner_discord_id=None)
+            aipom._calculate_stats()
+            aipom.current_hp = aipom.max_hp
+            pack.append(aipom)
+        return pack
+
+    def _build_test_path_ambipom(self) -> List[Pokemon]:
+        species_db = getattr(self.bot, "species_db", SpeciesDatabase("data/pokemon_species.json"))
+        species_data = species_db.get_species("ambipom")
+        ambipom = Pokemon(
+            species_data=species_data,
+            level=5,
+            owner_discord_id=None,
+            moves=["tail_whip", "sand_attack", "double_hit", "dual_chop", "rally_cry"],
+        )
+        ambipom.is_raid_boss = True
+        ambipom.scripted_ai = "ambipom_raid"
+        ambipom._calculate_stats()
+        ambipom.current_hp = ambipom.max_hp
+        return [ambipom]
+
+    def _build_test_path_nidoking(self) -> List[Pokemon]:
+        species_db = getattr(self.bot, "species_db", SpeciesDatabase("data/pokemon_species.json"))
+        species_data = species_db.get_species("nidoking")
+        nidoking = Pokemon(
+            species_data=species_data,
+            level=100,
+            owner_discord_id=None,
+            moves=["nidoking_wait"],
+        )
+        nidoking.is_raid_boss = True
+        nidoking.scripted_immune_damage = True
+        nidoking.scripted_immune_status = True
+        nidoking._calculate_stats()
+        nidoking.current_hp = nidoking.max_hp
+        return [nidoking]
+
+    async def _start_test_path_raid(
+        self,
+        interaction: discord.Interaction,
+        session: dict,
+        run: dict,
+        opponents: List[Pokemon],
+        raid_opponent_slots: int,
+        on_complete,
+        scripted_sequence: Optional[str] = None,
+    ) -> Optional[str]:
+        from battle_engine_v2 import BattleFormat, BattleType
+
+        battle_cog = self.bot.get_cog("BattleCog")
+        if not battle_cog:
+            if interaction.response.is_done():
+                await interaction.followup.send("❌ Battle system unavailable!")
+            else:
+                await interaction.response.send_message("❌ Battle system unavailable!", ephemeral=True)
+            return None
+
+        participants = self.session_manager.get_session_participants(session["session_id"])
+        eligible = []
+        for user_id in participants:
+            user = interaction.guild.get_member(user_id)
+            if not user or user_id in battle_cog.user_battles:
+                continue
+            trainer_pokemon = self._build_trainer_party(user_id)
+            if not trainer_pokemon:
+                continue
+            eligible.append((user, trainer_pokemon))
+
+        if not eligible:
+            if interaction.response.is_done():
+                await interaction.followup.send("❌ No eligible participants for this battle.")
+            else:
+                await interaction.response.send_message("❌ No eligible participants for this battle.", ephemeral=True)
+            return None
+
+        raid_entries = [
+            {"user_id": user.id, "trainer_name": user.display_name, "party": party}
+            for user, party in eligible
+        ]
+
+        battle_id = battle_cog.battle_engine.start_battle(
+            trainer_id=raid_entries[0]["user_id"],
+            trainer_name=", ".join([entry["trainer_name"] for entry in raid_entries]) or "Raid Team",
+            trainer_party=raid_entries[0]["party"],
+            opponent_party=opponents,
+            battle_type=BattleType.TRAINER,
+            opponent_is_ai=True,
+            opponent_name="Test Path Encounter",
+            battle_format=BattleFormat.RAID,
+            raid_participants=raid_entries,
+            raid_opponent_slots=raid_opponent_slots,
+        )
+
+        battle = battle_cog.battle_engine.get_battle(battle_id)
+        if battle:
+            battle.raid_participants = raid_entries
+            battle.no_exp = True
+            battle.raid_opponent_slots = raid_opponent_slots
+            if scripted_sequence:
+                battle.scripted_sequence = scripted_sequence
+
+        for entry in raid_entries:
+            battle_cog.user_battles[entry["user_id"]] = battle_id
+
+        parent_channel = interaction.channel
+        if isinstance(parent_channel, discord.Thread) and parent_channel.parent:
+            parent_channel = parent_channel.parent
+
+        if not isinstance(parent_channel, discord.TextChannel):
+            if interaction.response.is_done():
+                await interaction.followup.send("❌ Battles can only start in text channels.", ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ Battles can only start in text channels.", ephemeral=True)
+            return None
+
+        thread = await parent_channel.create_thread(
+            name="Dream Dive - Test Path",
+            auto_archive_duration=60,
+            reason="Test Path raid battle"
+        )
+
+        mock_interaction = self._create_thread_interaction(thread, interaction.user)
+        await battle_cog.prompt_and_start_battle_ui(
+            interaction=mock_interaction,
+            battle_id=battle_id,
+            battle_type=BattleType.TRAINER
+        )
+
+        if on_complete:
+            if not hasattr(self.bot, "dream_rogue_battle_callbacks"):
+                self.bot.dream_rogue_battle_callbacks = {}
+
+            async def _battle_done_callback(battle, result, battle_interaction):
+                if result == "opponent":
+                    await parent_channel.send(embed=DreamRogueEmbeds.test_path_loss())
+                completion = on_complete(result)
+                if asyncio.iscoroutine(completion):
+                    await completion
+
+            self.bot.dream_rogue_battle_callbacks[battle_id] = _battle_done_callback
+
+        return battle_id
+
+    def _build_trainer_party(self, user_id: int) -> List[Pokemon]:
+        species_db = getattr(self.bot, "species_db", SpeciesDatabase("data/pokemon_species.json"))
+        party_data = self.player_db.get_trainer_party(user_id)
+        trainer_pokemon = []
+        from ui.buttons import reconstruct_pokemon_from_data
+        for poke_data in party_data:
+            species_data = species_db.get_species(poke_data["species_dex_number"])
+            if not species_data:
+                continue
+            trainer_pokemon.append(reconstruct_pokemon_from_data(poke_data, species_data))
+        return trainer_pokemon
+
+    def _create_thread_interaction(self, thread: discord.Thread, user: discord.Member):
+        class MockInteraction:
+            def __init__(self, thread, user):
+                self.channel = thread
+                self.user = user
+                self.guild = thread.guild
+                self._response_done = False
+
+            @property
+            def response(self):
+                class Response:
+                    def __init__(self, parent):
+                        self.parent = parent
+
+                    async def defer(self):
+                        self.parent._response_done = True
+
+                    def is_done(self):
+                        return self.parent._response_done
+
+                return Response(self)
+
+            @property
+            def followup(self):
+                class Followup:
+                    def __init__(self, parent):
+                        self.parent = parent
+
+                    async def send(self, *args, **kwargs):
+                        return await self.parent.channel.send(*args, **kwargs)
+
+                return Followup(self)
+
+        return MockInteraction(thread, user)
 
     async def _send_embed(self, interaction: discord.Interaction, embed: discord.Embed):
         if interaction.response.is_done():

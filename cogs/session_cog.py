@@ -1001,6 +1001,26 @@ class SessionControlsView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.session_id = session_id
+        from dream_rogue_manager import DreamRogueManager
+        self.dream_manager = DreamRogueManager()
+        self.active_run = self.dream_manager.get_active_run_by_session(session_id)
+        self.is_test_path = bool(
+            self.active_run and self.active_run.get("layer_name") == DreamRogueManager.TEST_PATH_LAYER
+        )
+
+        if self.active_run:
+            if self.is_test_path:
+                self.dive_button.label = "Advance"
+                self.dive_button.emoji = "➡️"
+            else:
+                self.dive_button.label = "Dive (Active)"
+                self.dive_button.disabled = True
+        else:
+            self.dive_button.label = "Dive"
+            self.dive_button.emoji = "🌀"
+
+        if not self.is_test_path:
+            self.action_button.disabled = True
 
     def _get_music_manager(self):
         battle_cog = self.bot.get_cog("BattleCog")
@@ -1068,10 +1088,20 @@ class SessionControlsView(discord.ui.View):
     @discord.ui.button(label="Dive", style=discord.ButtonStyle.primary, emoji="🌀", row=0)
     async def dive_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Start Dream Dive dive"""
+        if self.is_test_path and self.active_run:
+            dream_cog = self.bot.get_cog("DreamRogueCog")
+            if not dream_cog:
+                await interaction.response.send_message(
+                    "❌ Dream Dive system not available!",
+                    ephemeral=True
+                )
+                return
+            await dream_cog.advance_test_path_area(interaction)
+            return
         from ui.dream_rogue_views import DiveConfigModal
 
         # Show stage selection modal
-        modal = DiveConfigModal(self._on_stage_selected)
+        modal = DiveConfigModal(self._on_stage_selected, allow_test_path=True)
         modal.interaction = interaction  # Store for callback
         await interaction.response.send_modal(modal)
 
@@ -1088,6 +1118,26 @@ class SessionControlsView(discord.ui.View):
 
         # Start dive from session
         await dream_cog.start_dive_from_session(interaction, layer_name, intensity)
+
+    @discord.ui.button(label="Action", style=discord.ButtonStyle.secondary, emoji="🎬", row=1)
+    async def action_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Trigger scripted session actions"""
+        if not self.is_test_path or not self.active_run:
+            await interaction.response.send_message(
+                "❌ No scripted actions are available right now.",
+                ephemeral=True
+            )
+            return
+
+        dream_cog = self.bot.get_cog("DreamRogueCog")
+        if not dream_cog:
+            await interaction.response.send_message(
+                "❌ Dream Dive system not available!",
+                ephemeral=True
+            )
+            return
+
+        await dream_cog.trigger_test_path_action(interaction)
 
     @discord.ui.button(label="End Session", style=discord.ButtonStyle.danger, emoji="🛑", row=1)
     async def end_session_button(self, interaction: discord.Interaction, button: discord.ui.Button):

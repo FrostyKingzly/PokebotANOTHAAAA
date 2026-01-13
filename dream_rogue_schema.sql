@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS dream_rogue_runs (
     -- Map state
     map_data TEXT,  -- JSON map definition for the run
     current_node_id TEXT,  -- Active node in the map
+    script_state TEXT,  -- JSON scripted state for special runs
 
     -- Boss state
     boss_defeated INTEGER DEFAULT 0,
