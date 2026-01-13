@@ -691,14 +691,17 @@ class DreamRogueCog(commands.Cog):
                         "A group of enraged Aipom swarm the area, ready for a group battle."
                     )
                 )
-                await self._start_test_path_raid(
+                battle_id = await self._start_test_path_raid(
                     interaction,
                     session,
                     run,
                     opponents=self._build_test_path_aipom_pack(),
                     raid_opponent_slots=4,
-                    on_complete=lambda result: self._advance_test_path_action(run["run_id"], 1, result)
+                    on_complete=None
                 )
+                if battle_id:
+                    state["action_index"] = 1
+                    self.dream_manager.update_script_state(run["run_id"], state)
                 return
 
             if action_index == 1:
@@ -709,14 +712,17 @@ class DreamRogueCog(commands.Cog):
                         "An Ambipom charges in with a commanding cry, daring the party to respond."
                     )
                 )
-                await self._start_test_path_raid(
+                battle_id = await self._start_test_path_raid(
                     interaction,
                     session,
                     run,
                     opponents=self._build_test_path_ambipom(),
                     raid_opponent_slots=3,
-                    on_complete=lambda result: self._advance_test_path_action(run["run_id"], 2, result)
+                    on_complete=None
                 )
+                if battle_id:
+                    state["action_index"] = 2
+                    self.dream_manager.update_script_state(run["run_id"], state)
                 return
 
             if action_index == 2:
@@ -775,10 +781,6 @@ class DreamRogueCog(commands.Cog):
             )
             return
 
-    def _advance_test_path_action(self, run_id: str, next_action_index: int, result: str):
-        state = self.dream_manager.get_script_state(run_id)
-        state["action_index"] = next_action_index
-        self.dream_manager.update_script_state(run_id, state)
 
     async def _send_nidoking_horn_drill(self, interaction: discord.Interaction, battle):
         from sprite_helper import PokemonSpriteHelper
