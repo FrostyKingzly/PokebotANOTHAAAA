@@ -864,25 +864,45 @@ class DreamRogueCog(commands.Cog):
 
         participants = self.session_manager.get_session_participants(session["session_id"])
         eligible = []
+        skip_missing_member = 0
+        skip_in_battle = 0
+        skip_no_party = 0
         for user_id in participants:
             user = interaction.guild.get_member(user_id)
             if not user:
                 try:
                     user = await interaction.guild.fetch_member(user_id)
                 except (discord.NotFound, discord.HTTPException):
+                    skip_missing_member += 1
                     continue
-            if not user or user_id in battle_cog.user_battles:
+            if not user:
+                skip_missing_member += 1
+                continue
+            if user_id in battle_cog.user_battles:
+                skip_in_battle += 1
                 continue
             trainer_pokemon = self._build_trainer_party(user_id)
             if not trainer_pokemon:
+                skip_no_party += 1
                 continue
             eligible.append((user, trainer_pokemon))
 
         if not eligible:
+            details = (
+                f"(participants: {len(participants)}, "
+                f"missing members: {skip_missing_member}, "
+                f"in battle: {skip_in_battle}, "
+                f"no party: {skip_no_party})"
+            )
             if interaction.response.is_done():
-                await interaction.followup.send("❌ No eligible participants for this battle.")
+                await interaction.followup.send(
+                    f"❌ No eligible participants for this battle. {details}"
+                )
             else:
-                await interaction.response.send_message("❌ No eligible participants for this battle.", ephemeral=True)
+                await interaction.response.send_message(
+                    f"❌ No eligible participants for this battle. {details}",
+                    ephemeral=True
+                )
             return None
 
         raid_entries = [
