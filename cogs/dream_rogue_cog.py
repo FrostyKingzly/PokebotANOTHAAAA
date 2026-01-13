@@ -696,7 +696,7 @@ class DreamRogueCog(commands.Cog):
                     session,
                     run,
                     opponents=self._build_test_path_aipom_pack(),
-                    raid_opponent_slots=2,
+                    raid_opponent_slots=4,
                     on_complete=lambda result: self._advance_test_path_action(run["run_id"], 1, result)
                 )
                 return
@@ -866,6 +866,11 @@ class DreamRogueCog(commands.Cog):
         eligible = []
         for user_id in participants:
             user = interaction.guild.get_member(user_id)
+            if not user:
+                try:
+                    user = await interaction.guild.fetch_member(user_id)
+                except (discord.NotFound, discord.HTTPException):
+                    continue
             if not user or user_id in battle_cog.user_battles:
                 continue
             trainer_pokemon = self._build_trainer_party(user_id)
