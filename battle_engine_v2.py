@@ -2554,9 +2554,12 @@ class BattleEngine:
                 if getattr(mon, "scripted_ai", None) != "ambipom_raid":
                     continue
                 self._ensure_stat_stages(mon)
+                # Boost all stats by 1, up to +6
                 for stat in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
                     mon.stat_stages[stat] = min(6, mon.stat_stages.get(stat, 0) + 1)
-                messages.append(f"{mon.species_name} drew strength from its Aipom ally! (All stats +1)")
+                # Show cumulative boost level (all stats should be the same since they boost together)
+                boost_level = mon.stat_stages.get('attack', 0)
+                messages.append(f"{mon.species_name} draws strength from its ally! (All stats {boost_level:+d})")
 
         return messages
 
@@ -2595,30 +2598,13 @@ class BattleEngine:
         attacker_battler.party.append(new_aipom)
         attacker_battler.active_positions.append(len(attacker_battler.party) - 1)
 
-        self._ensure_stat_stages(attacker)
-        for stat in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
-            attacker.stat_stages[stat] = min(6, attacker.stat_stages.get(stat, 0) + 1)
-
-        resonance_messages = [
-            "Attack +1",
-            "Defense +1",
-            "Sp. Attack +1",
-            "Sp. Defense +1",
-            "Speed +1",
-        ]
-
+        # Don't boost stats here - it will happen at end of turn via resonance
         action_events = [
             {
                 "type": "custom",
                 "title": "A wild Aipom answers the call!",
-                "messages": ["A wild Aipom answers the call!"],
+                "messages": ["Aipom joins Ambipom in battle!"],
                 "actor": new_aipom,
-            },
-            {
-                "type": "custom",
-                "title": "Ambipom and Aipom begin to resonate! Ambipom’s power grows!",
-                "messages": resonance_messages,
-                "actor": attacker,
             },
         ]
 
