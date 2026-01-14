@@ -3162,6 +3162,7 @@ class BattleEngine:
                 if not defender_battler.is_ai:
                     if defender_battler.has_usable_bench_pokemon(exclude_pokemon=defender):
                         # Add to pending switches
+                        print(f"[DEBUG] Adding pending switch for battler {defender_battler.battler_id} ({defender_battler.battler_name}) at position {fainted_position}")
                         battle.pending_switches[defender_battler.battler_id] = {
                             'position': fainted_position,
                             'switch_type': 'FORCED'
@@ -3171,7 +3172,9 @@ class BattleEngine:
                         if not battle.forced_switch_battler_id:
                             battle.forced_switch_battler_id = defender_battler.battler_id
                             battle.forced_switch_position = fainted_position
+                            print(f"[DEBUG] Set forced_switch_battler_id to {defender_battler.battler_id}")
                     else:
+                        print(f"[DEBUG] Battler {defender_battler.battler_id} ({defender_battler.battler_name}) has no usable bench Pokemon")
                         if fainted_position is not None and fainted_position < len(defender_battler.active_positions):
                             defender_battler.active_positions.pop(fainted_position)
                         self._check_battle_end(battle)

@@ -2103,6 +2103,10 @@ class BattleCog(commands.Cog):
         if not battle:
             return
 
+        print(f"[DEBUG] _handle_post_turn called. pending_switches: {battle.pending_switches}, phase: {battle.phase}")
+        all_battlers = battle.get_all_battlers()
+        print(f"[DEBUG] All battlers in battle: {[(b.battler_id, b.battler_name, getattr(b, 'is_ai', False)) for b in all_battlers]}")
+
         if battle.battle_type == BattleType.WILD and getattr(battle, "wild_dazed", False) and not battle.is_over:
             await self._send_dazed_prompt(interaction, battle)
             return
@@ -2114,17 +2118,33 @@ class BattleCog(commands.Cog):
             await self._finish_battle(interaction, battle)
             return
 
+        print(f"[DEBUG] Checking for forced switches. pending_switches keys: {list(battle.pending_switches.keys())}")
         # Check for forced switches (either from KO or from U-turn/Volt Switch)
         # First check the new pending_switches dict, fall back to old fields for compatibility
+        prompted_switch = False
         if battle.pending_switches:
             # Get the first player (non-AI) that needs to switch
             for battler_id, switch_info in battle.pending_switches.items():
                 battler = _get_battler_by_id(battle, battler_id)
-                if battler and not getattr(battler, 'is_ai', False):
+                # Debug: Check what we found
+                if not battler:
+                    print(f"[DEBUG] Could not find battler for ID {battler_id}")
+                    continue
+                is_ai = getattr(battler, 'is_ai', False)
+                print(f"[DEBUG] Battler {battler_id} ({battler.battler_name}): is_ai={is_ai}")
+                if not is_ai:
                     await self._prompt_forced_switch(interaction, battle, battler_id)
-                    return
-        elif battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and battle.forced_switch_battler_id:
+                    prompted_switch = True
+                    break
+
+        # If we didn't find anyone in pending_switches, try the old fields
+        if not prompted_switch and battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and battle.forced_switch_battler_id:
+            print(f"[DEBUG] Using fallback: forced_switch_battler_id={battle.forced_switch_battler_id}")
             await self._prompt_forced_switch(interaction, battle, battle.forced_switch_battler_id)
+            prompted_switch = True
+
+        # If we prompted a switch, stop here
+        if prompted_switch:
             return
 
         if battle.battle_format == BattleFormat.RAID:
@@ -2964,6 +2984,15 @@ class PartySelect(discord.ui.Select):
                     await cog._safe_followup_send(interaction, embed=send_embed)
                 battle = parent_view.engine.get_battle(parent_view.battle_id)
                 if battle:
+                    # Check if there are more pending switches (for raid battles with multiple faints)
+                    if battle.pending_switches:
+                        # Get the next player (non-AI) that needs to switch
+                        for next_battler_id, switch_info in battle.pending_switches.items():
+                            next_battler = _get_battler_by_id(battle, next_battler_id)
+                            if next_battler and not getattr(next_battler, 'is_ai', False):
+                                await cog._prompt_forced_switch(interaction, battle, next_battler_id)
+                                return
+
                     if battle.battle_format == BattleFormat.RAID:
                         await cog._safe_followup_send(
                             interaction,
