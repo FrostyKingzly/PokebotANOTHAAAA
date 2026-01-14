@@ -537,7 +537,7 @@ class BattleCog(commands.Cog):
         # Raid-specific dramatic intro and UI layout
         if battle.battle_format == BattleFormat.RAID:
             raid_mon = opponent_active[0] if opponent_active else None
-            battle_begin_embed = await self._send_raid_intro(interaction, raid_mon)
+            battle_begin_embed = await self._send_raid_intro(interaction, opponent_active)
 
             sprite_embed = self._create_raid_sprite_embed(raid_mon)
             status_embed = self._create_raid_status_embed(battle)
@@ -936,6 +936,9 @@ class BattleCog(commands.Cog):
         return _format_battle_pokemon_name(pokemon, include_level=include_level)
 
     def _build_raid_hp_bars(self, mon) -> str:
+        if not getattr(mon, "is_raid_boss", False):
+            return self._hp_bar(mon)
+
         total_segments = min(3, max(1, math.ceil(getattr(mon, "level", 1) / 100)))
         hp_ratio = max(0.0, getattr(mon, "current_hp", 0) / max(1, getattr(mon, "max_hp", 1)))
         segment_size = 1 / total_segments
@@ -948,7 +951,10 @@ class BattleCog(commands.Cog):
         return "\n".join(bars)
 
     def _create_raid_status_embed(self, battle) -> discord.Embed:
-        active_raids = battle.opponent.get_active_pokemon() or []
+        active_raids = [
+            mon for mon in (battle.opponent.get_active_pokemon() or [])
+            if getattr(mon, "current_hp", 0) > 0
+        ]
         if not active_raids:
             return discord.Embed(title="Raid Battle", description="Prepare for battle!", color=discord.Color.dark_red())
 
@@ -956,7 +962,7 @@ class BattleCog(commands.Cog):
             raid_mon = active_raids[0]
             hp_bars = self._build_raid_hp_bars(raid_mon)
             type_list = getattr(raid_mon, "species_data", {}).get("types", [])
-            type_emojis = " / ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
+            type_emojis = " ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
 
             embed = discord.Embed(
                 title=f"{self._format_pokemon_name(raid_mon)}",
@@ -989,7 +995,7 @@ class BattleCog(commands.Cog):
         for raid_mon in active_raids:
             hp_bars = self._build_raid_hp_bars(raid_mon)
             type_list = getattr(raid_mon, "species_data", {}).get("types", [])
-            type_emojis = " / ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
+            type_emojis = " ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
             embed.add_field(
                 name=self._format_pokemon_name(raid_mon),
                 value=(
@@ -1062,7 +1068,36 @@ class BattleCog(commands.Cog):
             embed.set_image(url=sprite_url)
         return embed
 
-    async def _send_raid_intro(self, interaction: discord.Interaction, raid_mon) -> Optional[discord.Embed]:
+    async def _send_raid_intro(
+        self,
+        interaction: discord.Interaction,
+        opponent_active: list[Any],
+    ) -> Optional[discord.Embed]:
+        raid_mon = opponent_active[0] if opponent_active else None
+        if raid_mon and not getattr(raid_mon, "is_raid_boss", False):
+            if len(opponent_active) > 1:
+                counts = {}
+                for mon in opponent_active:
+                    counts[mon.species_name] = counts.get(mon.species_name, 0) + 1
+                if len(counts) == 1:
+                    species_name = next(iter(counts))
+                    count = counts[species_name]
+                    enc_description = f"**{count}** wild **{species_name}** appeared!"
+                else:
+                    pokemon_names = " and ".join([f"**{mon.species_name}**" for mon in opponent_active])
+                    enc_description = f"You encountered wild {pokemon_names}!"
+            else:
+                enc_description = f"You encountered a wild **{raid_mon.species_name}**!"
+
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title=f"{SWORD} Encounter!",
+                    description=enc_description,
+                    color=discord.Color.blue(),
+                )
+            )
+            return None
+
         name = getattr(raid_mon, "species_name", "The Pokémon") if raid_mon else "The foe"
         formatted_name = self._format_pokemon_name(raid_mon, include_level=False) if raid_mon else name
 
