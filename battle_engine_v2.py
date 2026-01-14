@@ -1739,8 +1739,9 @@ class BattleEngine:
     ) -> BattleAction:
         preferred_attacks = ["double_hit", "dual_chop"]
         rally_move = "rally_cry"
+        support_moves = ["tail_whip"]
 
-        if battle.turn_number <= 2:
+        if battle.turn_number <= 1:
             attack_move = next((m for m in preferred_attacks if any(move["move_id"] == m for move in active_pokemon.moves)), None)
             if attack_move:
                 return BattleAction(
@@ -1755,11 +1756,7 @@ class BattleEngine:
         active_allies = battler.get_active_pokemon()
         aipom_count = sum(1 for mon in active_allies if getattr(mon, "species_name", "").lower() == "aipom")
 
-        should_rally = False
-        if aipom_count == 0:
-            should_rally = True
-        elif aipom_count == 1:
-            should_rally = random.random() < 0.5
+        should_rally = battle.turn_number > 1 and aipom_count < 2
 
         if should_rally and any(move["move_id"] == rally_move for move in active_pokemon.moves):
             return BattleAction(
@@ -1774,6 +1771,19 @@ class BattleEngine:
             move["move_id"] for move in active_pokemon.moves
             if move["move_id"] in preferred_attacks and move.get("pp", 0) > 0
         ]
+        support_options = [
+            move["move_id"] for move in active_pokemon.moves
+            if move["move_id"] in support_moves and move.get("pp", 0) > 0
+        ]
+        if support_options and random.random() < 0.25:
+            chosen = random.choice(support_options)
+            return BattleAction(
+                action_type='move',
+                battler_id=battler_id,
+                move_id=chosen,
+                target_position=0,
+                pokemon_position=pokemon_position,
+            )
         if attack_options:
             chosen = random.choice(attack_options)
             return BattleAction(
@@ -2485,6 +2495,31 @@ class BattleEngine:
                 'evasion': 0,
             }
 
+    def _apply_ambipom_rally_cry_resonance(self, battle: BattleState) -> List[str]:
+        messages: List[str] = []
+
+        for battler in battle.get_all_battlers():
+            if battler.is_eliminated:
+                continue
+            active_allies = [mon for mon in battler.get_active_pokemon() if getattr(mon, "current_hp", 0) > 0]
+            if not active_allies:
+                continue
+            aipom_alive = any(
+                getattr(mon, "species_name", "").lower() == "aipom"
+                for mon in active_allies
+            )
+            if not aipom_alive:
+                continue
+            for mon in active_allies:
+                if getattr(mon, "scripted_ai", None) != "ambipom_raid":
+                    continue
+                self._ensure_stat_stages(mon)
+                for stat in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
+                    mon.stat_stages[stat] = min(6, mon.stat_stages.get(stat, 0) + 1)
+                messages.append(f"{mon.species_name} drew strength from its Aipom ally! (All stats +1)")
+
+        return messages
+
     def _execute_rally_cry(self, battle: BattleState, attacker, attacker_battler: Battler, move_data: Dict) -> Dict:
         messages = [f"{attacker.species_name} used {move_data['name']}!"]
 
@@ -2686,7 +2721,8 @@ class BattleEngine:
                             break
                 messages.append(self._build_move_message(attacker, move_data, target, target_type))
                 messages.append(self._semi_invulnerable_message(target))
-                messages.append(f"{attacker.species_name}'s attack missed!")
+                move_name = move_data.get('name', action.move_id)
+                messages.append(f"{attacker.species_name} used {move_name}, but it missed!")
                 return {"messages": messages}
 
         # Filter out fainted targets and redirect to valid targets if needed
@@ -2722,7 +2758,8 @@ class BattleEngine:
                     move['pp'] = max(0, move['pp'] - 1)
                     break
             if targets:
-                messages.append(f"{attacker.species_name}'s attack missed!")
+                move_name = move_data.get('name', action.move_id)
+                messages.append(f"{attacker.species_name} used {move_name}, but it missed!")
                 return {"messages": messages}
             return {"messages": [f"{attacker.species_name} used {move_data['name']}, but there was no target!"]}
 
@@ -2820,7 +2857,8 @@ class BattleEngine:
 
             if ENHANCED_SYSTEMS_AVAILABLE and hasattr(self.calculator, '_check_accuracy'):
                 if not self.calculator._check_accuracy(move_data, attacker, defender, battle.weather):
-                    messages.append(f"{attacker.species_name}'s attack missed!")
+                    move_name = move_data.get('name', action.move_id)
+                    messages.append(f"{attacker.species_name} used {move_name}, but it missed!")
                     return {"messages": messages}
 
             actual_hits = 0
@@ -2832,11 +2870,8 @@ class BattleEngine:
                                 attacker, defender, move_data, battle
                             )
                         else:
-                            damage, is_crit, effectiveness, effect_msgs = self.calculator.calculate_damage_with_effects(
-                                attacker, defender, action.move_id,
-                                weather=battle.weather,
-                                terrain=battle.terrain,
-                                battle_state=battle
+                            damage, is_crit, effectiveness, effect_msgs = self._calculate_damage_without_accuracy(
+                                attacker, defender, move_data, battle
                             )
                     else:
                         if self._is_status_immune(defender):
@@ -3630,6 +3665,8 @@ class BattleEngine:
                 messages.extend(status_msgs)
             if self.held_item_manager:
                 messages.extend(self.held_item_manager.process_end_of_turn(pokemon))
+
+        messages.extend(self._apply_ambipom_rally_cry_resonance(battle))
 
         # Weather effects - apply to ALL active Pokemon including raid allies (except eliminated battlers)
         if battle.weather:
