@@ -238,10 +238,12 @@ class EnhancedDamageCalculator:
         if power == 0:
             return 0, False, 1.0
         
+        status_manager = getattr(attacker, 'status_manager', None)
+
         # Critical hit check
         crit_stage = move_data.get('crit_rate', 1)
         # Account for Focus Energy volatile status
-        if attacker.status_manager.has_status(VolatileStatus.FOCUS_ENERGY.value):
+        if status_manager and status_manager.has_status(VolatileStatus.FOCUS_ENERGY.value):
             crit_stage += 2
         
         crit_chance = [1/24, 1/8, 1/2, 1/1][min(crit_stage - 1, 3)]
@@ -268,7 +270,7 @@ class EnhancedDamageCalculator:
 
         # Guts ability: 1.5x physical damage when afflicted by a major status
         ability_id = getattr(attacker, 'ability', '')
-        has_status = getattr(attacker.status_manager, 'major_status', None) is not None
+        has_status = status_manager and getattr(status_manager, 'major_status', None) is not None
         if move_data['category'] == 'physical' and has_status and self._normalize_id(ability_id) == 'guts':
             damage *= 1.5
 
