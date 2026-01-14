@@ -818,7 +818,7 @@ class DreamRogueCog(commands.Cog):
             species_data=species_data,
             level=5,
             owner_discord_id=None,
-            moves=["tail_whip", "sand_attack", "double_hit", "dual_chop", "rally_cry"],
+            moves=["double_hit", "dual_chop", "tail_whip", "rally_cry"],
         )
         ambipom.is_alpha = True
         ambipom.raid_kind = "alpha"

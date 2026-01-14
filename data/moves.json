@@ -856,7 +856,7 @@
     "accuracy": 100,
     "pp": 30,
     "priority": 0,
-    "target": "all_opponents",
+    "target": "single",
     "crit_rate": 1,
     "description": "Lowers the foe's DEFENSE.",
     "generation": 1,
