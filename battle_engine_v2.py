@@ -2345,7 +2345,10 @@ class BattleEngine:
                 messages.append(f"It doesn't affect {defender.species_name}...")
                 continue
 
-            messages.append(f"{defender.species_name} took {damage} damage!{crit_text}{effectiveness_text}")
+            # Only show damage message for damaging moves (physical/special)
+            if move_data.get('category') in ['physical', 'special'] and damage > 0:
+                messages.append(f"{defender.species_name} took {damage} damage!{crit_text}{effectiveness_text}")
+
             messages.extend(effect_msgs)
 
             # Check for HP-based form changes after the exchange
@@ -2365,6 +2368,31 @@ class BattleEngine:
                     self._record_faint(defender_battler, defender)
                     # Record opponent faint for EXP calculation
                     self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
+
+                    # Determine which position the fainted Pokemon was in
+                    fainted_position = None
+                    for pos_idx, party_idx in enumerate(defender_battler.active_positions):
+                        if defender_battler.party[party_idx] == defender:
+                            fainted_position = pos_idx
+                            break
+
+                    # For player's Pokemon fainting (non-AI), they need to switch (if they have Pokemon left)
+                    if not defender_battler.is_ai:
+                        if defender_battler.has_usable_bench_pokemon(exclude_pokemon=defender):
+                            # Add to pending switches
+                            battle.pending_switches[defender_battler.battler_id] = {
+                                'position': fainted_position,
+                                'switch_type': 'FORCED'
+                            }
+                            battle.phase = 'FORCED_SWITCH'
+                            # Maintain backwards compatibility with old fields
+                            if not battle.forced_switch_battler_id:
+                                battle.forced_switch_battler_id = defender_battler.battler_id
+                                battle.forced_switch_position = fainted_position
+                        else:
+                            if fainted_position is not None and fainted_position < len(defender_battler.active_positions):
+                                defender_battler.active_positions.pop(fainted_position)
+                            self._check_battle_end(battle)
 
         return {"messages": messages}
 
