@@ -21,6 +21,44 @@ def is_admin(interaction: discord.Interaction) -> bool:
     return interaction.user.guild_permissions.administrator
 
 
+def build_session_join_embed(bot, session: dict, participants: List[int], admin_mention: Optional[str] = None) -> discord.Embed:
+    """Build the join-session embed with current participants."""
+    admin_id = session.get("admin_id")
+    admin_display = admin_mention or (f"<@{admin_id}>" if admin_id else "Unknown")
+
+    embed = discord.Embed(
+        title=f"📢 Session Started: {session.get('session_name', 'Session')}",
+        description=(
+            f"**Session Leader:** {admin_display}\n\n"
+            f"A new session has started! Click the button below to join.\n\n"
+            f"**What happens when you join:**\n"
+            f"• You'll enter session state\n"
+            f"• You can't travel or battle on your own\n"
+            f"• Your location moves with the session group\n"
+            f"• The admin controls encounters, rewards, and movement"
+        ),
+        color=discord.Color.blue()
+    )
+
+    admin_location = session.get("current_location_id")
+    if admin_location:
+        location_name = bot.location_manager.get_location_name(admin_location)
+        embed.add_field(
+            name="Current Location",
+            value=location_name or admin_location,
+            inline=False
+        )
+
+    participant_list = "\n".join([f"• <@{uid}>" for uid in participants])
+    embed.add_field(
+        name=f"Participants ({len(participants)})",
+        value=participant_list if participants else "No participants yet",
+        inline=False
+    )
+
+    return embed
+
+
 class JoinSessionView(discord.ui.View):
     """View with Join Session button"""
 
@@ -103,42 +141,7 @@ class JoinSessionView(discord.ui.View):
 
             # Get current participants
             participants = self.bot.session_manager.get_session_participants(self.session_id)
-            participant_list = "\n".join([f"• <@{uid}>" for uid in participants])
-
-            # Get location info
-            admin_location = session.get('current_location_id')
-            location_name = None
-            if admin_location:
-                location_name = self.bot.location_manager.get_location_name(admin_location)
-
-            # Recreate embed with updated participant count
-            embed = discord.Embed(
-                title=f"📢 Session Started: {session['session_name']}",
-                description=(
-                    f"**Session Leader:** <@{session['admin_id']}>\n\n"
-                    f"A new session has started! Click the button below to join.\n\n"
-                    f"**What happens when you join:**\n"
-                    f"• You'll enter session state\n"
-                    f"• You can't travel or battle on your own\n"
-                    f"• Your location moves with the session group\n"
-                    f"• The admin controls encounters, rewards, and movement"
-                ),
-                color=discord.Color.blue()
-            )
-
-            if admin_location:
-                embed.add_field(
-                    name="Current Location",
-                    value=location_name or admin_location,
-                    inline=False
-                )
-
-            # Add participants field
-            embed.add_field(
-                name=f"Participants ({len(participants)})",
-                value=participant_list if participants else "No participants yet",
-                inline=False
-            )
+            embed = build_session_join_embed(self.bot, session, participants)
 
             await message.edit(embed=embed)
         except Exception as e:
@@ -1152,6 +1155,46 @@ class SessionControlsView(discord.ui.View):
 
         await dream_cog.trigger_test_path_action(interaction)
 
+    @discord.ui.button(label="Resend Join", style=discord.ButtonStyle.secondary, emoji="📣", row=2)
+    async def resend_join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Resend the join session embed to the session channel."""
+        session = self.bot.session_manager.get_session(self.session_id)
+        if not session:
+            await interaction.response.send_message(
+                "❌ Session not found.",
+                ephemeral=True
+            )
+            return
+
+        if interaction.user.id != session.get("admin_id"):
+            await interaction.response.send_message(
+                "❌ Only the session admin can resend the join message.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        participants = self.bot.session_manager.get_session_participants(self.session_id)
+        embed = build_session_join_embed(self.bot, session, participants)
+        view = JoinSessionView(self.bot, self.session_id)
+
+        channel_id = session.get("join_message_channel_id") or session.get("channel_id") or interaction.channel_id
+        channel = interaction.guild.get_channel(channel_id) if interaction.guild else None
+        if not channel:
+            await interaction.followup.send(
+                "❌ Unable to find the session channel to resend the join message.",
+                ephemeral=True
+            )
+            return
+
+        message = await channel.send(embed=embed, view=view)
+        self.bot.session_manager.set_join_message(self.session_id, message.id, channel.id)
+
+        await interaction.followup.send(
+            "✅ Resent the join session message.",
+            ephemeral=True
+        )
+
     @discord.ui.button(label="End Session", style=discord.ButtonStyle.danger, emoji="🛑", row=1)
     async def end_session_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """End the session"""
@@ -1450,27 +1493,14 @@ class SessionCog(commands.Cog):
             return
 
         # Create join embed
-        embed = discord.Embed(
-            title=f"📢 Session Started: {session_name}",
-            description=(
-                f"**Session Leader:** {interaction.user.mention}\n\n"
-                f"A new session has started! Click the button below to join.\n\n"
-                f"**What happens when you join:**\n"
-                f"• You'll enter session state\n"
-                f"• You can't travel or battle on your own\n"
-                f"• Your location moves with the session group\n"
-                f"• The admin controls encounters, rewards, and movement"
-            ),
-            color=discord.Color.blue()
+        session = self.bot.session_manager.get_session(session_id)
+        participants = self.bot.session_manager.get_session_participants(session_id)
+        embed = build_session_join_embed(
+            self.bot,
+            session,
+            participants,
+            admin_mention=interaction.user.mention
         )
-
-        if admin_location:
-            location_name = self.bot.location_manager.get_location_name(admin_location)
-            embed.add_field(
-                name="Current Location",
-                value=location_name or admin_location,
-                inline=False
-            )
 
         # Create join view
         view = JoinSessionView(self.bot, session_id)
@@ -1549,6 +1579,12 @@ class SessionCog(commands.Cog):
         embed.add_field(
             name="🎵 Music",
             value="Queue or override music for the session",
+            inline=True
+        )
+
+        embed.add_field(
+            name="📣 Resend Join",
+            value="Post a fresh join button for late arrivals",
             inline=True
         )
 

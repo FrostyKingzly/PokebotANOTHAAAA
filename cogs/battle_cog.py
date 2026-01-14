@@ -2939,6 +2939,14 @@ class PartySelect(discord.ui.Select):
                 await interaction.followup.send(result["error"], ephemeral=True)
                 return
             messages = result.get('messages', [])
+            if not messages:
+                battle = parent_view.engine.get_battle(parent_view.battle_id)
+                battler = _get_battler_by_id(battle, self.battler_id) if battle else None
+                pokemon = result.get("pokemon")
+                if battler and pokemon:
+                    messages = [f"{battler.battler_name} sent out {pokemon.species_name}!"]
+                else:
+                    messages = ["A new Pokémon entered the battle."]
             if cog:
                 send_embed = cog._build_switch_embed(messages, title="Send-out", pokemon=result.get("pokemon"))
                 if send_embed:
