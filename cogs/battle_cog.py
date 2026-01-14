@@ -2104,6 +2104,8 @@ class BattleCog(commands.Cog):
             return
 
         print(f"[DEBUG] _handle_post_turn called. pending_switches: {battle.pending_switches}, phase: {battle.phase}")
+        all_battlers = battle.get_all_battlers()
+        print(f"[DEBUG] All battlers in battle: {[(b.battler_id, b.battler_name, getattr(b, 'is_ai', False)) for b in all_battlers]}")
 
         if battle.battle_type == BattleType.WILD and getattr(battle, "wild_dazed", False) and not battle.is_over:
             await self._send_dazed_prompt(interaction, battle)
