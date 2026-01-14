@@ -146,7 +146,12 @@ class EnhancedDamageCalculator:
             attack = self.effect_handler.apply_stat_stages(attacker, attack, 'attack')
             defense = self.effect_handler.apply_stat_stages(defender, defense, 'defense')
             # Apply burn status (halves physical attack) unless ability prevents it
-            attack = attacker.status_manager.modify_attack_stat(attack, is_physical=True, pokemon=attacker)
+            if hasattr(attacker, "status_manager"):
+                attack = attacker.status_manager.modify_attack_stat(
+                    attack,
+                    is_physical=True,
+                    pokemon=attacker
+                )
         else:  # special
             attack = attacker.sp_attack
             defense = defender.sp_defense

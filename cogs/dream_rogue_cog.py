@@ -6,7 +6,7 @@ Commands and orchestration for the Dream Dive roguelike gamemode
 
 import discord
 from discord.ext import commands
-from typing import List, Optional
+from typing import List, Optional, Union
 import asyncio
 import random
 
@@ -959,21 +959,7 @@ class DreamRogueCog(commands.Cog):
             return None
 
         try:
-            thread = await parent_channel.create_thread(
-                name="Dream Dive - Test Path",
-                auto_archive_duration=60,
-                reason="Test Path raid battle"
-            )
-        except (discord.Forbidden, discord.HTTPException):
-            message = "❌ I couldn't create the Test Path battle thread. Please check channel permissions."
-            if interaction.response.is_done():
-                await interaction.followup.send(message, ephemeral=True)
-            else:
-                await interaction.response.send_message(message, ephemeral=True)
-            return None
-
-        try:
-            mock_interaction = self._create_thread_interaction(thread, interaction.user)
+            mock_interaction = self._create_channel_interaction(parent_channel, interaction.user)
             await battle_cog.prompt_and_start_battle_ui(
                 interaction=mock_interaction,
                 battle_id=battle_id,
@@ -986,6 +972,13 @@ class DreamRogueCog(commands.Cog):
             else:
                 await interaction.response.send_message(message, ephemeral=True)
             return None
+
+        if interaction.channel != parent_channel:
+            notice = f"⚔️ Test Path battle started in {parent_channel.mention}."
+            if interaction.response.is_done():
+                await interaction.followup.send(notice)
+            else:
+                await interaction.response.send_message(notice)
 
         if on_complete:
             if not hasattr(self.bot, "dream_rogue_battle_callbacks"):
@@ -1014,12 +1007,16 @@ class DreamRogueCog(commands.Cog):
             trainer_pokemon.append(reconstruct_pokemon_from_data(poke_data, species_data))
         return trainer_pokemon
 
-    def _create_thread_interaction(self, thread: discord.Thread, user: discord.Member):
+    def _create_channel_interaction(
+        self,
+        channel: Union[discord.TextChannel, discord.Thread],
+        user: discord.Member
+    ):
         class MockInteraction:
-            def __init__(self, thread, user):
-                self.channel = thread
+            def __init__(self, channel, user):
+                self.channel = channel
                 self.user = user
-                self.guild = thread.guild
+                self.guild = channel.guild
                 self._response_done = False
 
             @property
@@ -1047,7 +1044,7 @@ class DreamRogueCog(commands.Cog):
 
                 return Followup(self)
 
-        return MockInteraction(thread, user)
+        return MockInteraction(channel, user)
 
     async def _send_embed(self, interaction: discord.Interaction, embed: discord.Embed):
         if interaction.response.is_done():
