@@ -987,12 +987,12 @@ class BattleCog(commands.Cog):
             return embed
 
         embed = discord.Embed(
-            title="Raid Enemies",
+            title="Enemies",
             description=f"**Turn {battle.turn_number}**",
             color=discord.Color.dark_red(),
         )
 
-        for raid_mon in active_raids:
+        for idx, raid_mon in enumerate(active_raids):
             hp_bars = self._build_raid_hp_bars(raid_mon)
             type_list = getattr(raid_mon, "species_data", {}).get("types", [])
             type_emojis = " ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
@@ -1002,8 +1002,11 @@ class BattleCog(commands.Cog):
                     f"**HP** {type_emojis}\n{hp_bars}\n"
                     f"**{max(0, int(getattr(raid_mon, 'current_hp', 0)))}/{int(getattr(raid_mon, 'max_hp', 1))}**"
                 ),
-                inline=False,
+                inline=True,
             )
+
+            if (idx + 1) % 4 == 0:
+                embed.add_field(name="\u200b", value="\u200b", inline=False)
 
         return embed
 
@@ -1598,12 +1601,32 @@ class BattleCog(commands.Cog):
         try:
             from database import PlayerDatabase
             pdb = PlayerDatabase('data/players.db')
-            party_rows = pdb.get_trainer_party(battle.trainer.battler_id)
-            rows_by_pos = {row.get('party_position', i): row for i, row in enumerate(party_rows)}
-            for i, mon in enumerate(battle.trainer.party):
-                row = rows_by_pos.get(i) or rows_by_pos.get(getattr(mon, 'party_position', i))
-                if row and 'pokemon_id' in row:
-                    pdb.update_pokemon(row['pokemon_id'], {'current_hp': max(0, int(getattr(mon, 'current_hp', 0)))})
+
+            def _persist_battler_party_hp(battler):
+                if not battler or battler.is_ai:
+                    return
+                party_rows = pdb.get_trainer_party(battler.battler_id)
+                rows_by_pos = {row.get('party_position', i): row for i, row in enumerate(party_rows)}
+                for i, mon in enumerate(battler.party):
+                    pokemon_id = getattr(mon, 'pokemon_id', None)
+                    if pokemon_id:
+                        pdb.update_pokemon(
+                            pokemon_id,
+                            {'current_hp': max(0, int(getattr(mon, 'current_hp', 0)))},
+                        )
+                        continue
+                    row = rows_by_pos.get(i) or rows_by_pos.get(getattr(mon, 'party_position', i))
+                    if row and 'pokemon_id' in row:
+                        pdb.update_pokemon(
+                            row['pokemon_id'],
+                            {'current_hp': max(0, int(getattr(mon, 'current_hp', 0)))},
+                        )
+
+            if battle.battle_format == BattleFormat.RAID:
+                for battler in battle.get_all_battlers():
+                    _persist_battler_party_hp(battler)
+            else:
+                _persist_battler_party_hp(battle.trainer)
         except Exception:
             pass
 
@@ -2337,6 +2360,8 @@ class BattleActionView(discord.ui.View):
         self.engine = engine
         self.battle = battle
         self.cog = battle_cog
+        if battle and battle.battle_format == BattleFormat.RAID:
+            self.remove_item(self.rp_mode_button)
 
     def _resolve_battler_id(self, interaction: discord.Interaction, battle) -> Optional[int]:
         for battler in battle.get_all_battlers():
