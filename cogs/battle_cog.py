@@ -2964,6 +2964,15 @@ class PartySelect(discord.ui.Select):
                     await cog._safe_followup_send(interaction, embed=send_embed)
                 battle = parent_view.engine.get_battle(parent_view.battle_id)
                 if battle:
+                    # Check if there are more pending switches (for raid battles with multiple faints)
+                    if battle.pending_switches:
+                        # Get the next player (non-AI) that needs to switch
+                        for next_battler_id, switch_info in battle.pending_switches.items():
+                            next_battler = _get_battler_by_id(battle, next_battler_id)
+                            if next_battler and not getattr(next_battler, 'is_ai', False):
+                                await cog._prompt_forced_switch(interaction, battle, next_battler_id)
+                                return
+
                     if battle.battle_format == BattleFormat.RAID:
                         await cog._safe_followup_send(
                             interaction,
