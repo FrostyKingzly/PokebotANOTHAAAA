@@ -94,6 +94,7 @@ class RaidManager:
         )
         # Mark this Pokemon as a raid boss for downstream systems
         pokemon.is_raid_boss = True
+        pokemon.raid_kind = "rogue"
         pokemon.raid_stat_multiplier = 2.0
         pokemon.raid_hp_multiplier = 5.0
         pokemon.raid_level_cap = self.MAX_LEVEL
@@ -173,6 +174,7 @@ class RaidManager:
             owner_discord_id=None,
         )
         pokemon.is_raid_boss = True
+        pokemon.raid_kind = "rogue"
         pokemon.raid_stat_multiplier = base.raid_stat_multiplier
         pokemon.raid_hp_multiplier = base.raid_hp_multiplier
         pokemon.raid_level_cap = self.MAX_LEVEL

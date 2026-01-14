@@ -142,6 +142,12 @@ class Pokemon:
         self.raid_stat_multiplier = 1.0
         self.raid_hp_multiplier = 1.0
         self.raid_level_cap = None
+        self.raid_kind = None
+
+        # Alpha (enraged) attributes
+        self.is_alpha = False
+        self.alpha_stat_multiplier = 1.2
+        self.alpha_hp_multiplier = 1.2
 
         # Experience
         self.exp = ExpSystem.exp_to_level(level, self.growth_rate)
@@ -205,6 +211,51 @@ class Pokemon:
             for stat in ['attack', 'defense', 'sp_attack', 'sp_defense']:
                 boosted = int(getattr(self, stat, 0) * stat_multi)
                 setattr(self, stat, boosted)
+
+        # Apply alpha multipliers (enraged Pokemon)
+        if getattr(self, "is_alpha", False):
+            hp_multi = max(1.0, getattr(self, "alpha_hp_multiplier", 1.0))
+            stat_multi = max(1.0, getattr(self, "alpha_stat_multiplier", 1.0))
+
+            self.max_hp = int(self.max_hp * hp_multi)
+
+            for stat in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
+                boosted = int(getattr(self, stat, 0) * stat_multi)
+                setattr(self, stat, boosted)
+
+    def ensure_moveset_size(self, min_moves: int = 4, max_moves: int = 4) -> None:
+        """Ensure the Pokemon has between min_moves and max_moves moves."""
+        if not isinstance(self.moves, list):
+            return
+
+        if len(self.moves) > max_moves:
+            self.moves = self.moves[:max_moves]
+
+        if len(self.moves) >= min_moves:
+            return
+
+        existing_ids = {move.get('move_id') for move in self.moves if isinstance(move, dict)}
+        candidates = self._generate_starting_moves()
+
+        def _add_move(move_id: str) -> bool:
+            if not move_id or move_id in existing_ids:
+                return False
+            new_move = self._create_move_objects([move_id])
+            if not new_move:
+                return False
+            self.moves.append(new_move[0])
+            existing_ids.add(move_id)
+            return True
+
+        for move_id in candidates:
+            if len(self.moves) >= min_moves:
+                break
+            _add_move(move_id)
+
+        for fallback_id in ['tackle', 'growl']:
+            if len(self.moves) >= min_moves:
+                break
+            _add_move(fallback_id)
     
     def _generate_starting_moves(self) -> List[str]:
         """

@@ -575,6 +575,7 @@ class InstanceActionView(View):
 
             raid_boss = _create_wild_opponents(1)[0]
             raid_boss.is_raid_boss = True
+            raid_boss.raid_kind = "rogue"
             raid_boss.raid_stat_multiplier = float(effect_data.get("raid_stat_multiplier", 2.0))
             raid_boss.raid_hp_multiplier = float(effect_data.get("raid_hp_multiplier", 5.0))
             raid_boss._calculate_stats()

@@ -820,7 +820,9 @@ class DreamRogueCog(commands.Cog):
             owner_discord_id=None,
             moves=["tail_whip", "sand_attack", "double_hit", "dual_chop", "rally_cry"],
         )
-        ambipom.is_raid_boss = True
+        ambipom.is_alpha = True
+        ambipom.raid_kind = "alpha"
+        ambipom.ensure_moveset_size(4, 4)
         ambipom.scripted_ai = "ambipom_raid"
         ambipom._calculate_stats()
         ambipom.current_hp = ambipom.max_hp
@@ -836,6 +838,7 @@ class DreamRogueCog(commands.Cog):
             moves=["nidoking_wait"],
         )
         nidoking.is_raid_boss = True
+        nidoking.raid_kind = "rogue"
         nidoking.scripted_immune_damage = True
         nidoking.scripted_immune_status = True
         nidoking._calculate_stats()
