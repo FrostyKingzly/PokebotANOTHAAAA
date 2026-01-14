@@ -1052,7 +1052,7 @@ class BattleCog(commands.Cog):
         return embed
 
     def _create_raid_sprite_embed(self, raid_mon) -> Optional[discord.Embed]:
-        if not raid_mon:
+        if not raid_mon or not getattr(raid_mon, "is_raid_boss", False):
             return None
 
         embed = discord.Embed(
@@ -1092,13 +1092,24 @@ class BattleCog(commands.Cog):
             else:
                 enc_description = f"You encountered a wild **{raid_mon.species_name}**!"
 
-            await interaction.followup.send(
-                embed=discord.Embed(
-                    title=f"{SWORD} Encounter!",
-                    description=enc_description,
-                    color=discord.Color.blue(),
-                )
+            embed = discord.Embed(
+                title=f"{SWORD} Encounter!",
+                description=enc_description,
+                color=discord.Color.blue(),
             )
+            sprite_target = raid_mon
+            if sprite_target:
+                sprite_url = PokemonSpriteHelper.get_sprite(
+                    getattr(sprite_target, "species_name", None),
+                    getattr(sprite_target, "species_dex_number", None),
+                    style='official',
+                    gender=getattr(sprite_target, 'gender', None),
+                    shiny=getattr(sprite_target, 'is_shiny', False),
+                    use_fallback=False,
+                )
+                if sprite_url:
+                    embed.set_thumbnail(url=sprite_url)
+            await interaction.followup.send(embed=embed)
             return None
 
         name = getattr(raid_mon, "species_name", "The Pokémon") if raid_mon else "The foe"
