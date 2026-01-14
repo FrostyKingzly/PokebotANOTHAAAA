@@ -1008,6 +1008,95 @@ class RewardTargetView(discord.ui.View):
         )
 
 
+class PartyHealParticipantSelect(discord.ui.UserSelect):
+    """Select menu for choosing participants to heal."""
+
+    def __init__(self):
+        super().__init__(
+            placeholder="Select participants to heal...",
+            min_values=1,
+            max_values=25,
+            row=0,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.selected_participants = [user.id for user in self.values]
+        await interaction.response.send_message(
+            f"✅ Selected {len(self.values)} participant(s). Click **Heal Selected** to restore their parties.",
+            ephemeral=True,
+        )
+
+
+class PartyHealTargetView(discord.ui.View):
+    """View for restoring party HP for selected participants or everyone."""
+
+    def __init__(self, bot, session_id: str):
+        super().__init__(timeout=180)
+        self.bot = bot
+        self.session_id = session_id
+        self.selected_participants: List[int] = []
+        self.add_item(PartyHealParticipantSelect())
+
+    def _get_session_participants(self) -> List[int]:
+        return self.bot.session_manager.get_session_participants(self.session_id)
+
+    async def _heal_parties(self, interaction: discord.Interaction, target_ids: List[int]):
+        if not getattr(self.bot, "player_manager", None):
+            await interaction.response.send_message(
+                "❌ Player manager is not available.",
+                ephemeral=True,
+            )
+            return
+
+        participants = set(self._get_session_participants())
+        valid_targets = [user_id for user_id in target_ids if user_id in participants]
+
+        if not valid_targets:
+            await interaction.response.send_message(
+                "❌ None of the selected users are in this session!",
+                ephemeral=True,
+            )
+            return
+
+        results = []
+        for user_id in valid_targets:
+            healed = self.bot.player_manager.heal_party(user_id)
+            if healed:
+                results.append(f"<@{user_id}>: restored **{healed}** Pokémon")
+            else:
+                results.append(f"<@{user_id}>: already at full health")
+
+        await interaction.response.send_message(
+            "✅ Party restoration complete:\n" + "\n".join(results),
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+
+    @discord.ui.button(label="Heal Selected", style=discord.ButtonStyle.success, row=1)
+    async def heal_selected(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Heal the selected participants' parties."""
+        if not self.selected_participants:
+            await interaction.response.send_message(
+                "❌ Please select participants first.",
+                ephemeral=True,
+            )
+            return
+
+        await self._heal_parties(interaction, self.selected_participants)
+
+    @discord.ui.button(label="Everyone", style=discord.ButtonStyle.primary, row=1)
+    async def heal_everyone(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Heal every participant's party."""
+        participants = self._get_session_participants()
+        if not participants:
+            await interaction.response.send_message(
+                "❌ No participants found in this session.",
+                ephemeral=True,
+            )
+            return
+
+        await self._heal_parties(interaction, participants)
+
+
 class SessionControlsView(discord.ui.View):
     """Main session controls view with all management buttons"""
 
@@ -1077,6 +1166,16 @@ class SessionControlsView(discord.ui.View):
             "Who should receive rewards?",
             view=view,
             ephemeral=True
+        )
+
+    @discord.ui.button(label="Restore Party", style=discord.ButtonStyle.success, emoji="🩺", row=1)
+    async def restore_party_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Restore party HP for session participants."""
+        view = PartyHealTargetView(self.bot, self.session_id)
+        await interaction.response.send_message(
+            "Select who should have their parties restored:",
+            view=view,
+            ephemeral=True,
         )
 
     @discord.ui.button(label="Music", style=discord.ButtonStyle.primary, emoji="🎵", row=1)
@@ -1573,6 +1672,12 @@ class SessionCog(commands.Cog):
         embed.add_field(
             name="🎁 Reward",
             value="Give rewards to participants",
+            inline=True
+        )
+
+        embed.add_field(
+            name="🩺 Restore Party",
+            value="Heal party HP for selected participants",
             inline=True
         )
 

@@ -1741,31 +1741,30 @@ class BattleEngine:
         rally_move = "rally_cry"
         support_moves = ["tail_whip"]
 
-        if battle.turn_number <= 1:
-            attack_move = next((m for m in preferred_attacks if any(move["move_id"] == m for move in active_pokemon.moves)), None)
-            if attack_move:
-                return BattleAction(
-                    action_type='move',
-                    battler_id=battler_id,
-                    move_id=attack_move,
-                    target_position=0,
-                    pokemon_position=pokemon_position,
-                )
-
         battler = self._get_battler_by_id(battle, battler_id)
         active_allies = battler.get_active_pokemon()
         aipom_count = sum(1 for mon in active_allies if getattr(mon, "species_name", "").lower() == "aipom")
-
-        should_rally = battle.turn_number > 1 and aipom_count < 2
-
-        if should_rally and any(move["move_id"] == rally_move for move in active_pokemon.moves):
-            return BattleAction(
-                action_type='move',
-                battler_id=battler_id,
-                move_id=rally_move,
-                target_position=0,
-                pokemon_position=pokemon_position,
-            )
+        rally_move_data = next(
+            (move for move in active_pokemon.moves if move["move_id"] == rally_move and move.get("pp", 0) > 0),
+            None,
+        )
+        if rally_move_data:
+            if aipom_count < 1:
+                return BattleAction(
+                    action_type='move',
+                    battler_id=battler_id,
+                    move_id=rally_move,
+                    target_position=0,
+                    pokemon_position=pokemon_position,
+                )
+            if aipom_count == 1 and random.random() < 0.5:
+                return BattleAction(
+                    action_type='move',
+                    battler_id=battler_id,
+                    move_id=rally_move,
+                    target_position=0,
+                    pokemon_position=pokemon_position,
+                )
 
         attack_options = [
             move["move_id"] for move in active_pokemon.moves
@@ -1774,6 +1773,10 @@ class BattleEngine:
         support_options = [
             move["move_id"] for move in active_pokemon.moves
             if move["move_id"] in support_moves and move.get("pp", 0) > 0
+        ]
+        other_options = [
+            move["move_id"] for move in active_pokemon.moves
+            if move["move_id"] != rally_move and move.get("pp", 0) > 0
         ]
         if support_options and random.random() < 0.25:
             chosen = random.choice(support_options)
@@ -1786,6 +1789,15 @@ class BattleEngine:
             )
         if attack_options:
             chosen = random.choice(attack_options)
+            return BattleAction(
+                action_type='move',
+                battler_id=battler_id,
+                move_id=chosen,
+                target_position=0,
+                pokemon_position=pokemon_position,
+            )
+        if other_options:
+            chosen = random.choice(other_options)
             return BattleAction(
                 action_type='move',
                 battler_id=battler_id,
@@ -3146,6 +3158,8 @@ class BattleEngine:
                             battle.forced_switch_battler_id = defender_battler.battler_id
                             battle.forced_switch_position = fainted_position
                     else:
+                        if fainted_position is not None and fainted_position < len(defender_battler.active_positions):
+                            defender_battler.active_positions.pop(fainted_position)
                         self._check_battle_end(battle)
 
                 # For AI-controlled trainers (NPCs), auto-send the next Pokémon before continuing
@@ -3176,6 +3190,8 @@ class BattleEngine:
                                 battle.forced_switch_position = fainted_position
                             battle.pending_ai_switch_index = replacement_index
                     else:
+                        if fainted_position is not None and fainted_position < len(defender_battler.active_positions):
+                            defender_battler.active_positions.pop(fainted_position)
                         self._check_battle_end(battle)
 
         # Handle self-switch moves (Volt Switch, U-turn, etc.)
@@ -3721,6 +3737,8 @@ class BattleEngine:
                                     if not battle.forced_switch_battler_id:
                                         battle.forced_switch_battler_id = battler.battler_id
                                         battle.forced_switch_position = fainted_position
+                                elif fainted_position is not None and fainted_position < len(battler.active_positions):
+                                    battler.active_positions.pop(fainted_position)
                             # For AI, queue replacement
                             elif battler.is_ai and battle.battle_type in (BattleType.TRAINER, BattleType.PVP):
                                 if battler.has_usable_bench_pokemon(exclude_pokemon=fainted_mon):
@@ -3741,6 +3759,8 @@ class BattleEngine:
                                         if not battle.forced_switch_battler_id:
                                             battle.forced_switch_battler_id = battler.battler_id
                                             battle.forced_switch_position = fainted_position
+                                elif fainted_position is not None and fainted_position < len(battler.active_positions):
+                                    battler.active_positions.pop(fainted_position)
                         break
 
             # Check for battle end and mark eliminated battlers
