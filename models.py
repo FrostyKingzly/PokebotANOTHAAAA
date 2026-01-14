@@ -127,6 +127,15 @@ class Pokemon:
         # Battle state
         self.held_item = None
         self.is_shiny = is_shiny
+        self.stat_stages = {
+            'attack': 0,
+            'defense': 0,
+            'sp_attack': 0,
+            'sp_defense': 0,
+            'speed': 0,
+            'accuracy': 0,
+            'evasion': 0,
+        }
         
         # Storage
         self.in_party = False
