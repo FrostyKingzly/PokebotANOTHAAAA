@@ -2103,6 +2103,8 @@ class BattleCog(commands.Cog):
         if not battle:
             return
 
+        print(f"[DEBUG] _handle_post_turn called. pending_switches: {battle.pending_switches}, phase: {battle.phase}")
+
         if battle.battle_type == BattleType.WILD and getattr(battle, "wild_dazed", False) and not battle.is_over:
             await self._send_dazed_prompt(interaction, battle)
             return
@@ -2114,17 +2116,33 @@ class BattleCog(commands.Cog):
             await self._finish_battle(interaction, battle)
             return
 
+        print(f"[DEBUG] Checking for forced switches. pending_switches keys: {list(battle.pending_switches.keys())}")
         # Check for forced switches (either from KO or from U-turn/Volt Switch)
         # First check the new pending_switches dict, fall back to old fields for compatibility
+        prompted_switch = False
         if battle.pending_switches:
             # Get the first player (non-AI) that needs to switch
             for battler_id, switch_info in battle.pending_switches.items():
                 battler = _get_battler_by_id(battle, battler_id)
-                if battler and not getattr(battler, 'is_ai', False):
+                # Debug: Check what we found
+                if not battler:
+                    print(f"[DEBUG] Could not find battler for ID {battler_id}")
+                    continue
+                is_ai = getattr(battler, 'is_ai', False)
+                print(f"[DEBUG] Battler {battler_id} ({battler.battler_name}): is_ai={is_ai}")
+                if not is_ai:
                     await self._prompt_forced_switch(interaction, battle, battler_id)
-                    return
-        elif battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and battle.forced_switch_battler_id:
+                    prompted_switch = True
+                    break
+
+        # If we didn't find anyone in pending_switches, try the old fields
+        if not prompted_switch and battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and battle.forced_switch_battler_id:
+            print(f"[DEBUG] Using fallback: forced_switch_battler_id={battle.forced_switch_battler_id}")
             await self._prompt_forced_switch(interaction, battle, battle.forced_switch_battler_id)
+            prompted_switch = True
+
+        # If we prompted a switch, stop here
+        if prompted_switch:
             return
 
         if battle.battle_format == BattleFormat.RAID:
