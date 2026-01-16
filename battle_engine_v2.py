@@ -3135,7 +3135,17 @@ class BattleEngine:
         # Check for faint / dazed state
         if defender.current_hp <= 0:
             # Determine which battler owns the defender
-            defender_battler = next((b for b in battle.get_all_battlers() if defender in b.party), battle.opponent)
+            print(f"[DEBUG] Pokemon {defender.species_name} has fainted (HP: {defender.current_hp})")
+            print(f"[DEBUG] Searching for owner among {len(battle.get_all_battlers())} battlers")
+            defender_battler = None
+            for b in battle.get_all_battlers():
+                if defender in b.party:
+                    defender_battler = b
+                    print(f"[DEBUG] Found owner: {b.battler_name} (ID: {b.battler_id}, is_ai: {getattr(b, 'is_ai', False)})")
+                    break
+            if not defender_battler:
+                print(f"[DEBUG] WARNING: Could not find owner for {defender.species_name}, defaulting to opponent")
+                defender_battler = battle.opponent
 
             # Special handling for wild battles: wild Pokémon do not fully faint, they become "dazed"
             if battle.battle_type == BattleType.WILD and defender_battler == battle.opponent:
@@ -3159,8 +3169,11 @@ class BattleEngine:
 
                 # For player's Pokemon fainting (non‑AI), they need to switch (if they have Pokemon left)
                 # In PVP, both trainer and opponent can be human players
+                print(f"[DEBUG] Checking if battler {defender_battler.battler_id} ({defender_battler.battler_name}) is AI: {getattr(defender_battler, 'is_ai', 'ATTRIBUTE_MISSING')}")
                 if not defender_battler.is_ai:
-                    if defender_battler.has_usable_bench_pokemon(exclude_pokemon=defender):
+                    has_bench = defender_battler.has_usable_bench_pokemon(exclude_pokemon=defender)
+                    print(f"[DEBUG] Battler has usable bench Pokemon: {has_bench}")
+                    if has_bench:
                         # Add to pending switches
                         print(f"[DEBUG] Adding pending switch for battler {defender_battler.battler_id} ({defender_battler.battler_name}) at position {fainted_position}")
                         battle.pending_switches[defender_battler.battler_id] = {
@@ -3168,6 +3181,7 @@ class BattleEngine:
                             'switch_type': 'FORCED'
                         }
                         battle.phase = 'FORCED_SWITCH'
+                        print(f"[DEBUG] Set battle.phase to FORCED_SWITCH. Current pending_switches: {battle.pending_switches}")
                         # Maintain backwards compatibility with old fields
                         if not battle.forced_switch_battler_id:
                             battle.forced_switch_battler_id = defender_battler.battler_id
@@ -3181,6 +3195,7 @@ class BattleEngine:
 
                 # For AI-controlled trainers (NPCs), auto-send the next Pokémon before continuing
                 elif defender_battler.is_ai and battle.battle_type in (BattleType.TRAINER, BattleType.PVP):
+                    print(f"[DEBUG] AI battler {defender_battler.battler_id} ({defender_battler.battler_name}) needs to switch")
                     if defender_battler.has_usable_bench_pokemon(exclude_pokemon=defender):
                         # Choose replacement index but DO NOT switch yet; queue it for after EOT
                         replacement_index = None

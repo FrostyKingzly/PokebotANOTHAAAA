@@ -2143,6 +2143,36 @@ class BattleCog(commands.Cog):
             await self._prompt_forced_switch(interaction, battle, battle.forced_switch_battler_id)
             prompted_switch = True
 
+        # Recovery mechanism: Scan for any fainted Pokemon that weren't tracked in pending_switches
+        # This catches cases where the fainting detection code failed to add the player
+        if not prompted_switch:
+            print(f"[DEBUG] No pending switches found, scanning for fainted Pokemon...")
+            for battler in battle.get_all_battlers():
+                if getattr(battler, 'is_ai', False):
+                    continue
+
+                active_pokemon = battler.get_active_pokemon()
+                for pos_idx, active_mon in enumerate(active_pokemon):
+                    if getattr(active_mon, 'current_hp', 0) <= 0:
+                        print(f"[DEBUG] Found fainted Pokemon {active_mon.species_name} for battler {battler.battler_id} ({battler.battler_name}) at position {pos_idx}")
+                        # Check if they have usable bench Pokemon
+                        if battler.has_usable_bench_pokemon(exclude_pokemon=active_mon):
+                            print(f"[DEBUG] Adding missing switch for battler {battler.battler_id} to pending_switches")
+                            # Add to pending switches
+                            battle.pending_switches[battler.battler_id] = {
+                                'position': pos_idx,
+                                'switch_type': 'FORCED'
+                            }
+                            battle.phase = 'FORCED_SWITCH'
+                            battle.forced_switch_battler_id = battler.battler_id
+                            battle.forced_switch_position = pos_idx
+                            # Prompt the switch immediately
+                            await self._prompt_forced_switch(interaction, battle, battler.battler_id)
+                            prompted_switch = True
+                            break
+                if prompted_switch:
+                    break
+
         # If we prompted a switch, stop here
         if prompted_switch:
             return
