@@ -682,10 +682,7 @@ class DreamRogueCog(commands.Cog):
             return
 
         if area_index == 1:
-            await interaction.response.send_message(
-                "ℹ️ There is nothing to act on here yet.",
-                ephemeral=True
-            )
+            await self._send_test_path_area_embed(interaction, run["run_id"], area_index=2)
             return
 
         if area_index == 2:

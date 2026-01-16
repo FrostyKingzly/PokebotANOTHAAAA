@@ -1235,7 +1235,7 @@ class SessionControlsView(discord.ui.View):
         # Start dive from session
         await dream_cog.start_dive_from_session(interaction, layer_name, intensity)
 
-    @discord.ui.button(label="Action", style=discord.ButtonStyle.secondary, emoji="🎬", row=1)
+    @discord.ui.button(label="Action", style=discord.ButtonStyle.secondary, emoji="🎬", row=0)
     async def action_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Trigger scripted session actions"""
         if not self.is_test_path or not self.active_run:
