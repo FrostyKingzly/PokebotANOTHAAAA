@@ -1532,6 +1532,18 @@ class BattleCog(commands.Cog):
             )
             return
 
+        # Safety check: Don't prompt eliminated battlers (those with no Pokemon left)
+        if getattr(battler, 'is_eliminated', False):
+            print(f"[DEBUG] Battler {battler_id} is eliminated, skipping switch prompt")
+            # Remove from pending switches since they can't switch
+            if battler_id in battle.pending_switches:
+                del battle.pending_switches[battler_id]
+            await interaction.followup.send(
+                "Your Pokémon have been defeated. Waiting for the battle to conclude...",
+                ephemeral=True,
+            )
+            return
+
         # Check if this is a U-turn/Volt Switch or a fainted Pokemon
         # First check the new pending_switches dict
         is_volt_switch = False
@@ -2123,7 +2135,17 @@ class BattleCog(commands.Cog):
         # First check the new pending_switches dict, fall back to old fields for compatibility
         prompted_switch = False
         if battle.pending_switches:
-            # Get the first player (non-AI) that needs to switch
+            # First pass: clean up eliminated battlers from pending_switches
+            eliminated_ids = []
+            for battler_id in list(battle.pending_switches.keys()):
+                battler = _get_battler_by_id(battle, battler_id)
+                if battler and getattr(battler, 'is_eliminated', False):
+                    print(f"[DEBUG] Removing eliminated battler {battler_id} from pending_switches")
+                    eliminated_ids.append(battler_id)
+            for battler_id in eliminated_ids:
+                del battle.pending_switches[battler_id]
+
+            # Second pass: get the first player (non-AI) that needs to switch
             for battler_id, switch_info in battle.pending_switches.items():
                 battler = _get_battler_by_id(battle, battler_id)
                 # Debug: Check what we found
@@ -2149,6 +2171,11 @@ class BattleCog(commands.Cog):
             print(f"[DEBUG] No pending switches found, scanning for fainted Pokemon...")
             for battler in battle.get_all_battlers():
                 if getattr(battler, 'is_ai', False):
+                    continue
+
+                # Skip eliminated battlers (those with no Pokemon left)
+                if getattr(battler, 'is_eliminated', False):
+                    print(f"[DEBUG] Skipping eliminated battler {battler.battler_id} ({battler.battler_name})")
                     continue
 
                 active_pokemon = battler.get_active_pokemon()
