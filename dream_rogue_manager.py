@@ -315,6 +315,7 @@ class DreamRogueManager:
             "area_index": 1,
             "action_index": 0,
             "nidoking_battle_id": None,
+            "skip_next_action": False,
         }
 
     def get_script_state(self, run_id: str) -> Dict[str, Any]:

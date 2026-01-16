@@ -675,6 +675,12 @@ class DreamRogueCog(commands.Cog):
         area_index = state.get("area_index", 1)
         action_index = state.get("action_index", 0)
 
+        if state.get("skip_next_action"):
+            state["skip_next_action"] = False
+            self.dream_manager.update_script_state(run["run_id"], state)
+            await self._skip_test_path_action(interaction, run, state)
+            return
+
         if area_index == 1:
             await interaction.response.send_message(
                 "ℹ️ There is nothing to act on here yet.",
@@ -779,6 +785,54 @@ class DreamRogueCog(commands.Cog):
             )
             return
 
+
+    async def _skip_test_path_action(self, interaction: discord.Interaction, run: dict, state: dict) -> None:
+        area_index = state.get("area_index", 1)
+        action_index = state.get("action_index", 0)
+
+        if area_index == 1:
+            await interaction.response.send_message(
+                "ℹ️ There is nothing to skip here yet.",
+                ephemeral=True
+            )
+            return
+
+        if area_index == 2:
+            if action_index in (0, 1):
+                state["action_index"] = action_index + 1
+                self.dream_manager.update_script_state(run["run_id"], state)
+                await interaction.response.send_message(
+                    "⏭️ Skipped the next action.",
+                    ephemeral=True
+                )
+                return
+
+            if action_index == 2:
+                await self._send_test_path_area_embed(interaction, run["run_id"], area_index=3)
+                return
+
+            await interaction.response.send_message(
+                "ℹ️ No further actions remain in this area.",
+                ephemeral=True
+            )
+            return
+
+        if area_index == 3:
+            if action_index in (0, 1):
+                state["action_index"] = 2
+                state["nidoking_battle_id"] = None
+                self.dream_manager.update_script_state(run["run_id"], state)
+                await interaction.response.send_message(
+                    "⏭️ Skipped the next action.",
+                    ephemeral=True
+                )
+                return
+
+            await interaction.response.send_message(
+                "ℹ️ No further actions remain in this area.",
+                ephemeral=True
+            )
+            return
 
     async def _send_nidoking_horn_drill(self, interaction: discord.Interaction, battle):
         from sprite_helper import PokemonSpriteHelper

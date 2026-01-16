@@ -1124,6 +1124,7 @@ class SessionControlsView(discord.ui.View):
 
         if not self.is_test_path:
             self.action_button.disabled = True
+            self.skip_button.disabled = True
 
     def _get_music_manager(self):
         battle_cog = self.bot.get_cog("BattleCog")
@@ -1253,6 +1254,25 @@ class SessionControlsView(discord.ui.View):
             return
 
         await dream_cog.trigger_test_path_action(interaction)
+
+    @discord.ui.button(label="Skip", style=discord.ButtonStyle.secondary, emoji="⏭️", row=1)
+    async def skip_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Skip the next scripted action."""
+        if not self.is_test_path or not self.active_run:
+            await interaction.response.send_message(
+                "❌ No scripted actions are available to skip right now.",
+                ephemeral=True
+            )
+            return
+
+        state = self.dream_manager.get_script_state(self.active_run["run_id"])
+        state["skip_next_action"] = True
+        self.dream_manager.update_script_state(self.active_run["run_id"], state)
+
+        await interaction.response.send_message(
+            "⏭️ The next action will be skipped.",
+            ephemeral=True
+        )
 
     @discord.ui.button(label="Resend Join", style=discord.ButtonStyle.secondary, emoji="📣", row=2)
     async def resend_join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
