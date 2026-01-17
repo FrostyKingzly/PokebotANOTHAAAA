@@ -1459,7 +1459,15 @@ class BattleCog(commands.Cog):
     def _build_switch_embed(self, messages: list[str], title: str = "Switch", color: Optional[discord.Color] = None, pokemon=None):
         if not messages:
             return None
-        embed_color = color or (discord.Color.blurple() if title == "Send-out" else discord.Color.teal())
+
+        # Check if this is a wild encounter (message contains "A wild **")
+        is_wild_encounter = any("A wild **" in msg for msg in messages)
+        if is_wild_encounter:
+            title = "Wild Encounter"
+            embed_color = color or discord.Color.red()
+        else:
+            embed_color = color or (discord.Color.blurple() if title == "Send-out" else discord.Color.teal())
+
         embed = discord.Embed(title=title, description="\n".join(messages), color=embed_color)
 
         if pokemon:
@@ -1500,7 +1508,11 @@ class BattleCog(commands.Cog):
             await self._safe_followup_send(interaction, embed=embed)
             await asyncio.sleep(1)
 
-        await send_switch_events(auto_switch_events)
+        # Store auto_switch_events to be sent after EXP is awarded in _handle_post_turn
+        battle = self.battle_engine.get_battle(turn_result.get('battle_id'))
+        if battle and auto_switch_events:
+            battle._pending_auto_switches = auto_switch_events
+            battle._pending_auto_switches_interaction = interaction
 
     async def _show_rp_mode_execution_prompt(self, interaction: discord.Interaction, battle):
         """Show the 'Both players have chosen their actions. Awaiting execution.' embed with Go button."""
@@ -2157,6 +2169,18 @@ class BattleCog(commands.Cog):
 
         # Award exp for any new faints that occurred this turn (before battle ends)
         await self._award_exp_for_new_faints(battle, interaction)
+
+        # Send any pending auto-switch events (after EXP is awarded, so KO embed appears first)
+        if hasattr(battle, '_pending_auto_switches') and battle._pending_auto_switches:
+            switch_interaction = getattr(battle, '_pending_auto_switches_interaction', interaction)
+            for event in battle._pending_auto_switches:
+                embed = self._build_switch_embed(event.get("messages") or [], pokemon=event.get("pokemon"))
+                if embed:
+                    await self._safe_followup_send(switch_interaction, embed=embed)
+                    await asyncio.sleep(1)
+            # Clean up
+            delattr(battle, '_pending_auto_switches')
+            delattr(battle, '_pending_auto_switches_interaction')
 
         if battle.is_over:
             await self._finish_battle(interaction, battle)

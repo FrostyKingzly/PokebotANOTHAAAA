@@ -3365,27 +3365,28 @@ class BattleEngine:
                             })
                             break
 
-                    # Aipom heals all ally pokemon by 20% HP
-                    heal_messages = []
-                    for ally_mon in attacker_battler.get_active_pokemon():
-                        if ally_mon.current_hp > 0:
-                            max_hp = ally_mon.max_hp
-                            heal_amount = int(max_hp * 0.20)
-                            old_hp = ally_mon.current_hp
-                            ally_mon.current_hp = min(max_hp, ally_mon.current_hp + heal_amount)
-                            actual_heal = ally_mon.current_hp - old_hp
-                            if actual_heal > 0:
-                                heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
+                    # Aipom heals all ally pokemon by 20% HP (only in test path)
+                    if battle.is_test_path:
+                        heal_messages = []
+                        for ally_mon in attacker_battler.get_active_pokemon():
+                            if ally_mon.current_hp > 0:
+                                max_hp = ally_mon.max_hp
+                                heal_amount = int(max_hp * 0.20)
+                                old_hp = ally_mon.current_hp
+                                ally_mon.current_hp = min(max_hp, ally_mon.current_hp + heal_amount)
+                                actual_heal = ally_mon.current_hp - old_hp
+                                if actual_heal > 0:
+                                    heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
 
-                    if heal_messages:
-                        # Create special event for healing embed
-                        resonance_broken_events.append({
-                            "type": "aipom_healing",
-                            "messages": heal_messages,
-                            "actor": defender,
-                            "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
-                            "custom_color": discord.Color.green()
-                        })
+                        if heal_messages:
+                            # Create special event for healing embed
+                            resonance_broken_events.append({
+                                "type": "aipom_healing",
+                                "messages": heal_messages,
+                                "actor": defender,
+                                "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
+                                "custom_color": discord.Color.green()
+                            })
 
                 # Determine which position the fainted Pokemon was in
                 fainted_position = None
