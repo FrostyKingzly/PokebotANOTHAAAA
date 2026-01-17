@@ -749,7 +749,15 @@ class DreamRogueCog(commands.Cog):
                 return
 
             if action_index == 2:
-                await self._send_test_path_area_embed(interaction, run["run_id"], area_index=3)
+                # Move to area 3 without sending embed
+                state["area_index"] = 3
+                state["action_index"] = 0
+                state["nidoking_battle_id"] = None
+                self.dream_manager.update_script_state(run["run_id"], state)
+                await interaction.response.send_message(
+                    "ℹ️ Moving to Area 3...",
+                    ephemeral=True
+                )
                 return
 
             await interaction.response.send_message(
@@ -760,13 +768,6 @@ class DreamRogueCog(commands.Cog):
 
         if area_index == 3:
             if action_index == 0:
-                await self._send_embed(
-                    interaction,
-                    DreamRogueEmbeds.test_path_action(
-                        "🎬 Action 3 — The Silent King",
-                        "A towering Nidoking emerges. It does not attack — it only watches."
-                    )
-                )
                 battle_id = await self._start_test_path_raid(
                     interaction,
                     session,
@@ -827,7 +828,15 @@ class DreamRogueCog(commands.Cog):
                 return
 
             if action_index == 2:
-                await self._send_test_path_area_embed(interaction, run["run_id"], area_index=3)
+                # Move to area 3 without sending embed
+                state["area_index"] = 3
+                state["action_index"] = 0
+                state["nidoking_battle_id"] = None
+                self.dream_manager.update_script_state(run["run_id"], state)
+                await interaction.response.send_message(
+                    "⏭️ Skipped to Area 3.",
+                    ephemeral=True
+                )
                 return
 
             await interaction.response.send_message(
