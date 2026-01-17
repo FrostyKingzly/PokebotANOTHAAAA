@@ -2738,6 +2738,7 @@ class BattleEngine:
         attacker = active_pokemon_list[pokemon_pos]
 
         messages: List[str] = []
+        resonance_broken_events = []
 
         if action.priority_message:
             messages.append(action.priority_message)
@@ -3111,7 +3112,34 @@ class BattleEngine:
                     # Record opponent faint for EXP calculation
                     self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
-            return {"messages": messages}
+                    # Check for Aipom faint in Ambipom raid - trigger resonance broken
+                    if getattr(defender, "species_name", "").lower() == "aipom":
+                        # Find Ambipom in the same battler team
+                        for mon in defender_battler.get_active_pokemon():
+                            if getattr(mon, "scripted_ai", None) == "ambipom_raid" and mon.current_hp > 0:
+                                # Lower Ambipom's stats by 1
+                                self._ensure_stat_stages(mon)
+                                for stat in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
+                                    mon.stat_stages[stat] = max(-6, mon.stat_stages.get(stat, 0) - 1)
+                                boost_level = mon.stat_stages.get('attack', 0)
+                                resonance_msg = f"Resonance broken! {mon.species_name}'s connection weakens!"
+                                stat_msg = f"All stats fell! (Now {boost_level:+d})"
+                                messages.append(f"{resonance_msg} {stat_msg}")
+
+                                # Create special event for embed
+                                resonance_broken_events.append({
+                                    "type": "resonance_broken",
+                                    "messages": [resonance_msg, stat_msg],
+                                    "actor": mon,
+                                    "custom_title": "⚡ Resonance Broken!",
+                                    "custom_color": discord.Color.red()
+                                })
+                                break
+
+            result = {"messages": messages}
+            if resonance_broken_events:
+                result["action_events"] = resonance_broken_events
+            return result
 
         # Calculate damage and apply effects
         if ENHANCED_SYSTEMS_AVAILABLE:
@@ -3264,6 +3292,30 @@ class BattleEngine:
                 # Record opponent faint for EXP calculation
                 self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
+                # Check for Aipom faint in Ambipom raid - trigger resonance broken
+                if getattr(defender, "species_name", "").lower() == "aipom":
+                    # Find Ambipom in the same battler team
+                    for mon in defender_battler.get_active_pokemon():
+                        if getattr(mon, "scripted_ai", None) == "ambipom_raid" and mon.current_hp > 0:
+                            # Lower Ambipom's stats by 1
+                            self._ensure_stat_stages(mon)
+                            for stat in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
+                                mon.stat_stages[stat] = max(-6, mon.stat_stages.get(stat, 0) - 1)
+                            boost_level = mon.stat_stages.get('attack', 0)
+                            resonance_msg = f"Resonance broken! {mon.species_name}'s connection weakens!"
+                            stat_msg = f"All stats fell! (Now {boost_level:+d})"
+                            messages.append(f"{resonance_msg} {stat_msg}")
+
+                            # Create special event for embed
+                            resonance_broken_events.append({
+                                "type": "resonance_broken",
+                                "messages": [resonance_msg, stat_msg],
+                                "actor": mon,
+                                "custom_title": "⚡ Resonance Broken!",
+                                "custom_color": discord.Color.red()
+                            })
+                            break
+
                 # Determine which position the fainted Pokemon was in
                 fainted_position = None
                 for pos_idx, party_idx in enumerate(defender_battler.active_positions):
@@ -3373,7 +3425,10 @@ class BattleEngine:
                     if not battle.forced_switch_battler_id:
                         battle.forced_switch_battler_id = attacker_battler.battler_id
 
-        return {"messages": messages}
+        result = {"messages": messages}
+        if resonance_broken_events:
+            result["action_events"] = resonance_broken_events
+        return result
 
     def _execute_revival_blessing(self, battle: BattleState, attacker_battler: Battler, attacker, action: BattleAction) -> Dict:
         """Execute Revival Blessing with explicit target selection."""
