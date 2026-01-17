@@ -609,7 +609,6 @@ class BattleCog(commands.Cog):
             )
             enc.set_thumbnail(url=sprite_url)
 
-        enc.set_footer(text=f"Build: {BUILD_TAG}")
         await interaction.followup.send(embed=enc)
 
         # 2) Send-out + entry effects - separate embeds for each Pokemon
@@ -929,7 +928,6 @@ class BattleCog(commands.Cog):
                 turns_text = f" ({terrain_turns} turns left)" if terrain_turns > 0 else ""
                 lines.append(f"Terrain: **{battle.terrain.title()}**{turns_text}")
             e.add_field(name=f"{FIELD} Field Effects", value="\n".join(lines), inline=False)
-        e.set_footer(text=f"Build: {BUILD_TAG}")
         return e
 
     def _create_battle_view(self, battle) -> discord.ui.View:
