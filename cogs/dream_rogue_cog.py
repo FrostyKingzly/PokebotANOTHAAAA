@@ -1025,6 +1025,7 @@ class DreamRogueCog(commands.Cog):
         if battle:
             battle.raid_participants = raid_entries
             battle.no_exp = True
+            battle.is_test_path = True
             battle.raid_opponent_slots = raid_opponent_slots
             if scripted_sequence:
                 battle.scripted_sequence = scripted_sequence

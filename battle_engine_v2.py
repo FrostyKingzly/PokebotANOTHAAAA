@@ -148,6 +148,9 @@ class BattleState:
     catch_attempted: bool = False
     wild_dazed: bool = False  # True when wild Pokémon has been reduced to a 'dazed' state instead of fainting
 
+    # Test path / dream mode flag
+    is_test_path: bool = False  # True for test path dream mode battles
+
     # Ranked metadata
     is_ranked: bool = False
     ranked_context: Dict[str, Any] = field(default_factory=dict)
@@ -2466,27 +2469,28 @@ class BattleEngine:
                                 })
                                 break
 
-                        # Aipom heals all ally pokemon by 20% HP
-                        heal_messages = []
-                        for ally_mon in attacker_battler.get_active_pokemon():
-                            if ally_mon.current_hp > 0:
-                                max_hp = ally_mon.max_hp
-                                heal_amount = int(max_hp * 0.20)
-                                old_hp = ally_mon.current_hp
-                                ally_mon.current_hp = min(max_hp, ally_mon.current_hp + heal_amount)
-                                actual_heal = ally_mon.current_hp - old_hp
-                                if actual_heal > 0:
-                                    heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
+                        # Aipom heals all ally pokemon by 20% HP (only in test path)
+                        if battle.is_test_path:
+                            heal_messages = []
+                            for ally_mon in attacker_battler.get_active_pokemon():
+                                if ally_mon.current_hp > 0:
+                                    max_hp = ally_mon.max_hp
+                                    heal_amount = int(max_hp * 0.20)
+                                    old_hp = ally_mon.current_hp
+                                    ally_mon.current_hp = min(max_hp, ally_mon.current_hp + heal_amount)
+                                    actual_heal = ally_mon.current_hp - old_hp
+                                    if actual_heal > 0:
+                                        heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
 
-                        if heal_messages:
-                            # Create special event for healing embed
-                            resonance_broken_events.append({
-                                "type": "aipom_healing",
-                                "messages": heal_messages,
-                                "actor": defender,
-                                "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
-                                "custom_color": discord.Color.green()
-                            })
+                            if heal_messages:
+                                # Create special event for healing embed
+                                resonance_broken_events.append({
+                                    "type": "aipom_healing",
+                                    "messages": heal_messages,
+                                    "actor": defender,
+                                    "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
+                                    "custom_color": discord.Color.green()
+                                })
 
                     # Determine which position the fainted Pokemon was in
                     fainted_position = None
@@ -3158,27 +3162,28 @@ class BattleEngine:
                                 })
                                 break
 
-                        # Aipom heals all ally pokemon by 20% HP
-                        heal_messages = []
-                        for ally_mon in attacker_battler.get_active_pokemon():
-                            if ally_mon.current_hp > 0:
-                                max_hp = ally_mon.max_hp
-                                heal_amount = int(max_hp * 0.20)
-                                old_hp = ally_mon.current_hp
-                                ally_mon.current_hp = min(max_hp, ally_mon.current_hp + heal_amount)
-                                actual_heal = ally_mon.current_hp - old_hp
-                                if actual_heal > 0:
-                                    heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
+                        # Aipom heals all ally pokemon by 20% HP (only in test path)
+                        if battle.is_test_path:
+                            heal_messages = []
+                            for ally_mon in attacker_battler.get_active_pokemon():
+                                if ally_mon.current_hp > 0:
+                                    max_hp = ally_mon.max_hp
+                                    heal_amount = int(max_hp * 0.20)
+                                    old_hp = ally_mon.current_hp
+                                    ally_mon.current_hp = min(max_hp, ally_mon.current_hp + heal_amount)
+                                    actual_heal = ally_mon.current_hp - old_hp
+                                    if actual_heal > 0:
+                                        heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
 
-                        if heal_messages:
-                            # Create special event for healing embed
-                            resonance_broken_events.append({
-                                "type": "aipom_healing",
-                                "messages": heal_messages,
-                                "actor": defender,
-                                "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
-                                "custom_color": discord.Color.green()
-                            })
+                            if heal_messages:
+                                # Create special event for healing embed
+                                resonance_broken_events.append({
+                                    "type": "aipom_healing",
+                                    "messages": heal_messages,
+                                    "actor": defender,
+                                    "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
+                                    "custom_color": discord.Color.green()
+                                })
 
             result = {"messages": messages}
             if resonance_broken_events:
@@ -3811,7 +3816,11 @@ class BattleEngine:
                     )
 
         if forced:
-            lead_messages = [f"{battler.battler_name} sent out {new_pokemon.species_name}!"]
+            # For wild_pokemon class, use encounter-style message instead of "sent out"
+            if getattr(battler, 'trainer_class', None) == 'wild_pokemon':
+                lead_messages = [f"A wild **{new_pokemon.species_name}** appeared!"]
+            else:
+                lead_messages = [f"{battler.battler_name} sent out {new_pokemon.species_name}!"]
         else:
             lead_messages = [
                 f"{battler.battler_name} withdrew {old_pokemon.species_name}!",

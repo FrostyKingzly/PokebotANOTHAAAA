@@ -534,8 +534,13 @@ class EncounterParticipantView(discord.ui.View):
             raise Exception("No valid Pokemon in party")
 
         # Create opponent Pokemon (exactly like admin_cog does)
+        # Multiply pokemon_entries to match num_enemies
+        repeated_entries = []
+        for i in range(num_enemies):
+            repeated_entries.extend(pokemon_entries)
+
         opponent_pokemon = []
-        for pokemon_data in pokemon_entries:
+        for pokemon_data in repeated_entries:
             # Get species data
             species_name = pokemon_data.get('species', 'Pikachu')
             species_data = self.bot.species_db.get_species(species_name)
