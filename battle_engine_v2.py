@@ -2082,7 +2082,7 @@ class BattleEngine:
                     "type": "ambipom_resonance",
                     "messages": resonance_messages,
                     "actor": ambipom,
-                    "custom_title": "Ambipom and Aipom begin to resonate! Ambipom's power grows!",
+                    "custom_title": "Alpha Ambipom and Aipom begin to resonate! Alpha Ambipom's power grows!",
                     "custom_color": discord.Color.purple()
                 })
 
@@ -2461,10 +2461,32 @@ class BattleEngine:
                                     "type": "resonance_broken",
                                     "messages": [resonance_msg, stat_msg],
                                     "actor": mon,
-                                    "custom_title": "⚡ Resonance Broken!",
+                                    "custom_title": "Resonance Broken!",
                                     "custom_color": discord.Color.red()
                                 })
                                 break
+
+                        # Aipom heals all ally pokemon by 20% HP
+                        heal_messages = []
+                        for ally_mon in attacker_battler.get_active_pokemon():
+                            if ally_mon.current_hp > 0:
+                                max_hp = ally_mon.max_hp
+                                heal_amount = int(max_hp * 0.20)
+                                old_hp = ally_mon.current_hp
+                                ally_mon.current_hp = min(max_hp, ally_mon.current_hp + heal_amount)
+                                actual_heal = ally_mon.current_hp - old_hp
+                                if actual_heal > 0:
+                                    heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
+
+                        if heal_messages:
+                            # Create special event for healing embed
+                            resonance_broken_events.append({
+                                "type": "aipom_healing",
+                                "messages": heal_messages,
+                                "actor": defender,
+                                "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
+                                "custom_color": discord.Color.green()
+                            })
 
                     # Determine which position the fainted Pokemon was in
                     fainted_position = None
@@ -2703,7 +2725,7 @@ class BattleEngine:
             {
                 "type": "custom",
                 "title": "A wild Aipom answers the call!",
-                "messages": ["Aipom joins Ambipom in battle!"],
+                "messages": ["Aipom joins Alpha Ambipom in battle!"],
                 "actor": new_aipom,
             },
         ]
@@ -2713,11 +2735,11 @@ class BattleEngine:
     def _execute_nidoking_wait(self, battle: BattleState, attacker) -> Dict:
         turn = battle.turn_number
         if turn <= 2:
-            message = "Nidoking waits, and watches..."
+            message = "Tyrant of Mist waits, and watches..."
         elif turn <= 4:
-            message = "Nidoking takes a step forward."
+            message = "Tyrant of Mist takes a step forward."
         else:
-            message = "Nidoking takes its last step. Nidoking is now upon you."
+            message = "Tyrant of Mist takes its last step. Tyrant of Mist is now upon you."
             # End the battle on turn 5 with a special ending
             battle.is_over = True
             battle.winner = "opponent"
@@ -3131,10 +3153,32 @@ class BattleEngine:
                                     "type": "resonance_broken",
                                     "messages": [resonance_msg, stat_msg],
                                     "actor": mon,
-                                    "custom_title": "⚡ Resonance Broken!",
+                                    "custom_title": "Resonance Broken!",
                                     "custom_color": discord.Color.red()
                                 })
                                 break
+
+                        # Aipom heals all ally pokemon by 20% HP
+                        heal_messages = []
+                        for ally_mon in attacker_battler.get_active_pokemon():
+                            if ally_mon.current_hp > 0:
+                                max_hp = ally_mon.max_hp
+                                heal_amount = int(max_hp * 0.20)
+                                old_hp = ally_mon.current_hp
+                                ally_mon.current_hp = min(max_hp, ally_mon.current_hp + heal_amount)
+                                actual_heal = ally_mon.current_hp - old_hp
+                                if actual_heal > 0:
+                                    heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
+
+                        if heal_messages:
+                            # Create special event for healing embed
+                            resonance_broken_events.append({
+                                "type": "aipom_healing",
+                                "messages": heal_messages,
+                                "actor": defender,
+                                "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
+                                "custom_color": discord.Color.green()
+                            })
 
             result = {"messages": messages}
             if resonance_broken_events:
@@ -3311,10 +3355,32 @@ class BattleEngine:
                                 "type": "resonance_broken",
                                 "messages": [resonance_msg, stat_msg],
                                 "actor": mon,
-                                "custom_title": "⚡ Resonance Broken!",
+                                "custom_title": "Resonance Broken!",
                                 "custom_color": discord.Color.red()
                             })
                             break
+
+                    # Aipom heals all ally pokemon by 20% HP
+                    heal_messages = []
+                    for ally_mon in attacker_battler.get_active_pokemon():
+                        if ally_mon.current_hp > 0:
+                            max_hp = ally_mon.max_hp
+                            heal_amount = int(max_hp * 0.20)
+                            old_hp = ally_mon.current_hp
+                            ally_mon.current_hp = min(max_hp, ally_mon.current_hp + heal_amount)
+                            actual_heal = ally_mon.current_hp - old_hp
+                            if actual_heal > 0:
+                                heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
+
+                    if heal_messages:
+                        # Create special event for healing embed
+                        resonance_broken_events.append({
+                            "type": "aipom_healing",
+                            "messages": heal_messages,
+                            "actor": defender,
+                            "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
+                            "custom_color": discord.Color.green()
+                        })
 
                 # Determine which position the fainted Pokemon was in
                 fainted_position = None

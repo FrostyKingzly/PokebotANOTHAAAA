@@ -789,7 +789,7 @@ class DreamRogueCog(commands.Cog):
                 battle = battle_cog.battle_engine.get_battle(battle_id) if battle_cog and battle_id else None
                 if not battle or not getattr(battle, "scripted_locked", False):
                     await interaction.response.send_message(
-                        "ℹ️ Nidoking is still approaching...",
+                        "ℹ️ Tyrant of Mist is still approaching...",
                         ephemeral=True
                     )
                     return
@@ -866,7 +866,7 @@ class DreamRogueCog(commands.Cog):
         from sprite_helper import PokemonSpriteHelper
         nidoking = (battle.opponent.get_active_pokemon() or [None])[0]
         embed = discord.Embed(
-            title="Nidoking used horn drill!",
+            title="Tyrant of Mist used horn drill!",
             description="",
             color=discord.Color.dark_red()
         )
