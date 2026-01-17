@@ -1514,10 +1514,12 @@ class BattleCog(commands.Cog):
             battle.rp_mode_execution_message_id = msg.id
 
     async def _prompt_forced_switch(self, interaction: discord.Interaction, battle, battler_id: int):
+        print(f"[DEBUG] _prompt_forced_switch called with battler_id={battler_id}")
         # Always refresh the battle state to avoid stale active slots or parties
         fresh_battle = self.battle_engine.get_battle(getattr(battle, 'battle_id', None)) or battle
         battle = fresh_battle
         battler = _get_battler_by_id(battle, battler_id)
+        print(f"[DEBUG] _get_battler_by_id returned battler: {battler.battler_name if battler else None} (ID: {battler.battler_id if battler else None})")
         if not battler:
             await interaction.followup.send(
                 "Waiting for your opponent to choose their next Pokémon...",
@@ -2711,9 +2713,13 @@ def _build_revival_target_options(battle, battler_id: int) -> tuple[list[discord
 
 
 def _get_battler_by_id(battle, battler_id: int):
-    for battler in battle.get_all_battlers():
+    all_battlers = battle.get_all_battlers()
+    print(f"[DEBUG] _get_battler_by_id looking for {battler_id}, available: {[(b.battler_id, b.battler_name) for b in all_battlers]}")
+    for battler in all_battlers:
         if battler.battler_id == battler_id:
+            print(f"[DEBUG] _get_battler_by_id found match: {battler.battler_name} (ID: {battler.battler_id})")
             return battler
+    print(f"[DEBUG] _get_battler_by_id FALLBACK: Could not find battler {battler_id}, returning battle.trainer ({battle.trainer.battler_name}, ID: {battle.trainer.battler_id})")
     return battle.trainer
 
 
