@@ -447,7 +447,8 @@ async def _show_main_menu(interaction: discord.Interaction, bot, user_id: int):
     if interaction.guild_id:
         dream_manager = DreamRogueManager()
         run = dream_manager.get_active_run_for_user(interaction.guild_id, user_id)
-        if run:
+        # Don't show dreamlites in test path
+        if run and run.get("layer_name") != "Somnia Prima - Test Path":
             dreamlites = dream_manager.get_dreamlites(run["run_id"], user_id)
     embed = EmbedBuilder.main_menu(
         player_data,
@@ -4965,7 +4966,8 @@ class EncounterSelectView(View):
             from dream_rogue_manager import DreamRogueManager
             dream_manager = DreamRogueManager()
             run = dream_manager.get_active_run_for_user(interaction.guild_id, interaction.user.id)
-            if run:
+            # Don't show dreamlites in test path
+            if run and run.get("layer_name") != "Somnia Prima - Test Path":
                 dreamlites = dream_manager.get_dreamlites(run["run_id"], interaction.user.id)
 
         # Create main menu embed

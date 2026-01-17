@@ -782,6 +782,9 @@ class BattleCog(commands.Cog):
         return DEFAULT_POKEBALL_ID
 
     def _get_pokeball_emoji(self, mon) -> str:
+        # Special handling for Alpha Ambipom
+        if getattr(mon, "scripted_ai", None) == "ambipom_raid":
+            return "<:Alpha:1437080659750289439>"
         ball_id = (self._get_pokeball_id(mon) or DEFAULT_POKEBALL_ID).lower()
         return POKEBALL_EMOJIS.get(ball_id, POKEBALL_EMOJIS.get(DEFAULT_POKEBALL_ID, BALL))
 
@@ -1264,8 +1267,11 @@ class BattleCog(commands.Cog):
                     title = custom_title
                     color = custom_color or discord.Color.orange()
                 elif event_type == "resonance_broken":
-                    title = event.get("custom_title", "⚡ Resonance Broken!")
+                    title = event.get("custom_title", "Resonance Broken!")
                     color = event.get("custom_color", discord.Color.red())
+                elif event_type == "aipom_healing":
+                    title = event.get("custom_title", "Aipom unleashes a strange energy, healing your pokemon!")
+                    color = event.get("custom_color", discord.Color.green())
                 elif event_type == "ambipom_resonance":
                     title = event.get("custom_title", "Resonance!")
                     color = event.get("custom_color", discord.Color.purple())
@@ -1691,7 +1697,7 @@ class BattleCog(commands.Cog):
 
         # Check for Nidoking special ending
         if getattr(battle, "nidoking_special_ending", False):
-            desc = "**Your Fate has been Decided.**\n\nNidoking prepares to attack."
+            desc = "**Your Fate has been Decided.**\n\nTyrant of Mist prepares to attack."
             title = "Your Fate has been Decided"
             color = discord.Color.dark_red()
         elif battle.battle_format == BattleFormat.RAID:
@@ -2779,11 +2785,18 @@ def _get_battle_status_label(pokemon) -> Optional[str]:
 
 
 def _format_battle_pokemon_name(pokemon, include_level: bool = False) -> str:
-    name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
-    if getattr(pokemon, "is_mega_evolved", False) and not name.lower().startswith("mega "):
-        name = f"Mega {name}"
-    if getattr(pokemon, "is_raid_boss", False):
-        name = f"Rogue {name}"
+    # Special handling for Alpha Ambipom
+    if getattr(pokemon, "scripted_ai", None) == "ambipom_raid":
+        name = "Alpha Ambipom"
+    # Special handling for Tyrant of Mist (Nidoking in test path)
+    elif getattr(pokemon, "scripted_immune_damage", False) and getattr(pokemon, "species_name", "").lower() == "nidoking":
+        name = "Tyrant of Mist"
+    else:
+        name = getattr(pokemon, "nickname", None) or getattr(pokemon, "species_name", "Pokémon")
+        if getattr(pokemon, "is_mega_evolved", False) and not name.lower().startswith("mega "):
+            name = f"Mega {name}"
+        if getattr(pokemon, "is_raid_boss", False):
+            name = f"Rogue {name}"
     level = getattr(pokemon, "level", None)
     if include_level and level is not None:
         status_label = _get_battle_status_label(pokemon)
