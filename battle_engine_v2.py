@@ -3870,6 +3870,10 @@ class BattleEngine:
         # Mark battlers as eliminated when they have no usable Pokemon
         for battler in battle.get_all_battlers():
             has_usable = battler.has_usable_pokemon()
+            # Debug: Show detailed party state
+            party_hp = [(p.species_name if hasattr(p, 'species_name') else 'Unknown', getattr(p, 'current_hp', 0), getattr(p, 'max_hp', 0)) for p in battler.party]
+            print(f"[DEBUG] _check_battle_end: Battler {battler.battler_id} ({battler.battler_name}), has_usable={has_usable}, party_hp={party_hp}")
+
             if not has_usable:
                 if not battler.is_eliminated:
                     print(f"[DEBUG] Marking battler {battler.battler_id} ({battler.battler_name}) as eliminated")
