@@ -191,8 +191,8 @@ class MoveLocationSelect(discord.ui.Select):
             )
             return
 
-        # Get stamina cost (default to 1 if location doesn't specify)
-        stamina_cost = location_data.get('travel_cost', 1)
+        # No stamina cost in session mode
+        stamina_cost = 0
         location_name = location_data.get('name', location_id.replace('_', ' ').title())
 
         # Move session

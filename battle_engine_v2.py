@@ -1746,11 +1746,42 @@ class BattleEngine:
         active_allies = battler.get_active_pokemon()
         aipom_count = sum(1 for mon in active_allies if getattr(mon, "species_name", "").lower() == "aipom")
 
-        # Get random target from player positions
+        # Get valid targets from player positions
         opponent_battler = battle.trainer if battler == battle.opponent else battle.opponent
         active_opponents = opponent_battler.get_active_pokemon()
         valid_targets = [i for i, mon in enumerate(active_opponents) if mon and mon.current_hp > 0]
-        target_position = random.choice(valid_targets) if valid_targets else 0
+
+        # Smart targeting: Choose the opponent that will take the most damage
+        target_position = 0
+        if valid_targets and ENHANCED_SYSTEMS_AVAILABLE:
+            max_damage = 0
+            best_target = valid_targets[0]
+
+            # Test damage against each valid target
+            for target_idx in valid_targets:
+                target_mon = active_opponents[target_idx]
+                # Use double_hit as the test move since it's Ambipom's preferred move
+                test_move_id = preferred_attacks[0] if preferred_attacks else "tackle"
+                test_damage, _, _, _ = self.calculator.calculate_damage_with_effects(
+                    active_pokemon, target_mon, test_move_id,
+                    weather=battle.weather,
+                    terrain=battle.terrain,
+                    battle_state=battle
+                )
+
+                # Add some randomness (±20%) to avoid always targeting the same player
+                test_damage = test_damage * random.uniform(0.8, 1.2)
+
+                if test_damage > max_damage:
+                    max_damage = test_damage
+                    best_target = target_idx
+
+            target_position = best_target
+        elif valid_targets:
+            # Fallback to random if enhanced systems not available
+            target_position = random.choice(valid_targets)
+        else:
+            target_position = 0
 
         rally_move_data = next(
             (move for move in active_pokemon.moves if move["move_id"] == rally_move and move.get("pp", 0) > 0),
@@ -2293,6 +2324,7 @@ class BattleEngine:
     ) -> Dict:
         """Handle moves that hit multiple targets (spread moves)."""
         messages = []
+        resonance_broken_events = []
 
         # Deduct PP once
         for move in attacker.moves:
@@ -2420,7 +2452,18 @@ class BattleEngine:
                                 for stat in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
                                     mon.stat_stages[stat] = max(-6, mon.stat_stages.get(stat, 0) - 1)
                                 boost_level = mon.stat_stages.get('attack', 0)
-                                messages.append(f"Resonance broken! {mon.species_name}'s connection weakens! (All stats {boost_level:+d})")
+                                resonance_msg = f"Resonance broken! {mon.species_name}'s connection weakens!"
+                                stat_msg = f"All stats fell! (Now {boost_level:+d})"
+                                messages.append(f"{resonance_msg} {stat_msg}")
+
+                                # Create special event for embed
+                                resonance_broken_events.append({
+                                    "type": "resonance_broken",
+                                    "messages": [resonance_msg, stat_msg],
+                                    "actor": mon,
+                                    "custom_title": "⚡ Resonance Broken!",
+                                    "custom_color": discord.Color.red()
+                                })
                                 break
 
                     # Determine which position the fainted Pokemon was in
@@ -2448,7 +2491,10 @@ class BattleEngine:
                                 defender_battler.active_positions.pop(fainted_position)
                             self._check_battle_end(battle)
 
-        return {"messages": messages}
+        result = {"messages": messages}
+        if resonance_broken_events:
+            result["action_events"] = resonance_broken_events
+        return result
 
     def _should_skip_charge(self, move_data: Dict, battle: BattleState) -> bool:
         """Check if a charging move should skip its charge turn (e.g., Solar Beam in sun)."""

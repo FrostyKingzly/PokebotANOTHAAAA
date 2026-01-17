@@ -964,11 +964,17 @@ class BattleCog(commands.Cog):
             type_list = getattr(raid_mon, "species_data", {}).get("types", [])
             type_emojis = " ".join([EmbedBuilder._type_to_emoji(t) for t in type_list])
 
+            # Check if this is Nidoking (test path boss with scripted immunity)
+            if getattr(raid_mon, "scripted_immune_damage", False):
+                hp_display = "**???/???**"
+            else:
+                hp_display = f"**{max(0, int(getattr(raid_mon, 'current_hp', 0)))}/{int(getattr(raid_mon, 'max_hp', 1))}**"
+
             embed = discord.Embed(
                 title=f"{self._format_pokemon_name(raid_mon)}",
                 description=(
                     f"**HP** {type_emojis}\n{hp_bars}\n"
-                    f"**{max(0, int(getattr(raid_mon, 'current_hp', 0)))}/{int(getattr(raid_mon, 'max_hp', 1))}**"
+                    f"{hp_display}"
                 ),
                 color=discord.Color.dark_red(),
             )
@@ -1257,6 +1263,9 @@ class BattleCog(commands.Cog):
                 if custom_title:
                     title = custom_title
                     color = custom_color or discord.Color.orange()
+                elif event_type == "resonance_broken":
+                    title = event.get("custom_title", "⚡ Resonance Broken!")
+                    color = event.get("custom_color", discord.Color.red())
                 elif event_type == "ambipom_resonance":
                     title = event.get("custom_title", "Resonance!")
                     color = event.get("custom_color", discord.Color.purple())
