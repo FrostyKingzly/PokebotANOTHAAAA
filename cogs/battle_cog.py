@@ -1691,7 +1691,7 @@ class BattleCog(commands.Cog):
 
         # Check for Nidoking special ending
         if getattr(battle, "nidoking_special_ending", False):
-            desc = "**Your Fate has been Decided.**"
+            desc = "**Your Fate has been Decided.**\n\nNidoking prepares to attack."
             title = "Your Fate has been Decided"
             color = discord.Color.dark_red()
         elif battle.battle_format == BattleFormat.RAID:
@@ -1702,25 +1702,9 @@ class BattleCog(commands.Cog):
             raid_name = self._format_pokemon_name(raid_mon, include_level=False) if raid_mon else opponent_name
             if result == 'trainer':
                 if is_test_path:
-                    # For test path, use standard battle victory message
-                    # Collect all player Pokemon from all non-AI battlers
-                    all_player_pokemon = []
-                    for battler in battle.get_all_battlers():
-                        if not battler.is_ai:
-                            all_player_pokemon.extend(battler.party)
-
-                    fainted_pokemon = [p for p in all_player_pokemon if p.current_hp <= 0]
-                    winner_pokemon = [p for p in all_player_pokemon if p.current_hp > 0]
-
-                    fainted_names = [self._format_pokemon_name(p, include_level=False) for p in fainted_pokemon] if fainted_pokemon else ["None"]
-                    winner_names = [self._format_pokemon_name(p, include_level=False) for p in winner_pokemon] if winner_pokemon else ["No one"]
-
-                    desc = (
-                        f"**The Battle Has Been Decided!**\n\n"
-                        f"**Fainted:** {', '.join(fainted_names)}\n\n"
-                        f"**Winners:** {', '.join(winner_names)}"
-                    )
-                    title = 'Victory!'
+                    # For test path, use simple victory message
+                    desc = "**Victory!**"
+                    title = 'The Battle Has Been Decided!'
                     color = discord.Color.gold()
                 else:
                     desc = (

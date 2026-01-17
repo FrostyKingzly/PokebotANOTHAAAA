@@ -13358,9 +13358,9 @@
     },
     "base_experience": 169,
     "base_stats": {
-      "attack": 100,
+      "attack": 50,
       "defense": 66,
-      "hp": 75,
+      "hp": 150,
       "sp_attack": 60,
       "sp_defense": 66,
       "speed": 115
