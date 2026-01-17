@@ -848,13 +848,19 @@ class TrainerCardView(View):
         self.bot = bot
         self.user_id = user_id
 
-    @discord.ui.button(label="🎵 Set Battle Theme", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="📸 Retake Photo", style=discord.ButtonStyle.primary, row=0)
+    async def retake_photo_button(self, interaction: discord.Interaction, button: Button):
+        """Update trainer photo/avatar"""
+        modal = RetakePhotoModal(self.bot)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="🎵 Set Battle Theme", style=discord.ButtonStyle.secondary, row=0)
     async def set_theme_button(self, interaction: discord.Interaction, button: Button):
         """Set custom battle and victory themes"""
         modal = BattleThemeModal(self.bot)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="◀️ Back", style=discord.ButtonStyle.gray, row=0)
+    @discord.ui.button(label="◀️ Back", style=discord.ButtonStyle.gray, row=1)
     async def back_button(self, interaction: discord.Interaction, button: Button):
         """Return to main menu"""
         await _show_main_menu(interaction, self.bot, self.user_id)
@@ -918,6 +924,91 @@ class BattleThemeModal(discord.ui.Modal, title="Set Your Battle Theme"):
             response = "✅ Battle themes cleared! Random NPC themes will be used."
 
         await interaction.response.send_message(response, ephemeral=True)
+
+
+class RetakePhotoModal(discord.ui.Modal, title="Retake Your Photo"):
+    """Modal for updating trainer avatar/photo"""
+
+    avatar_url = discord.ui.TextInput(
+        label="Your Photo",
+        placeholder="Paste a Discord image URL here",
+        required=False,
+        style=discord.TextStyle.short,
+        max_length=500
+    )
+
+    def __init__(self, bot):
+        super().__init__()
+        self.bot = bot
+
+    async def on_submit(self, interaction: discord.Interaction):
+        new_avatar_url = self.avatar_url.value.strip() if self.avatar_url.value else None
+
+        # Validate URL if provided
+        if new_avatar_url and not (new_avatar_url.startswith("http://") or new_avatar_url.startswith("https://")):
+            await interaction.response.send_message(
+                "❌ Photo URL must start with http:// or https://",
+                ephemeral=True
+            )
+            return
+
+        # Update trainer avatar
+        self.bot.player_manager.update_player(
+            interaction.user.id,
+            avatar_url=new_avatar_url
+        )
+
+        # Refresh the trainer card to show the new photo
+        from ui.embeds import EmbedBuilder
+
+        trainer = self.bot.player_manager.get_player(interaction.user.id)
+        party = self.bot.player_manager.get_party(interaction.user.id)
+        all_pokemon = self.bot.player_manager.get_all_pokemon(interaction.user.id)
+        total_pokemon = len(all_pokemon)
+        pokedex_caught = len(
+            {pokemon.get("species_dex_number") for pokemon in all_pokemon if pokemon.get("species_dex_number")}
+        )
+        location_manager = getattr(self.bot, "location_manager", None)
+
+        embed = EmbedBuilder.trainer_card(
+            trainer,
+            party_count=len(party),
+            total_pokemon=total_pokemon,
+            pokedex_caught=pokedex_caught,
+            location_manager=location_manager,
+        )
+
+        view = TrainerCardView(self.bot, interaction.user.id)
+
+        # Update the message with the new embed
+        await interaction.response.edit_message(embed=embed, view=view)
+
+
+async def _show_trainer_card(interaction: discord.Interaction, bot, user_id: int):
+    """Re-render the trainer card in the existing ephemeral message."""
+    from ui.embeds import EmbedBuilder
+
+    trainer = bot.player_manager.get_player(user_id)
+    party = bot.player_manager.get_party(user_id)
+    all_pokemon = bot.player_manager.get_all_pokemon(user_id)
+    total_pokemon = len(all_pokemon)
+    pokedex_caught = len(
+        {pokemon.get("species_dex_number") for pokemon in all_pokemon if pokemon.get("species_dex_number")}
+    )
+    location_manager = getattr(bot, "location_manager", None)
+
+    embed = EmbedBuilder.trainer_card(
+        trainer,
+        party_count=len(party),
+        total_pokemon=total_pokemon,
+        pokedex_caught=pokedex_caught,
+        location_manager=location_manager,
+    )
+
+    view = TrainerCardView(bot, user_id)
+
+    # Edit the original message (not the modal response)
+    await interaction.edit_original_response(embed=embed, view=view)
 
 
 class MainMenuView(View):
