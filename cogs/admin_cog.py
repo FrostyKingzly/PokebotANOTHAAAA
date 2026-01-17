@@ -2243,6 +2243,105 @@ Modest Nature
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    @app_commands.command(name="reset_battle", description="[ADMIN] Force reset an active battle")
+    @app_commands.check(is_admin)
+    @app_commands.describe(user="The user whose battle to reset")
+    async def reset_battle(self, interaction: discord.Interaction, user: discord.User):
+        """Reset an active battle for a user"""
+        battle_cog = self.bot.get_cog("BattleCog")
+        if not battle_cog:
+            await interaction.response.send_message(
+                "❌ Battle system not available",
+                ephemeral=True
+            )
+            return
+
+        battle_id = battle_cog.user_battles.get(user.id)
+        if not battle_id:
+            await interaction.response.send_message(
+                f"❌ No active battle found for {user.mention}",
+                ephemeral=True
+            )
+            return
+
+        battle = battle_cog.battle_engine.get_battle(battle_id)
+        if not battle:
+            await interaction.response.send_message(
+                "❌ Battle not found in engine",
+                ephemeral=True
+            )
+            return
+
+        # End the battle and unregister it
+        battle_cog.battle_engine.end_battle(battle_id)
+        battle_cog._unregister_battle(battle)
+
+        await interaction.response.send_message(
+            f"✅ Battle for {user.mention} has been reset\n**Battle ID:** `{battle_id}`",
+            ephemeral=True
+        )
+
+    @app_commands.command(name="force_turn", description="[ADMIN] Force advance a battle turn with current actions")
+    @app_commands.check(is_admin)
+    @app_commands.describe(user="The user whose battle to advance")
+    async def force_turn(self, interaction: discord.Interaction, user: discord.User):
+        """Force a battle turn to progress with whatever actions are currently locked in"""
+        battle_cog = self.bot.get_cog("BattleCog")
+        if not battle_cog:
+            await interaction.response.send_message(
+                "❌ Battle system not available",
+                ephemeral=True
+            )
+            return
+
+        battle_id = battle_cog.user_battles.get(user.id)
+        if not battle_id:
+            await interaction.response.send_message(
+                f"❌ No active battle found for {user.mention}",
+                ephemeral=True
+            )
+            return
+
+        battle = battle_cog.battle_engine.get_battle(battle_id)
+        if not battle:
+            await interaction.response.send_message(
+                "❌ Battle not found in engine",
+                ephemeral=True
+            )
+            return
+
+        # Check current battle phase
+        if battle.phase == 'END':
+            await interaction.response.send_message(
+                "❌ Battle has already ended",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            # Process the turn with whatever actions are currently registered
+            turn = await battle_cog.battle_engine.process_turn(battle_id)
+
+            # Send turn resolution to the battle channel/thread
+            await battle_cog._send_turn_resolution(interaction, turn)
+
+            # Handle post-turn (switches, battle end, etc.)
+            await battle_cog._handle_post_turn(interaction, battle_id)
+
+            await interaction.followup.send(
+                f"✅ Battle turn forced for {user.mention}\n"
+                f"**Turn:** {battle.turn_number}\n"
+                f"**Phase:** {battle.phase}",
+                ephemeral=True
+            )
+        except Exception as e:
+            await interaction.followup.send(
+                f"❌ Error forcing turn: {str(e)}",
+                ephemeral=True
+            )
+
 
 async def setup(bot):
     """Setup function for loading the cog"""
