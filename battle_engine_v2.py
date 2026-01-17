@@ -11,6 +11,7 @@ import random
 import json
 import uuid
 import math
+import discord
 from typing import Dict, List, Optional, Tuple, Any
 from ruleset_handler import RulesetHandler
 from dataclasses import dataclass, field
@@ -1744,6 +1745,13 @@ class BattleEngine:
         battler = self._get_battler_by_id(battle, battler_id)
         active_allies = battler.get_active_pokemon()
         aipom_count = sum(1 for mon in active_allies if getattr(mon, "species_name", "").lower() == "aipom")
+
+        # Get random target from player positions
+        opponent_battler = battle.trainer if battler == battle.opponent else battle.opponent
+        active_opponents = opponent_battler.get_active_pokemon()
+        valid_targets = [i for i, mon in enumerate(active_opponents) if mon and mon.current_hp > 0]
+        target_position = random.choice(valid_targets) if valid_targets else 0
+
         rally_move_data = next(
             (move for move in active_pokemon.moves if move["move_id"] == rally_move and move.get("pp", 0) > 0),
             None,
@@ -1754,7 +1762,7 @@ class BattleEngine:
                     action_type='move',
                     battler_id=battler_id,
                     move_id=rally_move,
-                    target_position=0,
+                    target_position=target_position,
                     pokemon_position=pokemon_position,
                 )
             if aipom_count == 1 and random.random() < 0.5:
@@ -1762,7 +1770,7 @@ class BattleEngine:
                     action_type='move',
                     battler_id=battler_id,
                     move_id=rally_move,
-                    target_position=0,
+                    target_position=target_position,
                     pokemon_position=pokemon_position,
                 )
 
@@ -1784,7 +1792,7 @@ class BattleEngine:
                 action_type='move',
                 battler_id=battler_id,
                 move_id=chosen,
-                target_position=0,
+                target_position=target_position,
                 pokemon_position=pokemon_position,
             )
         if attack_options:
@@ -1793,7 +1801,7 @@ class BattleEngine:
                 action_type='move',
                 battler_id=battler_id,
                 move_id=chosen,
-                target_position=0,
+                target_position=target_position,
                 pokemon_position=pokemon_position,
             )
         if other_options:
@@ -1802,7 +1810,7 @@ class BattleEngine:
                 action_type='move',
                 battler_id=battler_id,
                 move_id=chosen,
-                target_position=0,
+                target_position=target_position,
                 pokemon_position=pokemon_position,
             )
 
@@ -1810,7 +1818,7 @@ class BattleEngine:
             action_type='move',
             battler_id=battler_id,
             move_id=active_pokemon.moves[0]["move_id"],
-            target_position=0,
+            target_position=target_position,
             pokemon_position=pokemon_position,
         )
     
@@ -2019,7 +2027,33 @@ class BattleEngine:
 
         battle.turn_log.extend(eot_messages)
         if eot_messages:
-            action_events.append({"type": "end_of_turn", "messages": eot_messages})
+            # Check for Ambipom resonance boost messages and create a special event for them
+            resonance_messages = [msg for msg in eot_messages if "draws strength from its ally" in msg]
+            other_messages = [msg for msg in eot_messages if "draws strength from its ally" not in msg]
+
+            if other_messages:
+                action_events.append({"type": "end_of_turn", "messages": other_messages})
+
+            if resonance_messages:
+                # Find the Ambipom for the image
+                ambipom = None
+                for battler in battle.get_all_battlers():
+                    if battler.is_eliminated:
+                        continue
+                    for mon in battler.get_active_pokemon():
+                        if getattr(mon, "scripted_ai", None) == "ambipom_raid":
+                            ambipom = mon
+                            break
+                    if ambipom:
+                        break
+
+                action_events.append({
+                    "type": "ambipom_resonance",
+                    "messages": resonance_messages,
+                    "actor": ambipom,
+                    "custom_title": "Ambipom and Aipom begin to resonate! Ambipom's power grows!",
+                    "custom_color": discord.Color.purple()
+                })
 
         switch_events = manual_switch_events + auto_switch_events
         
@@ -2070,6 +2104,13 @@ class BattleEngine:
                 active_pokemon = battler.get_active_pokemon()
                 pokemon = active_pokemon[0] if active_pokemon else None
                 speed = self._get_effective_speed(pokemon)
+
+                # Check if this is Nidoking in the test path - make it go last
+                if getattr(battle, "scripted_sequence", None) == "nidoking_test" and pokemon:
+                    if getattr(pokemon, "species_name", "").lower() == "nidoking":
+                        action.priority = -999
+                        action.speed = -999
+                        continue
 
                 if self.held_item_manager and pokemon:
                     priority_effect = self.held_item_manager.get_priority_effect(pokemon, move_data)
@@ -2369,6 +2410,19 @@ class BattleEngine:
                     # Record opponent faint for EXP calculation
                     self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
+                    # Check for Aipom faint in Ambipom raid - trigger resonance broken
+                    if getattr(defender, "species_name", "").lower() == "aipom":
+                        # Find Ambipom in the same battler team
+                        for mon in defender_battler.get_active_pokemon():
+                            if getattr(mon, "scripted_ai", None) == "ambipom_raid" and mon.current_hp > 0:
+                                # Lower Ambipom's stats by 1
+                                self._ensure_stat_stages(mon)
+                                for stat in ['attack', 'defense', 'sp_attack', 'sp_defense', 'speed']:
+                                    mon.stat_stages[stat] = max(-6, mon.stat_stages.get(stat, 0) - 1)
+                                boost_level = mon.stat_stages.get('attack', 0)
+                                messages.append(f"Resonance broken! {mon.species_name}'s connection weakens! (All stats {boost_level:+d})")
+                                break
+
                     # Determine which position the fainted Pokemon was in
                     fainted_position = None
                     for pos_idx, party_idx in enumerate(defender_battler.active_positions):
@@ -2618,6 +2672,10 @@ class BattleEngine:
             message = "Nidoking takes a step forward."
         else:
             message = "Nidoking takes its last step. Nidoking is now upon you."
+            # End the battle on turn 5 with a special ending
+            battle.is_over = True
+            battle.winner = "opponent"
+            battle.nidoking_special_ending = True
         return {"messages": [message]}
 
     async def _execute_move(self, battle: BattleState, action: BattleAction) -> Dict:
