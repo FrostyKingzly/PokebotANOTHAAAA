@@ -205,8 +205,15 @@ class MoveLocationSelect(discord.ui.Select):
             participants = self.bot.session_manager.get_session_participants(self.session_id)
             participant_mentions = " ".join([f"<@{uid}>" for uid in participants])
 
+            # Check if location has a connected channel
+            channel_ids = self.bot.location_manager.get_channel_ids_for_location(location_id)
+            channel_link = ""
+            if channel_ids:
+                # Use the first channel as the link
+                channel_link = f"\n📍 Go to: <#{channel_ids[0]}>"
+
             await interaction.response.send_message(
-                f"✅ Session moved to **{location_name}**!\n{message}\n\n{participant_mentions}",
+                f"✅ Session moved to **{location_name}**!{channel_link}\n\n{participant_mentions}",
                 allowed_mentions=discord.AllowedMentions(users=True)
             )
         else:

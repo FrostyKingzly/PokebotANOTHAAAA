@@ -861,6 +861,22 @@ class TrainerCardView(View):
         modal = BattleThemeModal(self.bot)
         await interaction.response.send_modal(modal)
 
+    @discord.ui.button(label="📝 Update Bio", style=discord.ButtonStyle.primary, row=0)
+    async def update_bio_button(self, interaction: discord.Interaction, button: Button):
+        """Update trainer bio"""
+        modal = UpdateBioModal(self.bot, self.user_id)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="👥 View Other Trainers", style=discord.ButtonStyle.secondary, row=1)
+    async def view_other_trainers_button(self, interaction: discord.Interaction, button: Button):
+        """View other trainers' cards"""
+        view = ViewOtherTrainersView(self.bot, self.user_id)
+        await interaction.response.send_message(
+            "Select a trainer to view their card:",
+            view=view,
+            ephemeral=True
+        )
+
     @discord.ui.button(label="◀️ Back", style=discord.ButtonStyle.gray, row=1)
     async def back_button(self, interaction: discord.Interaction, button: Button):
         """Return to main menu"""
@@ -1010,6 +1026,151 @@ async def _show_trainer_card(interaction: discord.Interaction, bot, user_id: int
 
     # Edit the original message (not the modal response)
     await interaction.edit_original_response(embed=embed, view=view)
+
+
+class UpdateBioModal(discord.ui.Modal, title="Update Your Bio"):
+    """Modal for updating trainer bio"""
+
+    bio = discord.ui.TextInput(
+        label="Tell us about yourself",
+        placeholder="Write a small blurb about your trainer...",
+        style=discord.TextStyle.paragraph,
+        required=False,
+        max_length=250,
+    )
+
+    def __init__(self, bot, user_id: int):
+        super().__init__()
+        self.bot = bot
+        self.user_id = user_id
+
+        # Pre-fill with current bio if it exists
+        trainer = self.bot.player_manager.get_player(user_id)
+        if trainer and hasattr(trainer, 'bio') and trainer.bio:
+            self.bio.default = trainer.bio
+
+    async def on_submit(self, interaction: discord.Interaction):
+        new_bio = self.bio.value.strip() if self.bio.value else None
+
+        # Update the bio
+        self.bot.player_manager.update_player(
+            self.user_id,
+            bio=new_bio
+        )
+
+        if new_bio:
+            await interaction.response.send_message(
+                f"✅ Bio updated!\n\n{new_bio}",
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                "✅ Bio cleared!",
+                ephemeral=True
+            )
+
+
+class ViewOtherTrainersView(View):
+    """View for selecting another trainer's card to view"""
+
+    def __init__(self, bot, user_id: int):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+        self.add_item(ViewOtherTrainersSelect(bot, user_id))
+
+
+class ViewOtherTrainersSelect(discord.ui.Select):
+    """Select menu for choosing a trainer to view"""
+
+    def __init__(self, bot, user_id: int):
+        self.bot = bot
+        self.user_id = user_id
+
+        # Get all trainers from the database
+        conn = bot.player_manager.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT discord_user_id, trainer_name
+            FROM trainers
+            ORDER BY trainer_name
+            LIMIT 25
+        """)
+        trainers = cursor.fetchall()
+        conn.close()
+
+        # Create options (max 25 for Discord)
+        options = []
+        for trainer in trainers:
+            trainer_id = trainer['discord_user_id']
+            trainer_name = trainer['trainer_name']
+
+            # Add checkmark for current user
+            label = f"{trainer_name}" + (" (You)" if trainer_id == user_id else "")
+            options.append(
+                discord.SelectOption(
+                    label=label[:100],
+                    value=str(trainer_id),
+                    description=f"View {trainer_name}'s trainer card"[:100]
+                )
+            )
+
+        if not options:
+            options.append(
+                discord.SelectOption(
+                    label="No trainers found",
+                    value="none",
+                    description="No registered trainers"
+                )
+            )
+
+        super().__init__(
+            placeholder="Choose a trainer to view...",
+            options=options,
+            min_values=1,
+            max_values=1
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Handle trainer selection"""
+        selected_user_id = int(self.values[0])
+
+        if selected_user_id == 0 or self.values[0] == "none":
+            await interaction.response.send_message(
+                "No trainers available to view.",
+                ephemeral=True
+            )
+            return
+
+        # Get the selected trainer's info
+        from ui.embeds import EmbedBuilder
+
+        trainer = self.bot.player_manager.get_player(selected_user_id)
+        if not trainer:
+            await interaction.response.send_message(
+                "❌ Trainer not found.",
+                ephemeral=True
+            )
+            return
+
+        party = self.bot.player_manager.get_party(selected_user_id)
+        all_pokemon = self.bot.player_manager.get_all_pokemon(selected_user_id)
+        total_pokemon = len(all_pokemon)
+        pokedex_caught = len(
+            {pokemon.get("species_dex_number") for pokemon in all_pokemon if pokemon.get("species_dex_number")}
+        )
+        location_manager = getattr(self.bot, "location_manager", None)
+
+        embed = EmbedBuilder.trainer_card(
+            trainer,
+            party_count=len(party),
+            total_pokemon=total_pokemon,
+            pokedex_caught=pokedex_caught,
+            location_manager=location_manager,
+        )
+
+        # Show the trainer card (without edit buttons)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 class MainMenuView(View):
