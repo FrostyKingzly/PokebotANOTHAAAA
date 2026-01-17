@@ -3643,6 +3643,10 @@ class BattleEngine:
                 if getattr(other_battler, 'is_ai', False):
                     continue
 
+                # Skip eliminated battlers (those with no Pokemon left)
+                if getattr(other_battler, 'is_eliminated', False):
+                    continue
+
                 active_pokemon = other_battler.get_active_pokemon()
                 for pos_idx, active_mon in enumerate(active_pokemon):
                     if getattr(active_mon, 'current_hp', 0) <= 0:
