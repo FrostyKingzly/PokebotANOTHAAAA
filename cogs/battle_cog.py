@@ -1257,6 +1257,9 @@ class BattleCog(commands.Cog):
                 if custom_title:
                     title = custom_title
                     color = custom_color or discord.Color.orange()
+                elif event_type == "ambipom_resonance":
+                    title = event.get("custom_title", "Resonance!")
+                    color = event.get("custom_color", discord.Color.purple())
                 elif event_type == "end_of_turn":
                     title = "End of Turn"
                     color = discord.Color.orange()
@@ -1677,17 +1680,39 @@ class BattleCog(commands.Cog):
                     )
                     player_manager.reset_faint_streaks(party_pokemon=battler.party)
 
-        if battle.battle_format == BattleFormat.RAID:
+        # Check for Nidoking special ending
+        if getattr(battle, "nidoking_special_ending", False):
+            desc = "**Your Fate has been Decided.**"
+            title = "Your Fate has been Decided"
+            color = discord.Color.dark_red()
+        elif battle.battle_format == BattleFormat.RAID:
+            # Check if this is a test path battle
+            is_test_path = (opponent_name == "Test Path Encounter") or hasattr(battle, "scripted_sequence")
+
             raid_mon = (battle.opponent.get_active_pokemon() or [None])[0]
             raid_name = self._format_pokemon_name(raid_mon, include_level=False) if raid_mon else opponent_name
             if result == 'trainer':
-                desc = (
-                    f"The Dreamlites dissipate…\n\n"
-                    f"***The {raid_name} Fainted!!!***\n\n"
-                    "***Victory!!!***"
-                )
-                title = 'Raid Over'
-                color = discord.Color.gold()
+                if is_test_path:
+                    # For test path, use standard battle victory message
+                    fainted_names = [self._format_pokemon_name(p, include_level=False) for p in fainted_pokemon]
+                    survivors = [p for p in winner_pokemon if p.current_hp > 0]
+                    winner_names = [self._format_pokemon_name(p, include_level=False) for p in survivors] if survivors else ["No one"]
+
+                    desc = (
+                        f"**The Battle Has Been Decided!**\n\n"
+                        f"**Fainted:** {', '.join(fainted_names)}\n\n"
+                        f"**Winners:** {', '.join(winner_names)}"
+                    )
+                    title = 'Victory!'
+                    color = discord.Color.gold()
+                else:
+                    desc = (
+                        f"The Dreamlites dissipate…\n\n"
+                        f"***The {raid_name} Fainted!!!***\n\n"
+                        "***Victory!!!***"
+                    )
+                    title = 'Raid Over'
+                    color = discord.Color.gold()
             else:
                 desc = (
                     "All trainers' Pokémon have fainted…\n\n"

@@ -113,13 +113,20 @@ class DreamRogueCog(commands.Cog):
         # Show dive start embed
         participants_list = [interaction.user.id] + [p["discord_user_id"] for p in participants if p["discord_user_id"] != interaction.user.id]
 
-        embed = DreamRogueEmbeds.dive_start(layer_name, intensity, participants_list)
-
-        await interaction.response.send_message(embed=embed)
+        if layer_name == DreamRogueManager.TEST_PATH_LAYER:
+            # For test path, skip the dive start and area embeds
+            await interaction.response.send_message("Test Path dive started. Ready for action.", ephemeral=True)
+        else:
+            embed = DreamRogueEmbeds.dive_start(layer_name, intensity, participants_list)
+            await interaction.response.send_message(embed=embed)
 
         if layer_name == DreamRogueManager.TEST_PATH_LAYER:
-            await asyncio.sleep(1)
-            await self._send_test_path_area_embed(interaction, run_id, area_index=1)
+            # Skip the area embed, just set up the state
+            state = self.dream_manager.get_script_state(run_id)
+            state["area_index"] = 1
+            state["action_index"] = 0
+            state["nidoking_battle_id"] = None
+            self.dream_manager.update_script_state(run_id, state)
         else:
             # Start first node selection
             await asyncio.sleep(2)
@@ -646,7 +653,12 @@ class DreamRogueCog(commands.Cog):
         action_index = state.get("action_index", 0)
 
         if area_index == 1:
-            await self._send_test_path_area_embed(interaction, run["run_id"], area_index=2)
+            # Skip the area embed, just update state
+            state["area_index"] = 2
+            state["action_index"] = 0
+            state["nidoking_battle_id"] = None
+            self.dream_manager.update_script_state(run["run_id"], state)
+            await interaction.response.send_message("Advanced to Area 2. Ready for action.", ephemeral=True)
             return
 
         if area_index == 2 and action_index < 2:
@@ -663,7 +675,12 @@ class DreamRogueCog(commands.Cog):
             )
             return
 
-        await self._send_test_path_area_embed(interaction, run["run_id"], area_index=3)
+        # Skip the area embed, just update state
+        state["area_index"] = 3
+        state["action_index"] = 0
+        state["nidoking_battle_id"] = None
+        self.dream_manager.update_script_state(run["run_id"], state)
+        await interaction.response.send_message("Advanced to Area 3. Ready for action.", ephemeral=True)
 
     async def trigger_test_path_action(self, interaction: discord.Interaction):
         """Trigger the next scripted Test Path action."""
@@ -682,7 +699,12 @@ class DreamRogueCog(commands.Cog):
             return
 
         if area_index == 1:
-            await self._send_test_path_area_embed(interaction, run["run_id"], area_index=2)
+            # Skip area embed, just update state
+            state["area_index"] = 2
+            state["action_index"] = 0
+            state["nidoking_battle_id"] = None
+            self.dream_manager.update_script_state(run["run_id"], state)
+            await interaction.response.send_message("Advanced to Area 2. Ready for action.", ephemeral=True)
             return
 
         if area_index == 2:
