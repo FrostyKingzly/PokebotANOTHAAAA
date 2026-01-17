@@ -3869,8 +3869,16 @@ class BattleEngine:
 
         # Mark battlers as eliminated when they have no usable Pokemon
         for battler in battle.get_all_battlers():
-            if not battler.has_usable_pokemon():
+            has_usable = battler.has_usable_pokemon()
+            if not has_usable:
+                if not battler.is_eliminated:
+                    print(f"[DEBUG] Marking battler {battler.battler_id} ({battler.battler_name}) as eliminated")
                 battler.is_eliminated = True
+            elif battler.is_eliminated:
+                # Safety check: Reset is_eliminated if battler has usable Pokemon
+                # This prevents bugs where players are incorrectly stuck in eliminated state
+                print(f"[DEBUG] SAFETY: Resetting is_eliminated for battler {battler.battler_id} ({battler.battler_name}) who has usable Pokemon")
+                battler.is_eliminated = False
 
         if not trainer_has_pokemon and not opponent_has_pokemon:
             battle.is_over = True
