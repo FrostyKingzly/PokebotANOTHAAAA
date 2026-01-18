@@ -1403,9 +1403,12 @@ class SessionMusicLinkModal(discord.ui.Modal):
             )
             return
 
+        # Defer the response immediately to prevent timeout
+        await interaction.response.defer(ephemeral=True)
+
         url = self.url_input.value.strip()
         await music_manager.queue_session_track(interaction.user.voice.channel.id, url)
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "✅ Added to the session music queue.",
             ephemeral=True
         )
