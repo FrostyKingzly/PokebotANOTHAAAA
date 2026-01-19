@@ -259,6 +259,12 @@ class DreamRogueCog(commands.Cog):
         if not current_node or not next_nodes:
             return
 
+        if current_node.get("node_type") == "start":
+            state = self.dream_manager.get_script_state(run_id)
+            if not state.get("fate_selected"):
+                await self._offer_fate_choice(interaction, run_id)
+                return
+
         if len(next_nodes) == 1:
             await self._enter_node(interaction, run_id, next_nodes[0])
             return
@@ -294,12 +300,12 @@ class DreamRogueCog(commands.Cog):
             await interaction.response.send_message(embed=embed, view=view)
 
     def _node_option_name(self, node: dict) -> str:
-        node_type = node.get("node_type", "event")
+        node_type = node.get("node_type", "memoria")
         label_map = {
-            "combat": "Combat",
-            "event": "Event",
+            "battle": "Battle",
+            "memoria": "Memoria Event",
             "rest": "Rest",
-            "mini_boss": "Mini Boss",
+            "alpha": "Alpha",
             "boss": "Boss",
         }
         name = label_map.get(node_type, "Unknown")
@@ -308,15 +314,87 @@ class DreamRogueCog(commands.Cog):
         return name
 
     def _node_option_description(self, node: dict) -> str:
-        node_type = node.get("node_type", "event")
+        node_type = node.get("node_type", "memoria")
         description_map = {
-            "combat": "A battle against roaming foes.",
-            "event": "A mysterious encounter with choices.",
-            "rest": "Recover some HP at the campfire.",
-            "mini_boss": "A tougher fight with better rewards.",
+            "battle": "A battle against roaming foes.",
+            "memoria": "A memory-laced encounter with choices.",
+            "rest": "Recover HP by the campfire.",
+            "alpha": "A powerful alpha blocks the path.",
             "boss": "The floor guardian awaits.",
         }
         return description_map.get(node_type, "An unknown path.")
+
+    async def _offer_fate_choice(self, interaction: discord.Interaction, run_id: str):
+        """Prompt the team to choose one of three random fates."""
+        state = self.dream_manager.get_script_state(run_id)
+        fate_option_ids = state.get("fate_options") or []
+
+        fate_options = []
+        if fate_option_ids:
+            for template_id in fate_option_ids:
+                template = self.dream_manager.get_template_by_full_id(template_id)
+                if template:
+                    fate_options.append(template)
+
+        if not fate_options:
+            fate_options = self.dream_manager.get_instances_by_category(["fate"], 3)
+            fate_option_ids = [option["template_id"] for option in fate_options]
+            state["fate_options"] = fate_option_ids
+            self.dream_manager.update_script_state(run_id, state)
+
+        if not fate_options:
+            return
+
+        vote_id = self.dream_manager.create_vote(
+            run_id,
+            "Choose your fate...",
+            [
+                {
+                    "name": option.get("name", "Fate"),
+                    "description": option.get("description", "The dream awaits your choice."),
+                }
+                for option in fate_options
+            ],
+        )
+
+        vote = self.dream_manager.get_vote(vote_id)
+        percentages = self.dream_manager.get_vote_percentages(vote_id)
+        embed = DreamRogueEmbeds.voting(vote, percentages)
+
+        async def _on_fate_vote_complete(vote_interaction: discord.Interaction, result_index: int):
+            chosen = fate_options[result_index]
+            self.dream_manager.apply_buff(
+                run_id=run_id,
+                buff_type="fate",
+                buff_name=chosen.get("name", "Chosen Fate"),
+                buff_description=chosen.get("description", "A fate takes hold."),
+                scope="team",
+                effect_data=chosen.get("effect_data", {}),
+                duration=chosen.get("duration", "run"),
+            )
+
+            state = self.dream_manager.get_script_state(run_id)
+            state["fate_selected"] = True
+            state["fate_choice"] = chosen.get("template_id")
+            state["fate_options"] = []
+            self.dream_manager.update_script_state(run_id, state)
+
+            await vote_interaction.followup.send(
+                f"✨ Fate chosen: **{chosen.get('name', 'Unknown Fate')}**"
+            )
+            await self._offer_next_nodes(vote_interaction, run_id)
+
+        view = VotingView(
+            self.bot,
+            vote_id,
+            run_id,
+            lambda i, result: _on_fate_vote_complete(i, result),
+        )
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, view=view)
+        else:
+            await interaction.response.send_message(embed=embed, view=view)
 
     async def _on_node_vote_complete(
         self,

@@ -142,7 +142,7 @@ class FloorNavigationView(View):
 
     def _get_instance_emoji(self, categories: List[str]) -> str:
         """Get emoji for instance based on categories"""
-        if "mini_boss" in categories:
+        if "alpha" in categories:
             return "🟣"
         if "battle" in categories or "boss" in categories:
             return "⚔️"
@@ -156,6 +156,8 @@ class FloorNavigationView(View):
             return "💎"
         elif "gambling" in categories:
             return "🎲"
+        elif "memoria" in categories:
+            return "🕯️"
         elif "event" in categories:
             return "❓"
         elif "domain" in categories:
@@ -490,7 +492,7 @@ class InstanceActionView(View):
                 level = random.randint(min_lvl, max_lvl)
                 if "boss" in categories:
                     level = max_lvl + 10
-                elif "mini_boss" in categories:
+                elif "alpha" in categories:
                     level = max_lvl + 5
                 opponents.append(Pokemon(
                     species_data=species_data,
@@ -1200,10 +1202,25 @@ class InstanceActionView(View):
             dreamlites_gain = int(effects.get("dreamlites_gain", 0))
             dreamlites_loss = int(effects.get("dreamlites_loss", 0))
 
+            def _get_stat_bonus(stat_key: Optional[str]) -> int:
+                if not stat_key:
+                    return 0
+                ranks = []
+                for participant in participants:
+                    trainer = self.bot.player_manager.get_player(participant["discord_user_id"])
+                    if trainer:
+                        ranks.append(trainer.get_stat_rank(stat_key))
+                if not ranks:
+                    return 0
+                return int(round(sum(ranks) / len(ranks)))
+
             if "roll_d20" in effects:
+                stat_key = effects["roll_d20"].get("stat")
+                bonus = _get_stat_bonus(stat_key)
                 roll = random.randint(1, 20)
+                total_roll = roll + bonus
                 threshold = int(effects["roll_d20"].get("success_threshold", 11))
-                outcome = effects["roll_d20"]["success"] if roll >= threshold else effects["roll_d20"]["failure"]
+                outcome = effects["roll_d20"]["success"] if total_roll >= threshold else effects["roll_d20"]["failure"]
                 dreamlites_gain += int(outcome.get("dreamlites_gain", 0))
                 dreamlites_loss += int(outcome.get("dreamlites_loss", 0))
 
@@ -1240,6 +1257,10 @@ class InstanceActionView(View):
                     manager.add_dreamlites(self.run_id, participant["discord_user_id"], -dreamlites_loss)
 
             outcome_lines = []
+            if "roll_d20" in effects:
+                stat_label = effects["roll_d20"].get("stat", "")
+                stat_display = f" (+{_get_stat_bonus(stat_label)} {stat_label.title()})" if stat_label else ""
+                outcome_lines.append(f"🎲 Roll: **{roll}**{stat_display} vs **{threshold}+**")
             if dreamlites_gain:
                 outcome_lines.append(f"💎 Everyone gained **{dreamlites_gain}** Dreamlites.")
             if dreamlites_loss:
@@ -1392,6 +1413,8 @@ class DiveConfigModal(Modal, title="Choose Dream Dive Layer & Intensity"):
         allowed_layers = {
             "somnia prima": "Somnia Prima",
             "somnia": "Somnia Prima",
+            "somnium": "Somnia Prima",
+            "somnium prima": "Somnia Prima",
         }
         if self.allow_test_path:
             allowed_layers.update({

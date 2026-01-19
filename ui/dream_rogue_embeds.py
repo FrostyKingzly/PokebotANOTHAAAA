@@ -85,19 +85,19 @@ class DreamRogueEmbeds:
     def node_selection(current_node: Dict, next_nodes: List[Dict], layer_name: str, intensity: int) -> discord.Embed:
         """Embed for selecting the next node in the map."""
         def _node_display(node: Dict) -> str:
-            node_type = node.get("node_type", "event")
+            node_type = node.get("node_type", "memoria")
             emoji_map = {
-                "combat": DreamRogueEmbeds.BATTLE_EMOJI,
-                "event": "❓",
+                "battle": DreamRogueEmbeds.BATTLE_EMOJI,
+                "memoria": "🕯️",
                 "rest": "🔥",
-                "mini_boss": "🟣",
+                "alpha": "🟣",
                 "boss": DreamRogueEmbeds.BOSS_EMOJI,
             }
             label_map = {
-                "combat": "Combat Encounter",
-                "event": "Dream Event",
+                "battle": "Battle Encounter",
+                "memoria": "Memoria Event",
                 "rest": "Rest Area",
-                "mini_boss": "Mini Boss",
+                "alpha": "Alpha Encounter",
                 "boss": "Floor Boss",
             }
             emoji = emoji_map.get(node_type, "❓")
@@ -146,15 +146,15 @@ class DreamRogueEmbeds:
         elif "domain" in categories:
             color = DreamRogueEmbeds.DREAM_COLOR
             emoji = DreamRogueEmbeds.DOMAIN_EMOJI
-        elif "mini_boss" in categories:
+        elif "alpha" in categories:
             color = DreamRogueEmbeds.WARNING_COLOR
             emoji = "🟣"
         elif "battle" in categories or "boss" in categories:
             color = DreamRogueEmbeds.DANGER_COLOR
             emoji = DreamRogueEmbeds.BOSS_EMOJI if "boss" in categories else DreamRogueEmbeds.BATTLE_EMOJI
-        elif "event" in categories:
+        elif "event" in categories or "memoria" in categories:
             color = DreamRogueEmbeds.INFO_COLOR
-            emoji = "❓"
+            emoji = "🕯️" if "memoria" in categories else "❓"
         elif "buff" in categories:
             color = DreamRogueEmbeds.SUCCESS_COLOR
             emoji = DreamRogueEmbeds.BUFF_EMOJI
