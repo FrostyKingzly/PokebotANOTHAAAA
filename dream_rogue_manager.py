@@ -562,24 +562,6 @@ class DreamRogueManager:
         def _node_id(depth: int, index: int) -> str:
             return f"node_{depth}_{index}"
 
-        def _node_type_for_depth(depth: int) -> str:
-            if depth == 1:
-                return "start"
-            if depth == 2:
-                return "battle"
-            if depth == total_depth - 2:
-                return "alpha"
-            if depth == total_depth - 1:
-                return "rest"
-            if depth == total_depth:
-                return "boss"
-            roll = random.random()
-            if roll < 0.5:
-                return "battle"
-            if roll < 0.8:
-                return "memoria"
-            return "rest"
-
         nodes: Dict[str, Dict[str, Any]] = {}
         edges: List[Dict[str, str]] = []
 
@@ -587,37 +569,88 @@ class DreamRogueManager:
         for depth in range(3, total_depth - 1):
             layer_counts[depth] = random.choice([2, 3])
 
-        rest_depth = 5 if total_depth >= 6 else 3
-        rest_assigned = False
+        rest_depth = max(2, total_depth // 2)
         pre_boss_depth = max(2, total_depth - 1)
 
         for depth in range(1, total_depth + 1):
             count = layer_counts.get(depth, 1)
             for index in range(1, count + 1):
                 node_id = _node_id(depth, index)
-                node_type = _node_type_for_depth(depth)
-
-                if depth == rest_depth and not rest_assigned and node_type not in {"boss", "alpha", "start"}:
-                    node_type = "rest"
-                    rest_assigned = True
-
                 nodes[node_id] = {
                     "node_id": node_id,
                     "depth": depth,
-                    "node_type": node_type,
-                    "has_shop": node_type == "rest" and random.random() < 0.08,
+                    "node_type": "unassigned",
+                    "has_shop": False,
                 }
 
-        def _force_wishing_tree(depth: int):
-            candidates = [node for node in nodes.values() if node["depth"] == depth]
+        def _force_wishing_tree(depth: int) -> None:
+            candidates = [
+                node for node in nodes.values()
+                if node["depth"] == depth and node["node_type"] != "boss"
+            ]
             if not candidates:
                 return
             node = candidates[0]
             node["node_type"] = "rest"
             node["has_shop"] = True
 
+        for node in nodes.values():
+            if node["depth"] == 1:
+                node["node_type"] = "start"
+            elif node["depth"] == 2:
+                node["node_type"] = "battle"
+            elif node["depth"] == total_depth:
+                node["node_type"] = "boss"
+
         _force_wishing_tree(rest_depth)
         _force_wishing_tree(pre_boss_depth)
+
+        alpha_candidates = [
+            node for node in nodes.values()
+            if node["node_type"] == "unassigned"
+            and layer_counts.get(node["depth"], 1) > 1
+        ]
+        alpha_depths = sorted({node["depth"] for node in alpha_candidates})
+        alpha_target = min(4, len(alpha_depths))
+        if alpha_target:
+            for depth in random.sample(alpha_depths, k=alpha_target):
+                depth_nodes = [node for node in alpha_candidates if node["depth"] == depth]
+                if not depth_nodes:
+                    continue
+                chosen = random.choice(depth_nodes)
+                chosen["node_type"] = "alpha"
+
+        rest_chance = 0.08
+        random_rest_nodes = []
+        for node in nodes.values():
+            if node["node_type"] == "unassigned" and random.random() < rest_chance:
+                node["node_type"] = "rest"
+                node["has_shop"] = random.random() < 0.08
+                random_rest_nodes.append(node)
+
+        unassigned_nodes = [node for node in nodes.values() if node["node_type"] == "unassigned"]
+        fixed_battle_count = sum(1 for node in nodes.values() if node["node_type"] == "battle")
+        if (len(unassigned_nodes) - fixed_battle_count) % 2 != 0:
+            if random_rest_nodes:
+                node = random_rest_nodes.pop()
+                node["node_type"] = "unassigned"
+                node["has_shop"] = False
+                unassigned_nodes.append(node)
+            elif unassigned_nodes:
+                node = random.choice(unassigned_nodes)
+                node["node_type"] = "rest"
+                node["has_shop"] = random.random() < 0.08
+                unassigned_nodes = [n for n in unassigned_nodes if n["node_id"] != node["node_id"]]
+
+        battle_assigned = max(0, (len(unassigned_nodes) - fixed_battle_count) // 2)
+        battle_node_ids = {
+            node["node_id"] for node in random.sample(unassigned_nodes, k=battle_assigned)
+        } if battle_assigned else set()
+        for node in unassigned_nodes:
+            if node["node_id"] in battle_node_ids:
+                node["node_type"] = "battle"
+            else:
+                node["node_type"] = "memoria"
 
         for depth in range(1, total_depth):
             current_nodes = [n for n in nodes.values() if n["depth"] == depth]
