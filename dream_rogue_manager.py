@@ -316,6 +316,9 @@ class DreamRogueManager:
             "action_index": 0,
             "nidoking_battle_id": None,
             "skip_next_action": False,
+            "fate_selected": False,
+            "fate_choice": None,
+            "fate_options": [],
         }
 
     def get_script_state(self, run_id: str) -> Dict[str, Any]:
@@ -563,16 +566,18 @@ class DreamRogueManager:
             if depth == 1:
                 return "start"
             if depth == 2:
-                return "combat"
+                return "battle"
+            if depth == total_depth - 2:
+                return "alpha"
             if depth == total_depth - 1:
-                return "mini_boss"
+                return "rest"
             if depth == total_depth:
                 return "boss"
             roll = random.random()
             if roll < 0.5:
-                return "combat"
-            if roll < 0.75:
-                return "event"
+                return "battle"
+            if roll < 0.8:
+                return "memoria"
             return "rest"
 
         nodes: Dict[str, Dict[str, Any]] = {}
@@ -584,6 +589,7 @@ class DreamRogueManager:
 
         rest_depth = 5 if total_depth >= 6 else 3
         rest_assigned = False
+        pre_boss_depth = max(2, total_depth - 1)
 
         for depth in range(1, total_depth + 1):
             count = layer_counts.get(depth, 1)
@@ -591,7 +597,7 @@ class DreamRogueManager:
                 node_id = _node_id(depth, index)
                 node_type = _node_type_for_depth(depth)
 
-                if depth == rest_depth and not rest_assigned and node_type not in {"boss", "mini_boss", "start"}:
+                if depth == rest_depth and not rest_assigned and node_type not in {"boss", "alpha", "start"}:
                     node_type = "rest"
                     rest_assigned = True
 
@@ -601,6 +607,17 @@ class DreamRogueManager:
                     "node_type": node_type,
                     "has_shop": node_type == "rest" and random.random() < 0.08,
                 }
+
+        def _force_wishing_tree(depth: int):
+            candidates = [node for node in nodes.values() if node["depth"] == depth]
+            if not candidates:
+                return
+            node = candidates[0]
+            node["node_type"] = "rest"
+            node["has_shop"] = True
+
+        _force_wishing_tree(rest_depth)
+        _force_wishing_tree(pre_boss_depth)
 
         for depth in range(1, total_depth):
             current_nodes = [n for n in nodes.values() if n["depth"] == depth]
@@ -714,24 +731,25 @@ class DreamRogueManager:
             return []
         if node_type == "boss":
             return [self._create_boss_instance(node.get("depth", 10))]
-        if node_type == "mini_boss":
-            return [self._create_miniboss_instance(node.get("depth", 9))]
+        if node_type == "alpha":
+            alpha_instances = self._get_instances_by_category(["alpha"], 1)
+            if alpha_instances:
+                return alpha_instances
+            return [self._create_alpha_instance(node.get("depth", 9))]
         if node_type == "rest":
-            instance = self._create_instance("rest", "safe_camp")
+            instance = self._create_instance("rest", "campfire_rest")
             if node.get("has_shop"):
-                shop_instance = self._get_instances_by_category(["shop"], 1)
-                return [instance] + shop_instance
+                return [instance, self._create_wishing_tree_instance()]
             return [instance]
-        if node_type == "event":
-            event_instances = self._get_instances_by_category(["event"], 1)
+        if node_type == "memoria":
+            event_instances = self._get_instances_by_category(["memoria", "event"], 1)
             if event_instances:
                 return event_instances
-            return self._get_instances_by_category(["social", "trial", "gambling", "reward", "economy"], 1)
-        if node_type == "combat":
+            return self._get_instances_by_category(["memoria", "event"], 1)
+        if node_type == "battle":
             battle_instances = self._get_instances_by_category(["battle"], 3)
-            filtered = [b for b in battle_instances if "raid" not in b.get("categories", [])]
-            if filtered:
-                return [random.choice(filtered)]
+            if battle_instances:
+                return [random.choice(battle_instances)]
             return self._get_instances_by_category(["battle"], 1)
         return self._get_instances_by_category(["battle"], 1)
 
@@ -760,32 +778,23 @@ class DreamRogueManager:
         elif category_override:
             instances.extend(self._get_instances_by_category(category_override, 1))
         elif floor == 1:
-            # Stage 1: Randomize battle type (singles, doubles, multi, raid)
-            # Generate multiple battle options with different formats
-            battle_instances = self._get_instances_by_category(["battle"], 10)  # Get all battle types
+            battle_instances = self._get_instances_by_category(["battle"], 10)
             if battle_instances:
-                # Pick a random battle type for the first floor
                 instances.append(random.choice(battle_instances))
             else:
-                # Fallback to standard battle
                 instances.extend(self._get_instances_by_category(["battle"], 1))
         elif floor == 5:
-            # Middle stage always a rest
             instances.extend(self._get_instances_by_category(["rest"], 1))
+            instances.append(self._create_wishing_tree_instance())
         else:
             option_count = 3 if random.random() <= 0.35 else 2
 
             room_weights = [
-                (["battle"], 0.25),
-                (["gambling"], 0.10),
-                (["social"], 0.15),
-                (["trial"], 0.10),
-                (["domain"], 0.08),
-                (["buff"], 0.08),
-                (["nightmare", "curse"], 0.08),
-                (["economy", "reward"], 0.08),
-                (["rest"], 0.03),
-                (["shop"], 0.05),
+                (["battle"], 0.4),
+                (["memoria", "event"], 0.3),
+                (["rest"], 0.15),
+                (["blessing", "buff"], 0.1),
+                (["curse"], 0.05),
             ]
 
             def _roll_room_category() -> List[str]:
@@ -847,6 +856,23 @@ class DreamRogueManager:
             instances.extend(self._get_instances_by_category(["battle"], 1))
 
         return instances
+
+    def get_instances_by_category(self, categories: List[str], count: int) -> List[Dict]:
+        """Public helper to pull random instances by category."""
+        return self._get_instances_by_category(categories, count)
+
+    def get_template_by_full_id(self, template_full_id: str) -> Optional[Dict]:
+        """Fetch a template by its full ID (group.template_id)."""
+        if not template_full_id or "." not in template_full_id:
+            return None
+        group, template_id = template_full_id.split(".", 1)
+        templates = self.instance_templates.get(group, {})
+        template = templates.get(template_id)
+        if not template:
+            return None
+        instance = template.copy()
+        instance["template_id"] = template_full_id
+        return instance
 
     def grant_positive_buffs(self, run_id: str, count: int = 2) -> List[Dict[str, str]]:
         """Grant positive buffs to the team and return their display data."""
@@ -955,6 +981,25 @@ class DreamRogueManager:
             }
         }
 
+    def _create_alpha_instance(self, floor: int) -> Dict:
+        """Create an alpha battle instance."""
+        return {
+            "template_id": "alpha_battle",
+            "name": f"Alpha Encounter — Floor {floor}",
+            "description": "A powerful alpha Pokémon stalks the dreamscape.",
+            "categories": ["battle", "alpha"],
+            "scope": "team",
+            "risk_level": "high",
+            "effect_data": {
+                "type": "battle",
+                "floor": floor,
+                "battle_format": "doubles",
+                "num_opponents": 1,
+                "alpha": True,
+                "dreamlite_multiplier": 2,
+            }
+        }
+
     def _create_boss_instance(self, floor: int) -> Dict:
         """Create boss raid instance"""
         return {
@@ -972,6 +1017,48 @@ class DreamRogueManager:
                 "raid_stat_multiplier": 2.5,
                 "raid_hp_multiplier": 6.0
             }
+        }
+
+    def _create_wishing_tree_instance(self) -> Dict:
+        """Create a Wishing Tree shop instance with randomized offerings."""
+        move_templates = self._get_instances_by_category(["dream_move"], 3)
+        blessing_templates = self._get_instances_by_category(["blessing"], 3)
+        path_templates = self._get_instances_by_category(["path"], 3)
+
+        def _to_shop_item(template: Dict, default_cost: int) -> Dict[str, object]:
+            effect = template.get("shop_effect")
+            value = template.get("shop_value")
+            if effect is None:
+                effect = template.get("effect_data", {}).get("type", "dream_effect")
+            if value is None:
+                value = template.get("effect_data", {})
+            return {
+                "name": template.get("name", "Wishing Tree Offer"),
+                "description": template.get("description", ""),
+                "cost": template.get("dreamlite_cost", default_cost),
+                "effect": effect,
+                "value": value,
+            }
+
+        items: List[Dict[str, object]] = []
+        items.extend([_to_shop_item(t, 40) for t in move_templates])
+        items.extend([_to_shop_item(t, 55) for t in blessing_templates])
+        items.extend([_to_shop_item(t, 70) for t in path_templates])
+
+        return {
+            "template_id": "wishing_tree",
+            "name": "Wishing Tree",
+            "description": (
+                "A crystalline tree hums with memory. Offer Dreamlites to shape fate."
+            ),
+            "categories": ["shop", "wishing_tree"],
+            "scope": "team",
+            "risk_level": "low",
+            "effect_data": {
+                "type": "shop",
+                "items": items,
+            },
+            "visibility": "public",
         }
 
     # ===== BUFF/CURSE MANAGEMENT =====
