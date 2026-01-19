@@ -85,19 +85,19 @@ class DreamRogueEmbeds:
     def node_selection(current_node: Dict, next_nodes: List[Dict], layer_name: str, intensity: int) -> discord.Embed:
         """Embed for selecting the next node in the map."""
         def _node_display(node: Dict) -> str:
-            node_type = node.get("node_type", "event")
+            node_type = node.get("node_type", "memoria")
             emoji_map = {
-                "combat": DreamRogueEmbeds.BATTLE_EMOJI,
-                "event": "❓",
+                "battle": DreamRogueEmbeds.BATTLE_EMOJI,
+                "memoria": "🕯️",
                 "rest": "🔥",
-                "mini_boss": "🟣",
+                "alpha": "🟣",
                 "boss": DreamRogueEmbeds.BOSS_EMOJI,
             }
             label_map = {
-                "combat": "Combat Encounter",
-                "event": "Dream Event",
+                "battle": "Battle Encounter",
+                "memoria": "Memoria Event",
                 "rest": "Rest Area",
-                "mini_boss": "Mini Boss",
+                "alpha": "Alpha Encounter",
                 "boss": "Floor Boss",
             }
             emoji = emoji_map.get(node_type, "❓")
@@ -125,6 +125,51 @@ class DreamRogueEmbeds:
         return embed
 
     @staticmethod
+    def map_overview(map_data: Dict, current_node_id: str, next_node_ids: List[str]) -> discord.Embed:
+        """Embed showing an overview of the Dream Dive map."""
+        nodes = map_data.get("nodes", {})
+        total_depth = map_data.get("total_depth", 10)
+
+        def _node_icon(node: Dict) -> str:
+            node_type = node.get("node_type", "memoria")
+            icon_map = {
+                "start": "🌀",
+                "battle": DreamRogueEmbeds.BATTLE_EMOJI,
+                "memoria": "🕯️",
+                "rest": "🔥",
+                "alpha": "🟣",
+                "boss": DreamRogueEmbeds.BOSS_EMOJI,
+            }
+            icon = icon_map.get(node_type, "❓")
+            if node.get("has_shop"):
+                icon = f"{icon}🛍️"
+            return icon
+
+        lines = []
+        for depth in range(1, total_depth + 1):
+            depth_nodes = [node for node in nodes.values() if node.get("depth") == depth]
+            depth_nodes.sort(key=lambda n: n.get("node_id", ""))
+            rendered = []
+            for node in depth_nodes:
+                icon = _node_icon(node)
+                node_id = node.get("node_id")
+                if node_id == current_node_id:
+                    rendered.append(f"[{icon}]")
+                elif node_id in next_node_ids:
+                    rendered.append(f"({icon})")
+                else:
+                    rendered.append(icon)
+            lines.append(f"**Depth {depth}:** {' '.join(rendered) if rendered else '—'}")
+
+        embed = discord.Embed(
+            title=f"{DreamRogueEmbeds.FLOOR_EMOJI} Floor Path Overview",
+            description="\n".join(lines),
+            color=DreamRogueEmbeds.DREAM_COLOR
+        )
+        embed.set_footer(text="Legend: [current] (next) • 🛍️ = Wishing Tree")
+        return embed
+
+    @staticmethod
     def instance_selection(instance: Dict, stage: int) -> discord.Embed:
         """
         Instance encounter embed
@@ -146,15 +191,15 @@ class DreamRogueEmbeds:
         elif "domain" in categories:
             color = DreamRogueEmbeds.DREAM_COLOR
             emoji = DreamRogueEmbeds.DOMAIN_EMOJI
-        elif "mini_boss" in categories:
+        elif "alpha" in categories:
             color = DreamRogueEmbeds.WARNING_COLOR
             emoji = "🟣"
         elif "battle" in categories or "boss" in categories:
             color = DreamRogueEmbeds.DANGER_COLOR
             emoji = DreamRogueEmbeds.BOSS_EMOJI if "boss" in categories else DreamRogueEmbeds.BATTLE_EMOJI
-        elif "event" in categories:
+        elif "event" in categories or "memoria" in categories:
             color = DreamRogueEmbeds.INFO_COLOR
-            emoji = "❓"
+            emoji = "🕯️" if "memoria" in categories else "❓"
         elif "buff" in categories:
             color = DreamRogueEmbeds.SUCCESS_COLOR
             emoji = DreamRogueEmbeds.BUFF_EMOJI
