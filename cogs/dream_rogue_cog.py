@@ -285,7 +285,14 @@ class DreamRogueCog(commands.Cog):
         percentages = self.dream_manager.get_vote_percentages(vote_id)
         intensity = run.get("intensity", run.get("stage_level", 1))
         layer_name = run.get("layer_name", "Somnia Prima")
-        embed = DreamRogueEmbeds.node_selection(current_node, next_nodes, layer_name, intensity)
+        map_data = self.dream_manager.get_map(run_id)
+        embed = DreamRogueEmbeds.node_selection(
+            current_node,
+            next_nodes,
+            layer_name,
+            intensity,
+            map_data
+        )
 
         view = VotingView(
             self.bot,
