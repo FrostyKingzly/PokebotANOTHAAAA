@@ -567,13 +567,20 @@ class BattleCog(commands.Cog):
 
         # 1) Opening embed: differentiate wild encounters vs trainer battles
         if battle_mode == BattleType.WILD:
+            is_dream_rogue = getattr(battle.opponent, 'npc_class', None) == 'dream_rogue'
             enc_title = f"{SWORD} Encounter!"
             # Show all wild pokemon for doubles/multi battles
             if len(opponent_active) > 1:
                 pokemon_names = " and ".join([f"**{mon.species_name}**" for mon in opponent_active])
-                enc_description = f"You encountered wild {pokemon_names}!"
+                if is_dream_rogue:
+                    enc_description = f"{pokemon_names} emerge from the mist."
+                else:
+                    enc_description = f"You encountered wild {pokemon_names}!"
             else:
-                enc_description = f"You encountered a wild **{opponent_active[0].species_name}**!"
+                if is_dream_rogue:
+                    enc_description = f"**{opponent_active[0].species_name}** emerges from the mist."
+                else:
+                    enc_description = f"You encountered a wild **{opponent_active[0].species_name}**!"
         elif battle.battle_format == BattleFormat.MULTI:
             enc_title = f"{SWORD} Multi Battle Start!"
             # Show team composition
@@ -1231,12 +1238,15 @@ class BattleCog(commands.Cog):
                 if not interaction.response.is_done():
                     await interaction.response.send_message(**kwargs)
 
-    def _build_turn_embeds(self, turn_result: dict) -> list[discord.Embed]:
+    def _build_turn_embeds(self, turn_result: dict, battle=None) -> list[discord.Embed]:
         events = turn_result.get("action_events") or []
         embeds: list[discord.Embed] = []
+        is_dream_rogue = getattr(getattr(battle, "opponent", None), "npc_class", None) == "dream_rogue"
 
         if not events:
             messages = turn_result.get("messages") or []
+            if is_dream_rogue:
+                messages = self._replace_dream_dive_faint_messages(messages)
             action_msgs, faint_msgs = self._split_faint_messages(messages)
             embeds.append(self._build_action_embed(action_msgs, title="Turn Result"))
             if faint_msgs:
@@ -1253,6 +1263,8 @@ class BattleCog(commands.Cog):
 
         for event in events:
             raw_messages = event.get("messages") or []
+            if is_dream_rogue:
+                raw_messages = self._replace_dream_dive_faint_messages(raw_messages)
             action_msgs, faint_msgs = self._split_faint_messages(raw_messages)
 
             if action_msgs:
@@ -1339,6 +1351,8 @@ class BattleCog(commands.Cog):
 
         if not embeds:
             messages = turn_result.get("messages") or []
+            if is_dream_rogue:
+                messages = self._replace_dream_dive_faint_messages(messages)
             action_msgs, faint_msgs = self._split_faint_messages(messages)
             fallback = self._build_action_embed(action_msgs, title="Turn Result")
             if fallback:
@@ -1389,6 +1403,20 @@ class BattleCog(commands.Cog):
             if sprite_url:
                 embed.set_thumbnail(url=sprite_url)
         return embed
+
+    @staticmethod
+    def _replace_dream_dive_faint_messages(messages: list[str]) -> list[str]:
+        updated: list[str] = []
+        for msg in messages:
+            if not msg:
+                updated.append(msg)
+                continue
+            match = re.search(r"(.+?) fainted!", str(msg), flags=re.IGNORECASE)
+            if match:
+                updated.append(f"{match.group(1)} retreats into the mist.")
+            else:
+                updated.append(msg)
+        return updated
 
     def _resolve_trainer_avatar_url(self, trainer) -> Optional[str]:
         if not trainer:
@@ -1503,13 +1531,13 @@ class BattleCog(commands.Cog):
 
         await send_switch_events(manual_switch_events)
 
-        action_embeds = self._build_turn_embeds(turn_result)
+        battle = self.battle_engine.get_battle(turn_result.get('battle_id'))
+        action_embeds = self._build_turn_embeds(turn_result, battle=battle)
         for embed in action_embeds:
             await self._safe_followup_send(interaction, embed=embed)
             await asyncio.sleep(1)
 
         # Store auto_switch_events to be sent after EXP is awarded in _handle_post_turn
-        battle = self.battle_engine.get_battle(turn_result.get('battle_id'))
         if battle and auto_switch_events:
             battle._pending_auto_switches = auto_switch_events
             battle._pending_auto_switches_interaction = interaction
@@ -1744,13 +1772,8 @@ class BattleCog(commands.Cog):
 
             if is_dream_rogue and result == 'trainer':
                 # Player won against dream dive wild pokemon
-                opponent_party = battle.opponent.party
-                if len(opponent_party) > 1:
-                    desc = "The opposing Pokémon have all vanished into the mist…\n\n**You win!**"
-                else:
-                    pokemon_name = opponent_party[0].species_name if opponent_party else "Pokémon"
-                    desc = f"The opposing **{pokemon_name}** vanishes into the mist…\n\n**You win!**"
-                title = 'Victory!'
+                desc = "The battle has been decided. All of the opposing Pokémon have retreated."
+                title = 'The Battle Has Been Decided!'
                 color = discord.Color.gold()
             elif is_dream_rogue and result == 'opponent':
                 # Player lost against dream dive wild pokemon
