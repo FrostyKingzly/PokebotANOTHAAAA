@@ -955,6 +955,12 @@ class BattleEngine:
     def _normalize_name(name: str) -> str:
         return re.sub(r"[^a-z0-9]+", "", name.lower())
 
+    @staticmethod
+    def _get_base_species_name(pokemon: Any) -> str:
+        if not pokemon:
+            return ""
+        return getattr(pokemon, "_base_species_name", None) or getattr(pokemon, "species_name", "")
+
     def _trainer_has_mega(self, battler_id: int) -> bool:
         if not self.player_manager:
             return False
@@ -1747,7 +1753,9 @@ class BattleEngine:
 
         battler = self._get_battler_by_id(battle, battler_id)
         active_allies = battler.get_active_pokemon()
-        aipom_count = sum(1 for mon in active_allies if getattr(mon, "species_name", "").lower() == "aipom")
+        aipom_count = sum(
+            1 for mon in active_allies if self._get_base_species_name(mon).lower() == "aipom"
+        )
 
         # Get valid targets from player positions
         opponent_battler = battle.trainer if battler == battle.opponent else battle.opponent
@@ -2141,7 +2149,7 @@ class BattleEngine:
 
                 # Check if this is Nidoking in the test path - make it go last
                 if getattr(battle, "scripted_sequence", None) == "nidoking_test" and pokemon:
-                    if getattr(pokemon, "species_name", "").lower() == "nidoking":
+                    if self._get_base_species_name(pokemon).lower() == "nidoking":
                         action.priority = -999
                         action.speed = -999
                         continue
@@ -2446,7 +2454,7 @@ class BattleEngine:
                     self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
                     # Check for Aipom faint in Ambipom raid - trigger resonance broken
-                    if getattr(defender, "species_name", "").lower() == "aipom":
+                    if self._get_base_species_name(defender).lower() == "aipom":
                         # Find Ambipom in the same battler team
                         for mon in defender_battler.get_active_pokemon():
                             if getattr(mon, "scripted_ai", None) == "ambipom_raid" and mon.current_hp > 0:
@@ -2671,7 +2679,7 @@ class BattleEngine:
             if not active_allies:
                 continue
             aipom_alive = any(
-                getattr(mon, "species_name", "").lower() == "aipom"
+                self._get_base_species_name(mon).lower() == "aipom"
                 for mon in active_allies
             )
             if not aipom_alive:
@@ -2699,7 +2707,9 @@ class BattleEngine:
 
         max_slots = getattr(battle, "raid_opponent_slots", 1)
         active_allies = attacker_battler.get_active_pokemon()
-        aipom_active = sum(1 for mon in active_allies if getattr(mon, "species_name", "").lower() == "aipom")
+        aipom_active = sum(
+            1 for mon in active_allies if self._get_base_species_name(mon).lower() == "aipom"
+        )
 
         if len(active_allies) >= max_slots or aipom_active >= 2:
             return {"messages": messages}
@@ -3139,7 +3149,7 @@ class BattleEngine:
                     self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
                     # Check for Aipom faint in Ambipom raid - trigger resonance broken
-                    if getattr(defender, "species_name", "").lower() == "aipom":
+                    if self._get_base_species_name(defender).lower() == "aipom":
                         # Find Ambipom in the same battler team
                         for mon in defender_battler.get_active_pokemon():
                             if getattr(mon, "scripted_ai", None) == "ambipom_raid" and mon.current_hp > 0:
@@ -3342,7 +3352,7 @@ class BattleEngine:
                 self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
                 # Check for Aipom faint in Ambipom raid - trigger resonance broken
-                if getattr(defender, "species_name", "").lower() == "aipom":
+                if self._get_base_species_name(defender).lower() == "aipom":
                     # Find Ambipom in the same battler team
                     for mon in defender_battler.get_active_pokemon():
                         if getattr(mon, "scripted_ai", None) == "ambipom_raid" and mon.current_hp > 0:

@@ -5,7 +5,7 @@ Provides formatted Discord embeds for the Dream Dive gamemode
 """
 
 import discord
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 
 
 class DreamRogueEmbeds:
@@ -82,56 +82,12 @@ class DreamRogueEmbeds:
         return embed
 
     @staticmethod
-    def _map_overview(map_data: Dict, current_node_id: Optional[str] = None) -> str:
-        """Create a text-based overview of the full map and paths."""
-        if not map_data:
-            return "Map data unavailable."
-
-        emoji_map = {
-            "start": "🚪",
-            "battle": DreamRogueEmbeds.BATTLE_EMOJI,
-            "memoria": "🕯️",
-            "rest": "🔥",
-            "alpha": "🟣",
-            "boss": DreamRogueEmbeds.BOSS_EMOJI,
-        }
-
-        def _node_sort_key(node: Dict) -> Tuple[int, int]:
-            node_id = node.get("node_id", "")
-            parts = node_id.split("_")
-            if len(parts) >= 3 and parts[1].isdigit() and parts[2].isdigit():
-                return (int(parts[1]), int(parts[2]))
-            return (node.get("depth", 0), 0)
-
-        edges = map_data.get("edges", [])
-        edges_by_from: Dict[str, List[str]] = {}
-        for edge in edges:
-            edges_by_from.setdefault(edge.get("from", ""), []).append(edge.get("to", ""))
-
-        nodes = list(map_data.get("nodes", {}).values())
-        nodes.sort(key=_node_sort_key)
-
-        lines = []
-        for node in nodes:
-            node_id = node.get("node_id", "")
-            depth = node.get("depth", 0)
-            node_type = node.get("node_type", "memoria")
-            emoji = emoji_map.get(node_type, "❓")
-            marker = "▶️" if node_id == current_node_id else "  "
-            targets = ", ".join(sorted(edges_by_from.get(node_id, [])))
-            arrow = f" -> {targets}" if targets else ""
-            lines.append(f"{marker} D{depth} {node_id}: {emoji}{arrow}")
-
-        legend = "Legend: 🚪 Start | ⚔️ Battle | 🕯️ Memoria | 🔥 Rest | 🟣 Alpha | 👑 Boss"
-        return "```\n" + "\n".join(lines) + "\n```\n" + legend
-
     @staticmethod
     def node_selection(
         current_node: Dict,
         next_nodes: List[Dict],
         layer_name: str,
-        intensity: int,
-        map_data: Optional[Dict] = None
+        intensity: int
     ) -> discord.Embed:
         """Embed for selecting the next node in the map."""
         def _node_display(node: Dict) -> str:
@@ -168,13 +124,6 @@ class DreamRogueEmbeds:
             embed.add_field(
                 name=f"Option {idx}",
                 value=_node_display(node),
-                inline=False
-            )
-
-        if map_data:
-            embed.add_field(
-                name="Path Map",
-                value=DreamRogueEmbeds._map_overview(map_data, current_node.get("node_id")),
                 inline=False
             )
 

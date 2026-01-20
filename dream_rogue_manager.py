@@ -781,6 +781,17 @@ class DreamRogueManager:
             return self._get_instances_by_category(["memoria", "event"], 1)
         if node_type == "battle":
             battle_instances = self._get_instances_by_category(["battle"], 3)
+            if node.get("depth", 0) <= 2:
+                battle_instances = [
+                    instance for instance in battle_instances
+                    if "alpha" not in instance.get("categories", [])
+                ]
+                if not battle_instances:
+                    battle_instances = self._get_instances_by_category(["battle"], 10)
+                    battle_instances = [
+                        instance for instance in battle_instances
+                        if "alpha" not in instance.get("categories", [])
+                    ]
             if battle_instances:
                 return [random.choice(battle_instances)]
             return self._get_instances_by_category(["battle"], 1)
@@ -812,6 +823,10 @@ class DreamRogueManager:
             instances.extend(self._get_instances_by_category(category_override, 1))
         elif floor == 1:
             battle_instances = self._get_instances_by_category(["battle"], 10)
+            battle_instances = [
+                instance for instance in battle_instances
+                if "alpha" not in instance.get("categories", [])
+            ]
             if battle_instances:
                 instances.append(random.choice(battle_instances))
             else:

@@ -285,13 +285,11 @@ class DreamRogueCog(commands.Cog):
         percentages = self.dream_manager.get_vote_percentages(vote_id)
         intensity = run.get("intensity", run.get("stage_level", 1))
         layer_name = run.get("layer_name", "Somnia Prima")
-        map_data = self.dream_manager.get_map(run_id)
         embed = DreamRogueEmbeds.node_selection(
             current_node,
             next_nodes,
             layer_name,
-            intensity,
-            map_data
+            intensity
         )
 
         view = VotingView(
@@ -987,12 +985,10 @@ class DreamRogueCog(commands.Cog):
             owner_discord_id=None,
             moves=["double_hit", "dual_chop", "tail_whip", "rally_cry"],
         )
-        ambipom.is_alpha = True
+        ambipom.apply_alpha_status()
         ambipom.raid_kind = "alpha"
         ambipom.ensure_moveset_size(4, 4)
         ambipom.scripted_ai = "ambipom_raid"
-        ambipom._calculate_stats()
-        ambipom.current_hp = ambipom.max_hp
         return [ambipom]
 
     def _build_test_path_nidoking(self) -> List[Pokemon]:
