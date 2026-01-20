@@ -493,12 +493,15 @@ class InstanceActionView(View):
                 if "boss" in categories:
                     level = max_lvl + 10
                 elif "alpha" in categories:
-                    level = max_lvl + 5
-                opponents.append(Pokemon(
+                    level = max_lvl
+                opponent = Pokemon(
                     species_data=species_data,
                     level=level,
                     owner_discord_id=None
-                ))
+                )
+                if "alpha" in categories:
+                    opponent.apply_alpha_status()
+                opponents.append(opponent)
             return opponents
 
         def _build_trainer_party(user_id: int):
@@ -1155,6 +1158,7 @@ class InstanceActionView(View):
         """Resolve an event choice."""
         from dream_rogue_manager import DreamRogueManager
         from ui.dream_rogue_embeds import DreamRogueEmbeds
+        from ui.buttons import get_stat_display_name
         import random
 
         manager = DreamRogueManager()
@@ -1167,13 +1171,28 @@ class InstanceActionView(View):
             )
             return
 
+        def _format_option_description(option: Dict[str, Any]) -> str:
+            description = option.get("description", "A path through the dream.")
+            effects = option.get("effects", {})
+            roll_data = effects.get("roll_d20")
+            if not roll_data:
+                return description
+
+            threshold = int(roll_data.get("success_threshold", 11))
+            stat_key = roll_data.get("stat")
+            stat_label = get_stat_display_name(stat_key) if stat_key else "a stat"
+            roll_line = f"🎲 Roll: {stat_label} vs {threshold}+"
+            if description:
+                return f"{description}\n{roll_line}"
+            return roll_line
+
         vote_id = manager.create_vote(
             self.run_id,
             effect_data.get("prompt", self.instance.get("name", "Dream Event")),
             [
                 {
                     "name": option.get("name", "Option"),
-                    "description": option.get("description", "A path through the dream."),
+                    "description": _format_option_description(option),
                 }
                 for option in options
             ],

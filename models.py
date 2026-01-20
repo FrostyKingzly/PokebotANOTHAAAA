@@ -161,6 +161,16 @@ class Pokemon:
         # Experience
         self.exp = ExpSystem.exp_to_level(level, self.growth_rate)
         self.stored_exp = 0
+
+    def apply_alpha_status(self, display_prefix: str = "Alpha") -> None:
+        """Mark this Pokémon as alpha and update stats/display name."""
+        self.is_alpha = True
+        base_name = getattr(self, "_base_species_name", None) or self.species_name
+        self._base_species_name = base_name
+        if display_prefix:
+            self.species_name = f"{display_prefix} {base_name}"
+        self._calculate_stats()
+        self.current_hp = self.max_hp
     
     def _generate_gender(self, gender_ratio: Dict) -> Optional[str]:
         """Generate gender based on species ratio"""
