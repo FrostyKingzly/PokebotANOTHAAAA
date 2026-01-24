@@ -114,21 +114,34 @@ class DreamRogueCog(commands.Cog):
         participants_list = [interaction.user.id] + [p["discord_user_id"] for p in participants if p["discord_user_id"] != interaction.user.id]
 
         if layer_name == DreamRogueManager.TEST_PATH_LAYER:
-            # For test path, skip the dive start and area embeds
-            await interaction.response.send_message("Test Path dive started. Ready for action.", ephemeral=True)
-        else:
-            embed = DreamRogueEmbeds.dive_start(layer_name, intensity, participants_list)
-            await interaction.response.send_message(embed=embed)
-
-        if layer_name == DreamRogueManager.TEST_PATH_LAYER:
-            # Skip the area embed, just set up the state
+            # Set up the test path state first
             state = self.dream_manager.get_script_state(run_id)
             state["area_index"] = 1
             state["action_index"] = 0
             state["nidoking_battle_id"] = None
             self.dream_manager.update_script_state(run_id, state)
+
+            # Show the session controls panel with Test Path buttons
+            from cogs.session_cog import SessionControlsView
+
+            embed = discord.Embed(
+                title="🌀 Test Path Dive Started",
+                description=(
+                    "The scripted Test Path is now active.\n\n"
+                    "**Controls:**\n"
+                    "➡️ **Advance** - Move to the next area\n"
+                    "🎬 **Action** - Trigger the next scripted event\n"
+                    "⏭️ **Skip** - Skip the next scripted action"
+                ),
+                color=discord.Color.purple()
+            )
+            view = SessionControlsView(self.bot, session["session_id"])
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
         else:
-            # Start first node selection
+            embed = DreamRogueEmbeds.dive_start(layer_name, intensity, participants_list)
+            await interaction.response.send_message(embed=embed)
+
+            # Start first node selection (non-test path only)
             await asyncio.sleep(2)
             await self._offer_next_nodes(interaction, run_id)
 
