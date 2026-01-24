@@ -141,11 +141,16 @@ class PokemonSpriteHelper:
             >>> PokemonSpriteHelper.get_sprite("sandshrew", 27, form='alola')
             'https://play.pokemonshowdown.com/sprites/gen5ani/sandshrew-alola.gif'
         """
+        # Normalize display prefixes (e.g., "Alpha Ambipom") that are not part of
+        # Showdown's sprite naming scheme.
+        normalized_name = pokemon_name or ""
+        normalized_name = re.sub(r"^(alpha|rogue)\s+", "", normalized_name, flags=re.IGNORECASE)
+
         # Convert to lowercase, remove diacritics, and replace spaces with hyphens for parsing
         # Remove apostrophes, periods, and colons so names like "Mr. Mime" or "Type: Null"
         # line up with Showdown's sprite IDs.
         raw_name = (
-            PokemonSpriteHelper._strip_accents(pokemon_name.lower())
+            PokemonSpriteHelper._strip_accents(normalized_name.lower())
             .replace(' ', '-')
             .replace("'", "")
             .replace(".", "")
