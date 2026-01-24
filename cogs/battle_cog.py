@@ -1006,6 +1006,19 @@ class BattleCog(commands.Cog):
             color=discord.Color.dark_red(),
         )
 
+        # Use the first active Pokemon's sprite as the thumbnail
+        first_mon = active_raids[0]
+        sprite_url = PokemonSpriteHelper.get_sprite(
+            getattr(first_mon, "species_name", None),
+            getattr(first_mon, "species_dex_number", None),
+            style='animated',
+            gender=getattr(first_mon, 'gender', None),
+            shiny=getattr(first_mon, 'is_shiny', False),
+            use_fallback=False
+        )
+        if sprite_url:
+            embed.set_thumbnail(url=sprite_url)
+
         for idx, raid_mon in enumerate(active_raids):
             hp_bars = self._build_raid_hp_bars(raid_mon)
             type_list = getattr(raid_mon, "species_data", {}).get("types", [])

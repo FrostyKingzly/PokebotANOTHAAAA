@@ -1799,15 +1799,8 @@ class BattleEngine:
             None,
         )
         if rally_move_data:
-            if aipom_count < 1:
-                return BattleAction(
-                    action_type='move',
-                    battler_id=battler_id,
-                    move_id=rally_move,
-                    target_position=target_position,
-                    pokemon_position=pokemon_position,
-                )
-            if aipom_count == 1 and random.random() < 0.5:
+            # Always call Rally Cry until there are 2 Aipom on the field
+            if aipom_count < 2:
                 return BattleAction(
                     action_type='move',
                     battler_id=battler_id,
