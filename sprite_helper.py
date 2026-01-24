@@ -241,6 +241,13 @@ class PokemonSpriteHelper:
             sprite_urls = [animated_url, static_fallback, showdown_static]
             if pokeapi_fallback:
                 sprite_urls.append(pokeapi_fallback)
+
+            # When use_fallback=False, always return the animated URL directly
+            # without checking if it exists (avoids network latency and ensures
+            # we always try the animated GIF first)
+            if not use_fallback:
+                return animated_url
+
             available_urls = [url for url in sprite_urls if PokemonSpriteHelper._url_exists(url)]
 
             if available_urls:
@@ -249,9 +256,6 @@ class PokemonSpriteHelper:
                 ]
             else:
                 prioritized_urls = sprite_urls
-
-            if not use_fallback:
-                return prioritized_urls[0]
 
             return prioritized_urls
 
