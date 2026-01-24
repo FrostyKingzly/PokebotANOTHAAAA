@@ -1939,6 +1939,31 @@ class BattleEngine:
                 }
             )
 
+        # Check for Ambipom resonance - triggers at start of turn if Aipom has survived a full turn
+        # This gives players a chance to KO Aipom before Ambipom gets boosted
+        resonance_messages = self._apply_ambipom_rally_cry_resonance(battle)
+        if resonance_messages:
+            battle.turn_log.extend(resonance_messages)
+            # Find the Ambipom for the embed image
+            ambipom = None
+            for battler in battle.get_all_battlers():
+                if battler.is_eliminated:
+                    continue
+                for mon in battler.get_active_pokemon():
+                    if getattr(mon, "scripted_ai", None) == "ambipom_raid":
+                        ambipom = mon
+                        break
+                if ambipom:
+                    break
+
+            action_events.append({
+                "type": "ambipom_resonance",
+                "messages": resonance_messages,
+                "actor": ambipom,
+                "custom_title": "Alpha Ambipom and Aipom begin to resonate! Alpha Ambipom's power grows!",
+                "custom_color": discord.Color.purple()
+            })
+
         # Sort actions by priority and speed
         actions = list(battle.pending_actions.values())
         actions = self._sort_actions(battle, actions)
@@ -2069,33 +2094,8 @@ class BattleEngine:
 
         battle.turn_log.extend(eot_messages)
         if eot_messages:
-            # Check for Ambipom resonance boost messages and create a special event for them
-            resonance_messages = [msg for msg in eot_messages if "draws strength from its ally" in msg]
-            other_messages = [msg for msg in eot_messages if "draws strength from its ally" not in msg]
-
-            if other_messages:
-                action_events.append({"type": "end_of_turn", "messages": other_messages})
-
-            if resonance_messages:
-                # Find the Ambipom for the image
-                ambipom = None
-                for battler in battle.get_all_battlers():
-                    if battler.is_eliminated:
-                        continue
-                    for mon in battler.get_active_pokemon():
-                        if getattr(mon, "scripted_ai", None) == "ambipom_raid":
-                            ambipom = mon
-                            break
-                    if ambipom:
-                        break
-
-                action_events.append({
-                    "type": "ambipom_resonance",
-                    "messages": resonance_messages,
-                    "actor": ambipom,
-                    "custom_title": "Alpha Ambipom and Aipom begin to resonate! Alpha Ambipom's power grows!",
-                    "custom_color": discord.Color.purple()
-                })
+            # NOTE: Ambipom resonance now triggers at start of turn, not end of turn
+            action_events.append({"type": "end_of_turn", "messages": eot_messages})
 
         switch_events = manual_switch_events + auto_switch_events
         
@@ -2454,6 +2454,7 @@ class BattleEngine:
                     self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
                     # Check for Aipom faint in Ambipom raid - trigger resonance broken
+                    resonance_event = None
                     if self._get_base_species_name(defender).lower() == "aipom":
                         # Find Ambipom in the same battler team
                         for mon in defender_battler.get_active_pokemon():
@@ -2465,19 +2466,20 @@ class BattleEngine:
                                 boost_level = mon.stat_stages.get('attack', 0)
                                 resonance_msg = f"Resonance broken! {mon.species_name}'s connection weakens!"
                                 stat_msg = f"All stats fell! (Now {boost_level:+d})"
-                                messages.append(f"{resonance_msg} {stat_msg}")
+                                # Don't add to messages - shown in dedicated embed
 
-                                # Create special event for embed
-                                resonance_broken_events.append({
+                                # Store resonance broken event to add after healing
+                                resonance_event = {
                                     "type": "resonance_broken",
                                     "messages": [resonance_msg, stat_msg],
                                     "actor": mon,
                                     "custom_title": "Resonance Broken!",
                                     "custom_color": discord.Color.red()
-                                })
+                                }
                                 break
 
                         # Aipom heals all ally pokemon by 20% HP (only in test path)
+                        # Add healing event first so it appears right after faint
                         if battle.is_test_path:
                             heal_messages = []
                             for ally_mon in attacker_battler.get_active_pokemon():
@@ -2491,7 +2493,7 @@ class BattleEngine:
                                         heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
 
                             if heal_messages:
-                                # Create special event for healing embed
+                                # Create healing embed first (appears after faint)
                                 resonance_broken_events.append({
                                     "type": "aipom_healing",
                                     "messages": heal_messages,
@@ -2499,6 +2501,10 @@ class BattleEngine:
                                     "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
                                     "custom_color": discord.Color.green()
                                 })
+
+                        # Add resonance broken event last (appears after healing)
+                        if resonance_event:
+                            resonance_broken_events.append(resonance_event)
 
                     # Determine which position the fainted Pokemon was in
                     fainted_position = None
@@ -2670,6 +2676,7 @@ class BattleEngine:
             }
 
     def _apply_ambipom_rally_cry_resonance(self, battle: BattleState) -> List[str]:
+        """Apply resonance boost to Ambipom if any Aipom has been on field for at least one turn."""
         messages: List[str] = []
 
         for battler in battle.get_all_battlers():
@@ -2678,11 +2685,13 @@ class BattleEngine:
             active_allies = [mon for mon in battler.get_active_pokemon() if getattr(mon, "current_hp", 0) > 0]
             if not active_allies:
                 continue
-            aipom_alive = any(
+            # Check if any Aipom has been on field for at least one full turn
+            aipom_eligible = any(
                 self._get_base_species_name(mon).lower() == "aipom"
+                and getattr(mon, "summoned_on_turn", 0) < battle.turn_number
                 for mon in active_allies
             )
-            if not aipom_alive:
+            if not aipom_eligible:
                 continue
             for mon in active_allies:
                 if getattr(mon, "scripted_ai", None) != "ambipom_raid":
@@ -2730,11 +2739,13 @@ class BattleEngine:
         )
         new_aipom._calculate_stats()
         new_aipom.current_hp = new_aipom.max_hp
+        # Track when this Aipom was summoned for delayed resonance
+        new_aipom.summoned_on_turn = battle.turn_number
 
         attacker_battler.party.append(new_aipom)
         attacker_battler.active_positions.append(len(attacker_battler.party) - 1)
 
-        # Don't boost stats here - it will happen at end of turn via resonance
+        # Don't boost stats here - resonance triggers before Aipom's action on its second turn
         action_events = [
             {
                 "type": "custom",
@@ -3149,6 +3160,7 @@ class BattleEngine:
                     self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
                     # Check for Aipom faint in Ambipom raid - trigger resonance broken
+                    resonance_event = None
                     if self._get_base_species_name(defender).lower() == "aipom":
                         # Find Ambipom in the same battler team
                         for mon in defender_battler.get_active_pokemon():
@@ -3160,19 +3172,20 @@ class BattleEngine:
                                 boost_level = mon.stat_stages.get('attack', 0)
                                 resonance_msg = f"Resonance broken! {mon.species_name}'s connection weakens!"
                                 stat_msg = f"All stats fell! (Now {boost_level:+d})"
-                                messages.append(f"{resonance_msg} {stat_msg}")
+                                # Don't add to messages - shown in dedicated embed
 
-                                # Create special event for embed
-                                resonance_broken_events.append({
+                                # Store resonance broken event to add after healing
+                                resonance_event = {
                                     "type": "resonance_broken",
                                     "messages": [resonance_msg, stat_msg],
                                     "actor": mon,
                                     "custom_title": "Resonance Broken!",
                                     "custom_color": discord.Color.red()
-                                })
+                                }
                                 break
 
                         # Aipom heals all ally pokemon by 20% HP (only in test path)
+                        # Add healing event first so it appears right after faint
                         if battle.is_test_path:
                             heal_messages = []
                             for ally_mon in attacker_battler.get_active_pokemon():
@@ -3186,7 +3199,7 @@ class BattleEngine:
                                         heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
 
                             if heal_messages:
-                                # Create special event for healing embed
+                                # Create healing embed first (appears after faint)
                                 resonance_broken_events.append({
                                     "type": "aipom_healing",
                                     "messages": heal_messages,
@@ -3194,6 +3207,10 @@ class BattleEngine:
                                     "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
                                     "custom_color": discord.Color.green()
                                 })
+
+                        # Add resonance broken event last (appears after healing)
+                        if resonance_event:
+                            resonance_broken_events.append(resonance_event)
 
             result = {"messages": messages}
             if resonance_broken_events:
@@ -3352,6 +3369,7 @@ class BattleEngine:
                 self._record_opponent_faint_for_exp(battle, defender, defender_battler, attacker_battler)
 
                 # Check for Aipom faint in Ambipom raid - trigger resonance broken
+                resonance_event = None
                 if self._get_base_species_name(defender).lower() == "aipom":
                     # Find Ambipom in the same battler team
                     for mon in defender_battler.get_active_pokemon():
@@ -3363,19 +3381,20 @@ class BattleEngine:
                             boost_level = mon.stat_stages.get('attack', 0)
                             resonance_msg = f"Resonance broken! {mon.species_name}'s connection weakens!"
                             stat_msg = f"All stats fell! (Now {boost_level:+d})"
-                            messages.append(f"{resonance_msg} {stat_msg}")
+                            # Don't add to messages - shown in dedicated embed
 
-                            # Create special event for embed
-                            resonance_broken_events.append({
+                            # Store resonance broken event to add after healing
+                            resonance_event = {
                                 "type": "resonance_broken",
                                 "messages": [resonance_msg, stat_msg],
                                 "actor": mon,
                                 "custom_title": "Resonance Broken!",
                                 "custom_color": discord.Color.red()
-                            })
+                            }
                             break
 
                     # Aipom heals all ally pokemon by 20% HP (only in test path)
+                    # Add healing event first so it appears right after faint
                     if battle.is_test_path:
                         heal_messages = []
                         for ally_mon in attacker_battler.get_active_pokemon():
@@ -3389,7 +3408,7 @@ class BattleEngine:
                                     heal_messages.append(f"{ally_mon.species_name} recovered {actual_heal} HP!")
 
                         if heal_messages:
-                            # Create special event for healing embed
+                            # Create healing embed first (appears after faint)
                             resonance_broken_events.append({
                                 "type": "aipom_healing",
                                 "messages": heal_messages,
@@ -3397,6 +3416,10 @@ class BattleEngine:
                                 "custom_title": "Aipom unleashes a strange energy, healing your pokemon!",
                                 "custom_color": discord.Color.green()
                             })
+
+                    # Add resonance broken event last (appears after healing)
+                    if resonance_event:
+                        resonance_broken_events.append(resonance_event)
 
                 # Determine which position the fainted Pokemon was in
                 fainted_position = None
@@ -3963,7 +3986,8 @@ class BattleEngine:
             if self.held_item_manager:
                 messages.extend(self.held_item_manager.process_end_of_turn(pokemon))
 
-        messages.extend(self._apply_ambipom_rally_cry_resonance(battle))
+        # NOTE: Ambipom resonance is now triggered at the START of turn (before actions)
+        # instead of end of turn, to give players a chance to KO Aipom first
 
         # Weather effects - apply to ALL active Pokemon including raid allies (except eliminated battlers)
         if battle.weather:
