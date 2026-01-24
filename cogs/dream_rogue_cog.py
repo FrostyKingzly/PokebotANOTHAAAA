@@ -800,9 +800,9 @@ class DreamRogueCog(commands.Cog):
                     interaction,
                     session,
                     run,
-                    opponents=self._build_test_path_aipom_pack(),
                     raid_opponent_slots=4,
-                    on_complete=None
+                    on_complete=None,
+                    opponent_builder=self._build_test_path_aipom_pack,
                 )
                 if battle_id:
                     state["action_index"] = 1
@@ -820,9 +820,9 @@ class DreamRogueCog(commands.Cog):
                     interaction,
                     session,
                     run,
-                    opponents=self._build_test_path_ambipom(),
                     raid_opponent_slots=3,
-                    on_complete=None
+                    on_complete=None,
+                    opponent_builder=self._build_test_path_ambipom,
                 )
                 if battle_id:
                     state["action_index"] = 2
@@ -965,18 +965,25 @@ class DreamRogueCog(commands.Cog):
             embed.set_thumbnail(url=sprite_url)
         await self._send_embed(interaction, embed)
 
-    def _build_test_path_aipom_pack(self) -> List[Pokemon]:
+    def _build_test_path_aipom_pack(self, player_count: int = 1) -> List[Pokemon]:
         species_db = getattr(self.bot, "species_db", SpeciesDatabase("data/pokemon_species.json"))
         species_data = species_db.get_species("aipom")
         pack = []
+        # Scale HP based on player count: 15 base + 5 per player
+        scaled_hp = 15 + (5 * max(1, player_count))
+        # Very low attack - level 5 Pokemon have ~10 HP
+        scaled_attack = 4
         for _ in range(4):
             aipom = Pokemon(species_data=species_data, level=2, owner_discord_id=None)
             aipom._calculate_stats()
-            aipom.current_hp = aipom.max_hp
+            # Override with scaled stats
+            aipom.max_hp = scaled_hp
+            aipom.current_hp = scaled_hp
+            aipom.attack = scaled_attack
             pack.append(aipom)
         return pack
 
-    def _build_test_path_ambipom(self) -> List[Pokemon]:
+    def _build_test_path_ambipom(self, player_count: int = 1) -> List[Pokemon]:
         species_db = getattr(self.bot, "species_db", SpeciesDatabase("data/pokemon_species.json"))
         species_data = species_db.get_species("ambipom")
         ambipom = Pokemon(
@@ -989,6 +996,15 @@ class DreamRogueCog(commands.Cog):
         ambipom.raid_kind = "alpha"
         ambipom.ensure_moveset_size(4, 4)
         ambipom.scripted_ai = "ambipom_raid"
+        # Scale HP based on player count: 25 HP per player, minimum 100
+        scaled_hp = max(100, 25 * player_count)
+        ambipom.max_hp = scaled_hp
+        ambipom.current_hp = scaled_hp
+        # Set attack so OHKO only happens at +6 stat boost
+        # Level 5 Pokemon have ~10 HP
+        # At +0: Double Hit deals ~3-4 damage (safe)
+        # At +6 (4x attack = 20): deals ~10-12 damage (OHKO)
+        ambipom.attack = 5
         return [ambipom]
 
     def _build_test_path_nidoking(self) -> List[Pokemon]:
@@ -1013,10 +1029,11 @@ class DreamRogueCog(commands.Cog):
         interaction: discord.Interaction,
         session: dict,
         run: dict,
-        opponents: List[Pokemon],
-        raid_opponent_slots: int,
-        on_complete,
+        opponents: Optional[List[Pokemon]] = None,
+        raid_opponent_slots: int = 1,
+        on_complete=None,
         scripted_sequence: Optional[str] = None,
+        opponent_builder: Optional[callable] = None,
     ) -> Optional[str]:
         from battle_engine_v2 import BattleFormat, BattleType
 
@@ -1083,6 +1100,10 @@ class DreamRogueCog(commands.Cog):
                     ephemeral=True
                 )
             return None
+
+        # Build opponents with player count if a builder was provided
+        if opponent_builder is not None:
+            opponents = opponent_builder(len(eligible))
 
         raid_entries = [
             {"user_id": user.id, "trainer_name": user.display_name, "party": party}
