@@ -22,6 +22,21 @@ from rank_manager import get_rank_tier_definition
 from raid_manager import RaidEncounter
 
 
+
+
+TEAM_TASK_GATHER_CLUES_ID = "gather_clues"
+TEAM_TASK_CRYSTALS_ID = "research_mysterious_crystals"
+
+TASK_GATHER_CLUES_SUBTEXT = (
+    "In order to save Camilo, Professor Willow needs help gathering more information about "
+    "Chronic Somnolence. Battle other trainers to question them."
+)
+TASK_PERSONAL_GROWTH_NAME = "Build a Strong Team"
+
+
+def _get_stat_roll_bonus(rank: int) -> int:
+    return max(0, int(rank or 0))
+
 def get_stat_display_name(stat_key: str) -> str:
     """Return the display label for a stat key."""
 
@@ -479,6 +494,94 @@ async def _show_alerts_menu(interaction: discord.Interaction, bot, user_id: int)
     view = AlertsView(bot, user_id=user_id)
 
     await interaction.response.edit_message(embed=embed, view=view)
+
+
+class TasksView(View):
+    """Tasks/side-quest menu shown from the Rotom phone."""
+
+    def __init__(self, bot, user_id: int):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+
+    async def _check_owner(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ This task menu isn't for you.", ephemeral=True)
+            return False
+        return True
+
+    def _build_tasks_embed(self) -> discord.Embed:
+        db = self.bot.player_manager.db
+        gather = db.get_team_task(TEAM_TASK_GATHER_CLUES_ID) or {}
+        crystals = db.get_team_task(TEAM_TASK_CRYSTALS_ID) or {}
+
+        party = self.bot.player_manager.get_party(self.user_id)
+        party_count = len(party)
+        top_three = sorted([int(mon.get('level', 1)) for mon in party], reverse=True)[:3]
+        avg_top_three = (sum(top_three) / 3) if len(top_three) >= 3 else 0
+        personal_complete = party_count >= 3 and len(top_three) >= 3 and avg_top_three >= 10
+
+        embed = discord.Embed(
+            title="🗂️ Tasks",
+            description="Track side quests and team objectives.",
+            color=discord.Color.blurple(),
+        )
+
+        gather_name = f"{'✅' if gather.get('completed') else '⬜'} Gather Clues"
+        gather_value = (
+            f"{TASK_GATHER_CLUES_SUBTEXT}\n"
+            f"Progress: **{gather.get('progress', 0)}/{gather.get('goal', 10)}**"
+        )
+        embed.add_field(name=gather_name, value=gather_value, inline=False)
+
+        crystal_name = f"{'✅' if crystals.get('completed') else '⬜'} Research: Mysterious Crystals"
+        crystal_value = (
+            "Work together to research the city's crystal outbreaks.\n"
+            f"Progress: **{crystals.get('progress', 0)}/{crystals.get('goal', 10)}**"
+        )
+        embed.add_field(name=crystal_name, value=crystal_value, inline=False)
+
+        personal_name = f"{'✅' if personal_complete else '⬜'} {TASK_PERSONAL_GROWTH_NAME}"
+        personal_value = (
+            f"Party size: **{party_count}/3**\n"
+            f"Top-3 average level: **{avg_top_three:.1f}/10**"
+        )
+        embed.add_field(name=personal_name, value=personal_value, inline=False)
+
+        embed.set_footer(text="Use buttons below to inspect clues or refresh progress.")
+        return embed
+
+    @discord.ui.button(label="🧩 View Gathered Clues", style=discord.ButtonStyle.secondary, row=0)
+    async def clues_button(self, interaction: discord.Interaction, button: Button):
+        if not await self._check_owner(interaction):
+            return
+
+        clues = self.bot.player_manager.db.get_team_task_clues(TEAM_TASK_GATHER_CLUES_ID)
+        if not clues:
+            description = "No clue dialogue has been logged yet. Battle trainers and question them."
+        else:
+            lines = []
+            for idx, clue in enumerate(clues[:25], 1):
+                source = clue.get('source_npc') or 'Unknown source'
+                lines.append(f"{idx}. **{source}:** {clue.get('clue_text', '')}")
+            description = "\n".join(lines)
+
+        embed = discord.Embed(title="🧩 Gathered Clues", description=description, color=discord.Color.teal())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(label="🔄 Refresh", style=discord.ButtonStyle.primary, row=0)
+    async def refresh_button(self, interaction: discord.Interaction, button: Button):
+        if not await self._check_owner(interaction):
+            return
+        await interaction.response.edit_message(embed=self._build_tasks_embed(), view=self)
+
+    @discord.ui.button(label="⬅️ Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back_button(self, interaction: discord.Interaction, button: Button):
+        if not await self._check_owner(interaction):
+            return
+        await _show_main_menu(interaction, self.bot, self.user_id)
+
+
 
 
 def _add_back_button(view: View, callback: Callable[[discord.Interaction], Awaitable[None]], *, row: int = 4):
@@ -1446,6 +1549,15 @@ class MainMenuView(View):
         # Create view with battle theme button
         view = TrainerCardView(self.bot, interaction.user.id)
         await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="🗂️ Tasks", style=discord.ButtonStyle.secondary, row=3)
+    async def tasks_button(self, interaction: discord.Interaction, button: Button):
+        """Open shared and personal tasks."""
+        if await self._deny_if_in_battle(interaction):
+            return
+
+        view = TasksView(self.bot, interaction.user.id)
+        await interaction.response.edit_message(embed=view._build_tasks_embed(), view=view)
 
     @discord.ui.button(label="🛎️ Alerts", style=discord.ButtonStyle.secondary, row=3)
     async def alerts_button(self, interaction: discord.Interaction, button: Button):
@@ -7616,8 +7728,8 @@ class NpcTrainerSelectView(View):
         options = []
         for i, npc in enumerate(npc_trainers[:25], 1):  # Discord max 25 options
             npc_name = npc.get('name', 'Unknown Trainer')
-            npc_class = npc.get('class', 'Trainer')
-            party_size = len(npc.get('party', []))
+            npc_class = npc.get('class') or npc.get('trainer_class', 'Trainer')
+            party_size = len(npc.get('party') or npc.get('team', []))
             prize_money = npc.get('prize_money', 0)
             
             label = npc_name
@@ -7753,7 +7865,7 @@ class NpcTrainerSelectView(View):
 
         # Build NPC's party
         npc_pokemon = []
-        for npc_poke in npc_data.get('party', []):
+        for npc_poke in (npc_data.get('party') or npc_data.get('team', [])):
             pokemon = self._create_npc_pokemon(npc_poke)
             npc_pokemon.append(pokemon)
         
@@ -7769,6 +7881,10 @@ class NpcTrainerSelectView(View):
             return
         
         ranked_context = self._build_ranked_context(npc_data, extra_context, self.selected_rank_override)
+        if ranked_context is None:
+            ranked_context = {}
+        ranked_context['npc_post_battle_dialogue'] = npc_data.get('post_battle_sleep_dialogue')
+        ranked_context['npc_name'] = npc_data.get('name')
 
         # Determine battle format from NPC data
         battle_format_str = npc_data.get('battle_format', 'singles').lower()
@@ -7790,7 +7906,7 @@ class NpcTrainerSelectView(View):
             trainer_party=trainer_pokemon,
             npc_party=npc_pokemon,
             npc_name=npc_data.get('name', 'Trainer'),
-            npc_class=npc_data.get('class', 'Trainer'),
+            npc_class=npc_data.get('class') or npc_data.get('trainer_class', 'Trainer'),
             prize_money=npc_data.get('prize_money', 0),
             battle_format=battle_format,
             is_ranked=self.ranked,
@@ -7832,21 +7948,38 @@ class NpcTrainerSelectView(View):
         return context
 
     def _create_npc_pokemon(self, npc_poke_data: dict):
-        """Create a Pokemon object from NPC trainer data"""
+        """Create a Pokemon object from NPC trainer data."""
         from models import Pokemon
         import random
-        
-        # Get species data
+
         species_dex_number = npc_poke_data.get('species_dex_number')
-        species_data = self.bot.species_db.get_species(species_dex_number)
-        
-        # Get level
+        species_data = self.bot.species_db.get_species(species_dex_number) if species_dex_number is not None else None
+
+        if not species_data and npc_poke_data.get('species'):
+            species_name = str(npc_poke_data.get('species'))
+            normalized = species_name.lower().replace('.', '').replace("'", '').replace(' ', '')
+            species_data = self.bot.species_db.get_species(normalized)
+            if not species_data:
+                for entry in self.bot.species_db.get_all_species().values():
+                    if str(entry.get('name', '')).lower() == species_name.lower():
+                        species_data = entry
+                        break
+
+        if not species_data:
+            raise ValueError(f"Unknown NPC species payload: {npc_poke_data}")
+
         level = npc_poke_data.get('level', 5)
-        
-        # Get moves (or auto-generate from level)
+
         moves = npc_poke_data.get('moves', [])
-        
-        # Generate random IVs for NPC (slightly lower than perfect)
+        normalized_moves = []
+        for move in moves:
+            if isinstance(move, str):
+                normalized_moves.append(
+                    move.lower().replace('-', '_').replace(' ', '_').replace('.', '').replace("'", '')
+                )
+            else:
+                normalized_moves.append(move)
+
         ivs = {
             'hp': random.randint(20, 31),
             'attack': random.randint(20, 31),
@@ -7855,28 +7988,26 @@ class NpcTrainerSelectView(View):
             'sp_defense': random.randint(20, 31),
             'speed': random.randint(20, 31)
         }
-        
-        # Create the Pokemon
+
         pokemon = Pokemon(
             species_data=species_data,
             level=level,
-            owner_discord_id=-1,  # NPC trainer
+            owner_discord_id=-1,
             nature=npc_poke_data.get('nature') or random.choice(['hardy', 'docile', 'serious', 'bashful', 'quirky']),
             ability=npc_poke_data.get('ability') or species_data.get('abilities', {}).get('primary'),
-            moves=moves if moves else None,  # None will auto-generate
+            moves=normalized_moves if normalized_moves else None,
             ivs=ivs,
             is_shiny=npc_poke_data.get('is_shiny', False)
         )
-        
-        # Set gender if specified
+
         if 'gender' in npc_poke_data:
             pokemon.gender = npc_poke_data['gender']
 
-        # Set held item if specified
         if 'held_item' in npc_poke_data:
             pokemon.held_item = npc_poke_data['held_item']
 
         return pokemon
+
 
 
 class PartyJoinCreateView(View):

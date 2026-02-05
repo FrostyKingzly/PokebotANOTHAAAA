@@ -6,6 +6,7 @@ from discord.ext import commands
 from pathlib import Path
 from typing import Optional, Any
 import math
+import random
 
 from battle_engine_v2 import BattleEngine, BattleType, BattleAction, BattleFormat, HeldItemManager
 from battle_exp_integration import BattleExpHandler
@@ -94,6 +95,78 @@ class BattleCog(commands.Cog):
         if getattr(battle, 'battle_format', None) == BattleFormat.RAID:
             for ally in getattr(battle, 'raid_allies', []) or []:
                 self.user_battles.pop(getattr(ally, 'battler_id', None), None)
+
+
+    async def _handle_npc_post_battle_dialogue(self, interaction: discord.Interaction, battle, result: str):
+        if result != 'trainer':
+            return
+
+        context = getattr(battle, 'ranked_context', None) or {}
+        dialogue = context.get('npc_post_battle_dialogue')
+        if not isinstance(dialogue, dict):
+            return
+
+        npc_name = context.get('npc_name') or getattr(battle.opponent, 'battler_name', 'Trainer')
+        text = dialogue.get('text') or '...'
+        reveal = None
+
+        if dialogue.get('type') == 'gated':
+            gate = dialogue.get('gate') or {}
+            required_stat = str(gate.get('required_stat') or 'heart').lower()
+            dc = max(3, int(gate.get('dc') or 3))
+
+            trainer_profile = self.bot.player_manager.get_player(battle.trainer.battler_id)
+            stat_rank = trainer_profile.get_stat_rank(required_stat) if trainer_profile else 0
+            bonus = max(0, int(stat_rank))
+            roll = random.randint(1, 20)
+            total = roll + bonus
+
+            if total >= dc:
+                reveal = dialogue.get('success_text') or text
+            else:
+                reveal = dialogue.get('failure_text') or text
+
+            text = f"{text}\n\n🎲 **{required_stat.title()} Check**: d20 ({roll}) + {bonus} = **{total}** vs DC {dc}"
+
+        embed = discord.Embed(
+            title=f"💬 {npc_name}",
+            description=text,
+            color=discord.Color.blurple(),
+        )
+
+        if reveal:
+            embed.add_field(name="Follow-up", value=reveal, inline=False)
+
+        await self._safe_followup_send(interaction, embed=embed)
+
+        clue_data = dialogue.get('sleep_case_clue') or {}
+        if int(clue_data.get('adds_progress') or 0) > 0:
+            db = self.bot.player_manager.db
+            clue_text = reveal or dialogue.get('text') or ''
+            if clue_text:
+                inserted = db.add_team_task_clue(
+                    'gather_clues',
+                    clue_text=clue_text,
+                    source_npc=npc_name,
+                    discovered_by=battle.trainer.battler_id,
+                )
+                if inserted:
+                    task = db.increment_team_task('gather_clues', int(clue_data.get('adds_progress') or 1)) or {}
+                    progress = task.get('progress', 0)
+                    goal = task.get('goal', 10)
+                    done = bool(task.get('completed'))
+                    status = '✅ Task complete!' if done else '📈 Team progress updated!'
+                    await self._safe_followup_send(
+                        interaction,
+                        embed=discord.Embed(
+                            title='🗂️ Team Task Updated',
+                            description=(
+                                f"**Gather Clues** +{int(clue_data.get('adds_progress') or 1)}\n"
+                                f"Progress: **{progress}/{goal}**\n{status}"
+                            ),
+                            color=discord.Color.green() if done else discord.Color.gold(),
+                        ),
+                    )
 
     async def _prompt_for_music(
         self,
@@ -1815,6 +1888,8 @@ class BattleCog(commands.Cog):
         ranked_embed = self._build_ranked_result_embed(battle)
         if ranked_embed:
             await self._safe_followup_send(interaction, embed=ranked_embed)
+
+        await self._handle_npc_post_battle_dialogue(interaction, battle, result)
 
         player_manager = getattr(self.bot, 'player_manager', None)
         if player_manager:
