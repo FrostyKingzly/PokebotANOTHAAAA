@@ -203,6 +203,58 @@ class ChannelLocationSelectView(discord.ui.View):
         self.stop()
 
 
+
+
+class CrystalResearchRollView(discord.ui.View):
+    def __init__(self, bot, player_id: int, stat_key: str, dc: int):
+        super().__init__(timeout=600)
+        self.bot = bot
+        self.player_id = player_id
+        self.stat_key = stat_key
+        self.dc = max(3, dc)
+        self.resolved = False
+
+    @discord.ui.button(label="🎲 Roll", style=discord.ButtonStyle.success)
+    async def roll_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.player_id:
+            await interaction.response.send_message("❌ This roll isn't assigned to you.", ephemeral=True)
+            return
+        if self.resolved:
+            await interaction.response.send_message("This roll has already been resolved.", ephemeral=True)
+            return
+
+        trainer = self.bot.player_manager.get_player(self.player_id)
+        stat_rank = trainer.get_stat_rank(self.stat_key) if trainer else 0
+        bonus = max(0, int(stat_rank))
+
+        d20 = random.randint(1, STAT_ROLL_DICE_SIDES)
+        total = d20 + bonus
+        success = total >= self.dc
+
+        progress_gain = 2 if success else 1
+        task = self.bot.player_manager.db.increment_team_task("research_mysterious_crystals", progress_gain) or {}
+
+        result_embed = discord.Embed(
+            title="🔬 Research Check Result",
+            description=f"{'✅ Success' if success else '⚠️ Partial findings'}",
+            color=discord.Color.green() if success else discord.Color.orange(),
+        )
+        result_embed.add_field(name="Stat", value=SOCIAL_STAT_DEFINITIONS[self.stat_key].display_name, inline=True)
+        result_embed.add_field(name="Roll", value=f"d20 ({d20}) + {bonus}", inline=True)
+        result_embed.add_field(name="Target", value=str(self.dc), inline=True)
+        result_embed.add_field(name="Total", value=str(total), inline=True)
+        result_embed.add_field(
+            name="Task Progress",
+            value=f"+{progress_gain} → **{task.get('progress', 0)}/{task.get('goal', 10)}**",
+            inline=True,
+        )
+        if task.get('completed'):
+            result_embed.add_field(name="Status", value="✅ Team task complete!", inline=True)
+
+        self.resolved = True
+        button.disabled = True
+        await interaction.response.edit_message(embed=result_embed, view=self)
+
 class AdminCog(commands.Cog):
     """Admin commands for bot management and testing"""
 
@@ -1193,6 +1245,47 @@ Modest Nature
         embed.add_field(name="Stat Snapshots", value="\n".join(stats_lines), inline=False)
 
         await interaction.response.send_message(embed=embed)
+
+
+    @app_commands.command(name="task_research_roll", description="[ADMIN] Prompt a player to roll for crystal research")
+    @app_commands.describe(
+        user="Player who should make the roll",
+        stat="Which social stat this check uses",
+        difficulty="Target number to meet or beat (minimum 3)",
+    )
+    @app_commands.choices(
+        stat=SOCIAL_STAT_CHOICES,
+    )
+    @app_commands.check(is_admin)
+    async def task_research_roll(
+        self,
+        interaction: discord.Interaction,
+        user: discord.User,
+        stat: app_commands.Choice[str],
+        difficulty: int,
+    ):
+        player = self.bot.player_manager.get_player(user.id)
+        if not player:
+            await interaction.response.send_message(f"❌ {user.mention} hasn't registered yet!", ephemeral=True)
+            return
+
+        dc = max(3, int(difficulty or 3))
+        view = CrystalResearchRollView(self.bot, user.id, stat.value, dc)
+
+        embed = discord.Embed(
+            title="🔬 Research: Mysterious Crystals",
+            description=(
+                f"{user.mention}, you've been assigned a research check.\n"
+                "Press **Roll** to resolve it."
+            ),
+            color=discord.Color.purple(),
+        )
+        embed.add_field(name="Stat", value=SOCIAL_STAT_DEFINITIONS[stat.value].display_name, inline=True)
+        embed.add_field(name="Target Number", value=str(dc), inline=True)
+        embed.add_field(name="Team Reward", value="Success: +2 progress\nFail: +1 progress", inline=False)
+
+        await interaction.response.send_message(embed=embed, view=view)
+
 
 
     # ============================================================

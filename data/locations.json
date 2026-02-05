@@ -5,7 +5,8 @@
     "channel_ids": [],
     "amenities": [],
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "lights_district_central_plaza": {
     "name": "Lights District - Central Plaza",
@@ -103,7 +104,362 @@
       }
     ],
     "npc_trainers": [],
-    "ranked_npc_trainers": []
+    "ranked_npc_trainers": [
+      {
+        "id": "t001",
+        "name": "Lyn",
+        "trainer_class": "Backpacker",
+        "class": "Backpacker",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Budew",
+            "level": 3,
+            "moves": [
+              "Absorb",
+              "Growth",
+              "Stun Spore",
+              "Worry Seed"
+            ]
+          },
+          {
+            "species": "Poochyena",
+            "level": 3,
+            "moves": [
+              "Tackle",
+              "Howl",
+              "Bite",
+              "Sand Attack"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Budew",
+            "level": 3,
+            "moves": [
+              "Absorb",
+              "Growth",
+              "Stun Spore",
+              "Worry Seed"
+            ]
+          },
+          {
+            "species": "Poochyena",
+            "level": 3,
+            "moves": [
+              "Tackle",
+              "Howl",
+              "Bite",
+              "Sand Attack"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "Chronic Somnolence? Yeah\u2026 people falling asleep and not waking up. I don\u2019t really know anything useful, sorry."
+        }
+      },
+      {
+        "id": "t007",
+        "name": "Darnell",
+        "trainer_class": "Security Guard",
+        "class": "Security Guard",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Houndour",
+            "level": 6,
+            "moves": [
+              "Ember",
+              "Howl",
+              "Bite",
+              "Smog"
+            ]
+          },
+          {
+            "species": "Machop",
+            "level": 6,
+            "moves": [
+              "Low Kick",
+              "Leer",
+              "Focus Energy",
+              "Karate Chop"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Houndour",
+            "level": 6,
+            "moves": [
+              "Ember",
+              "Howl",
+              "Bite",
+              "Smog"
+            ]
+          },
+          {
+            "species": "Machop",
+            "level": 6,
+            "moves": [
+              "Low Kick",
+              "Leer",
+              "Focus Energy",
+              "Karate Chop"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "People just\u2026 don\u2019t wake up. No warning signs, no struggle.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
+      },
+      {
+        "id": "t011",
+        "name": "Mara",
+        "trainer_class": "Nurse Aide",
+        "class": "Nurse Aide",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Chansey",
+            "level": 8,
+            "moves": [
+              "Pound",
+              "Soft-Boiled",
+              "Refresh",
+              "Disarming Voice"
+            ]
+          },
+          {
+            "species": "Spritzee",
+            "level": 8,
+            "moves": [
+              "Fairy Wind",
+              "Sweet Scent",
+              "Draining Kiss",
+              "Aromatherapy"
+            ]
+          },
+          {
+            "species": "Wooper",
+            "level": 8,
+            "moves": [
+              "Water Gun",
+              "Mud Shot",
+              "Tail Whip",
+              "Slam"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Chansey",
+            "level": 8,
+            "moves": [
+              "Pound",
+              "Soft-Boiled",
+              "Refresh",
+              "Disarming Voice"
+            ]
+          },
+          {
+            "species": "Spritzee",
+            "level": 8,
+            "moves": [
+              "Fairy Wind",
+              "Sweet Scent",
+              "Draining Kiss",
+              "Aromatherapy"
+            ]
+          },
+          {
+            "species": "Wooper",
+            "level": 8,
+            "moves": [
+              "Water Gun",
+              "Mud Shot",
+              "Tail Whip",
+              "Slam"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "Their brains stay active the entire time. That\u2019s what scares us.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
+      },
+      {
+        "id": "t013",
+        "name": "Inez",
+        "trainer_class": "Photographer",
+        "class": "Photographer",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Fletchling",
+            "level": 8,
+            "moves": [
+              "Peck",
+              "Quick Attack",
+              "Ember",
+              "Agility"
+            ]
+          },
+          {
+            "species": "Smeargle",
+            "level": 8,
+            "moves": [
+              "Tackle",
+              "Leer",
+              "Quick Attack",
+              "Helping Hand"
+            ]
+          },
+          {
+            "species": "Cutiefly",
+            "level": 8,
+            "moves": [
+              "Absorb",
+              "Fairy Wind",
+              "Stun Spore",
+              "Sweet Scent"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Fletchling",
+            "level": 8,
+            "moves": [
+              "Peck",
+              "Quick Attack",
+              "Ember",
+              "Agility"
+            ]
+          },
+          {
+            "species": "Smeargle",
+            "level": 8,
+            "moves": [
+              "Tackle",
+              "Leer",
+              "Quick Attack",
+              "Helping Hand"
+            ]
+          },
+          {
+            "species": "Cutiefly",
+            "level": 8,
+            "moves": [
+              "Absorb",
+              "Fairy Wind",
+              "Stun Spore",
+              "Sweet Scent"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "Everyone looks tired lately. Like the whole city\u2019s waiting for bad news.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
+      },
+      {
+        "id": "t018",
+        "name": "Kara",
+        "trainer_class": "Rival Trainer",
+        "class": "Rival Trainer",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Eevee",
+            "level": 10,
+            "moves": [
+              "Quick Attack",
+              "Baby-Doll Eyes",
+              "Bite",
+              "Swift"
+            ]
+          },
+          {
+            "species": "Riolu",
+            "level": 10,
+            "moves": [
+              "Quick Attack",
+              "Force Palm",
+              "Counter",
+              "Work Up"
+            ]
+          },
+          {
+            "species": "Roselia",
+            "level": 10,
+            "moves": [
+              "Mega Drain",
+              "Stun Spore",
+              "Leech Seed",
+              "Magical Leaf"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Eevee",
+            "level": 10,
+            "moves": [
+              "Quick Attack",
+              "Baby-Doll Eyes",
+              "Bite",
+              "Swift"
+            ]
+          },
+          {
+            "species": "Riolu",
+            "level": 10,
+            "moves": [
+              "Quick Attack",
+              "Force Palm",
+              "Counter",
+              "Work Up"
+            ]
+          },
+          {
+            "species": "Roselia",
+            "level": 10,
+            "moves": [
+              "Mega Drain",
+              "Stun Spore",
+              "Leech Seed",
+              "Magical Leaf"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "Whatever\u2019s happening, it\u2019s real. Don\u2019t let anyone shrug it off."
+        }
+      }
+    ]
   },
   "lights_district_art_studio": {
     "name": "Lights District - Art Studio",
@@ -153,8 +509,8 @@
     "ranked_npc_trainers": []
   },
   "wild_area_forest_meadow_path": {
-    "name": "Wild Area α - Forest: Meadow Path",
-    "description": "A peaceful meadow at the edge of the forest, filled with wildflowers and gentle Pokémon. The perfect starting point for new trainers to begin their wild area adventures.",
+    "name": "Wild Area \u03b1 - Forest: Meadow Path",
+    "description": "A peaceful meadow at the edge of the forest, filled with wildflowers and gentle Pok\u00e9mon. The perfect starting point for new trainers to begin their wild area adventures.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -237,14 +593,14 @@
       },
       {
         "species_dex_number": 32,
-        "species_name": "Nidoran♂",
+        "species_name": "Nidoran\u2642",
         "min_level": 4,
         "max_level": 8,
         "weight": 2
       },
       {
         "species_dex_number": 29,
-        "species_name": "Nidoran♀",
+        "species_name": "Nidoran\u2640",
         "min_level": 4,
         "max_level": 8,
         "weight": 2
@@ -320,11 +676,12 @@
         "weight": 1
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "wild_area_canyon_redstone_canyon": {
-    "name": "Wild Area β - Canyon: Redstone Canyon",
-    "description": "A rugged canyon carved by ancient rivers, with red stone cliffs and rocky outcrops. Rock and Ground-type Pokémon make their homes in the caves and ledges throughout the area.",
+    "name": "Wild Area \u03b2 - Canyon: Redstone Canyon",
+    "description": "A rugged canyon carved by ancient rivers, with red stone cliffs and rocky outcrops. Rock and Ground-type Pok\u00e9mon make their homes in the caves and ledges throughout the area.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -469,11 +826,12 @@
         "weight": 1
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "wild_area_desert_sunbaked_path": {
-    "name": "Wild Area γ - Desert: Sandy Crossing",
-    "description": "The outskirts of a vast desert, where the ground begins to turn sandy under the scorching sun. Hardy Pokémon adapted to heat and arid conditions can be found here.",
+    "name": "Wild Area \u03b3 - Desert: Sandy Crossing",
+    "description": "The outskirts of a vast desert, where the ground begins to turn sandy under the scorching sun. Hardy Pok\u00e9mon adapted to heat and arid conditions can be found here.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -634,11 +992,12 @@
         "weight": 1
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "wild_area_tundra_snowdust_crossing": {
-    "name": "Wild Area δ - Tundra: Snowdust Crossing",
-    "description": "A frozen path through the tundra where snow falls year-round. Ice and hardy Pokémon brave the cold winds and bitter temperatures of this unforgiving landscape.",
+    "name": "Wild Area \u03b4 - Tundra: Snowdust Crossing",
+    "description": "A frozen path through the tundra where snow falls year-round. Ice and hardy Pok\u00e9mon brave the cold winds and bitter temperatures of this unforgiving landscape.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -784,7 +1143,8 @@
         "weight": 1
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "lights_district_crossings": {
     "name": "Lights District - Crossings",
@@ -880,7 +1240,209 @@
         "weight": 2
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": [
+      {
+        "id": "t003",
+        "name": "Reggie",
+        "trainer_class": "Janitor",
+        "class": "Janitor",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Rattata",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Quick Attack",
+              "Tail Whip",
+              "Bite"
+            ]
+          },
+          {
+            "species": "Trubbish",
+            "level": 4,
+            "moves": [
+              "Pound",
+              "Poison Gas",
+              "Acid Spray",
+              "Recycle"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Rattata",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Quick Attack",
+              "Tail Whip",
+              "Bite"
+            ]
+          },
+          {
+            "species": "Trubbish",
+            "level": 4,
+            "moves": [
+              "Pound",
+              "Poison Gas",
+              "Acid Spray",
+              "Recycle"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "Hospital staff look exhausted lately. Too many cases, not enough answers."
+        }
+      },
+      {
+        "id": "t008",
+        "name": "Kiki",
+        "trainer_class": "Street Performer",
+        "class": "Street Performer",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Mime Jr.",
+            "level": 6,
+            "moves": [
+              "Confusion",
+              "Copycat",
+              "Encore",
+              "Disarming Voice"
+            ]
+          },
+          {
+            "species": "Pichu",
+            "level": 6,
+            "moves": [
+              "Thunder Shock",
+              "Charm",
+              "Tail Whip",
+              "Nuzzle"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Mime Jr.",
+            "level": 6,
+            "moves": [
+              "Confusion",
+              "Copycat",
+              "Encore",
+              "Disarming Voice"
+            ]
+          },
+          {
+            "species": "Pichu",
+            "level": 6,
+            "moves": [
+              "Thunder Shock",
+              "Charm",
+              "Tail Whip",
+              "Nuzzle"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "gated",
+          "text": "You\u2019re asking a lot of personal questions.",
+          "gate": {
+            "required_stat": "heart",
+            "dc": 10
+          },
+          "success_text": "A friend of mine collapsed into sleep after a double shift. That was the last time anyone heard from them.",
+          "failure_text": "I\u2019m done talking."
+        }
+      },
+      {
+        "id": "t020",
+        "name": "Vaughn",
+        "trainer_class": "Detective (Off-Duty)",
+        "class": "Detective (Off-Duty)",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Growlithe",
+            "level": 10,
+            "moves": [
+              "Ember",
+              "Bite",
+              "Helping Hand",
+              "Flame Wheel"
+            ]
+          },
+          {
+            "species": "Nickit",
+            "level": 10,
+            "moves": [
+              "Quick Attack",
+              "Beat Up",
+              "Snarl",
+              "Tail Whip"
+            ]
+          },
+          {
+            "species": "Magnemite",
+            "level": 10,
+            "moves": [
+              "Thunder Shock",
+              "Supersonic",
+              "Charge Beam",
+              "Thunder Wave"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Growlithe",
+            "level": 10,
+            "moves": [
+              "Ember",
+              "Bite",
+              "Helping Hand",
+              "Flame Wheel"
+            ]
+          },
+          {
+            "species": "Nickit",
+            "level": 10,
+            "moves": [
+              "Quick Attack",
+              "Beat Up",
+              "Snarl",
+              "Tail Whip"
+            ]
+          },
+          {
+            "species": "Magnemite",
+            "level": 10,
+            "moves": [
+              "Thunder Shock",
+              "Supersonic",
+              "Charge Beam",
+              "Thunder Wave"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "Cases are clustering, but not cleanly. Whatever this is, it doesn\u2019t follow simple rules.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
+      }
+    ]
   },
   "lights_district_streets": {
     "name": "Lights District - Streets",
@@ -960,11 +1522,373 @@
     "shops": [
       {
         "id": "pokemart",
-        "name": "PokéMart"
+        "name": "Pok\u00e9Mart"
       },
       {
         "id": "berry_stall",
         "name": "Berry Stall"
+      }
+    ],
+    "ranked_npc_trainers": [
+      {
+        "id": "t002",
+        "name": "Milo",
+        "trainer_class": "Rookie",
+        "class": "Rookie",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Skwovet",
+            "level": 3,
+            "moves": [
+              "Tackle",
+              "Tail Whip",
+              "Bite",
+              "Stuff Cheeks"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Skwovet",
+            "level": 3,
+            "moves": [
+              "Tackle",
+              "Tail Whip",
+              "Bite",
+              "Stuff Cheeks"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "The doctors say it\u2019s not a normal coma. Brain scans are weirdly active, like the person never actually rests.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
+      },
+      {
+        "id": "t004",
+        "name": "Jax",
+        "trainer_class": "Skater",
+        "class": "Skater",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Shinx",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Leer",
+              "Thunder Shock",
+              "Charge"
+            ]
+          },
+          {
+            "species": "Zigzagoon",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Sand Attack",
+              "Headbutt",
+              "Baby-Doll Eyes"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Shinx",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Leer",
+              "Thunder Shock",
+              "Charge"
+            ]
+          },
+          {
+            "species": "Zigzagoon",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Sand Attack",
+              "Headbutt",
+              "Baby-Doll Eyes"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "gated",
+          "text": "That\u2019s not something I talk about.",
+          "gate": {
+            "required_stat": "heart",
+            "dc": 9
+          },
+          "success_text": "\u2026It\u2019s my cousin. He was stressed about money. Took a nap after work and never woke up.",
+          "failure_text": "Drop it."
+        }
+      },
+      {
+        "id": "t010",
+        "name": "Oz",
+        "trainer_class": "Delivery Driver",
+        "class": "Delivery Driver",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Yamper",
+            "level": 7,
+            "moves": [
+              "Nuzzle",
+              "Bite",
+              "Spark",
+              "Tail Whip"
+            ]
+          },
+          {
+            "species": "Wingull",
+            "level": 7,
+            "moves": [
+              "Water Gun",
+              "Gust",
+              "Quick Attack",
+              "Supersonic"
+            ]
+          },
+          {
+            "species": "Rolycoly",
+            "level": 7,
+            "moves": [
+              "Tackle",
+              "Smokescreen",
+              "Rock Throw",
+              "Rapid Spin"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Yamper",
+            "level": 7,
+            "moves": [
+              "Nuzzle",
+              "Bite",
+              "Spark",
+              "Tail Whip"
+            ]
+          },
+          {
+            "species": "Wingull",
+            "level": 7,
+            "moves": [
+              "Water Gun",
+              "Gust",
+              "Quick Attack",
+              "Supersonic"
+            ]
+          },
+          {
+            "species": "Rolycoly",
+            "level": 7,
+            "moves": [
+              "Tackle",
+              "Smokescreen",
+              "Rock Throw",
+              "Rapid Spin"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "I\u2019ve started knocking extra hard on doors. You never know."
+        }
+      },
+      {
+        "id": "t015",
+        "name": "Piper",
+        "trainer_class": "Research Intern",
+        "class": "Research Intern",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Magnemite",
+            "level": 9,
+            "moves": [
+              "Thunder Shock",
+              "Tackle",
+              "Supersonic",
+              "Charge Beam"
+            ]
+          },
+          {
+            "species": "Solosis",
+            "level": 9,
+            "moves": [
+              "Psywave",
+              "Reflect",
+              "Confusion",
+              "Helping Hand"
+            ]
+          },
+          {
+            "species": "Natu",
+            "level": 9,
+            "moves": [
+              "Peck",
+              "Leer",
+              "Confusion",
+              "Night Shade"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Magnemite",
+            "level": 9,
+            "moves": [
+              "Thunder Shock",
+              "Tackle",
+              "Supersonic",
+              "Charge Beam"
+            ]
+          },
+          {
+            "species": "Solosis",
+            "level": 9,
+            "moves": [
+              "Psywave",
+              "Reflect",
+              "Confusion",
+              "Helping Hand"
+            ]
+          },
+          {
+            "species": "Natu",
+            "level": 9,
+            "moves": [
+              "Peck",
+              "Leer",
+              "Confusion",
+              "Night Shade"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "A lot of cases started popping up around the same time the city began sealing off those weird crystal growths. Probably unrelated, but people talk.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
+      },
+      {
+        "id": "t017",
+        "name": "Boone",
+        "trainer_class": "Construction Worker",
+        "class": "Construction Worker",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Timburr",
+            "level": 10,
+            "moves": [
+              "Low Kick",
+              "Focus Energy",
+              "Rock Throw",
+              "Chip Away"
+            ]
+          },
+          {
+            "species": "Drilbur",
+            "level": 10,
+            "moves": [
+              "Scratch",
+              "Rapid Spin",
+              "Mud-Slap",
+              "Fury Swipes"
+            ]
+          },
+          {
+            "species": "Geodude",
+            "level": 10,
+            "moves": [
+              "Tackle",
+              "Defense Curl",
+              "Rock Throw",
+              "Magnitude"
+            ]
+          },
+          {
+            "species": "Mudbray",
+            "level": 10,
+            "moves": [
+              "Mud-Slap",
+              "Stomp",
+              "Bide",
+              "Double Kick"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Timburr",
+            "level": 10,
+            "moves": [
+              "Low Kick",
+              "Focus Energy",
+              "Rock Throw",
+              "Chip Away"
+            ]
+          },
+          {
+            "species": "Drilbur",
+            "level": 10,
+            "moves": [
+              "Scratch",
+              "Rapid Spin",
+              "Mud-Slap",
+              "Fury Swipes"
+            ]
+          },
+          {
+            "species": "Geodude",
+            "level": 10,
+            "moves": [
+              "Tackle",
+              "Defense Curl",
+              "Rock Throw",
+              "Magnitude"
+            ]
+          },
+          {
+            "species": "Mudbray",
+            "level": 10,
+            "moves": [
+              "Mud-Slap",
+              "Stomp",
+              "Bide",
+              "Double Kick"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "City cleans up those crystal things fast. They\u2019re not dangerous, far as anyone knows.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
       }
     ]
   },
@@ -1056,7 +1980,86 @@
         "weight": 5
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": [
+      {
+        "id": "t012",
+        "name": "Hank",
+        "trainer_class": "Biker",
+        "class": "Biker",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Sandile",
+            "level": 8,
+            "moves": [
+              "Bite",
+              "Sand Attack",
+              "Assurance",
+              "Mud-Slap"
+            ]
+          },
+          {
+            "species": "Koffing",
+            "level": 8,
+            "moves": [
+              "Tackle",
+              "Smog",
+              "Poison Gas",
+              "Assurance"
+            ]
+          },
+          {
+            "species": "Stunky",
+            "level": 8,
+            "moves": [
+              "Scratch",
+              "Smokescreen",
+              "Bite",
+              "Poison Gas"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Sandile",
+            "level": 8,
+            "moves": [
+              "Bite",
+              "Sand Attack",
+              "Assurance",
+              "Mud-Slap"
+            ]
+          },
+          {
+            "species": "Koffing",
+            "level": 8,
+            "moves": [
+              "Tackle",
+              "Smog",
+              "Poison Gas",
+              "Assurance"
+            ]
+          },
+          {
+            "species": "Stunky",
+            "level": 8,
+            "moves": [
+              "Scratch",
+              "Smokescreen",
+              "Bite",
+              "Poison Gas"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "People keep blaming random stuff. Truth is, nobody knows."
+        }
+      }
+    ]
   },
   "lights_district_wild_zone_1": {
     "name": "Lights District - Wild Zone 1",
@@ -1136,7 +2139,8 @@
         "weight": 5
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "lights_district_wild_zone_2": {
     "name": "Lights District - Wild Zone 2",
@@ -1216,7 +2220,8 @@
         "weight": 5
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_beach": {
     "name": "Residential District - Beach",
@@ -1296,7 +2301,8 @@
         "weight": 5
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_dreamyard": {
     "name": "Residential District - Dreamyard",
@@ -1376,7 +2382,8 @@
         "weight": 5
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_wild_zone_3": {
     "name": "Residential District - Wild Zone 3",
@@ -1457,7 +2464,8 @@
         "weight": 5
       }
     ],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_wild_zone_4": {
     "name": "Residential District - Wild Zone 4",
@@ -1540,7 +2548,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "lights_district_strip_mall": {
     "name": "Lights District - Strip Mall",
@@ -1549,7 +2558,166 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": [
+      {
+        "id": "t005",
+        "name": "Noelle",
+        "trainer_class": "Barista",
+        "class": "Barista",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Milcery",
+            "level": 5,
+            "moves": [
+              "Tackle",
+              "Aromatic Mist",
+              "Sweet Scent",
+              "Draining Kiss"
+            ]
+          },
+          {
+            "species": "Bunnelby",
+            "level": 5,
+            "moves": [
+              "Tackle",
+              "Leer",
+              "Quick Attack",
+              "Mud-Slap"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Milcery",
+            "level": 5,
+            "moves": [
+              "Tackle",
+              "Aromatic Mist",
+              "Sweet Scent",
+              "Draining Kiss"
+            ]
+          },
+          {
+            "species": "Bunnelby",
+            "level": 5,
+            "moves": [
+              "Tackle",
+              "Leer",
+              "Quick Attack",
+              "Mud-Slap"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "A regular here always complained about never sleeping. When he finally did\u2026 that was it.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
+      },
+      {
+        "id": "t014",
+        "name": "Ramon",
+        "trainer_class": "Chef",
+        "class": "Chef",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Gulpin",
+            "level": 9,
+            "moves": [
+              "Pound",
+              "Yawn",
+              "Poison Gas",
+              "Acid Spray"
+            ]
+          },
+          {
+            "species": "Shroomish",
+            "level": 9,
+            "moves": [
+              "Absorb",
+              "Stun Spore",
+              "Leech Seed",
+              "Headbutt"
+            ]
+          },
+          {
+            "species": "Togedemaru",
+            "level": 9,
+            "moves": [
+              "Thunder Shock",
+              "Nuzzle",
+              "Spiky Shield",
+              "Fury Swipes"
+            ]
+          },
+          {
+            "species": "Growlithe",
+            "level": 9,
+            "moves": [
+              "Ember",
+              "Bite",
+              "Leer",
+              "Flame Wheel"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Gulpin",
+            "level": 9,
+            "moves": [
+              "Pound",
+              "Yawn",
+              "Poison Gas",
+              "Acid Spray"
+            ]
+          },
+          {
+            "species": "Shroomish",
+            "level": 9,
+            "moves": [
+              "Absorb",
+              "Stun Spore",
+              "Leech Seed",
+              "Headbutt"
+            ]
+          },
+          {
+            "species": "Togedemaru",
+            "level": 9,
+            "moves": [
+              "Thunder Shock",
+              "Nuzzle",
+              "Spiky Shield",
+              "Fury Swipes"
+            ]
+          },
+          {
+            "species": "Growlithe",
+            "level": 9,
+            "moves": [
+              "Ember",
+              "Bite",
+              "Leer",
+              "Flame Wheel"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "Stress kills appetite. Then it kills sleep."
+        }
+      }
+    ]
   },
   "lights_district_night_club": {
     "name": "Lights District - Night Club",
@@ -1558,7 +2726,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "lights_district_research_lab": {
     "name": "Lights District - Research Lab",
@@ -1567,7 +2736,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "lights_district_starlight_restaurant": {
     "name": "Lights District - Starlight Restaurant",
@@ -1576,7 +2746,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "lights_district_moonveil_hotel": {
     "name": "Lights District - Moonveil Hotel",
@@ -1585,7 +2756,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "lights_district_penthouse_suite": {
     "name": "Lights District - Penthouse Suite",
@@ -1594,7 +2766,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "lights_district_gardens": {
     "name": "Lights District - Gardens",
@@ -1603,7 +2776,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "lights_district_fountain": {
     "name": "Lights District - Fountain",
@@ -1612,7 +2786,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_central_street": {
     "name": "Residential District - Central Street",
@@ -1621,7 +2796,332 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": [
+      {
+        "id": "t006",
+        "name": "Sana",
+        "trainer_class": "Office Worker",
+        "class": "Office Worker",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Psyduck",
+            "level": 5,
+            "moves": [
+              "Water Gun",
+              "Scratch",
+              "Tail Whip",
+              "Confusion"
+            ]
+          },
+          {
+            "species": "Meowth",
+            "level": 5,
+            "moves": [
+              "Scratch",
+              "Growl",
+              "Bite",
+              "Fake Out"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Psyduck",
+            "level": 5,
+            "moves": [
+              "Water Gun",
+              "Scratch",
+              "Tail Whip",
+              "Confusion"
+            ]
+          },
+          {
+            "species": "Meowth",
+            "level": 5,
+            "moves": [
+              "Scratch",
+              "Growl",
+              "Bite",
+              "Fake Out"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "HR keeps calling it medical leave, but everyone knows what happened."
+        }
+      },
+      {
+        "id": "t009",
+        "name": "Bea",
+        "trainer_class": "Student",
+        "class": "Student",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Munna",
+            "level": 7,
+            "moves": [
+              "Psywave",
+              "Defense Curl",
+              "Yawn",
+              "Disarming Voice"
+            ]
+          },
+          {
+            "species": "Drowzee",
+            "level": 7,
+            "moves": [
+              "Pound",
+              "Hypnosis",
+              "Confusion",
+              "Disable"
+            ]
+          },
+          {
+            "species": "Hoothoot",
+            "level": 7,
+            "moves": [
+              "Peck",
+              "Growl",
+              "Hypnosis",
+              "Confusion"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Munna",
+            "level": 7,
+            "moves": [
+              "Psywave",
+              "Defense Curl",
+              "Yawn",
+              "Disarming Voice"
+            ]
+          },
+          {
+            "species": "Drowzee",
+            "level": 7,
+            "moves": [
+              "Pound",
+              "Hypnosis",
+              "Confusion",
+              "Disable"
+            ]
+          },
+          {
+            "species": "Hoothoot",
+            "level": 7,
+            "moves": [
+              "Peck",
+              "Growl",
+              "Hypnosis",
+              "Confusion"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "My brother has it. He was terrified of losing his job. I wish I\u2019d told him to rest.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
+      },
+      {
+        "id": "t016",
+        "name": "Etta",
+        "trainer_class": "Librarian",
+        "class": "Librarian",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Hatenna",
+            "level": 9,
+            "moves": [
+              "Confusion",
+              "Life Dew",
+              "Disarming Voice",
+              "Aromatherapy"
+            ]
+          },
+          {
+            "species": "Litwick",
+            "level": 9,
+            "moves": [
+              "Ember",
+              "Astonish",
+              "Confuse Ray",
+              "Hex"
+            ]
+          },
+          {
+            "species": "Deerling",
+            "level": 9,
+            "moves": [
+              "Tackle",
+              "Sand Attack",
+              "Leech Seed",
+              "Double Kick"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Hatenna",
+            "level": 9,
+            "moves": [
+              "Confusion",
+              "Life Dew",
+              "Disarming Voice",
+              "Aromatherapy"
+            ]
+          },
+          {
+            "species": "Litwick",
+            "level": 9,
+            "moves": [
+              "Ember",
+              "Astonish",
+              "Confuse Ray",
+              "Hex"
+            ]
+          },
+          {
+            "species": "Deerling",
+            "level": 9,
+            "moves": [
+              "Tackle",
+              "Sand Attack",
+              "Leech Seed",
+              "Double Kick"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "gated",
+          "text": "I don\u2019t discuss patrons.",
+          "gate": {
+            "required_stat": "heart",
+            "dc": 12
+          },
+          "success_text": "Someone was obsessively researching sleep disorders. Then they became a patient themselves.",
+          "failure_text": "No."
+        }
+      },
+      {
+        "id": "t019",
+        "name": "Theo",
+        "trainer_class": "Gamer",
+        "class": "Gamer",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Rotom",
+            "level": 10,
+            "moves": [
+              "Thunder Shock",
+              "Astonish",
+              "Confuse Ray",
+              "Hex"
+            ]
+          },
+          {
+            "species": "Gastly",
+            "level": 10,
+            "moves": [
+              "Lick",
+              "Hypnosis",
+              "Confuse Ray",
+              "Night Shade"
+            ]
+          },
+          {
+            "species": "Misdreavus",
+            "level": 10,
+            "moves": [
+              "Growl",
+              "Confuse Ray",
+              "Hex",
+              "Psybeam"
+            ]
+          },
+          {
+            "species": "Sableye",
+            "level": 10,
+            "moves": [
+              "Scratch",
+              "Leer",
+              "Astonish",
+              "Fake Out"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Rotom",
+            "level": 10,
+            "moves": [
+              "Thunder Shock",
+              "Astonish",
+              "Confuse Ray",
+              "Hex"
+            ]
+          },
+          {
+            "species": "Gastly",
+            "level": 10,
+            "moves": [
+              "Lick",
+              "Hypnosis",
+              "Confuse Ray",
+              "Night Shade"
+            ]
+          },
+          {
+            "species": "Misdreavus",
+            "level": 10,
+            "moves": [
+              "Growl",
+              "Confuse Ray",
+              "Hex",
+              "Psybeam"
+            ]
+          },
+          {
+            "species": "Sableye",
+            "level": 10,
+            "moves": [
+              "Scratch",
+              "Leer",
+              "Astonish",
+              "Fake Out"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "gated",
+          "text": "People online joke about it. Makes me sick.",
+          "gate": {
+            "required_stat": "heart",
+            "dc": 12
+          },
+          "success_text": "It\u2019s my fianc\u00e9. Wedding stress, I guess. Fell asleep and never woke up.",
+          "failure_text": "I can\u2019t."
+        }
+      }
+    ]
   },
   "residential_district_cafe": {
     "name": "Residential District - Cafe",
@@ -1630,7 +3130,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_daycare": {
     "name": "Residential District - Daycare",
@@ -1639,7 +3140,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_library": {
     "name": "Residential District - Reverie Library",
@@ -1648,7 +3150,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_gym": {
     "name": "Residential District - Ironcore Gym",
@@ -1657,7 +3160,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_boardwalk": {
     "name": "Residential District - Boardwalk",
@@ -1666,7 +3170,8 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_school": {
     "name": "Residential District - School",
@@ -1675,15 +3180,17 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   },
   "residential_district_temple_of_twilight": {
     "name": "Residential District - Temple of Twilight",
-    "description": "A small temple on the outskirts of the city. In the center is a large statue of the Wish Pokémon, Jirachi. People from all over come to pray for their wishes to come true.",
+    "description": "A small temple on the outskirts of the city. In the center is a large statue of the Wish Pok\u00e9mon, Jirachi. People from all over come to pray for their wishes to come true.",
     "channel_ids": [],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": []
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
   }
 }

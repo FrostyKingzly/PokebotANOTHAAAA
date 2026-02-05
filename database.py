@@ -697,12 +697,59 @@ class PlayerDatabase:
             )
         """)
 
+        # Team-wide task progress tracking
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS team_tasks (
+                task_id TEXT PRIMARY KEY,
+                task_name TEXT NOT NULL,
+                progress INTEGER DEFAULT 0,
+                goal INTEGER NOT NULL,
+                completed INTEGER DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS team_task_clues (
+                clue_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_id TEXT NOT NULL,
+                clue_text TEXT NOT NULL,
+                source_npc TEXT,
+                discovered_by INTEGER,
+                discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(task_id, clue_text)
+            )
+            """
+        )
+
+        self._ensure_default_team_tasks(cursor)
+
         conn.commit()
         conn.close()
 
     def _get_table_columns(self, cursor, table_name: str) -> set:
         cursor.execute(f"PRAGMA table_info({table_name})")
         return {row[1] for row in cursor.fetchall()}
+
+    def _ensure_default_team_tasks(self, cursor):
+        defaults = [
+            ("gather_clues", "Gather Clues", 10),
+            ("research_mysterious_crystals", "Research: Mysterious Crystals", 10),
+        ]
+        for task_id, task_name, goal in defaults:
+            cursor.execute(
+                """
+                INSERT INTO team_tasks (task_id, task_name, goal)
+                VALUES (?, ?, ?)
+                ON CONFLICT(task_id) DO UPDATE SET
+                    task_name = excluded.task_name,
+                    goal = excluded.goal
+                """,
+                (task_id, task_name, goal),
+            )
 
     def _ensure_trainer_columns(self, cursor):
         """Add missing trainer columns when migrating older databases."""
@@ -1100,6 +1147,82 @@ class PlayerDatabase:
         )
         conn.commit()
         conn.close()
+
+    # ------------------------------------------------------------
+    # Task operations
+    # ------------------------------------------------------------
+    def get_team_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM team_tasks WHERE task_id = ?", (task_id,))
+        row = cursor.fetchone()
+        conn.close()
+        return dict(row) if row else None
+
+    def increment_team_task(self, task_id: str, amount: int = 1) -> Optional[Dict[str, Any]]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT progress, goal FROM team_tasks WHERE task_id = ?", (task_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return None
+
+        progress = int(row["progress"])
+        goal = int(row["goal"])
+        new_progress = max(0, min(goal, progress + int(amount)))
+        completed = 1 if new_progress >= goal else 0
+        cursor.execute(
+            """
+            UPDATE team_tasks
+            SET progress = ?, completed = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE task_id = ?
+            """,
+            (new_progress, completed, task_id),
+        )
+        conn.commit()
+        conn.close()
+        return self.get_team_task(task_id)
+
+    def add_team_task_clue(
+        self,
+        task_id: str,
+        clue_text: str,
+        source_npc: Optional[str] = None,
+        discovered_by: Optional[int] = None,
+    ) -> bool:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO team_task_clues (task_id, clue_text, source_npc, discovered_by)
+                VALUES (?, ?, ?, ?)
+                """,
+                (task_id, clue_text, source_npc, discovered_by),
+            )
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+        finally:
+            conn.close()
+
+    def get_team_task_clues(self, task_id: str) -> List[Dict[str, Any]]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT clue_text, source_npc, discovered_by, discovered_at
+            FROM team_task_clues
+            WHERE task_id = ?
+            ORDER BY clue_id ASC
+            """,
+            (task_id,),
+        )
+        rows = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return rows
     
     # ============================================================
     # POKEMON OPERATIONS
