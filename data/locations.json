@@ -6,7 +6,53 @@
     "amenities": [],
     "encounters": [],
     "npc_trainers": [],
-    "ranked_npc_trainers": []
+    "ranked_npc_trainers": [
+      {
+        "id": "t030",
+        "name": "Briggs",
+        "trainer_class": "Sailor",
+        "class": "Sailor",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Wingull",
+            "level": 6,
+            "moves": [
+              "Gust",
+              "Water Gun"
+            ]
+          },
+          {
+            "species": "Buizel",
+            "level": 6,
+            "moves": [
+              "Quick Attack",
+              "Water Gun"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Wingull",
+            "level": 6,
+            "moves": [
+              "Gust",
+              "Water Gun"
+            ]
+          },
+          {
+            "species": "Buizel",
+            "level": 6,
+            "moves": [
+              "Quick Attack",
+              "Water Gun"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "lights_district_central_plaza": {
     "name": "Lights District - Central Plaza",
@@ -458,6 +504,205 @@
           "type": "none",
           "text": "Whatever\u2019s happening, it\u2019s real. Don\u2019t let anyone shrug it off."
         }
+      },
+      {
+        "id": "t021",
+        "name": "Elia",
+        "trainer_class": "Paramedic Trainee",
+        "class": "Paramedic Trainee",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Kirlia",
+            "level": 9,
+            "moves": [
+              "Confusion",
+              "Disarming Voice",
+              "Teleport",
+              "Life Dew"
+            ]
+          },
+          {
+            "species": "Growlithe",
+            "level": 9,
+            "moves": [
+              "Ember",
+              "Bite",
+              "Helping Hand",
+              "Flame Wheel"
+            ]
+          },
+          {
+            "species": "Indeedee",
+            "level": 9,
+            "moves": [
+              "Stored Power",
+              "Helping Hand",
+              "Heal Pulse",
+              "Baton Pass"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Kirlia",
+            "level": 9,
+            "moves": [
+              "Confusion",
+              "Disarming Voice",
+              "Teleport",
+              "Life Dew"
+            ]
+          },
+          {
+            "species": "Growlithe",
+            "level": 9,
+            "moves": [
+              "Ember",
+              "Bite",
+              "Helping Hand",
+              "Flame Wheel"
+            ]
+          },
+          {
+            "species": "Indeedee",
+            "level": 9,
+            "moves": [
+              "Stored Power",
+              "Helping Hand",
+              "Heal Pulse",
+              "Baton Pass"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "major_clue",
+          "text": "Most victims show elevated brain activity\u2026 like their minds are stuck in overdrive. Doctors are terrified they don\u2019t know how to slow it down.",
+          "sleep_case_clue": {
+            "adds_progress": 2
+          }
+        }
+      },
+      {
+        "id": "t036",
+        "name": "Elle",
+        "trainer_class": "Runner",
+        "class": "Runner",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Lillipup",
+            "level": 2,
+            "moves": [
+              "Tackle",
+              "Leer"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Lillipup",
+            "level": 2,
+            "moves": [
+              "Tackle",
+              "Leer"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t039",
+        "name": "Ari",
+        "trainer_class": "Musician",
+        "class": "Musician",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Kricketune",
+            "level": 7,
+            "moves": [
+              "Fury Cutter",
+              "Sing"
+            ]
+          },
+          {
+            "species": "Jigglypuff",
+            "level": 7,
+            "moves": [
+              "Sing",
+              "Pound"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Kricketune",
+            "level": 7,
+            "moves": [
+              "Fury Cutter",
+              "Sing"
+            ]
+          },
+          {
+            "species": "Jigglypuff",
+            "level": 7,
+            "moves": [
+              "Sing",
+              "Pound"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t041",
+        "name": "Helga",
+        "trainer_class": "Tourist",
+        "class": "Tourist",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Snubbull",
+            "level": 6,
+            "moves": [
+              "Bite",
+              "Charm"
+            ]
+          },
+          {
+            "species": "Ducklett",
+            "level": 6,
+            "moves": [
+              "Water Gun",
+              "Wing Attack"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Snubbull",
+            "level": 6,
+            "moves": [
+              "Bite",
+              "Charm"
+            ]
+          },
+          {
+            "species": "Ducklett",
+            "level": 6,
+            "moves": [
+              "Water Gun",
+              "Wing Attack"
+            ]
+          }
+        ]
       }
     ]
   },
@@ -506,7 +751,132 @@
       }
     ],
     "npc_trainers": [],
-    "ranked_npc_trainers": []
+    "ranked_npc_trainers": [
+      {
+        "id": "t031",
+        "name": "Fern",
+        "trainer_class": "Hiker",
+        "class": "Hiker",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Phanpy",
+            "level": 7,
+            "moves": [
+              "Tackle",
+              "Defense Curl"
+            ]
+          },
+          {
+            "species": "Nacli",
+            "level": 7,
+            "moves": [
+              "Rock Throw",
+              "Harden"
+            ]
+          },
+          {
+            "species": "Woobat",
+            "level": 7,
+            "moves": [
+              "Confusion",
+              "Gust"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Phanpy",
+            "level": 7,
+            "moves": [
+              "Tackle",
+              "Defense Curl"
+            ]
+          },
+          {
+            "species": "Nacli",
+            "level": 7,
+            "moves": [
+              "Rock Throw",
+              "Harden"
+            ]
+          },
+          {
+            "species": "Woobat",
+            "level": 7,
+            "moves": [
+              "Confusion",
+              "Gust"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t042",
+        "name": "Silas",
+        "trainer_class": "Park Ranger",
+        "class": "Park Ranger",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Arbok",
+            "level": 8,
+            "moves": [
+              "Bite",
+              "Glare",
+              "Acid"
+            ]
+          },
+          {
+            "species": "Tropius",
+            "level": 8,
+            "moves": [
+              "Razor Leaf",
+              "Gust"
+            ]
+          },
+          {
+            "species": "Breloom",
+            "level": 8,
+            "moves": [
+              "Mach Punch",
+              "Absorb"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Arbok",
+            "level": 8,
+            "moves": [
+              "Bite",
+              "Glare",
+              "Acid"
+            ]
+          },
+          {
+            "species": "Tropius",
+            "level": 8,
+            "moves": [
+              "Razor Leaf",
+              "Gust"
+            ]
+          },
+          {
+            "species": "Breloom",
+            "level": 8,
+            "moves": [
+              "Mach Punch",
+              "Absorb"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "wild_area_forest_meadow_path": {
     "name": "Wild Area \u03b1 - Forest: Meadow Path",
@@ -677,7 +1047,53 @@
       }
     ],
     "npc_trainers": [],
-    "ranked_npc_trainers": []
+    "ranked_npc_trainers": [
+      {
+        "id": "t040",
+        "name": "Bennett",
+        "trainer_class": "Groundskeeper",
+        "class": "Groundskeeper",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Oddish",
+            "level": 5,
+            "moves": [
+              "Absorb",
+              "Acid"
+            ]
+          },
+          {
+            "species": "Diglett",
+            "level": 5,
+            "moves": [
+              "Scratch",
+              "Mud-Slap"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Oddish",
+            "level": 5,
+            "moves": [
+              "Absorb",
+              "Acid"
+            ]
+          },
+          {
+            "species": "Diglett",
+            "level": 5,
+            "moves": [
+              "Scratch",
+              "Mud-Slap"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "wild_area_canyon_redstone_canyon": {
     "name": "Wild Area \u03b2 - Canyon: Redstone Canyon",
@@ -827,7 +1243,80 @@
       }
     ],
     "npc_trainers": [],
-    "ranked_npc_trainers": []
+    "ranked_npc_trainers": [
+      {
+        "id": "t024",
+        "name": "Pia",
+        "trainer_class": "Youngster",
+        "class": "Youngster",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Azurill",
+            "level": 2,
+            "moves": [
+              "Splash",
+              "Tail Whip"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Azurill",
+            "level": 2,
+            "moves": [
+              "Splash",
+              "Tail Whip"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t026",
+        "name": "Doyle",
+        "trainer_class": "Fisher",
+        "class": "Fisher",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Magikarp",
+            "level": 4,
+            "moves": [
+              "Splash"
+            ]
+          },
+          {
+            "species": "Finneon",
+            "level": 4,
+            "moves": [
+              "Pound",
+              "Water Gun"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Magikarp",
+            "level": 4,
+            "moves": [
+              "Splash"
+            ]
+          },
+          {
+            "species": "Finneon",
+            "level": 4,
+            "moves": [
+              "Pound",
+              "Water Gun"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "wild_area_desert_sunbaked_path": {
     "name": "Wild Area \u03b3 - Desert: Sandy Crossing",
@@ -993,7 +1482,53 @@
       }
     ],
     "npc_trainers": [],
-    "ranked_npc_trainers": []
+    "ranked_npc_trainers": [
+      {
+        "id": "t032",
+        "name": "Lyle",
+        "trainer_class": "Bug Catcher",
+        "class": "Bug Catcher",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Caterpie",
+            "level": 3,
+            "moves": [
+              "Tackle",
+              "String Shot"
+            ]
+          },
+          {
+            "species": "Weedle",
+            "level": 3,
+            "moves": [
+              "Poison Sting",
+              "String Shot"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Caterpie",
+            "level": 3,
+            "moves": [
+              "Tackle",
+              "String Shot"
+            ]
+          },
+          {
+            "species": "Weedle",
+            "level": 3,
+            "moves": [
+              "Poison Sting",
+              "String Shot"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "wild_area_tundra_snowdust_crossing": {
     "name": "Wild Area \u03b4 - Tundra: Snowdust Crossing",
@@ -1144,7 +1679,53 @@
       }
     ],
     "npc_trainers": [],
-    "ranked_npc_trainers": []
+    "ranked_npc_trainers": [
+      {
+        "id": "t038",
+        "name": "Lana",
+        "trainer_class": "Picnicker",
+        "class": "Picnicker",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Teddiursa",
+            "level": 6,
+            "moves": [
+              "Scratch",
+              "Lick"
+            ]
+          },
+          {
+            "species": "Petilil",
+            "level": 6,
+            "moves": [
+              "Absorb",
+              "Growth"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Teddiursa",
+            "level": 6,
+            "moves": [
+              "Scratch",
+              "Lick"
+            ]
+          },
+          {
+            "species": "Petilil",
+            "level": 6,
+            "moves": [
+              "Absorb",
+              "Growth"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "lights_district_crossings": {
     "name": "Lights District - Crossings",
@@ -1441,6 +2022,51 @@
             "adds_progress": 1
           }
         }
+      },
+      {
+        "id": "t027",
+        "name": "Tara",
+        "trainer_class": "Cyclist",
+        "class": "Cyclist",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Shuppet",
+            "level": 5,
+            "moves": [
+              "Astonish",
+              "Leer"
+            ]
+          },
+          {
+            "species": "Yungoos",
+            "level": 5,
+            "moves": [
+              "Tackle",
+              "Bite"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Shuppet",
+            "level": 5,
+            "moves": [
+              "Astonish",
+              "Leer"
+            ]
+          },
+          {
+            "species": "Yungoos",
+            "level": 5,
+            "moves": [
+              "Tackle",
+              "Bite"
+            ]
+          }
+        ]
       }
     ]
   },
@@ -1889,6 +2515,51 @@
             "adds_progress": 1
           }
         }
+      },
+      {
+        "id": "t025",
+        "name": "Rhett",
+        "trainer_class": "Jogger",
+        "class": "Jogger",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Rockruff",
+            "level": 3,
+            "moves": [
+              "Tackle",
+              "Leer"
+            ]
+          },
+          {
+            "species": "Elekid",
+            "level": 3,
+            "moves": [
+              "Quick Attack",
+              "Leer"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Rockruff",
+            "level": 3,
+            "moves": [
+              "Tackle",
+              "Leer"
+            ]
+          },
+          {
+            "species": "Elekid",
+            "level": 3,
+            "moves": [
+              "Quick Attack",
+              "Leer"
+            ]
+          }
+        ]
       }
     ]
   },
@@ -2058,6 +2729,51 @@
           "type": "none",
           "text": "People keep blaming random stuff. Truth is, nobody knows."
         }
+      },
+      {
+        "id": "t037",
+        "name": "Rook",
+        "trainer_class": "Street Kid",
+        "class": "Street Kid",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Nickit",
+            "level": 4,
+            "moves": [
+              "Quick Attack",
+              "Tail Whip"
+            ]
+          },
+          {
+            "species": "Purrloin",
+            "level": 4,
+            "moves": [
+              "Scratch",
+              "Growl"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Nickit",
+            "level": 4,
+            "moves": [
+              "Quick Attack",
+              "Tail Whip"
+            ]
+          },
+          {
+            "species": "Purrloin",
+            "level": 4,
+            "moves": [
+              "Scratch",
+              "Growl"
+            ]
+          }
+        ]
       }
     ]
   },
@@ -3161,7 +3877,69 @@
     "type": "civilian_zone",
     "encounters": [],
     "npc_trainers": [],
-    "ranked_npc_trainers": []
+    "ranked_npc_trainers": [
+      {
+        "id": "t035",
+        "name": "Jiro",
+        "trainer_class": "Black Belt",
+        "class": "Black Belt",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Mankey",
+            "level": 7,
+            "moves": [
+              "Karate Chop",
+              "Focus Energy"
+            ]
+          },
+          {
+            "species": "Meditite",
+            "level": 7,
+            "moves": [
+              "Confusion",
+              "Detect"
+            ]
+          },
+          {
+            "species": "Tyrogue",
+            "level": 7,
+            "moves": [
+              "Quick Attack",
+              "Low Kick"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Mankey",
+            "level": 7,
+            "moves": [
+              "Karate Chop",
+              "Focus Energy"
+            ]
+          },
+          {
+            "species": "Meditite",
+            "level": 7,
+            "moves": [
+              "Confusion",
+              "Detect"
+            ]
+          },
+          {
+            "species": "Tyrogue",
+            "level": 7,
+            "moves": [
+              "Quick Attack",
+              "Low Kick"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "residential_district_boardwalk": {
     "name": "Residential District - Boardwalk",
@@ -3171,7 +3949,82 @@
     "type": "civilian_zone",
     "encounters": [],
     "npc_trainers": [],
-    "ranked_npc_trainers": []
+    "ranked_npc_trainers": [
+      {
+        "id": "t023",
+        "name": "Cal",
+        "trainer_class": "Youngster",
+        "class": "Youngster",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Sentret",
+            "level": 1,
+            "moves": [
+              "Scratch",
+              "Defense Curl"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Sentret",
+            "level": 1,
+            "moves": [
+              "Scratch",
+              "Defense Curl"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t034",
+        "name": "Koa",
+        "trainer_class": "Swimmer",
+        "class": "Swimmer",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Shellos",
+            "level": 5,
+            "moves": [
+              "Water Gun",
+              "Mud-Slap"
+            ]
+          },
+          {
+            "species": "Wiglett",
+            "level": 5,
+            "moves": [
+              "Peck",
+              "Sand Attack"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Shellos",
+            "level": 5,
+            "moves": [
+              "Water Gun",
+              "Mud-Slap"
+            ]
+          },
+          {
+            "species": "Wiglett",
+            "level": 5,
+            "moves": [
+              "Peck",
+              "Sand Attack"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "residential_district_school": {
     "name": "Residential District - School",
@@ -3181,7 +4034,257 @@
     "type": "civilian_zone",
     "encounters": [],
     "npc_trainers": [],
-    "ranked_npc_trainers": []
+    "ranked_npc_trainers": [
+      {
+        "id": "t022",
+        "name": "Mr. Halbrook",
+        "trainer_class": "School Teacher",
+        "class": "School Teacher",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Kadabra",
+            "level": 8,
+            "moves": [
+              "Confusion",
+              "Disable",
+              "Reflect",
+              "Psybeam"
+            ]
+          },
+          {
+            "species": "Noctowl",
+            "level": 8,
+            "moves": [
+              "Peck",
+              "Hypnosis",
+              "Confusion",
+              "Reflect"
+            ]
+          },
+          {
+            "species": "Greavard",
+            "level": 8,
+            "moves": [
+              "Lick",
+              "Bite",
+              "Headbutt",
+              "Roar"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Kadabra",
+            "level": 8,
+            "moves": [
+              "Confusion",
+              "Disable",
+              "Reflect",
+              "Psybeam"
+            ]
+          },
+          {
+            "species": "Noctowl",
+            "level": 8,
+            "moves": [
+              "Peck",
+              "Hypnosis",
+              "Confusion",
+              "Reflect"
+            ]
+          },
+          {
+            "species": "Greavard",
+            "level": 8,
+            "moves": [
+              "Lick",
+              "Bite",
+              "Headbutt",
+              "Roar"
+            ]
+          }
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "major_clue",
+          "text": "Three former students have fallen ill this month alone. All honor students. Driven kids\u2026 the kind who never allowed themselves proper rest.",
+          "sleep_case_clue": {
+            "adds_progress": 2
+          }
+        }
+      },
+      {
+        "id": "t028",
+        "name": "Marco",
+        "trainer_class": "School Boy",
+        "class": "School Boy",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Ralts",
+            "level": 4,
+            "moves": [
+              "Confusion",
+              "Growl"
+            ]
+          },
+          {
+            "species": "Fidough",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Charm"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Ralts",
+            "level": 4,
+            "moves": [
+              "Confusion",
+              "Growl"
+            ]
+          },
+          {
+            "species": "Fidough",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Charm"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t029",
+        "name": "Ms. Bell",
+        "trainer_class": "School Teacher",
+        "class": "School Teacher",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Pachirisu",
+            "level": 6,
+            "moves": [
+              "Spark",
+              "Quick Attack"
+            ]
+          },
+          {
+            "species": "Chatot",
+            "level": 6,
+            "moves": [
+              "Peck",
+              "Chatter"
+            ]
+          },
+          {
+            "species": "Smoliv",
+            "level": 6,
+            "moves": [
+              "Absorb",
+              "Tackle"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Pachirisu",
+            "level": 6,
+            "moves": [
+              "Spark",
+              "Quick Attack"
+            ]
+          },
+          {
+            "species": "Chatot",
+            "level": 6,
+            "moves": [
+              "Peck",
+              "Chatter"
+            ]
+          },
+          {
+            "species": "Smoliv",
+            "level": 6,
+            "moves": [
+              "Absorb",
+              "Tackle"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t033",
+        "name": "Nora",
+        "trainer_class": "School Girl",
+        "class": "School Girl",
+        "rank_tier_number": 1,
+        "prize_money": 1500,
+        "battle_format": "singles",
+        "team": [
+          {
+            "species": "Raboot",
+            "level": 8,
+            "moves": [
+              "Ember",
+              "Quick Attack",
+              "Double Kick"
+            ]
+          },
+          {
+            "species": "Kirlia",
+            "level": 8,
+            "moves": [
+              "Confusion",
+              "Draining Kiss"
+            ]
+          },
+          {
+            "species": "Luxio",
+            "level": 8,
+            "moves": [
+              "Spark",
+              "Bite"
+            ]
+          }
+        ],
+        "party": [
+          {
+            "species": "Raboot",
+            "level": 8,
+            "moves": [
+              "Ember",
+              "Quick Attack",
+              "Double Kick"
+            ]
+          },
+          {
+            "species": "Kirlia",
+            "level": 8,
+            "moves": [
+              "Confusion",
+              "Draining Kiss"
+            ]
+          },
+          {
+            "species": "Luxio",
+            "level": 8,
+            "moves": [
+              "Spark",
+              "Bite"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "residential_district_temple_of_twilight": {
     "name": "Residential District - Temple of Twilight",
