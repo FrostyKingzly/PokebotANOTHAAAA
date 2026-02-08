@@ -25,6 +25,7 @@ class DreamRogueManager:
     """Manages Dream Dive roguelike runs"""
 
     TEST_PATH_LAYER = "Somnia Prima - Test Path"
+    MAX_PARTICIPANTS = 4
 
     def __init__(self, db_path: str = "data/players.db"):
         self.db_path = db_path
@@ -148,12 +149,13 @@ class DreamRogueManager:
         # Intensity 1 = 105, Intensity 2 = 110, etc.
         return 100 + (intensity * 5)
 
-    def add_participant(self, run_id: str, discord_user_id: int) -> bool:
+    def add_participant(self, run_id: str, discord_user_id: int) -> str:
         """
         Add a participant to an active run
 
         Returns:
-            True if added successfully, False if already in run
+            "added" if added successfully, "already" if already in run,
+            "full" if the run is at capacity, "missing" if run not found
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -166,7 +168,17 @@ class DreamRogueManager:
 
         if cursor.fetchone():
             conn.close()
-            return False
+            return "already"
+
+        cursor.execute("""
+            SELECT COUNT(*) FROM dream_rogue_participants
+            WHERE run_id = ?
+        """, (run_id,))
+        participant_count = cursor.fetchone()
+        current_count = int(participant_count[0] or 0) if participant_count else 0
+        if current_count >= self.MAX_PARTICIPANTS:
+            conn.close()
+            return "full"
 
         # Get stage level to calculate Dreamlites
         cursor.execute("""
@@ -177,7 +189,7 @@ class DreamRogueManager:
         result = cursor.fetchone()
         if not result:
             conn.close()
-            return False
+            return "missing"
 
         intensity = int(result[0] or 1)
         run = self.get_run(run_id) or {}
@@ -191,7 +203,7 @@ class DreamRogueManager:
 
         conn.commit()
         conn.close()
-        return True
+        return "added"
 
     def record_party_snapshot(self, run_id: str, discord_user_id: int, party: List[Dict]):
         """Store party level/EXP snapshots for temporary dive effects."""
@@ -628,13 +640,14 @@ class DreamRogueManager:
         conn.close()
         return new_floor
 
-    def get_floor_level_range(self, intensity: int, floor: int) -> Tuple[int, int]:
+    def get_floor_level_range(self, intensity: int, floor: int, player_count: int = 1) -> Tuple[int, int]:
         """
         Get min/max level for a floor based on stage and floor number
 
         Args:
             intensity: Dive intensity (1-10)
             floor: Floor number (1-10)
+            player_count: Number of participants in the dive
 
         Returns:
             (min_level, max_level) tuple
@@ -647,11 +660,15 @@ class DreamRogueManager:
         min_level = max(1, (intensity - 1) * 10 + 1)
         max_level = max(min_level, intensity * 10)
 
+        scaling_bonus = max(0, player_count - 1)
+        min_level = max(1, min_level + scaling_bonus)
+        max_level = max(min_level, max_level + scaling_bonus)
+
         return (min_level, max_level)
 
     # ===== MAP GENERATION =====
 
-    def _generate_dive_map(self, intensity: int, total_depth: int = 10) -> Dict[str, Any]:
+    def _generate_dive_map(self, intensity: int, total_depth: int = 14) -> Dict[str, Any]:
         """Generate a branching map for the run."""
         def _node_id(depth: int, index: int) -> str:
             return f"node_{depth}_{index}"
@@ -659,92 +676,84 @@ class DreamRogueManager:
         nodes: Dict[str, Dict[str, Any]] = {}
         edges: List[Dict[str, str]] = []
 
-        layer_counts = {1: 1, 2: 3, total_depth - 1: 2, total_depth: 1}
-        for depth in range(3, total_depth - 1):
-            layer_counts[depth] = random.choice([2, 3])
+        for depth in range(1, total_depth + 1):
+            node_id = _node_id(depth, 1)
+            nodes[node_id] = {
+                "node_id": node_id,
+                "depth": depth,
+                "node_type": "unassigned",
+                "has_shop": False,
+            }
 
-        rest_depth = max(2, total_depth // 2)
+        interactable_count = total_depth - 1
+        halfway_depth = 1 + ((interactable_count + 1) // 2)
         pre_boss_depth = max(2, total_depth - 1)
 
-        for depth in range(1, total_depth + 1):
-            count = layer_counts.get(depth, 1)
-            for index in range(1, count + 1):
-                node_id = _node_id(depth, index)
-                nodes[node_id] = {
-                    "node_id": node_id,
-                    "depth": depth,
-                    "node_type": "unassigned",
-                    "has_shop": False,
-                }
+        nodes[_node_id(1, 1)]["node_type"] = "start"
+        nodes[_node_id(total_depth, 1)]["node_type"] = "boss"
 
-        def _force_wishing_tree(depth: int) -> None:
-            candidates = [
-                node for node in nodes.values()
-                if node["depth"] == depth and node["node_type"] != "boss"
-            ]
-            if not candidates:
-                return
-            node = candidates[0]
+        for depth in (halfway_depth, pre_boss_depth):
+            if depth == total_depth:
+                continue
+            node = nodes[_node_id(depth, 1)]
             node["node_type"] = "rest"
             node["has_shop"] = True
 
-        for node in nodes.values():
-            if node["depth"] == 1:
-                node["node_type"] = "start"
-            elif node["depth"] == 2:
-                node["node_type"] = "battle"
-            elif node["depth"] == total_depth:
-                node["node_type"] = "boss"
-
-        _force_wishing_tree(rest_depth)
-        _force_wishing_tree(pre_boss_depth)
-
-        alpha_candidates = [
+        random_nodes = [
             node for node in nodes.values()
             if node["node_type"] == "unassigned"
-            and layer_counts.get(node["depth"], 1) > 1
         ]
-        alpha_depths = sorted({node["depth"] for node in alpha_candidates})
-        alpha_target = min(4, len(alpha_depths))
-        if alpha_target:
-            for depth in random.sample(alpha_depths, k=alpha_target):
-                depth_nodes = [node for node in alpha_candidates if node["depth"] == depth]
-                if not depth_nodes:
-                    continue
-                chosen = random.choice(depth_nodes)
-                chosen["node_type"] = "alpha"
 
-        rest_chance = 0.08
-        random_rest_nodes = []
-        for node in nodes.values():
-            if node["node_type"] == "unassigned" and random.random() < rest_chance:
-                node["node_type"] = "rest"
+        if random_nodes:
+            start_choice = nodes[_node_id(2, 1)]
+            start_choice["node_type"] = random.choices(
+                ["battle", "memoria"],
+                weights=[0.65, 0.35],
+                k=1
+            )[0]
+            random_nodes = [
+                node for node in nodes.values()
+                if node["node_type"] == "unassigned"
+            ]
+
+        node_type_weights = [
+            ("battle", 0.55),
+            ("memoria", 0.25),
+            ("alpha", 0.12),
+            ("rest", 0.08),
+        ]
+        weight_total = sum(weight for _, weight in node_type_weights)
+
+        def _weighted_pick() -> str:
+            roll = random.random() * weight_total
+            cumulative = 0.0
+            for node_type, weight in node_type_weights:
+                cumulative += weight
+                if roll <= cumulative:
+                    return node_type
+            return "battle"
+
+        for node in random_nodes:
+            node["node_type"] = _weighted_pick()
+            if node["node_type"] == "rest":
                 node["has_shop"] = random.random() < 0.08
-                random_rest_nodes.append(node)
 
-        unassigned_nodes = [node for node in nodes.values() if node["node_type"] == "unassigned"]
-        fixed_battle_count = sum(1 for node in nodes.values() if node["node_type"] == "battle")
-        if (len(unassigned_nodes) - fixed_battle_count) % 2 != 0:
-            if random_rest_nodes:
-                node = random_rest_nodes.pop()
-                node["node_type"] = "unassigned"
-                node["has_shop"] = False
-                unassigned_nodes.append(node)
-            elif unassigned_nodes:
-                node = random.choice(unassigned_nodes)
-                node["node_type"] = "rest"
-                node["has_shop"] = random.random() < 0.08
-                unassigned_nodes = [n for n in unassigned_nodes if n["node_id"] != node["node_id"]]
-
-        battle_assigned = max(0, (len(unassigned_nodes) - fixed_battle_count) // 2)
-        battle_node_ids = {
-            node["node_id"] for node in random.sample(unassigned_nodes, k=battle_assigned)
-        } if battle_assigned else set()
-        for node in unassigned_nodes:
-            if node["node_id"] in battle_node_ids:
+        min_combat_nodes = max(6, int(len(random_nodes) * 0.6))
+        combat_nodes = [
+            node for node in nodes.values()
+            if node["node_type"] in {"battle", "alpha"}
+        ]
+        if len(combat_nodes) < min_combat_nodes:
+            non_combat = [
+                node for node in nodes.values()
+                if node["node_type"] in {"memoria", "rest"}
+                and node["depth"] not in {1, total_depth}
+            ]
+            random.shuffle(non_combat)
+            needed = min_combat_nodes - len(combat_nodes)
+            for node in non_combat[:needed]:
                 node["node_type"] = "battle"
-            else:
-                node["node_type"] = "memoria"
+                node["has_shop"] = False
 
         for depth in range(1, total_depth):
             current_nodes = [n for n in nodes.values() if n["depth"] == depth]
@@ -753,14 +762,7 @@ class DreamRogueManager:
                 continue
 
             for node in current_nodes:
-                connections = random.sample(next_nodes, k=random.randint(1, min(2, len(next_nodes))))
-                for next_node in connections:
-                    edges.append({"from": node["node_id"], "to": next_node["node_id"]})
-
-            for next_node in next_nodes:
-                if not any(edge["to"] == next_node["node_id"] for edge in edges):
-                    source = random.choice(current_nodes)
-                    edges.append({"from": source["node_id"], "to": next_node["node_id"]})
+                edges.append({"from": node["node_id"], "to": next_nodes[0]["node_id"]})
 
         start_node_id = _node_id(1, 1)
         final_node_id = _node_id(total_depth, 1)

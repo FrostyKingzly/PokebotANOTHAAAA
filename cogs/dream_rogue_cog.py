@@ -68,6 +68,12 @@ class DreamRogueCog(commands.Cog):
                 ephemeral=True
             )
             return
+        if len(participants) > self.dream_manager.MAX_PARTICIPANTS:
+            await interaction.response.send_message(
+                f"❌ Dream Dive runs are limited to {self.dream_manager.MAX_PARTICIPANTS} players.",
+                ephemeral=True
+            )
+            return
 
         # Move session to Dreamyard location
         try:
@@ -181,10 +187,20 @@ class DreamRogueCog(commands.Cog):
         # Show join/start embed
         participants = self.dream_manager.get_participants(run_id)
         run = self.dream_manager.get_run(run_id)
-        floor_range = self.dream_manager.get_floor_level_range(intensity, 1)
+        map_data = self.dream_manager.get_map(run_id) or {}
+        total_depth = map_data.get("total_depth", 10)
+        floor_range = self.dream_manager.get_floor_level_range(intensity, 1, len(participants))
 
-        embed = DreamRogueEmbeds.run_status(run, participants, floor_range)
-        embed.description += "\n\n*Waiting for participants... Click 'Start Dive' when ready.*"
+        embed = DreamRogueEmbeds.run_status(
+            run,
+            participants,
+            floor_range,
+            total_depth,
+            self.dream_manager.MAX_PARTICIPANTS
+        )
+        embed.description += (
+            "\n\n*Waiting for participants (up to 3 more). Click 'Start Dive' when ready.*"
+        )
 
         view = DiveStartView(
             self.bot,
@@ -240,10 +256,24 @@ class DreamRogueCog(commands.Cog):
             # Just update lobby
             participants = self.dream_manager.get_participants(run_id)
             intensity = run.get("intensity", run.get("stage_level", 1))
-            floor_range = self.dream_manager.get_floor_level_range(intensity, run["starting_floor"])
+            map_data = self.dream_manager.get_map(run_id) or {}
+            total_depth = map_data.get("total_depth", 10)
+            floor_range = self.dream_manager.get_floor_level_range(
+                intensity,
+                run["starting_floor"],
+                len(participants)
+            )
 
-            embed = DreamRogueEmbeds.run_status(run, participants, floor_range)
-            embed.description += "\n\n*Waiting for participants... Click 'Start Dive' when ready.*"
+            embed = DreamRogueEmbeds.run_status(
+                run,
+                participants,
+                floor_range,
+                total_depth,
+                self.dream_manager.MAX_PARTICIPANTS
+            )
+            embed.description += (
+                "\n\n*Waiting for participants (up to 3 more). Click 'Start Dive' when ready.*"
+            )
 
             # Don't change view
             await interaction.response.defer()

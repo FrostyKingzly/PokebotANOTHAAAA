@@ -28,9 +28,9 @@ class DiveStartView(View):
         manager = DreamRogueManager()
 
         # Try to add participant
-        success = manager.add_participant(self.run_id, interaction.user.id)
+        status = manager.add_participant(self.run_id, interaction.user.id)
 
-        if success:
+        if status == "added":
             player_db = PlayerDatabase()
             party = player_db.get_trainer_party(interaction.user.id)
             manager.record_party_snapshot(self.run_id, interaction.user.id, party)
@@ -41,6 +41,11 @@ class DiveStartView(View):
             # Update main embed to show new participant
             if self.callback:
                 await self.callback(interaction)
+        elif status == "full":
+            await interaction.response.send_message(
+                f"❌ This dive already has {manager.MAX_PARTICIPANTS} participants.",
+                ephemeral=True
+            )
         else:
             await interaction.response.send_message(
                 "❌ You're already in this dive!",
@@ -448,7 +453,6 @@ class InstanceActionView(View):
         run = manager.get_run(self.run_id)
         floor = run["current_floor"]
         intensity = run.get("intensity", run.get("stage_level", 1))
-        min_lvl, max_lvl = manager.get_floor_level_range(intensity, floor)
 
         categories = self.instance.get("categories", [])
         effect_data = self.instance.get("effect_data", {})
@@ -475,6 +479,8 @@ class InstanceActionView(View):
         if not participants:
             await interaction.response.send_message("❌ No participants found for this battle!", ephemeral=True)
             return
+
+        min_lvl, max_lvl = manager.get_floor_level_range(intensity, floor, len(participants))
 
         if interaction.response.is_done():
             await interaction.followup.send("⚔️ Battle instance is starting for all participants...")
