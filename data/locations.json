@@ -5,7 +5,50 @@
     "channel_ids": [],
     "amenities": [],
     "encounters": [],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t050",
+        "trainer_class": "Sailor",
+        "name": "Hugo",
+        "avg_team_level": 7,
+        "location": {
+          "district": "Lights District",
+          "zone": "moonwake-port"
+        },
+        "team": [
+          {
+            "species": "Buizel",
+            "level": 7,
+            "moves": [
+              "Water Gun",
+              "Quick Attack",
+              "Aqua Jet",
+              "Bite"
+            ]
+          },
+          {
+            "species": "Wingull",
+            "level": 7,
+            "moves": [
+              "Water Gun",
+              "Gust",
+              "Quick Attack",
+              "Supersonic"
+            ]
+          },
+          {
+            "species": "Krabby",
+            "level": 7,
+            "moves": [
+              "Bubble",
+              "Vice Grip",
+              "Harden",
+              "Leer"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": [
       {
         "id": "t030",
@@ -149,7 +192,102 @@
         "weight": 2
       }
     ],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t043",
+        "trainer_class": "Youngster",
+        "name": "Nico",
+        "avg_team_level": 1,
+        "location": {
+          "district": "Lights District",
+          "zone": "central-plaza"
+        },
+        "team": [
+          {
+            "species": "Pidgey",
+            "level": 1,
+            "moves": [
+              "Tackle",
+              "Sand Attack"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t054",
+        "trainer_class": "Tourist",
+        "name": "Omar",
+        "avg_team_level": 6,
+        "location": {
+          "district": "Lights District",
+          "zone": "central-plaza"
+        },
+        "team": [
+          {
+            "species": "Snubbull",
+            "level": 6,
+            "moves": [
+              "Bite",
+              "Charm",
+              "Lick",
+              "Scary Face"
+            ]
+          },
+          {
+            "species": "Fletchling",
+            "level": 6,
+            "moves": [
+              "Peck",
+              "Quick Attack",
+              "Ember",
+              "Agility"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t059",
+        "trainer_class": "Musician",
+        "name": "Sera",
+        "avg_team_level": 8,
+        "location": {
+          "district": "Lights District",
+          "zone": "central-stadium"
+        },
+        "team": [
+          {
+            "species": "Jigglypuff",
+            "level": 8,
+            "moves": [
+              "Sing",
+              "Pound",
+              "Disarming Voice",
+              "Defense Curl"
+            ]
+          },
+          {
+            "species": "Chatot",
+            "level": 8,
+            "moves": [
+              "Peck",
+              "Chatter",
+              "Growl",
+              "Roost"
+            ]
+          },
+          {
+            "species": "Kricketune",
+            "level": 8,
+            "moves": [
+              "Fury Cutter",
+              "Sing",
+              "Bide",
+              "Focus Energy"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": [
       {
         "id": "t001",
@@ -1821,7 +1959,82 @@
         "weight": 2
       }
     ],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t046",
+        "trainer_class": "Skater",
+        "name": "Tobin",
+        "avg_team_level": 4,
+        "location": {
+          "district": "Lights District",
+          "zone": "crossings"
+        },
+        "team": [
+          {
+            "species": "Shinx",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Leer",
+              "Thunder Shock",
+              "Charge"
+            ]
+          },
+          {
+            "species": "Bidoof",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Growl",
+              "Defense Curl",
+              "Rollout"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t062",
+        "trainer_class": "Cyclist",
+        "name": "Kellen",
+        "avg_team_level": 6,
+        "location": {
+          "district": "Lights District",
+          "zone": "crossings"
+        },
+        "team": [
+          {
+            "species": "Yamper",
+            "level": 6,
+            "moves": [
+              "Nuzzle",
+              "Bite",
+              "Spark",
+              "Tail Whip"
+            ]
+          },
+          {
+            "species": "Bunnelby",
+            "level": 6,
+            "moves": [
+              "Tackle",
+              "Quick Attack",
+              "Mud-Slap",
+              "Double Kick"
+            ]
+          },
+          {
+            "species": "Zigzagoon",
+            "level": 6,
+            "moves": [
+              "Tackle",
+              "Headbutt",
+              "Sand Attack",
+              "Baby-Doll Eyes"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": [
       {
         "id": "t003",
@@ -2144,7 +2357,28 @@
         "weight": 5
       }
     ],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t048",
+        "trainer_class": "Runner",
+        "name": "Sloane",
+        "avg_team_level": 2,
+        "location": {
+          "district": "Lights District",
+          "zone": "streets"
+        },
+        "team": [
+          {
+            "species": "Lillipup",
+            "level": 2,
+            "moves": [
+              "Tackle",
+              "Leer"
+            ]
+          }
+        ]
+      }
+    ],
     "shops": [
       {
         "id": "pokemart",
@@ -2651,7 +2885,40 @@
         "weight": 5
       }
     ],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t047",
+        "trainer_class": "Street Kid",
+        "name": "Vee",
+        "avg_team_level": 4,
+        "location": {
+          "district": "Lights District",
+          "zone": "alleyways"
+        },
+        "team": [
+          {
+            "species": "Purrloin",
+            "level": 4,
+            "moves": [
+              "Scratch",
+              "Growl",
+              "Assist",
+              "Sand Attack"
+            ]
+          },
+          {
+            "species": "Nickit",
+            "level": 4,
+            "moves": [
+              "Quick Attack",
+              "Tail Whip",
+              "Beat Up",
+              "Snarl"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": [
       {
         "id": "t012",
@@ -2855,7 +3122,60 @@
         "weight": 5
       }
     ],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t060",
+        "trainer_class": "Park Ranger",
+        "name": "Maddox",
+        "avg_team_level": 10,
+        "location": {
+          "district": "Lights District",
+          "zone": "wild-zone-1"
+        },
+        "team": [
+          {
+            "species": "Breloom",
+            "level": 10,
+            "moves": [
+              "Mach Punch",
+              "Mega Drain",
+              "Leech Seed",
+              "Headbutt"
+            ]
+          },
+          {
+            "species": "Arbok",
+            "level": 10,
+            "moves": [
+              "Bite",
+              "Glare",
+              "Acid",
+              "Poison Fang"
+            ]
+          },
+          {
+            "species": "Tropius",
+            "level": 10,
+            "moves": [
+              "Razor Leaf",
+              "Gust",
+              "Stomp",
+              "Synthesis"
+            ]
+          },
+          {
+            "species": "Pidgeotto",
+            "level": 10,
+            "moves": [
+              "Gust",
+              "Quick Attack",
+              "Twister",
+              "Feather Dance"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": []
   },
   "lights_district_wild_zone_2": {
@@ -2936,7 +3256,92 @@
         "weight": 5
       }
     ],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t049",
+        "trainer_class": "Hiker",
+        "name": "Grady",
+        "avg_team_level": 6,
+        "location": {
+          "district": "Lights District",
+          "zone": "wild-zone-2"
+        },
+        "team": [
+          {
+            "species": "Geodude",
+            "level": 6,
+            "moves": [
+              "Tackle",
+              "Defense Curl",
+              "Rock Throw",
+              "Magnitude"
+            ]
+          },
+          {
+            "species": "Nacli",
+            "level": 6,
+            "moves": [
+              "Rock Throw",
+              "Harden",
+              "Mud-Slap",
+              "Smack Down"
+            ]
+          },
+          {
+            "species": "Sandshrew",
+            "level": 6,
+            "moves": [
+              "Scratch",
+              "Defense Curl",
+              "Sand Attack",
+              "Rollout"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t061",
+        "trainer_class": "Hiker",
+        "name": "Rowan",
+        "avg_team_level": 8,
+        "location": {
+          "district": "Lights District",
+          "zone": "wild-zone-2"
+        },
+        "team": [
+          {
+            "species": "Rolycoly",
+            "level": 8,
+            "moves": [
+              "Tackle",
+              "Smokescreen",
+              "Rock Throw",
+              "Rapid Spin"
+            ]
+          },
+          {
+            "species": "Phanpy",
+            "level": 8,
+            "moves": [
+              "Tackle",
+              "Defense Curl",
+              "Rollout",
+              "Slam"
+            ]
+          },
+          {
+            "species": "Geodude",
+            "level": 8,
+            "moves": [
+              "Tackle",
+              "Defense Curl",
+              "Rock Throw",
+              "Magnitude"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": []
   },
   "residential_district_beach": {
@@ -3017,7 +3422,40 @@
         "weight": 5
       }
     ],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t051",
+        "trainer_class": "Fisher",
+        "name": "Eli",
+        "avg_team_level": 5,
+        "location": {
+          "district": "Residential District",
+          "zone": "beach"
+        },
+        "team": [
+          {
+            "species": "Finneon",
+            "level": 5,
+            "moves": [
+              "Pound",
+              "Water Gun",
+              "Attract",
+              "Icy Wind"
+            ]
+          },
+          {
+            "species": "Shellder",
+            "level": 5,
+            "moves": [
+              "Tackle",
+              "Water Gun",
+              "Withdraw",
+              "Ice Shard"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": []
   },
   "residential_district_dreamyard": {
@@ -3180,7 +3618,36 @@
         "weight": 5
       }
     ],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t045",
+        "trainer_class": "Bug Catcher",
+        "name": "Wes",
+        "avg_team_level": 3,
+        "location": {
+          "district": "Residential District",
+          "zone": "wild-zone-3"
+        },
+        "team": [
+          {
+            "species": "Wurmple",
+            "level": 3,
+            "moves": [
+              "Tackle",
+              "String Shot"
+            ]
+          },
+          {
+            "species": "Spinarak",
+            "level": 3,
+            "moves": [
+              "Poison Sting",
+              "String Shot"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": []
   },
   "residential_district_wild_zone_4": {
@@ -3254,7 +3721,40 @@
         "weight": 5
       }
     ],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t053",
+        "trainer_class": "Picnicker",
+        "name": "Bree",
+        "avg_team_level": 5,
+        "location": {
+          "district": "Residential District",
+          "zone": "wild-zone-4"
+        },
+        "team": [
+          {
+            "species": "Petilil",
+            "level": 5,
+            "moves": [
+              "Absorb",
+              "Growth",
+              "Stun Spore",
+              "Mega Drain"
+            ]
+          },
+          {
+            "species": "Bounsweet",
+            "level": 5,
+            "moves": [
+              "Razor Leaf",
+              "Sweet Scent",
+              "Rapid Spin",
+              "Play Nice"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": []
   },
   "lights_district_dojo": {
@@ -3876,7 +4376,60 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t058",
+        "trainer_class": "Black Belt",
+        "name": "Ren",
+        "avg_team_level": 9,
+        "location": {
+          "district": "Residential District",
+          "zone": "ironcore-gym"
+        },
+        "team": [
+          {
+            "species": "Machop",
+            "level": 9,
+            "moves": [
+              "Low Kick",
+              "Karate Chop",
+              "Focus Energy",
+              "Revenge"
+            ]
+          },
+          {
+            "species": "Meditite",
+            "level": 9,
+            "moves": [
+              "Confusion",
+              "Detect",
+              "Force Palm",
+              "Calm Mind"
+            ]
+          },
+          {
+            "species": "Tyrogue",
+            "level": 9,
+            "moves": [
+              "Quick Attack",
+              "Low Kick",
+              "Counter",
+              "Work Up"
+            ]
+          },
+          {
+            "species": "Riolu",
+            "level": 9,
+            "moves": [
+              "Quick Attack",
+              "Force Palm",
+              "Counter",
+              "Work Up"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": [
       {
         "id": "t035",
@@ -3948,7 +4501,70 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t044",
+        "trainer_class": "Lass",
+        "name": "Mina",
+        "avg_team_level": 2,
+        "location": {
+          "district": "Residential District",
+          "zone": "boardwalk"
+        },
+        "team": [
+          {
+            "species": "Skitty",
+            "level": 2,
+            "moves": [
+              "Tackle",
+              "Growl"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t052",
+        "trainer_class": "Swimmer",
+        "name": "Jade",
+        "avg_team_level": 6,
+        "location": {
+          "district": "Residential District",
+          "zone": "boardwalk"
+        },
+        "team": [
+          {
+            "species": "Shellos",
+            "level": 6,
+            "moves": [
+              "Water Gun",
+              "Mud-Slap",
+              "Harden",
+              "Recover"
+            ]
+          },
+          {
+            "species": "Ducklett",
+            "level": 6,
+            "moves": [
+              "Water Gun",
+              "Wing Attack",
+              "Growl",
+              "Aqua Jet"
+            ]
+          },
+          {
+            "species": "Wiglett",
+            "level": 6,
+            "moves": [
+              "Peck",
+              "Sand Attack",
+              "Water Gun",
+              "Mud-Slap"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": [
       {
         "id": "t023",
@@ -4033,7 +4649,114 @@
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
-    "npc_trainers": [],
+    "npc_trainers": [
+      {
+        "id": "t055",
+        "trainer_class": "School Boy",
+        "name": "Dylan",
+        "avg_team_level": 3,
+        "location": {
+          "district": "Residential District",
+          "zone": "school"
+        },
+        "team": [
+          {
+            "species": "Hoothoot",
+            "level": 3,
+            "moves": [
+              "Peck",
+              "Growl",
+              "Hypnosis",
+              "Confusion"
+            ]
+          },
+          {
+            "species": "Wooper",
+            "level": 3,
+            "moves": [
+              "Water Gun",
+              "Tail Whip",
+              "Mud Shot",
+              "Slam"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t056",
+        "trainer_class": "School Girl",
+        "name": "Priya",
+        "avg_team_level": 4,
+        "location": {
+          "district": "Residential District",
+          "zone": "school"
+        },
+        "team": [
+          {
+            "species": "Fidough",
+            "level": 4,
+            "moves": [
+              "Tackle",
+              "Charm",
+              "Bite",
+              "Lick"
+            ]
+          },
+          {
+            "species": "Ralts",
+            "level": 4,
+            "moves": [
+              "Confusion",
+              "Growl",
+              "Disarming Voice",
+              "Life Dew"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t057",
+        "trainer_class": "School Teacher",
+        "name": "Mr. Keene",
+        "avg_team_level": 7,
+        "location": {
+          "district": "Residential District",
+          "zone": "school"
+        },
+        "team": [
+          {
+            "species": "Noctowl",
+            "level": 7,
+            "moves": [
+              "Peck",
+              "Hypnosis",
+              "Confusion",
+              "Reflect"
+            ]
+          },
+          {
+            "species": "Pachirisu",
+            "level": 7,
+            "moves": [
+              "Spark",
+              "Quick Attack",
+              "Charm",
+              "Nuzzle"
+            ]
+          },
+          {
+            "species": "Kadabra",
+            "level": 7,
+            "moves": [
+              "Confusion",
+              "Disable",
+              "Reflect",
+              "Psybeam"
+            ]
+          }
+        ]
+      }
+    ],
     "ranked_npc_trainers": [
       {
         "id": "t022",
