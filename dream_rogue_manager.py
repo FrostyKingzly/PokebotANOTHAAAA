@@ -18,6 +18,8 @@ import time
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 
+from database import PlayerDatabase
+
 
 class DreamRogueManager:
     """Manages Dream Dive roguelike runs"""
@@ -454,6 +456,8 @@ class DreamRogueManager:
         Returns:
             New Dreamlite balance
         """
+        if amount > 0:
+            amount = int(round(amount * self._get_dreamlite_gain_multiplier(run_id, user_id)))
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
@@ -472,6 +476,96 @@ class DreamRogueManager:
         conn.commit()
         conn.close()
         return new_balance
+
+    def get_active_effects(self, run_id: str, user_id: Optional[int] = None) -> List[Dict]:
+        """Get active effect_data entries for team and (optionally) a user."""
+        buffs = self.get_active_buffs(run_id, user_id)
+        return [buff.get("effect_data", {}) for buff in buffs if buff.get("effect_data")]
+
+    def get_effects_by_type(self, run_id: str, effect_type: str, user_id: Optional[int] = None) -> List[Dict]:
+        """Return effect_data entries matching a type."""
+        effect_type = str(effect_type or "").lower()
+        return [
+            effect for effect in self.get_active_effects(run_id, user_id)
+            if str(effect.get("type", "")).lower() == effect_type
+        ]
+
+    def get_shop_cost_multiplier(self, run_id: str, user_id: Optional[int] = None) -> float:
+        """Return the shop price multiplier from dream effects."""
+        multiplier = 1.0
+        for effect in self.get_effects_by_type(run_id, "dreamlite_abundance", user_id):
+            multiplier *= float(effect.get("shop_multiplier", 1.0))
+        return max(0.01, multiplier)
+
+    def get_rest_heal_multiplier(self, run_id: str, user_id: Optional[int] = None) -> float:
+        """Return the rest-heal multiplier from dream effects."""
+        multiplier = 1.0
+        for effect in self.get_effects_by_type(run_id, "rest_heal_bonus", user_id):
+            multiplier *= float(effect.get("multiplier", 1.0))
+        return max(0.0, multiplier)
+
+    def has_effect(self, run_id: str, effect_type: str, user_id: Optional[int] = None) -> bool:
+        """Check if a dream effect is active."""
+        return bool(self.get_effects_by_type(run_id, effect_type, user_id))
+
+    def _get_dreamlite_gain_multiplier(self, run_id: str, user_id: Optional[int] = None) -> float:
+        multiplier = 1.0
+        for effect in self.get_effects_by_type(run_id, "dreamlite_abundance", user_id):
+            multiplier *= float(effect.get("gain_multiplier", 1.0))
+        return max(0.0, multiplier)
+
+    def apply_post_battle_effects(self, run_id: str) -> List[str]:
+        """Apply end-of-battle Dream Dive effects like healing/revive."""
+        messages: List[str] = []
+        participants = self.get_participants(run_id)
+        if not participants:
+            return messages
+
+        player_db = PlayerDatabase()
+        team_effects = self.get_active_effects(run_id)
+
+        heal_percent = 0.0
+        for effect in team_effects:
+            if effect.get("type") == "battle_end_heal":
+                heal_percent = max(heal_percent, float(effect.get("heal_percent", 0.0)))
+
+        revive_percent = 0.0
+        for effect in team_effects:
+            if effect.get("type") == "battle_revive":
+                revive_percent = max(revive_percent, float(effect.get("revive_percent", 0.0)))
+
+        for participant in participants:
+            user_id = participant["discord_user_id"]
+            party = player_db.get_trainer_party(user_id)
+
+            if heal_percent > 0:
+                for pokemon in party:
+                    max_hp = int(pokemon.get("max_hp", 1))
+                    current_hp = int(pokemon.get("current_hp", max_hp))
+                    heal_amount = max(1, int(round(max_hp * heal_percent)))
+                    new_hp = min(max_hp, current_hp + heal_amount)
+                    player_db.update_pokemon(
+                        pokemon["pokemon_id"],
+                        {"current_hp": new_hp}
+                    )
+
+            if revive_percent > 0:
+                for pokemon in party:
+                    current_hp = int(pokemon.get("current_hp", 0))
+                    if current_hp <= 0:
+                        max_hp = int(pokemon.get("max_hp", 1))
+                        revive_hp = max(1, int(round(max_hp * revive_percent)))
+                        player_db.update_pokemon(
+                            pokemon["pokemon_id"],
+                            {"current_hp": revive_hp}
+                        )
+                        break
+
+        if heal_percent > 0:
+            messages.append(f"✨ Dream effects healed the party after battle (+{int(heal_percent * 100)}% HP).")
+        if revive_percent > 0:
+            messages.append("✨ Dream effects revived one fainted Pokémon.")
+        return messages
 
     def can_afford(self, run_id: str, user_id: int, cost: int) -> bool:
         """Check if user can afford cost"""

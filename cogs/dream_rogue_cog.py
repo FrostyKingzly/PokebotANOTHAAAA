@@ -526,6 +526,10 @@ class DreamRogueCog(commands.Cog):
         floor = run["current_floor"]
 
         if result in {"battle_complete", "boss_defeated"}:
+            post_battle_messages = self.dream_manager.apply_post_battle_effects(run_id)
+            for message in post_battle_messages:
+                await interaction.followup.send(message)
+
             participants = self.dream_manager.get_participants(run_id)
             effect_data = instance.get("effect_data", {})
             multiplier = max(1, int(effect_data.get("dreamlite_multiplier", 1)))

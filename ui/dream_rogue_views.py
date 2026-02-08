@@ -418,6 +418,15 @@ class InstanceActionView(View):
             ))
             self.children[-1].callback = self._proceed
 
+    def _build_dream_effect_snapshot(self, participants: List[Dict[str, Any]]) -> Dict[int, List[Dict]]:
+        from dream_rogue_manager import DreamRogueManager
+
+        manager = DreamRogueManager()
+        return {
+            participant["discord_user_id"]: manager.get_active_effects(self.run_id, participant["discord_user_id"])
+            for participant in participants
+        }
+
     async def _start_battle(self, interaction: discord.Interaction):
         """Start a battle instance"""
         from dream_rogue_manager import DreamRogueManager
@@ -601,6 +610,8 @@ class InstanceActionView(View):
                 opponent_name=f"Dream Dive {raid_boss.species_name}",
                 battle_format=BattleFormat.RAID,
                 raid_participants=raid_entries,
+                dream_run_id=self.run_id,
+                dream_effects_by_user=self._build_dream_effect_snapshot(participants),
             )
 
             battle = battle_cog.battle_engine.get_battle(battle_id)
@@ -691,7 +702,9 @@ class InstanceActionView(View):
                 partner2_is_ai=True,
                 partner1_class=None,
                 partner2_class="dream_rogue",
-                is_pve=True
+                is_pve=True,
+                dream_run_id=self.run_id,
+                dream_effects_by_user=self._build_dream_effect_snapshot(participants)
             )
 
             battle_cog.user_battles[trainer1.id] = battle_id
@@ -769,7 +782,9 @@ class InstanceActionView(View):
                     npc_name=opponent_name,
                     npc_class="dream_rogue",
                     prize_money=0,
-                    battle_format=battle_format
+                    battle_format=battle_format,
+                    dream_run_id=self.run_id,
+                    dream_effects_by_user=self._build_dream_effect_snapshot(participants)
                 )
 
                 thread_name = f"Dream Dive - {user.display_name}"
@@ -865,6 +880,10 @@ class InstanceActionView(View):
         participants = manager.get_participants(self.run_id)
         effect_data = self.instance.get("effect_data", {})
         heal_percent = float(effect_data.get("heal_hp_percent", 0.2))
+        heal_percent *= manager.get_rest_heal_multiplier(self.run_id, interaction.user.id)
+        deep_rest = manager.has_effect(self.run_id, "deep_rest", interaction.user.id)
+        if deep_rest:
+            heal_percent = max(heal_percent, 1.0)
 
         # Restore all participants' Pokemon
         for p in participants:
@@ -876,15 +895,24 @@ class InstanceActionView(View):
                 current_hp = int(pokemon.get("current_hp", max_hp))
                 heal_amount = max(1, int(round(max_hp * heal_percent)))
                 new_hp = min(max_hp, current_hp + heal_amount)
+                if deep_rest:
+                    moves = pokemon.get("moves", [])
+                    for move in moves:
+                        if isinstance(move, dict):
+                            move["pp"] = move.get("max_pp", move.get("pp", 0))
+                    player_db.update_pokemon(
+                        pokemon["pokemon_id"],
+                        {"moves": moves}
+                    )
                 player_db.update_pokemon(
                     pokemon["pokemon_id"],
                     {"current_hp": new_hp}
                 )
 
-        await interaction.response.send_message(
-            "🛌 Your team rests by the campfire. Each Pokémon recovers some HP.",
-            ephemeral=False
-        )
+        rest_message = "🛌 Your team rests by the campfire. Each Pokémon recovers some HP."
+        if deep_rest:
+            rest_message = "🛌 Deep rest restores your team fully. HP and PP are refreshed."
+        await interaction.response.send_message(rest_message, ephemeral=False)
 
         if self.on_complete_callback:
             await self.on_complete_callback(interaction, "rested")
@@ -1136,11 +1164,14 @@ class InstanceActionView(View):
             return
 
         shop_items = []
+        cost_multiplier = manager.get_shop_cost_multiplier(self.run_id, interaction.user.id)
         for item in items:
+            base_cost = int(item.get("cost", 0))
+            adjusted_cost = int(round(base_cost * cost_multiplier))
             shop_items.append({
                 "name": item.get("name", "Dream Item"),
                 "description": item.get("description", ""),
-                "dreamlite_cost": item.get("cost", 0),
+                "dreamlite_cost": adjusted_cost,
                 "effect": item.get("effect"),
                 "value": item.get("value"),
             })
@@ -1371,19 +1402,48 @@ class DreamShopView(View):
 
     async def _on_purchase(self, interaction: discord.Interaction):
         from dream_rogue_manager import DreamRogueManager
+        from database import PlayerDatabase
 
         manager = DreamRogueManager()
+        player_db = PlayerDatabase()
         item = self.items[int(interaction.values[0])]
         cost = int(item.get("dreamlite_cost", 0))
 
         if not manager.can_afford(self.run_id, interaction.user.id, cost):
-            await interaction.response.send_message(
-                "❌ You don't have enough Dreamlites for that item.",
-                ephemeral=True
-            )
-            return
+            hp_effects = manager.get_effects_by_type(self.run_id, "hp_for_shop", interaction.user.id)
+            hp_cost_percent = 0.0
+            for effect in hp_effects:
+                hp_cost_percent = max(hp_cost_percent, float(effect.get("hp_cost_percent", 0.0)))
 
-        manager.add_dreamlites(self.run_id, interaction.user.id, -cost)
+            if hp_cost_percent <= 0:
+                await interaction.response.send_message(
+                    "❌ You don't have enough Dreamlites for that item.",
+                    ephemeral=True
+                )
+                return
+
+            party = player_db.get_trainer_party(interaction.user.id)
+            paid = False
+            for pokemon in party:
+                max_hp = int(pokemon.get("max_hp", 1))
+                hp_cost = max(1, int(round(max_hp * hp_cost_percent)))
+                current_hp = int(pokemon.get("current_hp", 0))
+                if current_hp > hp_cost:
+                    player_db.update_pokemon(
+                        pokemon["pokemon_id"],
+                        {"current_hp": current_hp - hp_cost}
+                    )
+                    paid = True
+                    break
+
+            if not paid:
+                await interaction.response.send_message(
+                    "❌ You don't have enough HP to purchase that item.",
+                    ephemeral=True
+                )
+                return
+        else:
+            manager.add_dreamlites(self.run_id, interaction.user.id, -cost)
         manager.apply_buff(
             run_id=self.run_id,
             buff_type="buff",

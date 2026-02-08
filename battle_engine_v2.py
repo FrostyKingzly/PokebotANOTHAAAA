@@ -151,6 +151,10 @@ class BattleState:
     # Test path / dream mode flag
     is_test_path: bool = False  # True for test path dream mode battles
 
+    # Dream Dive metadata
+    dream_run_id: Optional[str] = None
+    dream_effects_by_user: Dict[int, List[Dict[str, Any]]] = field(default_factory=dict)
+
     # Ranked metadata
     is_ranked: bool = False
     ranked_context: Dict[str, Any] = field(default_factory=dict)
@@ -382,6 +386,104 @@ class HeldItemManager:
         name = item_name or effect.get('item_name', 'item')
         return healed, f"{pokemon.species_name} restored health with its {name}! (+{healed} HP)"
 
+    def _get_dream_effects(self, pokemon, effect_type: str) -> List[Dict[str, Any]]:
+        effect_type = str(effect_type or "").lower()
+        return [
+            effect for effect in getattr(pokemon, "dream_effects", [])
+            if str(effect.get("type", "")).lower() == effect_type
+        ]
+
+    def _apply_stat_multiplier(self, pokemon, stat: str, multiplier: float) -> None:
+        if multiplier == 1.0:
+            return
+        if stat == "hp":
+            old_max = max(1, int(getattr(pokemon, "max_hp", 1)))
+            new_max = max(1, int(round(old_max * multiplier)))
+            current_hp = int(getattr(pokemon, "current_hp", new_max))
+            pokemon.max_hp = new_max
+            pokemon.current_hp = min(new_max, max(1, int(round(current_hp * multiplier))))
+            return
+        current_value = int(getattr(pokemon, stat, 0))
+        setattr(pokemon, stat, max(1, int(round(current_value * multiplier))))
+
+    def _apply_path_role(self, pokemon, effect: Dict[str, Any]) -> None:
+        role = effect.get("role")
+        if role == "protector":
+            self._apply_stat_multiplier(pokemon, "hp", float(effect.get("hp_multiplier", 1.0)))
+            self._apply_stat_multiplier(pokemon, "defense", float(effect.get("defense_multiplier", 1.0)))
+            self._apply_stat_multiplier(pokemon, "sp_defense", float(effect.get("sp_defense_multiplier", 1.0)))
+        elif role == "healer":
+            self._apply_stat_multiplier(pokemon, "speed", float(effect.get("speed_multiplier", 1.0)))
+            pokemon.dream_healing_multiplier = float(effect.get("healing_multiplier", 1.0))
+            pokemon.dream_support_multiplier = float(effect.get("support_multiplier", 1.0))
+        elif role == "fighter":
+            self._apply_stat_multiplier(pokemon, "attack", float(effect.get("attack_multiplier", 1.0)))
+            self._apply_stat_multiplier(pokemon, "sp_attack", float(effect.get("sp_attack_multiplier", 1.0)))
+
+    def _apply_dream_effects_to_battle(self, battle: BattleState) -> None:
+        effects_by_user = battle.dream_effects_by_user or {}
+        for battler in battle.get_all_battlers():
+            effects = effects_by_user.get(battler.battler_id, [])
+            for pokemon in battler.party:
+                pokemon.dream_effects = list(effects)
+                pokemon.dream_survive_used = False
+
+            active_pokemon = battler.get_active_pokemon()
+            for pokemon in active_pokemon:
+                for effect in self._get_dream_effects(pokemon, "path_role"):
+                    self._apply_path_role(pokemon, effect)
+
+    def _dream_damage_multiplier(self, attacker, move_data: Dict[str, Any]) -> float:
+        multiplier = 1.0
+        category = move_data.get("category")
+        for effect in getattr(attacker, "dream_effects", []):
+            effect_type = effect.get("type")
+            if effect_type == "damage_reduction":
+                multiplier *= float(effect.get("multiplier", 1.0))
+            elif effect_type == "blood_price":
+                multiplier *= float(effect.get("damage_multiplier", 1.0))
+            elif effect_type == "path_role" and effect.get("role") == "fighter":
+                if category == "physical":
+                    multiplier *= float(effect.get("attack_multiplier", 1.0))
+                elif category == "special":
+                    multiplier *= float(effect.get("sp_attack_multiplier", 1.0))
+        return multiplier
+
+    def _dream_defense_multiplier(self, defender, move_data: Dict[str, Any]) -> float:
+        multiplier = 1.0
+        category = move_data.get("category")
+        for effect in getattr(defender, "dream_effects", []):
+            effect_type = effect.get("type")
+            if effect_type == "special_vulnerability" and category == "special":
+                multiplier *= float(effect.get("multiplier", 1.0))
+            elif effect_type == "path_role" and effect.get("role") == "protector":
+                if category == "physical":
+                    multiplier /= max(0.01, float(effect.get("defense_multiplier", 1.0)))
+                elif category == "special":
+                    multiplier /= max(0.01, float(effect.get("sp_defense_multiplier", 1.0)))
+        return multiplier
+
+    def _apply_dream_counterattack(
+        self,
+        battle: BattleState,
+        attacker,
+        defender,
+        move_data: Dict[str, Any],
+        messages: List[str]
+    ) -> None:
+        if move_data.get("category") not in ["physical", "special"]:
+            return
+        effects = self._get_dream_effects(defender, "counterattack")
+        if not effects:
+            return
+        return_percent = max(float(effect.get("return_percent", 0.5)) for effect in effects)
+        damage, _, _, _ = self._calculate_damage_without_accuracy(attacker, defender, move_data, battle)
+        retaliate = max(1, int(round(damage * return_percent)))
+        if retaliate <= 0 or getattr(attacker, "current_hp", 0) <= 0:
+            return
+        attacker.current_hp = max(0, attacker.current_hp - retaliate)
+        messages.append(f"{defender.species_name} counterattacked for {retaliate} damage!")
+
     # -------- Restrictions / tracking --------
     def check_move_restrictions(self, pokemon, move_data) -> Optional[str]:
         item = self._get_item(pokemon)
@@ -455,13 +557,21 @@ class HeldItemManager:
 
         messages: List[str] = []
         damage = int(round(damage * self._power_multiplier(attacker, move_data)))
+        damage = int(round(damage * self._dream_damage_multiplier(attacker, move_data)))
         defense_mult = self._defense_multiplier(defender, move_data)
         if defense_mult > 1:
             damage = max(1, int(math.ceil(damage / defense_mult)))
+        damage = int(round(damage * self._dream_defense_multiplier(defender, move_data)))
 
         damage, reduction_msg = self._apply_damage_reduction(defender, move_data, damage)
         if reduction_msg:
             messages.append(reduction_msg)
+
+        if damage >= defender.current_hp and self._get_dream_effects(defender, "survive_fatal_blow"):
+            if not getattr(defender, "dream_survive_used", False) and defender.current_hp > 1:
+                damage = defender.current_hp - 1
+                defender.dream_survive_used = True
+                messages.append(f"{defender.species_name} endured the fatal blow!")
 
         damage, survival_msg = self._try_focus_items(defender, damage)
         if survival_msg:
@@ -503,23 +613,36 @@ class HeldItemManager:
         return damage, message
 
     def apply_after_damage(self, attacker, move_data, dealt_damage: int) -> List[str]:
+        messages: List[str] = []
         item = self._get_item(attacker)
-        if not item:
-            return []
 
-        # Choice items lock even on misses
-        self.register_move_use(attacker, move_data)
+        if item:
+            # Choice items lock even on misses
+            self.register_move_use(attacker, move_data)
 
         if dealt_damage <= 0:
-            return []
+            return messages
 
-        effect = item.get('effect_data') or {}
-        messages: List[str] = []
+        effect = item.get('effect_data') or {} if item else {}
 
         if effect.get('recoil_percent'):
             recoil = max(1, int(round(attacker.max_hp * (effect['recoil_percent'] / 100.0))))
             attacker.current_hp = max(0, attacker.current_hp - recoil)
             messages.append(f"{attacker.species_name} was hurt by its {item.get('name', item['id'])}! (-{recoil} HP)")
+
+        for drain_effect in self._get_dream_effects(attacker, "special_drain"):
+            if move_data.get("category") == "special":
+                heal_percent = float(drain_effect.get("heal_percent", 0.0))
+                heal_amount = max(1, int(round(dealt_damage * heal_percent)))
+                attacker.current_hp = min(attacker.max_hp, attacker.current_hp + heal_amount)
+                messages.append(f"{attacker.species_name} drained energy! (+{heal_amount} HP)")
+
+        for drain_effect in self._get_dream_effects(attacker, "physical_drain"):
+            if move_data.get("category") == "physical":
+                heal_percent = float(drain_effect.get("heal_percent", 0.0))
+                heal_amount = max(1, int(round(dealt_damage * heal_percent)))
+                attacker.current_hp = min(attacker.max_hp, attacker.current_hp + heal_amount)
+                messages.append(f"{attacker.species_name} drained energy! (+{heal_amount} HP)")
 
         return messages
 
@@ -876,6 +999,9 @@ class BattleEngine:
             prize_money=kwargs.get('prize_money', 0)
         )
         
+        dream_run_id = kwargs.get("dream_run_id")
+        dream_effects_by_user = kwargs.get("dream_effects_by_user") or {}
+
         # Create battle state
         battle = BattleState(
             battle_id=battle_id,
@@ -885,7 +1011,9 @@ class BattleEngine:
             opponent=opponent,
             raid_allies=raid_allies,
             is_ranked=is_ranked,
-            ranked_context=ranked_context or {}
+            ranked_context=ranked_context or {},
+            dream_run_id=dream_run_id,
+            dream_effects_by_user=dream_effects_by_user
         )
         if raid_opponent_slots is not None:
             battle.raid_opponent_slots = raid_opponent_slots
@@ -906,6 +1034,8 @@ class BattleEngine:
             except Exception as e:
                 # Don't let weather errors crash battle initialization
                 print(f"Warning: Failed to set overworld weather: {e}")
+
+        self._apply_dream_effects_to_battle(battle)
 
         for battler in battle.get_all_battlers():
             for mon in battler.get_active_pokemon():
@@ -1124,7 +1254,8 @@ class BattleEngine:
         ranked_context: Optional[Dict[str, Any]] = None,
         weather_manager: Optional[Any] = None,
         location_id: Optional[str] = None,
-        wild_area_state: Optional[Dict[str, Any]] = None
+        wild_area_state: Optional[Dict[str, Any]] = None,
+        **kwargs
     ) -> str:
         """Convenience method for NPC trainer battles"""
         return self.start_battle(
@@ -1141,7 +1272,8 @@ class BattleEngine:
             ranked_context=ranked_context,
             weather_manager=weather_manager,
             location_id=location_id,
-            wild_area_state=wild_area_state
+            wild_area_state=wild_area_state,
+            **kwargs
         )
     
     def start_pvp_battle(
@@ -1282,6 +1414,9 @@ class BattleEngine:
         # Determine battle type (PvP if all humans, otherwise TRAINER for PvE)
         battle_type = BattleType.PVP if not (partner1_is_ai or partner2_is_ai) else BattleType.TRAINER
 
+        dream_run_id = kwargs.get("dream_run_id")
+        dream_effects_by_user = kwargs.get("dream_effects_by_user") or {}
+
         # Create battle state
         battle = BattleState(
             battle_id=battle_id,
@@ -1292,8 +1427,12 @@ class BattleEngine:
             trainer_partner=partner1,
             opponent_partner=partner2,
             is_ranked=is_ranked,
-            ranked_context=ranked_context or {}
+            ranked_context=ranked_context or {},
+            dream_run_id=dream_run_id,
+            dream_effects_by_user=dream_effects_by_user
         )
+
+        self._apply_dream_effects_to_battle(battle)
 
         # Trigger entry abilities
         try:
@@ -3003,6 +3142,16 @@ class BattleEngine:
             if move_id_normalized in BANNED_RAID_MOVES:
                 return {"messages": [f"{attacker.species_name} tried to use {move_data.get('name', action.move_id)}, but it doesn't affect Rogue Pokemon!"]}
 
+        if not skip_pp_deduct and self._get_dream_effects(attacker, "blood_price"):
+            hp_cost_percent = max(
+                float(effect.get("hp_cost_percent", 0.0))
+                for effect in self._get_dream_effects(attacker, "blood_price")
+            )
+            hp_cost = max(1, int(round(attacker.max_hp * hp_cost_percent)))
+            attacker.current_hp = max(1, attacker.current_hp - hp_cost)
+            messages.append(f"{attacker.species_name} paid {hp_cost} HP to empower the move!")
+            skip_pp_deduct = True
+
         # Deduct PP
         if not skip_pp_deduct:
             for move in attacker.moves:
@@ -3030,6 +3179,7 @@ class BattleEngine:
                 if not self.calculator._check_accuracy(move_data, attacker, defender, battle.weather):
                     move_name = move_data.get('name', action.move_id)
                     messages.append(f"{attacker.species_name} used {move_name}, but it missed!")
+                    self._apply_dream_counterattack(battle, attacker, defender, move_data, messages)
                     return {"messages": messages}
 
             actual_hits = 0
