@@ -89,6 +89,42 @@ class EmbedBuilder:
             "It’s getting late… but I’ll stay awake as long as you do.",
             "Hey… you still awake? Don’t forget to rest up when you can.",
         ],
+        "weather:sunshine": [
+            "Sun’s out, circuits warm—perfect weather for a photo op!",
+            "Bzzt! Plenty of sunlight today. Let’s make the most of it!",
+        ],
+        "weather:rain": [
+            "Rain detected. I’m waterproof, but you still might want an umbrella.",
+            "Pitter-patter… I’ll keep the map clear while you stay dry.",
+        ],
+        "weather:snowing": [
+            "Snow’s falling! Hope you brought a scarf.",
+            "Brrr… even I can feel that chill. Stay warm out there!",
+        ],
+        "weather:thunder_storm": [
+            "Storm alert! Let’s keep our distance from tall trees, okay?",
+            "Zzzt! Static in the air… that’s some serious lightning.",
+        ],
+        "weather:cloudy": [
+            "Cloud cover detected—soft light, great for photos.",
+            "Overcast skies. Perfect weather for a quiet walk.",
+        ],
+        "weather:gentle_skies": [
+            "Gentle skies… feels like a good day to explore.",
+            "The breeze is nice. Let’s take a long route!",
+        ],
+        "weather:heatwave": [
+            "Heatwave warning. Hydration check!",
+            "It’s blazing out there—let’s take it easy.",
+        ],
+        "weather:sandstorm": [
+            "Sandstorm detected. I’ll keep the grit out of the ports.",
+            "Visibility’s low—stay close, okay?",
+        ],
+        "weather:blizzard": [
+            "Blizzard conditions! Stay warm and stick to safe paths.",
+            "Whiteout alert… I’ll keep the route marked.",
+        ],
         "stamina:full": [
             "You’re running at peak power right now! Don’t waste it!",
             "I can feel the spark! You’re ready for anything!",
