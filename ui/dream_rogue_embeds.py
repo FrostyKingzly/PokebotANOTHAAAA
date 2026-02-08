@@ -34,7 +34,13 @@ class DreamRogueEmbeds:
     EXTRACT_EMOJI = "🚪"
 
     @staticmethod
-    def run_status(run: Dict, participants: List[Dict], floor_level_range: tuple) -> discord.Embed:
+    def run_status(
+        run: Dict,
+        participants: List[Dict],
+        floor_level_range: tuple,
+        total_depth: int,
+        max_participants: int
+    ) -> discord.Embed:
         """
         Main run status embed
 
@@ -60,8 +66,9 @@ class DreamRogueEmbeds:
             value=(
                 f"**Layer:** {layer_name}\n"
                 f"**Intensity:** {intensity}\n"
-                f"**Floor:** {floor}/10\n"
-                f"**Enemy Level Range:** {min_lvl}-{max_lvl}"
+                f"**Floor:** {floor}/{total_depth}\n"
+                f"**Enemy Level Range:** {min_lvl}-{max_lvl}\n"
+                f"**Party Size Limit:** {max_participants}"
             ),
             inline=False
         )
