@@ -258,8 +258,151 @@ class CrystalResearchRollView(discord.ui.View):
 class AdminCog(commands.Cog):
     """Admin commands for bot management and testing"""
 
+    rotom = app_commands.Group(
+        name="rotom",
+        description="[ADMIN] Rotom message posting tools"
+    )
+
     def __init__(self, bot):
         self.bot = bot
+
+    @rotom.command(name="post", description="[ADMIN] Post a Rotom message in this channel")
+    @app_commands.describe(
+        message="The message Rotom should post",
+        image="Optional image attachment"
+    )
+    @app_commands.check(is_admin)
+    async def rotom_post(
+        self,
+        interaction: discord.Interaction,
+        message: Optional[str] = None,
+        image: Optional[discord.Attachment] = None,
+    ):
+        """Post a message (and optional image) as Rotom in the current channel."""
+        if interaction.channel is None:
+            await interaction.response.send_message(
+                "❌ This command can only be used in a channel.",
+                ephemeral=True
+            )
+            return
+
+        if not message and image is None:
+            await interaction.response.send_message(
+                "❌ Provide a message, an image, or both.",
+                ephemeral=True
+            )
+            return
+
+        if image and image.content_type and not image.content_type.startswith("image/"):
+            await interaction.response.send_message(
+                "❌ The attached file must be an image.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        files = []
+        if image:
+            files.append(await image.to_file())
+
+        sent_message = await interaction.channel.send(
+            content=message,
+            files=files
+        )
+
+        await interaction.followup.send(
+            f"✅ Rotom posted your message. Message ID: `{sent_message.id}`",
+            ephemeral=True
+        )
+
+    @rotom.command(name="edit", description="[ADMIN] Edit a Rotom-posted message")
+    @app_commands.describe(
+        message_id="The ID of the Rotom message to edit",
+        message="New text for the message",
+        image="New image to replace the existing image",
+        remove_image="Remove all current images from the message"
+    )
+    @app_commands.check(is_admin)
+    async def rotom_edit(
+        self,
+        interaction: discord.Interaction,
+        message_id: str,
+        message: Optional[str] = None,
+        image: Optional[discord.Attachment] = None,
+        remove_image: bool = False,
+    ):
+        """Edit a message previously posted by the bot in this channel."""
+        if interaction.channel is None:
+            await interaction.response.send_message(
+                "❌ This command can only be used in a channel.",
+                ephemeral=True
+            )
+            return
+
+        if image and remove_image:
+            await interaction.response.send_message(
+                "❌ Choose either a new image or remove_image, not both.",
+                ephemeral=True
+            )
+            return
+
+        if not message and image is None and not remove_image:
+            await interaction.response.send_message(
+                "❌ Provide a new message, a new image, or set remove_image to true.",
+                ephemeral=True
+            )
+            return
+
+        if image and image.content_type and not image.content_type.startswith("image/"):
+            await interaction.response.send_message(
+                "❌ The attached file must be an image.",
+                ephemeral=True
+            )
+            return
+
+        try:
+            target_message_id = int(message_id)
+        except ValueError:
+            await interaction.response.send_message(
+                "❌ message_id must be a valid message ID number.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            target_message = await interaction.channel.fetch_message(target_message_id)
+        except discord.NotFound:
+            await interaction.followup.send(
+                "❌ I couldn't find a message with that ID in this channel.",
+                ephemeral=True
+            )
+            return
+
+        if target_message.author.id != self.bot.user.id:
+            await interaction.followup.send(
+                "❌ I can only edit messages posted by Rotom.",
+                ephemeral=True
+            )
+            return
+
+        edit_kwargs = {
+            "content": message if message is not None else target_message.content,
+        }
+
+        if image is not None:
+            edit_kwargs["attachments"] = [await image.to_file()]
+        elif remove_image:
+            edit_kwargs["attachments"] = []
+
+        await target_message.edit(**edit_kwargs)
+
+        await interaction.followup.send(
+            f"✅ Rotom edited message `{target_message.id}`.",
+            ephemeral=True
+        )
     
     # ============================================================
     # GIVE POKEMON - SHOWDOWN FORMAT
