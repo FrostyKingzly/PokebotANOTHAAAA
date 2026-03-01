@@ -141,6 +141,7 @@ class PokemonBot(commands.Bot):
             'cogs.admin_cog',
             'cogs.pokemon_ai_cog',
             'cogs.session_cog',
+            'cogs.roleplay_cog',
             'cogs.dream_rogue_cog',
         ]
         
