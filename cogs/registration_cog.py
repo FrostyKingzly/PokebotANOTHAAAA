@@ -633,22 +633,40 @@ class RegistrationCog(commands.Cog):
 
     @app_commands.command(
         name="register",
-        description="Create your trainer profile and begin your journey",
+        description="Admin-only: create a trainer profile for a selected server member",
     )
-    async def register(self, interaction: discord.Interaction):
-        """Register as a new trainer"""
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.describe(target_user="The server member this character will belong to")
+    async def register(self, interaction: discord.Interaction, target_user: discord.Member):
+        """Register a selected member as a new trainer (admin-only)."""
         await interaction.response.defer(ephemeral=True)
 
-        if self.bot.player_manager.player_exists(interaction.user.id):
+        if interaction.guild is None:
+            embed = EmbedBuilder.error(
+                "Server Only",
+                "This command can only be used inside a server.",
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        if not interaction.user.guild_permissions.administrator:
+            embed = EmbedBuilder.error(
+                "Admin Only",
+                "Only server administrators can use `/register`.",
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        if self.bot.player_manager.player_exists(target_user.id):
             embed = EmbedBuilder.error(
                 "Already Registered",
-                "You already have a trainer profile! Use `/menu` to continue your journey.",
+                f"{target_user.mention} already has a trainer profile! Use `/menu` to continue your journey.",
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         # Initialize registration data
-        interaction.client.temp_registration_data = RegistrationData(interaction.user.id)
+        interaction.client.temp_registration_data = RegistrationData(target_user.id)
 
         description = (
             "You've just taken your very first steps into the beautiful city of dreams.\n\n"
@@ -662,6 +680,7 @@ class RegistrationCog(commands.Cog):
             description=description,
             color=discord.Color.green(),
         )
+        embed.add_field(name="Registering Character For", value=target_user.mention, inline=False)
         embed.set_footer(text="Press the button below to begin")
 
         view = WelcomeView()
