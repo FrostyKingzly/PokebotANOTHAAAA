@@ -1109,6 +1109,80 @@ class PartyHealTargetView(discord.ui.View):
         await self._heal_parties(interaction, participants)
 
 
+class ParticipantActionSelect(discord.ui.UserSelect):
+    """User selector for adding/removing session participants."""
+
+    def __init__(self, bot, session_id: str, action: str):
+        self.bot = bot
+        self.session_id = session_id
+        self.action = action
+
+        placeholder = "Select users to add" if action == "add" else "Select users to remove"
+        super().__init__(
+            placeholder=placeholder,
+            min_values=1,
+            max_values=25,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        if not is_admin(interaction):
+            await interaction.response.send_message(
+                "❌ Only admins can manage session participants.",
+                ephemeral=True,
+            )
+            return
+
+        selected_ids = [member.id for member in self.values]
+        results = []
+
+        if self.action == "add":
+            for user_id in selected_ids:
+                if not self.bot.player_manager.player_exists(user_id):
+                    results.append(f"• <@{user_id}>: not registered")
+                    continue
+
+                if self.bot.session_manager.is_in_session(user_id):
+                    current_session = self.bot.session_manager.get_player_session(user_id)
+                    if current_session and current_session.get("session_id") == self.session_id:
+                        results.append(f"• <@{user_id}>: already in this session")
+                    else:
+                        results.append(f"• <@{user_id}>: already in another session")
+                    continue
+
+                if self.bot.session_manager.add_participant(self.session_id, user_id):
+                    results.append(f"• <@{user_id}>: ✅ added")
+                else:
+                    results.append(f"• <@{user_id}>: ❌ failed to add")
+        else:
+            participants = set(self.bot.session_manager.get_session_participants(self.session_id))
+
+            for user_id in selected_ids:
+                if user_id not in participants:
+                    results.append(f"• <@{user_id}>: not in this session")
+                    continue
+
+                if self.bot.session_manager.remove_participant(user_id):
+                    results.append(f"• <@{user_id}>: ✅ removed")
+                else:
+                    results.append(f"• <@{user_id}>: ❌ failed to remove")
+
+        summary = "\n".join(results) if results else "No users were processed."
+        await interaction.response.send_message(
+            f"Participant update results:\n{summary}",
+            allowed_mentions=discord.AllowedMentions.none(),
+            ephemeral=True,
+        )
+
+
+class ParticipantManagementView(discord.ui.View):
+    """View for manually adding/removing session participants."""
+
+    def __init__(self, bot, session_id: str):
+        super().__init__(timeout=120)
+        self.add_item(ParticipantActionSelect(bot, session_id, action="add"))
+        self.add_item(ParticipantActionSelect(bot, session_id, action="remove"))
+
+
 class SessionControlsView(discord.ui.View):
     """Main session controls view with all management buttons"""
 
@@ -1143,6 +1217,16 @@ class SessionControlsView(discord.ui.View):
         if not battle_cog:
             return None
         return getattr(battle_cog, "music_manager", None)
+
+    @discord.ui.button(label="Participants", style=discord.ButtonStyle.secondary, emoji="👥", row=2)
+    async def participants_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Open participant management controls."""
+        view = ParticipantManagementView(self.bot, self.session_id)
+        await interaction.response.send_message(
+            "Choose users to add to or remove from this session:",
+            view=view,
+            ephemeral=True,
+        )
 
     @discord.ui.button(label="Move", style=discord.ButtonStyle.primary, emoji="🗺️", row=0)
     async def move_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -1725,6 +1809,12 @@ class SessionCog(commands.Cog):
         embed.add_field(
             name="📣 Resend Join",
             value="Post a fresh join button for late arrivals",
+            inline=True
+        )
+
+        embed.add_field(
+            name="👥 Participants",
+            value="Manually add or remove session members",
             inline=True
         )
 
