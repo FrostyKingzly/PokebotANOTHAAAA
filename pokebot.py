@@ -139,6 +139,7 @@ class PokemonBot(commands.Bot):
             'cogs.items_cog',
             'cogs.rank_cog',
             'cogs.admin_cog',
+            'cogs.community_events_cog',
             'cogs.pokemon_ai_cog',
             'cogs.session_cog',
             'cogs.roleplay_cog',
