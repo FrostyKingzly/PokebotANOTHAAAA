@@ -79,12 +79,12 @@ class CommunityEventsCog(commands.Cog):
             f"and <#{REVERIE_INTRODUCTIONS_CHANNEL_ID}> if you want to introduce yourself! "
             "When you're ready to make a character, the rp information category is available "
             "to read before you step into the night.\n\n"
-            "May all your dreams come true in Reverie!"
+            "May all your dreams come true in Reverie!\n\n"
+            f"{REVERIE_WELCOME_GIF_URL}"
         )
 
         embed = discord.Embed(description=description, color=REVERIE_WELCOME_COLOR)
         await channel.send(embed=embed)
-        await channel.send(REVERIE_WELCOME_GIF_URL)
 
     async def cog_load(self):
         """Prime booster caches from member state at startup."""
