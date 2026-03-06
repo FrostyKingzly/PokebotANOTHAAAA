@@ -12,6 +12,12 @@ from discord.ext import commands
 
 DISBOARD_BOT_ID = 302050872383242240
 USER_MENTION_PATTERN = re.compile(r"<@!?(\d+)>")
+REVERIE_GUILD_ID = 1477425059147677878
+REVERIE_WELCOME_CHANNEL_ID = 1477876580284891197
+REVERIE_RULES_CHANNEL_ID = 1477614227052167250
+REVERIE_INTRODUCTIONS_CHANNEL_ID = 1478527442795630683
+REVERIE_WELCOME_GIF_URL = "https://tenor.com/view/joie-pikachu-pokemon-bohneur-gif-20062195"
+REVERIE_WELCOME_COLOR = discord.Color.orange()
 
 
 @dataclass
@@ -58,6 +64,27 @@ class CommunityEventsCog(commands.Cog):
         self.bot = bot
         self.latest_bumps_by_guild: Dict[int, BumpRecord] = {}
         self.boosters_by_guild: Dict[int, Set[int]] = {}
+
+    async def _send_reverie_welcome(self, member: discord.Member):
+        if member.guild.id != REVERIE_GUILD_ID:
+            return
+
+        channel = member.guild.get_channel(REVERIE_WELCOME_CHANNEL_ID)
+        if not isinstance(channel, discord.TextChannel):
+            return
+
+        description = (
+            f"Welcome to Reverie City, {member.mention}!\n\n"
+            f"We're glad you've arrived. Be sure to check out our <#{REVERIE_RULES_CHANNEL_ID}> "
+            f"and <#{REVERIE_INTRODUCTIONS_CHANNEL_ID}> if you want to introduce yourself! "
+            "When you're ready to make a character, the rp information category is available "
+            "to read before you step into the night.\n\n"
+            "May all your dreams come true in Reverie!"
+        )
+
+        embed = discord.Embed(description=description, color=REVERIE_WELCOME_COLOR)
+        await channel.send(embed=embed)
+        await channel.send(REVERIE_WELCOME_GIF_URL)
 
     async def cog_load(self):
         """Prime booster caches from member state at startup."""
@@ -157,6 +184,8 @@ class CommunityEventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
+        await self._send_reverie_welcome(member)
+
         if member.premium_since is None:
             return
         self.boosters_by_guild.setdefault(member.guild.id, set()).add(member.id)
