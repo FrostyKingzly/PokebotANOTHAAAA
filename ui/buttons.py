@@ -7445,6 +7445,13 @@ class MultiPartnerSelectView(View):
 
         # Check if partner is already in a battle
         battle_cog = self.bot.get_cog('BattleCog')
+        if not battle_cog:
+            await interaction.response.send_message(
+                "❌ Battle system not available right now.",
+                ephemeral=True
+            )
+            return
+
         if partner.id in battle_cog.user_battles:
             await interaction.response.send_message(
                 f"❌ {partner.display_name} is already in a battle!",
@@ -7534,6 +7541,14 @@ class MultiPartnerInviteView(View):
 
         # Get both players' parties
         battle_cog = self.bot.get_cog('BattleCog')
+        if not battle_cog:
+            await interaction.followup.send(
+                "❌ Battle system not available right now.",
+                ephemeral=True
+            )
+            await self._finalize("❌ Multi battle cancelled - battle system unavailable.")
+            self.stop()
+            return
 
         # Check if either player is now in a battle
         if self.initiator.id in battle_cog.user_battles:
