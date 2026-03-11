@@ -3339,6 +3339,39 @@ class BagView(discord.ui.View):
         self.add_item(BagBallSelect(battle_cog, self.battle_id, balls))
 
 
+class BagBallSelect(discord.ui.Select):
+    """Poké Ball picker used by the in-battle bag view."""
+
+    def __init__(self, battle_cog: BattleCog, battle_id: str, balls: dict[str, tuple[dict, int]]):
+        self.battle_cog = battle_cog
+        self.battle_id = battle_id
+
+        options = []
+        for item_id, (item_data, qty) in balls.items():
+            label = f"{item_data.get('name', item_id)} x{qty}"[:100]
+            description = item_data.get("description")
+            if description:
+                description = description[:100]
+            options.append(
+                discord.SelectOption(
+                    label=label,
+                    value=item_id,
+                    description=description,
+                )
+            )
+
+        super().__init__(
+            placeholder="Choose a Poké Ball",
+            min_values=1,
+            max_values=1,
+            options=options,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        chosen_id = self.values[0]
+        await self.battle_cog._handle_ball_throw(interaction, self.battle_id, chosen_id)
+
+
 class DazedCatchView(discord.ui.View):
     """Prompt that lets trainers confirm whether they will catch a dazed wild Pokemon."""
 
