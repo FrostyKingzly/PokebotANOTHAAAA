@@ -1670,10 +1670,12 @@ class BattleCog(commands.Cog):
             return
 
         if getattr(battler, "is_ai", False):
-            await interaction.followup.send(
-                "Waiting for your opponent to choose their next Pokémon...",
-                ephemeral=True,
-            )
+            auto_switch_events = self.battle_engine.auto_switch_if_forced_ai(battle)
+            for event in auto_switch_events:
+                embed = self._build_switch_embed(event.get("messages") or [], pokemon=event.get("pokemon"))
+                if embed:
+                    await self._safe_followup_send(interaction, embed=embed)
+                    await asyncio.sleep(1)
             return
 
         # Safety check: Don't prompt eliminated battlers (those with no Pokemon left)
@@ -2329,8 +2331,10 @@ class BattleCog(commands.Cog):
         # If we didn't find anyone in pending_switches, try the old fields
         if not prompted_switch and battle.phase in ['FORCED_SWITCH', 'VOLT_SWITCH'] and battle.forced_switch_battler_id:
             print(f"[DEBUG] Using fallback: forced_switch_battler_id={battle.forced_switch_battler_id}")
-            await self._prompt_forced_switch(interaction, battle, battle.forced_switch_battler_id)
-            prompted_switch = True
+            fallback_battler = _get_battler_by_id(battle, battle.forced_switch_battler_id)
+            if fallback_battler and not getattr(fallback_battler, 'is_ai', False):
+                await self._prompt_forced_switch(interaction, battle, battle.forced_switch_battler_id)
+                prompted_switch = True
 
         # Recovery mechanism: Scan for any fainted Pokemon that weren't tracked in pending_switches
         # This catches cases where the fainting detection code failed to add the player
