@@ -877,6 +877,14 @@ class BattleEngine:
 
         return weather_map.get(str(overworld_weather).lower())
 
+    def _get_dream_effects(self, pokemon, effect_type: str) -> List[Dict[str, Any]]:
+        """Return dream effects of a given type for a Pokémon-like object."""
+        effect_type = str(effect_type or "").lower()
+        return [
+            effect for effect in getattr(pokemon, "dream_effects", [])
+            if str(effect.get("type", "")).lower() == effect_type
+        ]
+
     # ========================
     # Battle Initialization
     # ========================
