@@ -3432,7 +3432,7 @@ class DazedCatchView(discord.ui.View):
 class DoublesActionMenuView(discord.ui.View):
     """Action menu for individual Pokemon in doubles battles."""
     def __init__(self, battle, battler_id: int, engine: BattleEngine,
-                 pokemon_position: int, collector: DoublesActionCollector):
+                 pokemon_position: int, collector: 'DoublesActionCollector'):
         super().__init__(timeout=None)
         self.battle = battle
         self.battle_id = battle.battle_id
@@ -3484,7 +3484,7 @@ class DoublesActionMenuView(discord.ui.View):
 class DoublesPartySelectView(discord.ui.View):
     """Party selection for switching in doubles battles."""
     def __init__(self, battle, battler_id: int, engine: BattleEngine,
-                 pokemon_position: int, collector: DoublesActionCollector, forced: bool = False):
+                 pokemon_position: int, collector: 'DoublesActionCollector', forced: bool = False):
         super().__init__(timeout=None)
         self.battle = battle
         self.battle_id = battle.battle_id
