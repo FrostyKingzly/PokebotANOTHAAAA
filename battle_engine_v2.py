@@ -830,7 +830,7 @@ class BattleEngine:
         self.player_manager = None
 
     @staticmethod
-    def map_overworld_weather_to_battle(overworld_weather: Optional[str]) -> Optional[str]:
+    def map_overworld_weather_to_battle(overworld_weather: Optional[Any]) -> Optional[str]:
         """
         Maps overworld weather types to battle weather effects.
 
@@ -850,6 +850,14 @@ class BattleEngine:
         if not overworld_weather:
             return None
 
+        # Weather manager contexts may return a payload dictionary instead of a
+        # direct weather string. In that case, use the channel/region's current
+        # weather value.
+        if isinstance(overworld_weather, dict):
+            overworld_weather = overworld_weather.get("current_weather")
+            if not overworld_weather:
+                return None
+
         weather_map = {
             # No effects
             'cloudy': None,
@@ -867,7 +875,7 @@ class BattleEngine:
             'blizzard': 'snow',
         }
 
-        return weather_map.get(overworld_weather.lower())
+        return weather_map.get(str(overworld_weather).lower())
 
     # ========================
     # Battle Initialization
@@ -1035,7 +1043,8 @@ class BattleEngine:
                 # Don't let weather errors crash battle initialization
                 print(f"Warning: Failed to set overworld weather: {e}")
 
-        self._apply_dream_effects_to_battle(battle)
+        if battle.dream_run_id:
+            self._apply_dream_effects_to_battle(battle)
 
         for battler in battle.get_all_battlers():
             for mon in battler.get_active_pokemon():
@@ -1432,7 +1441,8 @@ class BattleEngine:
             dream_effects_by_user=dream_effects_by_user
         )
 
-        self._apply_dream_effects_to_battle(battle)
+        if battle.dream_run_id:
+            self._apply_dream_effects_to_battle(battle)
 
         # Trigger entry abilities
         try:
