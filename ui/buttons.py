@@ -5088,6 +5088,13 @@ class EncounterSelectView(View):
         
         # Check if already in battle
         battle_cog = self.bot.get_cog('BattleCog')
+        if not battle_cog:
+            await interaction.response.send_message(
+                "❌ Battle system not loaded! Please try again in a moment.",
+                ephemeral=True
+            )
+            return
+
         if interaction.user.id in battle_cog.user_battles:
             await interaction.response.send_message(
                 "❌ You're already in a battle! Finish it first!",
@@ -5107,12 +5114,6 @@ class EncounterSelectView(View):
         await interaction.response.defer()
         
         # Start battle using unified battle engine
-        if not battle_cog:
-            await interaction.followup.send(
-                "❌ Battle system not loaded!",
-                ephemeral=True
-            )
-            return
 
         # Get trainer's wild area state for weather
         trainer_profile = self.bot.player_manager.get_player(interaction.user.id)
@@ -7444,6 +7445,13 @@ class MultiPartnerSelectView(View):
 
         # Check if partner is already in a battle
         battle_cog = self.bot.get_cog('BattleCog')
+        if not battle_cog:
+            await interaction.response.send_message(
+                "❌ Battle system not available right now.",
+                ephemeral=True
+            )
+            return
+
         if partner.id in battle_cog.user_battles:
             await interaction.response.send_message(
                 f"❌ {partner.display_name} is already in a battle!",
@@ -7533,6 +7541,14 @@ class MultiPartnerInviteView(View):
 
         # Get both players' parties
         battle_cog = self.bot.get_cog('BattleCog')
+        if not battle_cog:
+            await interaction.followup.send(
+                "❌ Battle system not available right now.",
+                ephemeral=True
+            )
+            await self._finalize("❌ Multi battle cancelled - battle system unavailable.")
+            self.stop()
+            return
 
         # Check if either player is now in a battle
         if self.initiator.id in battle_cog.user_battles:
@@ -7785,6 +7801,13 @@ class NpcTrainerSelectView(View):
 
         # Check if already in battle
         battle_cog = self.bot.get_cog('BattleCog')
+        if not battle_cog:
+            await interaction.response.send_message(
+                "❌ Battle system not loaded! Please try again in a moment.",
+                ephemeral=True
+            )
+            return
+
         if interaction.user.id in battle_cog.user_battles:
             await interaction.response.send_message(
                 "❌ You're already in a battle! Finish it first!",
@@ -7873,12 +7896,6 @@ class NpcTrainerSelectView(View):
         await interaction.response.defer()
         
         # Start battle using unified battle engine
-        if not battle_cog:
-            await interaction.followup.send(
-                "❌ Battle system not loaded!",
-                ephemeral=True
-            )
-            return
         
         ranked_context = self._build_ranked_context(npc_data, extra_context, self.selected_rank_override)
         if ranked_context is None:
