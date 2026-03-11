@@ -13,6 +13,7 @@ from discord.ext import commands
 
 WORD_RE = re.compile(r"[A-Za-z0-9']+")
 PAREN_RE = re.compile(r"\([^)]*\)")
+RP_EXP_WORD_RATIO = 5
 
 # Temporary placeholder rewards until per-location tuning is provided.
 # Keys should be location_id values from LocationManager.
@@ -147,7 +148,7 @@ class RPSpendStaminaView(discord.ui.View):
         for stat_key, amount in stat_rewards.items():
             outcome = self.cog.apply_social_points(trainer, stat_key, amount)
             applied_lines.append(
-                f"• **{stat_key.title()}** +{amount} → Rank {outcome['new_rank']} ({outcome['new_points']}/{outcome['cap']})"
+                f"• **{stat_key.title()}** +{amount} → Rank {outcome['new_rank']}"
             )
 
         await interaction.response.edit_message(
@@ -210,9 +211,12 @@ class RPEndConfirmView(discord.ui.View):
             )
             return
 
-        exp_amount = max(0, session.word_count)
+        exp_amount = max(0, session.word_count // RP_EXP_WORD_RATIO)
         exp_results = self.cog.award_party_exp(self.session.user_id, exp_amount)
-        summary_lines = [f"• Words counted: **{session.word_count}**", f"• EXP per party Pokémon: **{exp_amount}**"]
+        summary_lines = [
+            f"• Words counted: **{session.word_count}**",
+            f"• EXP per party Pokémon: **{exp_amount}** (1 EXP per {RP_EXP_WORD_RATIO} words)",
+        ]
 
         if exp_results:
             summary_lines.append("\n**Party EXP results:**")
