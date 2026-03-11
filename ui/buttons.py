@@ -6487,7 +6487,8 @@ class PromotionMatchView(View):
                 'mode': 'npc',
                 'npc_rank': npc_rank or self.match.tier,
                 'npc_name': self.npc_data.get('name'),
-                'npc_class': self.npc_data.get('class')
+                'npc_class': self.npc_data.get('class'),
+                'npc_cooldown_identifier': self.npc_data.get('id') or self.npc_data.get('name')
             }
             if extra_context:
                 ranked_context.update(extra_context)
@@ -7747,14 +7748,19 @@ class NpcTrainerSelectView(View):
             npc_class = npc.get('class') or npc.get('trainer_class', 'Trainer')
             party_size = len(npc.get('party') or npc.get('team', []))
             prize_money = npc.get('prize_money', 0)
-            
+            battle_format = (npc.get('battle_format', 'singles') or 'singles').capitalize()
+            levels = [
+                poke.get("level", 1)
+                for poke in (npc.get("party") or npc.get("team", []))
+                if poke.get("level") is not None
+            ]
+            avg_level = round(sum(levels) / len(levels)) if levels else 1
+
             label = npc_name
-            description = npc_class
+            description = f"{battle_format} Av. Lvl {avg_level}"
             if ranked:
                 npc_rank = npc.get("rank_tier_number") or npc.get("rank") or 1
                 rank_name = get_rank_tier_definition(npc_rank)["name"]
-                levels = [poke.get("level", 1) for poke in npc.get("party", []) if poke.get("level") is not None]
-                avg_level = round(sum(levels) / len(levels)) if levels else 1
                 description = f"{rank_name} (Lv. {avg_level})"
             
             options.append(
@@ -7902,6 +7908,7 @@ class NpcTrainerSelectView(View):
             ranked_context = {}
         ranked_context['npc_post_battle_dialogue'] = npc_data.get('post_battle_sleep_dialogue')
         ranked_context['npc_name'] = npc_data.get('name')
+        ranked_context['npc_cooldown_identifier'] = identifier
 
         # Determine battle format from NPC data
         battle_format_str = npc_data.get('battle_format', 'singles').lower()
