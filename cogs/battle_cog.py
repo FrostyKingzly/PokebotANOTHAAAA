@@ -57,6 +57,8 @@ class BattleCog(commands.Cog):
         self.music_manager = BattleMusicManager(bot)
         # Track which battles have music enabled (battle_id -> bool)
         self.battles_with_music = {}
+        # Track dedicated battle threads (battle_id -> thread_id)
+        self.battle_threads = {}
 
     def _init_exp_handler(self) -> Optional[BattleExpHandler]:
         species_db = getattr(self.bot, "species_db", None)
@@ -597,6 +599,13 @@ class BattleCog(commands.Cog):
         except Exception:
             pass
 
+        battle_thread = await self._maybe_create_battle_thread(interaction, battle)
+
+        async def _send_battle_message(*args, **kwargs):
+            if battle_thread:
+                return await battle_thread.send(*args, **kwargs)
+            return await interaction.followup.send(*args, **kwargs)
+
         # Start battle music if enabled
         trainer_id = battle.trainer.battler_id if hasattr(battle.trainer, 'battler_id') else None
         if trainer_id:
@@ -618,7 +627,7 @@ class BattleCog(commands.Cog):
             view = self._create_battle_view(battle)
 
             if sprite_embed:
-                await interaction.followup.send(embed=sprite_embed)
+                await _send_battle_message(embed=sprite_embed)
                 await asyncio.sleep(1)
 
             await self._send_raid_sendouts(interaction, battle)
@@ -626,16 +635,16 @@ class BattleCog(commands.Cog):
             field_embed = self._create_field_effects_embed(battle)
 
             if battle_begin_embed:
-                await interaction.followup.send(embed=battle_begin_embed)
+                await _send_battle_message(embed=battle_begin_embed)
                 await asyncio.sleep(1)
 
             if field_embed:
-                await interaction.followup.send(embed=field_embed)
+                await _send_battle_message(embed=field_embed)
                 await asyncio.sleep(1)
 
-            await interaction.followup.send(embed=status_embed)
+            await _send_battle_message(embed=status_embed)
             await asyncio.sleep(1)
-            await interaction.followup.send(embed=party_embed, view=view)
+            await _send_battle_message(embed=party_embed, view=view)
             return
 
         # 1) Opening embed: differentiate wild encounters vs trainer battles
@@ -689,7 +698,7 @@ class BattleCog(commands.Cog):
             )
             enc.set_thumbnail(url=sprite_url)
 
-        await interaction.followup.send(embed=enc)
+        await _send_battle_message(embed=enc)
 
         # 2) Send-out + entry effects - separate embeds for each Pokemon
 
@@ -718,7 +727,7 @@ class BattleCog(commands.Cog):
             )
             send_embed.set_thumbnail(url=sprite_url)
 
-            await interaction.followup.send(embed=send_embed)
+            await _send_battle_message(embed=send_embed)
             await asyncio.sleep(1)
 
         # For multi battles, also send out partner's Pokemon
@@ -745,7 +754,7 @@ class BattleCog(commands.Cog):
                 )
                 send_embed.set_thumbnail(url=sprite_url)
 
-                await interaction.followup.send(embed=send_embed)
+                await _send_battle_message(embed=send_embed)
                 await asyncio.sleep(1)
 
         # For trainer battles, also send out opponent's Pokemon (one embed per Pokemon)
@@ -771,7 +780,7 @@ class BattleCog(commands.Cog):
                 )
                 send_embed.set_thumbnail(url=sprite_url)
 
-                await interaction.followup.send(embed=send_embed)
+                await _send_battle_message(embed=send_embed)
                 await asyncio.sleep(1)
 
             # For multi battles, also send out opponent partner's Pokemon
@@ -798,19 +807,60 @@ class BattleCog(commands.Cog):
                     )
                     send_embed.set_thumbnail(url=sprite_url)
 
-                    await interaction.followup.send(embed=send_embed)
+                    await _send_battle_message(embed=send_embed)
                     await asyncio.sleep(1)
 
         # If there are entry messages or field effects, send them in a final embed
         field_embed = self._create_field_effects_embed(battle, entry_messages)
         if field_embed:
-            await interaction.followup.send(embed=field_embed)
+            await _send_battle_message(embed=field_embed)
             await asyncio.sleep(1)
 
         # 3) Main action embed + view
         main_embed = self._create_battle_embed(battle)
         view = self._create_battle_view(battle)
-        await interaction.followup.send(embed=main_embed, view=view)
+        await _send_battle_message(embed=main_embed, view=view)
+
+    async def _maybe_create_battle_thread(self, interaction: discord.Interaction, battle):
+        """Create a dedicated thread for non-wild battles when possible."""
+        if not interaction.guild or getattr(battle, 'battle_type', None) == BattleType.WILD:
+            return None
+        if isinstance(interaction.channel, discord.Thread):
+            return interaction.channel
+        if not isinstance(interaction.channel, discord.TextChannel):
+            return None
+
+        participant_ids = []
+        for participant in [
+            getattr(battle, 'trainer', None),
+            getattr(battle, 'opponent', None),
+            getattr(battle, 'trainer_partner', None),
+            getattr(battle, 'opponent_partner', None),
+        ]:
+            battler_id = getattr(participant, 'battler_id', None)
+            if isinstance(battler_id, int):
+                participant_ids.append(battler_id)
+
+        thread_name = f"{battle.trainer.battler_name} vs {battle.opponent.battler_name}"[:100]
+        try:
+            thread = await interaction.channel.create_thread(
+                name=thread_name,
+                type=discord.ChannelType.public_thread,
+                auto_archive_duration=1440,
+            )
+            self.battle_threads[battle.battle_id] = thread.id
+
+            await interaction.followup.send(
+                f"🧵 Battle thread created: {thread.mention} ({thread.jump_url})"
+            )
+            mentions = " ".join(f"<@{user_id}>" for user_id in sorted(set(participant_ids)))
+            await thread.send(
+                f"Battle participants: {mentions}" if mentions else "Battle participants have arrived."
+            )
+            return thread
+        except Exception:
+            return None
+
 
     # --------------------
     # Helpers
@@ -1896,7 +1946,8 @@ class BattleCog(commands.Cog):
         player_manager = getattr(self.bot, 'player_manager', None)
         if player_manager:
             if getattr(battle, 'battle_type', None) == BattleType.TRAINER and result == 'trainer':
-                identifier = getattr(battle.opponent, 'battler_name', 'opponent')
+                context = getattr(battle, 'ranked_context', None) or {}
+                identifier = context.get('npc_cooldown_identifier') or getattr(battle.opponent, 'battler_name', 'opponent')
                 target_type = 'npc_ranked' if getattr(battle, 'is_ranked', False) else 'npc_casual'
                 duration = None if getattr(battle, 'is_ranked', False) else 24 * 60 * 60
                 player_manager.set_battle_cooldown(battle.trainer.battler_id, target_type, identifier, duration)
@@ -1964,8 +2015,30 @@ class BattleCog(commands.Cog):
                 await interaction.channel.edit(archived=True, locked=True)
             except Exception as e:
                 print(f"Failed to close Dream Dive encounter thread: {e}")
-        elif getattr(battle, 'battle_type', None) == BattleType.WILD:
-            await self.send_return_to_encounter_prompt(interaction, battle.trainer.battler_id)
+        else:
+            await self._close_battle_thread(interaction, battle)
+            if getattr(battle, 'battle_type', None) == BattleType.WILD:
+                await self.send_return_to_encounter_prompt(interaction, battle.trainer.battler_id)
+
+    async def _close_battle_thread(self, interaction: discord.Interaction, battle):
+        """Archive/lock a dedicated battle thread for completed battles."""
+        thread_id = self.battle_threads.pop(battle.battle_id, None)
+        if not thread_id:
+            return
+
+        thread = interaction.guild.get_thread(thread_id) if interaction.guild else None
+        if not thread:
+            try:
+                thread = await self.bot.fetch_channel(thread_id)
+            except Exception:
+                return
+
+        try:
+            await thread.send("✅ Battle complete. This thread is now locked for viewing.")
+            await thread.edit(archived=True, locked=True)
+        except Exception:
+            pass
+
 
     async def _award_exp_for_new_faints(self, battle, interaction: Optional[discord.Interaction] = None):
         """
