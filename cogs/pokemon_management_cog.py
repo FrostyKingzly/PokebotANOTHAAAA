@@ -448,15 +448,9 @@ class PokemonActionsView(View):
             )
             return
 
-        # Get evolution target
-        if method == 'multiple':
-            # Multiple evolution options (e.g., Eevee)
-            await interaction.response.send_message(
-                "[!] This Pokemon has multiple evolution options! Use an evolution stone to choose.",
-                ephemeral=True
-            )
-            return
-
+        # Get evolution target. For multi-path species (e.g., Eevee),
+        # can_evolve() already resolves the specific evolution when the
+        # correct held item is present.
         evolve_into = evolution_data.get('into')
         if not evolve_into:
             await interaction.response.send_message("[X] Evolution data error!", ephemeral=True)

@@ -62,3 +62,25 @@ def test_multiple_stone_evolution_detected_with_held_item():
     assert can_evolve is True
     assert method == "multiple"
     assert evo_data["into"] == "jolteon"
+
+
+def test_multiple_stone_evolution_resolves_fire_stone_to_flareon():
+    manager = _manager_with_data(
+        {
+            "eevee": {
+                "method": "multiple",
+                "evolutions": [
+                    {"method": "stone", "stone": "water_stone", "into": "vaporeon"},
+                    {"method": "stone", "stone": "thunder_stone", "into": "jolteon"},
+                    {"method": "stone", "stone": "fire_stone", "into": "flareon"},
+                ],
+            }
+        }
+    )
+    can_evolve, method, evo_data = manager.can_evolve(
+        {"species_name": "Eevee", "held_item": "Fire Stone"}
+    )
+
+    assert can_evolve is True
+    assert method == "multiple"
+    assert evo_data["into"] == "flareon"
