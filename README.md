@@ -267,6 +267,25 @@ pokemon-bot/
 - **Full Pokemon Stats**: Real IV/EV/Nature calculations like main games
 - **Data-Driven**: Easy to add custom Pokemon, moves, abilities later
 
+## 🔄 Migrating Trainer Data Between Environments
+
+Use the helper script to package and restore trainer persistence data:
+
+```bash
+# Create a backup archive
+python scripts/trainer_data_transfer.py export trainer_backup.zip
+
+# Restore from backup archive
+python scripts/trainer_data_transfer.py import trainer_backup.zip
+```
+
+The transfer includes these files (if present):
+
+- `data/players.db`
+- `config/player_inventory.json`
+- `config/rank_state.json`
+- `config/rank_matches.json`
+
 ## 🎯 Current Limitations
 
 These are placeholders for future development:
