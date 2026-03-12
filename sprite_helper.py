@@ -222,36 +222,13 @@ class PokemonSpriteHelper:
                 else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
             )
 
-            showdown_static = (
-                PokemonSpriteHelper.SHOWDOWN_STATIC_SHINY.format(name=gendered_name)
-                if shiny
-                else PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=gendered_name)
-            )
+            # Strictly prefer Gen 5 assets only: animated first, static fallback.
+            sprite_urls = [animated_url, static_fallback]
 
-            pokeapi_fallback = None
-            if dex_number is not None:
-                if gender and gender.lower() == "female":
-                    pokeapi_fallback = (
-                        PokemonSpriteHelper.POKEAPI_SHINY_FEMALE.format(id=dex_number)
-                        if shiny
-                        else PokemonSpriteHelper.POKEAPI_FRONT_FEMALE.format(id=dex_number)
-                    )
-                else:
-                    pokeapi_fallback = (
-                        PokemonSpriteHelper.POKEAPI_SHINY.format(id=dex_number)
-                        if shiny
-                        else PokemonSpriteHelper.POKEAPI_FRONT.format(id=dex_number)
-                    )
-
-            sprite_urls = [animated_url, static_fallback, showdown_static]
-            if pokeapi_fallback:
-                sprite_urls.append(pokeapi_fallback)
-
-            # When use_fallback=False, always return the animated URL directly
-            # without checking if it exists (avoids network latency and ensures
-            # we always try the animated GIF first)
             if not use_fallback:
-                return animated_url
+                if PokemonSpriteHelper._url_exists(animated_url):
+                    return animated_url
+                return static_fallback
 
             available_urls = [url for url in sprite_urls if PokemonSpriteHelper._url_exists(url)]
 
@@ -278,15 +255,11 @@ class PokemonSpriteHelper:
             return PokemonSpriteHelper.SHOWDOWN_STATIC.format(name=gendered_name)
 
         elif style == 'static':
-            if dex_number is None:
-                raise ValueError("dex_number required for static sprites")
-            if gender and gender.lower() == "female":
-                if shiny:
-                    return PokemonSpriteHelper.POKEAPI_SHINY_FEMALE.format(id=dex_number)
-                return PokemonSpriteHelper.POKEAPI_FRONT_FEMALE.format(id=dex_number)
+            # Keep static style aligned with Gen 5-only sprite policy.
+            gendered_name = PokemonSpriteHelper._gendered_name(name, gender)
             if shiny:
-                return PokemonSpriteHelper.POKEAPI_SHINY.format(id=dex_number)
-            return PokemonSpriteHelper.POKEAPI_FRONT.format(id=dex_number)
+                return PokemonSpriteHelper.GEN5_STATIC_SHINY.format(name=gendered_name)
+            return PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
 
         elif style == 'official':
             if dex_number is None:
