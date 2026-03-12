@@ -1602,7 +1602,8 @@ class MainMenuView(View):
             encounters,
             location,
             interaction.user.id,
-            current_location_id
+            current_location_id,
+            channel_id=interaction.channel_id,
         )
 
         await interaction.followup.edit_message(
@@ -2127,9 +2128,23 @@ class PokedexView(View):
         self.filter_mode = "all"
         self.current_index = 0
 
-        self.seen_species = set(bot.player_manager.get_pokedex(player_id))
+        self.seen_entries = {
+            (
+                entry.get("species_dex_number"),
+                self._normalize_form(entry.get("form")),
+            )
+            for entry in bot.player_manager.get_pokedex_entries(player_id)
+            if entry.get("species_dex_number") is not None
+        }
         owned = bot.player_manager.get_all_pokemon(player_id)
-        self.caught_species = {p.get("species_dex_number") for p in owned if p.get("species_dex_number") is not None}
+        self.caught_entries = {
+            (
+                p.get("species_dex_number"),
+                self._normalize_form(p.get("form")),
+            )
+            for p in owned
+            if p.get("species_dex_number") is not None
+        }
 
         self.species_entries: List[Dict[str, Any]] = sorted(
             [s for s in bot.species_db.data.values() if isinstance(s, dict) and s.get("dex_number")],
@@ -2139,11 +2154,20 @@ class PokedexView(View):
         self._refresh_items()
 
     # Status helpers -----------------------------------------------------
+    def _normalize_form(self, form: Optional[str]) -> Optional[str]:
+        if form is None:
+            return None
+        cleaned = str(form).strip().lower()
+        return cleaned or None
+
+    def _species_key(self, species: Dict[str, Any]) -> Tuple[Optional[int], Optional[str]]:
+        return (species.get("dex_number"), self._normalize_form(species.get("form")))
+
     def _status(self, species: Dict[str, Any]) -> str:
-        dex = species.get("dex_number")
-        if dex in self.caught_species:
+        species_key = self._species_key(species)
+        if species_key in self.caught_entries:
             return "caught"
-        if dex in self.seen_species:
+        if species_key in self.seen_entries:
             return "seen"
         return "unseen"
 
@@ -2167,7 +2191,7 @@ class PokedexView(View):
         return self.species_entries
 
     def _spawn_locations(self, species: Optional[Dict[str, Any]]) -> List[str]:
-        if not species or not (self._is_seen(species) or self._is_caught(species)):
+        if not species:
             return []
 
         loc_manager = getattr(self.bot, "location_manager", None)
@@ -2175,17 +2199,20 @@ class PokedexView(View):
             return []
 
         results: List[str] = []
-        for location in loc_manager.get_all_locations().values():
-            for encounter in location.get("encounters", []):
-                if encounter.get("species_dex_number") != species.get("dex_number"):
-                    continue
+        sightings = self.bot.player_manager.db.get_wild_sightings(
+            species.get("dex_number"),
+            form=species.get("form"),
+        )
+        for sighting in sightings:
+            location_id = sighting.get("location_id")
+            loc_name = loc_manager.get_location_name(location_id) if location_id else None
+            loc_text = loc_name or location_id or "Unknown area"
 
-                loc_name = location.get("name") or "Unknown area"
-                form = encounter.get("form")
-                if form:
-                    loc_name = f"{loc_name} ({str(form).replace('_', ' ').title()})"
-                results.append(loc_name)
-                break
+            channel_id = sighting.get("channel_id")
+            if channel_id:
+                loc_text = f"{loc_text} (<#{channel_id}>)"
+
+            results.append(loc_text)
 
         # Deduplicate while preserving order
         seen_names = set()
@@ -2236,8 +2263,8 @@ class PokedexView(View):
         self._clamp_index()
 
         species = filtered[self.current_index] if filtered else None
-        seen_total = len(self.seen_species | self.caught_species)
-        caught_total = len(self.caught_species)
+        seen_total = len(self.seen_entries | self.caught_entries)
+        caught_total = len(self.caught_entries)
         total_species = max(len(self.species_entries), self.DISPLAY_TOTAL)
         filtered_total = len(filtered) if filtered else 1
 
@@ -2257,8 +2284,8 @@ class PokedexView(View):
         self.clear_items()
 
         # Filter select
-        seen_total = len(self.seen_species | self.caught_species)
-        caught_total = len(self.caught_species)
+        seen_total = len(self.seen_entries | self.caught_entries)
+        caught_total = len(self.caught_entries)
         display_total = self.DISPLAY_TOTAL
         unseen_total = max(0, display_total - seen_total)
         filter_select = Select(
@@ -4971,7 +4998,15 @@ class TravelSelectView(View):
 class EncounterSelectView(View):
     """Wild encounter selection from rolled encounters"""
 
-    def __init__(self, bot, encounters: list, location: dict, player_id: int, location_id: str):
+    def __init__(
+        self,
+        bot,
+        encounters: list,
+        location: dict,
+        player_id: int,
+        location_id: str,
+        channel_id: Optional[int] = None,
+    ):
         super().__init__(timeout=900)  # Maximum Discord timeout: 15 minutes
         self.bot = bot
         self.encounters = encounters
@@ -4985,6 +5020,13 @@ class EncounterSelectView(View):
                 self.bot.player_manager.add_pokedex_seen(
                     player_id,
                     encounter.species_dex_number,
+                    getattr(encounter, "form", None),
+                )
+                self.bot.player_manager.db.add_wild_sighting(
+                    encounter.species_dex_number,
+                    location_id,
+                    form=getattr(encounter, "form", None),
+                    channel_id=channel_id,
                 )
             except Exception:
                 # Best-effort logging only; failure shouldn't block encounter UI
@@ -5165,7 +5207,8 @@ class EncounterSelectView(View):
             new_encounters,
             self.location,
             interaction.user.id,
-            current_location_id
+            current_location_id,
+            channel_id=interaction.channel_id,
         )
 
         # Edit the ACTUAL MESSAGE (not the deferred response) - allows unlimited rerolls
@@ -5799,7 +5842,14 @@ class ReturnToEncounterView(View):
         from ui.embeds import EmbedBuilder
 
         embed = EmbedBuilder.encounter_roll(encounters, location)
-        view = EncounterSelectView(self.bot, encounters, location, self.player_id, location_id)
+        view = EncounterSelectView(
+            self.bot,
+            encounters,
+            location,
+            self.player_id,
+            location_id,
+            channel_id=interaction.channel_id,
+        )
 
         await interaction.response.send_message(
             embed=embed,

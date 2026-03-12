@@ -628,11 +628,26 @@ class PlayerDatabase:
             CREATE TABLE IF NOT EXISTS pokedex (
                 discord_user_id INTEGER,
                 species_dex_number INTEGER,
+                form TEXT,
                 first_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (discord_user_id, species_dex_number),
+                PRIMARY KEY (discord_user_id, species_dex_number, form),
                 FOREIGN KEY (discord_user_id) REFERENCES trainers(discord_user_id)
             )
         """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS wild_sightings (
+                species_dex_number INTEGER,
+                form TEXT,
+                location_id TEXT,
+                channel_id INTEGER,
+                first_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (species_dex_number, form, location_id)
+            )
+        """)
+
+        self._ensure_pokedex_tables(cursor)
 
         # Wild Areas system
         cursor.execute("""
@@ -912,6 +927,36 @@ class PlayerDatabase:
 
         # Friendship/faint tracking
         add_column('consecutive_faints', 'INTEGER DEFAULT 0')
+
+    def _ensure_pokedex_tables(self, cursor):
+        """Ensure Pokédex and shared wild sighting tables support form-specific tracking."""
+        cursor.execute("PRAGMA table_info(pokedex)")
+        pokedex_columns = [row[1] for row in cursor.fetchall()]
+
+        # Legacy schema used (discord_user_id, species_dex_number) as the primary key.
+        # Rebuild the table so regional forms can be tracked independently.
+        if 'form' not in pokedex_columns:
+            cursor.execute("ALTER TABLE pokedex RENAME TO pokedex_old")
+            cursor.execute(
+                """
+                CREATE TABLE pokedex (
+                    discord_user_id INTEGER,
+                    species_dex_number INTEGER,
+                    form TEXT,
+                    first_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (discord_user_id, species_dex_number, form),
+                    FOREIGN KEY (discord_user_id) REFERENCES trainers(discord_user_id)
+                )
+                """
+            )
+            cursor.execute(
+                """
+                INSERT OR IGNORE INTO pokedex (discord_user_id, species_dex_number, form, first_seen_at)
+                SELECT discord_user_id, species_dex_number, NULL, first_seen_at
+                FROM pokedex_old
+                """
+            )
+            cursor.execute("DROP TABLE pokedex_old")
 
         # Cooldown tracking for per-opponent battles
         cursor.execute(
@@ -1502,16 +1547,23 @@ class PlayerDatabase:
     # POKEDEX OPERATIONS
     # ============================================================
     
-    def add_pokedex_entry(self, discord_user_id: int, species_dex_number: int):
+    def _normalize_form(self, form: Optional[str]) -> Optional[str]:
+        if form is None:
+            return None
+        cleaned = str(form).strip().lower()
+        return cleaned or None
+
+    def add_pokedex_entry(self, discord_user_id: int, species_dex_number: int, form: Optional[str] = None):
         """Record that a trainer has seen this species"""
         conn = self.get_connection()
         cursor = conn.cursor()
+        normalized_form = self._normalize_form(form)
         
         try:
             cursor.execute("""
-                INSERT INTO pokedex (discord_user_id, species_dex_number)
-                VALUES (?, ?)
-            """, (discord_user_id, species_dex_number))
+                INSERT INTO pokedex (discord_user_id, species_dex_number, form)
+                VALUES (?, ?, ?)
+            """, (discord_user_id, species_dex_number, normalized_form))
             conn.commit()
         except sqlite3.IntegrityError:
             pass  # Already seen
@@ -1524,7 +1576,7 @@ class PlayerDatabase:
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT species_dex_number FROM pokedex
+            SELECT DISTINCT species_dex_number FROM pokedex
             WHERE discord_user_id = ?
             ORDER BY species_dex_number
         """, (discord_user_id,))
@@ -1533,6 +1585,71 @@ class PlayerDatabase:
         conn.close()
         
         return [row['species_dex_number'] for row in rows]
+
+    def get_pokedex_entries(self, discord_user_id: int) -> List[Dict[str, Any]]:
+        """Get form-aware Pokédex entries for a trainer."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT species_dex_number, form
+            FROM pokedex
+            WHERE discord_user_id = ?
+            ORDER BY species_dex_number, form
+            """,
+            (discord_user_id,),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+    def add_wild_sighting(
+        self,
+        species_dex_number: int,
+        location_id: str,
+        *,
+        form: Optional[str] = None,
+        channel_id: Optional[int] = None,
+    ) -> None:
+        """Record a server-wide wild sighting for a form at a location."""
+        if not location_id:
+            return
+
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        normalized_form = self._normalize_form(form)
+        cursor.execute(
+            """
+            INSERT INTO wild_sightings (species_dex_number, form, location_id, channel_id)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(species_dex_number, form, location_id)
+            DO UPDATE SET
+                channel_id = COALESCE(excluded.channel_id, wild_sightings.channel_id),
+                last_seen_at = CURRENT_TIMESTAMP
+            """,
+            (species_dex_number, normalized_form, location_id, channel_id),
+        )
+        conn.commit()
+        conn.close()
+
+    def get_wild_sightings(self, species_dex_number: int, form: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get all server-wide wild sighting locations for a specific form."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        normalized_form = self._normalize_form(form)
+        cursor.execute(
+            """
+            SELECT location_id, channel_id, first_seen_at, last_seen_at
+            FROM wild_sightings
+            WHERE species_dex_number = ?
+              AND ((form IS NULL AND ? IS NULL) OR form = ?)
+            ORDER BY first_seen_at ASC
+            """,
+            (species_dex_number, normalized_form, normalized_form),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
     
     # ============================================================
     # INVENTORY OPERATIONS
