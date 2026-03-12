@@ -511,69 +511,12 @@ class TasksView(View):
         return True
 
     def _build_tasks_embed(self) -> discord.Embed:
-        db = self.bot.player_manager.db
-        gather = db.get_team_task(TEAM_TASK_GATHER_CLUES_ID) or {}
-        crystals = db.get_team_task(TEAM_TASK_CRYSTALS_ID) or {}
-
-        party = self.bot.player_manager.get_party(self.user_id)
-        party_count = len(party)
-        top_three = sorted([int(mon.get('level', 1)) for mon in party], reverse=True)[:3]
-        avg_top_three = (sum(top_three) / 3) if len(top_three) >= 3 else 0
-        personal_complete = party_count >= 3 and len(top_three) >= 3 and avg_top_three >= 10
-
         embed = discord.Embed(
             title="🗂️ Tasks",
-            description="Track side quests and team objectives.",
+            description="No tasks available right now.",
             color=discord.Color.blurple(),
         )
-
-        gather_name = f"{'✅' if gather.get('completed') else '⬜'} Gather Clues"
-        gather_value = (
-            f"{TASK_GATHER_CLUES_SUBTEXT}\n"
-            f"Progress: **{gather.get('progress', 0)}/{gather.get('goal', 10)}**"
-        )
-        embed.add_field(name=gather_name, value=gather_value, inline=False)
-
-        crystal_name = f"{'✅' if crystals.get('completed') else '⬜'} Research: Mysterious Crystals"
-        crystal_value = (
-            "Work together to research the city's crystal outbreaks.\n"
-            f"Progress: **{crystals.get('progress', 0)}/{crystals.get('goal', 10)}**"
-        )
-        embed.add_field(name=crystal_name, value=crystal_value, inline=False)
-
-        personal_name = f"{'✅' if personal_complete else '⬜'} {TASK_PERSONAL_GROWTH_NAME}"
-        personal_value = (
-            f"Party size: **{party_count}/3**\n"
-            f"Top-3 average level: **{avg_top_three:.1f}/10**"
-        )
-        embed.add_field(name=personal_name, value=personal_value, inline=False)
-
-        embed.set_footer(text="Use buttons below to inspect clues or refresh progress.")
         return embed
-
-    @discord.ui.button(label="🧩 View Gathered Clues", style=discord.ButtonStyle.secondary, row=0)
-    async def clues_button(self, interaction: discord.Interaction, button: Button):
-        if not await self._check_owner(interaction):
-            return
-
-        clues = self.bot.player_manager.db.get_team_task_clues(TEAM_TASK_GATHER_CLUES_ID)
-        if not clues:
-            description = "No clue dialogue has been logged yet. Battle trainers and question them."
-        else:
-            lines = []
-            for idx, clue in enumerate(clues[:25], 1):
-                source = clue.get('source_npc') or 'Unknown source'
-                lines.append(f"{idx}. **{source}:** {clue.get('clue_text', '')}")
-            description = "\n".join(lines)
-
-        embed = discord.Embed(title="🧩 Gathered Clues", description=description, color=discord.Color.teal())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    @discord.ui.button(label="🔄 Refresh", style=discord.ButtonStyle.primary, row=0)
-    async def refresh_button(self, interaction: discord.Interaction, button: Button):
-        if not await self._check_owner(interaction):
-            return
-        await interaction.response.edit_message(embed=self._build_tasks_embed(), view=self)
 
     @discord.ui.button(label="⬅️ Back", style=discord.ButtonStyle.secondary, row=1)
     async def back_button(self, interaction: discord.Interaction, button: Button):
