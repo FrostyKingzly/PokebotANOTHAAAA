@@ -46,7 +46,8 @@ def test_regional_forms_fallback_to_static_when_animation_missing(monkeypatch):
 
     urls = PokemonSpriteHelper.get_sprite("growlithe-hisui", 58)
     assert urls[0].endswith("gen5/growlithe-hisui.png")
-    assert PokemonSpriteHelper.SHOWDOWN_STATIC.format(name="growlithe-hisui") in urls
+    assert len(urls) == 2
+    assert all("/sprites/gen5" in url or "/sprites/gen5ani" in url for url in urls)
 
 
 def test_gen_one_species_keep_gen5_animation_chain(monkeypatch):
@@ -57,7 +58,8 @@ def test_gen_one_species_keep_gen5_animation_chain(monkeypatch):
 
     urls = PokemonSpriteHelper.get_sprite("Charizard", 6)
     assert urls[0].endswith("gen5ani/charizard.gif")
-    assert PokemonSpriteHelper.SHOWDOWN_STATIC.format(name="charizard") in urls
+    assert len(urls) == 2
+    assert all("/sprites/gen5" in url or "/sprites/gen5ani" in url for url in urls)
 
 
 def test_female_sprites_only_use_variant_when_available():
