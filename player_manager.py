@@ -550,7 +550,7 @@ class PlayerManager:
 
         # Record Pokédex sighting upon acquisition
         if pokemon.species_dex_number is not None:
-            self.add_pokedex_seen(discord_id, pokemon.species_dex_number)
+            self.add_pokedex_seen(discord_id, pokemon.species_dex_number, getattr(pokemon, 'form', None))
 
         return pokemon_id
 
@@ -581,7 +581,11 @@ class PlayerManager:
         pokemon.party_position = position
 
         if pokemon.owner_discord_id:
-            self.add_pokedex_seen(pokemon.owner_discord_id, pokemon.species_dex_number)
+            self.add_pokedex_seen(
+                pokemon.owner_discord_id,
+                pokemon.species_dex_number,
+                getattr(pokemon, 'form', None),
+            )
         
         return self.db.add_pokemon(pokemon.to_dict())
 
@@ -594,7 +598,11 @@ class PlayerManager:
         pokemon.box_position = len(boxes)
 
         if pokemon.owner_discord_id:
-            self.add_pokedex_seen(pokemon.owner_discord_id, pokemon.species_dex_number)
+            self.add_pokedex_seen(
+                pokemon.owner_discord_id,
+                pokemon.species_dex_number,
+                getattr(pokemon, 'form', None),
+            )
         
         return self.db.add_pokemon(pokemon.to_dict())
     
@@ -715,13 +723,17 @@ class PlayerManager:
     # POKEDEX OPERATIONS
     # ============================================================
     
-    def add_pokedex_seen(self, discord_user_id: int, species_dex_number: int):
+    def add_pokedex_seen(self, discord_user_id: int, species_dex_number: int, form: Optional[str] = None):
         """Mark a species as seen in Pokedex"""
-        self.db.add_pokedex_entry(discord_user_id, species_dex_number)
+        self.db.add_pokedex_entry(discord_user_id, species_dex_number, form=form)
     
     def get_pokedex(self, discord_user_id: int) -> List[int]:
         """Get list of seen species"""
         return self.db.get_pokedex(discord_user_id)
+
+    def get_pokedex_entries(self, discord_user_id: int) -> List[Dict]:
+        """Get form-aware list of seen species entries."""
+        return self.db.get_pokedex_entries(discord_user_id)
     
     def has_seen_species(self, discord_user_id: int, species_dex_number: int) -> bool:
         """Check if trainer has seen this species"""
