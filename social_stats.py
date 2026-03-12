@@ -8,8 +8,6 @@ from typing import Dict, List, Optional
 POINTS_PER_RANK = 50
 MAX_RANK = 5
 STANDARD_MAX_POINTS = POINTS_PER_RANK * MAX_RANK  # 250
-BOON_MAX_POINTS = 200
-BANE_MAX_POINTS = 300
 
 # Stamina tuning
 # Rank 0 should start at 3 stamina and gain +2 per Fortitude rank
@@ -64,12 +62,12 @@ SOCIAL_STAT_ORDER: List[str] = [
 
 
 def get_stat_cap(stat_key: str, boon_stat: Optional[str] = None, bane_stat: Optional[str] = None) -> int:
-    """Return the total points a stat can accumulate for a specific trainer."""
+    """Return the total points a stat can accumulate for a trainer.
 
-    if stat_key == boon_stat:
-        return BOON_MAX_POINTS
-    if stat_key == bane_stat:
-        return BANE_MAX_POINTS
+    Boon/bane only affect starting rank selection, not long-term growth caps.
+    """
+
+    _ = stat_key, boon_stat, bane_stat
     return STANDARD_MAX_POINTS
 
 
