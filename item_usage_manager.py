@@ -60,6 +60,15 @@ class ItemUsageManager:
         key = key.replace('.', '')
         return key
 
+    def _normalize_item_key(self, raw: Optional[str]) -> Optional[str]:
+        """Normalize item identifiers for held-item evolution checks."""
+        if not raw:
+            return None
+
+        key = str(raw).strip().lower()
+        key = key.replace('-', '_').replace(' ', '_')
+        return key
+
 
     def _load_evolution_data(self) -> Dict:
         """Load evolution data from disk and ensure every species is covered."""
@@ -263,6 +272,7 @@ class ItemUsageManager:
             return False, None, None
 
         method = evolution['method']
+        held_item = self._normalize_item_key(pokemon.get('held_item'))
 
         if method == 'level':
             required_level = evolution.get('level', 100)
@@ -274,12 +284,18 @@ class ItemUsageManager:
                     if not knows_move:
                         return False, 'level_with_move', evolution
                 return True, 'level', evolution
-            return False, 'stone', evolution  # Needs item to evolve
+            return False, 'level', evolution
+
+        elif method == 'stone':
+            required_stone = self._normalize_item_key(evolution.get('stone'))
+            if held_item and required_stone and held_item == required_stone:
+                return True, 'stone', evolution
+            return False, 'stone', evolution
 
         elif method == 'trade':
             # Support trade evolutions when holding the required item (e.g., Metal Coat)
-            required_item = evolution.get('item')
-            if required_item and pokemon.get('held_item') == required_item:
+            required_item = self._normalize_item_key(evolution.get('item'))
+            if required_item and held_item == required_item:
                 return True, 'trade', evolution
             return False, 'trade', evolution
 
@@ -291,10 +307,10 @@ class ItemUsageManager:
         elif method == 'multiple':
             # Multiple options (e.g., Eevee). If a compatible item is already held,
             # surface the option so the evolution button can appear.
-            held_item = pokemon.get('held_item')
             if held_item:
                 for option in evolution.get('evolutions', []):
-                    if option.get('method') == 'stone' and option.get('stone') == held_item:
+                    option_stone = self._normalize_item_key(option.get('stone'))
+                    if option.get('method') == 'stone' and option_stone == held_item:
                         return True, 'multiple', {**option, 'into': option.get('into')}
             return False, 'multiple', evolution  # Needs item choice
 
