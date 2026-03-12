@@ -792,7 +792,40 @@ class PlayerDatabase:
             """
         )
 
+        # Individual task definitions and per-player progress
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS individual_tasks (
+                task_id TEXT PRIMARY KEY,
+                task_name TEXT NOT NULL,
+                task_description TEXT NOT NULL,
+                goal INTEGER NOT NULL,
+                reward_item_id TEXT NOT NULL,
+                reward_quantity INTEGER NOT NULL,
+                is_active INTEGER DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS player_individual_tasks (
+                discord_user_id INTEGER NOT NULL,
+                task_id TEXT NOT NULL,
+                progress INTEGER DEFAULT 0,
+                claimed INTEGER DEFAULT 0,
+                completed_at TIMESTAMP,
+                claimed_at TIMESTAMP,
+                PRIMARY KEY (discord_user_id, task_id),
+                FOREIGN KEY (discord_user_id) REFERENCES trainers(discord_user_id),
+                FOREIGN KEY (task_id) REFERENCES individual_tasks(task_id)
+            )
+            """
+        )
+
         self._ensure_default_team_tasks(cursor)
+        self._ensure_default_individual_tasks(cursor)
 
         conn.commit()
         conn.close()
@@ -816,6 +849,35 @@ class PlayerDatabase:
                     goal = excluded.goal
                 """,
                 (task_id, task_name, goal),
+            )
+
+    def _ensure_default_individual_tasks(self, cursor):
+        defaults = [
+            (
+                "explore_reverie_city",
+                "Explore Reverie City!",
+                "Get to know the people and places in Reverie. Roleplay in 5 different locations around the city.",
+                5,
+                "rare_candy",
+                3,
+            ),
+        ]
+
+        for task_id, task_name, description, goal, reward_item_id, reward_quantity in defaults:
+            cursor.execute(
+                """
+                INSERT INTO individual_tasks (task_id, task_name, task_description, goal, reward_item_id, reward_quantity, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, 1)
+                ON CONFLICT(task_id) DO UPDATE SET
+                    task_name = excluded.task_name,
+                    task_description = excluded.task_description,
+                    goal = excluded.goal,
+                    reward_item_id = excluded.reward_item_id,
+                    reward_quantity = excluded.reward_quantity,
+                    is_active = 1,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (task_id, task_name, description, goal, reward_item_id, reward_quantity),
             )
 
     def _ensure_trainer_columns(self, cursor):
@@ -1048,6 +1110,7 @@ class PlayerDatabase:
                 ),
             )
 
+            self._ensure_player_individual_tasks(cursor, discord_user_id)
             conn.commit()
             return True
         except sqlite3.IntegrityError:
@@ -1320,6 +1383,155 @@ class PlayerDatabase:
         rows = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return rows
+
+    def _ensure_player_individual_tasks(self, cursor, discord_user_id: int):
+        cursor.execute(
+            """
+            INSERT INTO player_individual_tasks (discord_user_id, task_id)
+            SELECT ?, it.task_id
+            FROM individual_tasks it
+            WHERE it.is_active = 1
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM player_individual_tasks pit
+                  WHERE pit.discord_user_id = ? AND pit.task_id = it.task_id
+              )
+            """,
+            (discord_user_id, discord_user_id),
+        )
+
+    def get_active_player_individual_tasks(self, discord_user_id: int) -> List[Dict[str, Any]]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        self._ensure_player_individual_tasks(cursor, discord_user_id)
+        cursor.execute(
+            """
+            SELECT
+                it.task_id,
+                it.task_name,
+                it.task_description,
+                it.goal,
+                it.reward_item_id,
+                it.reward_quantity,
+                pit.progress,
+                pit.claimed
+            FROM individual_tasks it
+            JOIN player_individual_tasks pit
+              ON pit.task_id = it.task_id
+            WHERE pit.discord_user_id = ?
+              AND it.is_active = 1
+              AND pit.claimed = 0
+            ORDER BY it.task_name ASC
+            """,
+            (discord_user_id,),
+        )
+        rows = [dict(row) for row in cursor.fetchall()]
+        conn.commit()
+        conn.close()
+        return rows
+
+    def increment_player_individual_task(
+        self,
+        discord_user_id: int,
+        task_id: str,
+        amount: int = 1,
+    ) -> Optional[Dict[str, Any]]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        self._ensure_player_individual_tasks(cursor, discord_user_id)
+        cursor.execute(
+            """
+            SELECT pit.progress, pit.claimed, it.goal, it.task_name, it.task_description, it.reward_item_id, it.reward_quantity
+            FROM player_individual_tasks pit
+            JOIN individual_tasks it ON it.task_id = pit.task_id
+            WHERE pit.discord_user_id = ? AND pit.task_id = ?
+            """,
+            (discord_user_id, task_id),
+        )
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return None
+
+        if int(row["claimed"] or 0) == 0:
+            goal = int(row["goal"] or 0)
+            current = int(row["progress"] or 0)
+            new_progress = max(0, min(goal, current + int(amount)))
+            cursor.execute(
+                """
+                UPDATE player_individual_tasks
+                SET progress = ?, completed_at = CASE WHEN ? >= ? THEN COALESCE(completed_at, CURRENT_TIMESTAMP) ELSE completed_at END
+                WHERE discord_user_id = ? AND task_id = ?
+                """,
+                (new_progress, new_progress, goal, discord_user_id, task_id),
+            )
+
+        cursor.execute(
+            """
+            SELECT
+                pit.discord_user_id,
+                pit.task_id,
+                pit.progress,
+                pit.claimed,
+                it.goal,
+                it.task_name,
+                it.task_description,
+                it.reward_item_id,
+                it.reward_quantity
+            FROM player_individual_tasks pit
+            JOIN individual_tasks it ON it.task_id = pit.task_id
+            WHERE pit.discord_user_id = ? AND pit.task_id = ?
+            """,
+            (discord_user_id, task_id),
+        )
+        result = dict(cursor.fetchone())
+        conn.commit()
+        conn.close()
+        return result
+
+    def claim_player_individual_task_reward(self, discord_user_id: int, task_id: str) -> Optional[Dict[str, Any]]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        self._ensure_player_individual_tasks(cursor, discord_user_id)
+        cursor.execute(
+            """
+            SELECT
+                pit.progress,
+                pit.claimed,
+                it.goal,
+                it.reward_item_id,
+                it.reward_quantity,
+                it.task_name,
+                it.task_description
+            FROM player_individual_tasks pit
+            JOIN individual_tasks it ON it.task_id = pit.task_id
+            WHERE pit.discord_user_id = ? AND pit.task_id = ?
+            """,
+            (discord_user_id, task_id),
+        )
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return None
+
+        claimed = int(row["claimed"] or 0)
+        progress = int(row["progress"] or 0)
+        goal = int(row["goal"] or 0)
+        if claimed or progress < goal:
+            conn.close()
+            return None
+
+        cursor.execute(
+            """
+            UPDATE player_individual_tasks
+            SET claimed = 1, claimed_at = CURRENT_TIMESTAMP
+            WHERE discord_user_id = ? AND task_id = ?
+            """,
+            (discord_user_id, task_id),
+        )
+        conn.commit()
+        conn.close()
+        return dict(row)
     
     # ============================================================
     # POKEMON OPERATIONS

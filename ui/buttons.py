@@ -499,6 +499,8 @@ async def _show_alerts_menu(interaction: discord.Interaction, bot, user_id: int)
 class TasksView(View):
     """Tasks/side-quest menu shown from the Rotom phone."""
 
+    INDIVIDUAL_REVERIE_TASK_ID = "explore_reverie_city"
+
     def __init__(self, bot, user_id: int):
         super().__init__(timeout=300)
         self.bot = bot
@@ -510,13 +512,77 @@ class TasksView(View):
             return False
         return True
 
+    def _get_active_tasks(self) -> List[Dict[str, Any]]:
+        db = getattr(getattr(self.bot, "player_manager", None), "db", None)
+        if not db:
+            return []
+        return db.get_active_player_individual_tasks(self.user_id) or []
+
     def _build_tasks_embed(self) -> discord.Embed:
+        tasks = self._get_active_tasks()
         embed = discord.Embed(
             title="🗂️ Tasks",
-            description="No tasks available right now.",
             color=discord.Color.blurple(),
         )
+
+        if not tasks:
+            embed.description = "No tasks available right now."
+            return embed
+
+        lines = []
+        for task in tasks:
+            progress = int(task.get("progress", 0) or 0)
+            goal = int(task.get("goal", 0) or 0)
+            reward_qty = int(task.get("reward_quantity", 0) or 0)
+            reward_item_id = str(task.get("reward_item_id", "item"))
+            reward_name = reward_item_id.replace("_", " ").title()
+            status = "✅ Ready to claim" if progress >= goal else "📈 In progress"
+            lines.append(
+                f"**{task.get('task_name', 'Task')}**\n"
+                f"{task.get('task_description', '')} **{progress}/{goal}**\n"
+                f"Reward: **{reward_qty} {reward_name}**\n"
+                f"Status: {status}"
+            )
+
+        embed.description = "\n\n".join(lines)
         return embed
+
+    @discord.ui.button(label="🎁 Claim Reward", style=discord.ButtonStyle.success, row=0)
+    async def claim_button(self, interaction: discord.Interaction, button: Button):
+        if not await self._check_owner(interaction):
+            return
+
+        db = getattr(getattr(self.bot, "player_manager", None), "db", None)
+        pm = getattr(self.bot, "player_manager", None)
+        if not db or not pm:
+            await interaction.response.send_message("❌ Task system unavailable right now.", ephemeral=True)
+            return
+
+        tasks = self._get_active_tasks()
+        claimable = next((task for task in tasks if int(task.get("progress", 0) or 0) >= int(task.get("goal", 0) or 0)), None)
+        if not claimable:
+            await interaction.response.send_message("❌ You don't have any completed task rewards to claim yet.", ephemeral=True)
+            return
+
+        claimed = db.claim_player_individual_task_reward(self.user_id, claimable.get("task_id", ""))
+        if not claimed:
+            await interaction.response.send_message("❌ That task reward is no longer claimable.", ephemeral=True)
+            return
+
+        reward_item_id = str(claimed.get("reward_item_id", ""))
+        reward_quantity = int(claimed.get("reward_quantity", 0) or 0)
+        if reward_item_id and reward_quantity > 0:
+            pm.add_item(self.user_id, reward_item_id, reward_quantity)
+
+        reward_name = reward_item_id.replace("_", " ").title()
+        await interaction.response.edit_message(
+            embed=self._build_tasks_embed(),
+            view=self,
+        )
+        await interaction.followup.send(
+            f"✅ You claimed **{claimed.get('task_name', 'Task')}** and received **{reward_quantity} {reward_name}**!",
+            ephemeral=True,
+        )
 
     @discord.ui.button(label="⬅️ Back", style=discord.ButtonStyle.secondary, row=1)
     async def back_button(self, interaction: discord.Interaction, button: Button):
