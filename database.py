@@ -278,6 +278,7 @@ class ItemsDatabase:
         with open(json_path, 'r', encoding='utf-8') as f:
             self.data = json.load(f)
 
+        self._fill_missing_descriptions_from_csv()
         self._apply_bag_categories()
     
     def get_item(self, item_id: str) -> Optional[Dict]:
@@ -366,6 +367,57 @@ class ItemsDatabase:
                 item_data['bag_category'] = bag_category
             else:
                 item_data.setdefault('bag_category', item_data.get('category', 'other'))
+
+    def _fill_missing_descriptions_from_csv(self) -> None:
+        """Backfill missing item descriptions using the bundled PokeAPI prose CSV.
+
+        The JSON item database is the primary source used by the bot UI. If an
+        entry is missing a description (or has a placeholder), we pull the
+        English short effect from `item_prose.csv` so every real item can show
+        informative text in dropdowns and embeds.
+        """
+
+        csv_root = Path(__file__).resolve().parent / "pokeapi_csv_bot"
+        items_csv = csv_root / "items.csv"
+        prose_csv = csv_root / "item_prose.csv"
+
+        if not (items_csv.exists() and prose_csv.exists()):
+            return
+
+        item_identifier_by_id = {}
+        with open(items_csv, newline='') as f:
+            for row in csv.DictReader(f):
+                item_identifier_by_id[row['id']] = row['identifier'].replace('-', '_')
+
+        prose_by_identifier = {}
+        with open(prose_csv, newline='') as f:
+            for row in csv.DictReader(f):
+                # 9 = English in PokeAPI language table
+                if row.get('local_language_id') != '9':
+                    continue
+
+                identifier = item_identifier_by_id.get(row.get('item_id'))
+                if not identifier:
+                    continue
+
+                short_effect = (row.get('short_effect') or '').strip()
+                effect = (row.get('effect') or '').strip()
+                prose = short_effect or effect
+                if prose:
+                    prose_by_identifier[identifier] = prose
+
+        placeholder_values = {'', 'none', 'null', 'no description'}
+        for item_id, item_data in self.data.items():
+            if not isinstance(item_data, dict) or 'name' not in item_data:
+                continue
+
+            current_description = str(item_data.get('description', '')).strip()
+            if current_description.lower() not in placeholder_values:
+                continue
+
+            prose = prose_by_identifier.get(item_id)
+            if prose:
+                item_data['description'] = prose
 
 
 class NaturesDatabase:
