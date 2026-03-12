@@ -1,6 +1,6 @@
 import pytest
 
-from sprite_helper import PokemonSpriteHelper
+from sprite_helper import ItemSpriteHelper, PokemonSpriteHelper
 
 
 def test_showdown_slug_normalization_handles_punctuation():
@@ -86,3 +86,20 @@ def test_post_gen_five_species_prioritize_static_in_fallback_list(monkeypatch):
     urls = PokemonSpriteHelper.get_sprite("Ceruledge", 937, style="animated", use_fallback=True)
     assert urls[0].endswith("/gen5/ceruledge.png")
     assert urls[1].endswith("/gen5ani/ceruledge.gif")
+
+
+def test_item_sprite_slug_uses_hyphenated_ids(monkeypatch):
+    def fake_exists(url: str) -> bool:
+        return url.endswith('/rare-candy.png')
+
+    monkeypatch.setattr(PokemonSpriteHelper, '_url_exists', staticmethod(fake_exists))
+
+    url = ItemSpriteHelper.get_sprite('rare_candy')
+    assert url is not None
+    assert url.endswith('/rare-candy.png')
+
+
+def test_item_sprite_returns_none_when_missing(monkeypatch):
+    monkeypatch.setattr(PokemonSpriteHelper, '_url_exists', staticmethod(lambda _url: False))
+
+    assert ItemSpriteHelper.get_sprite('totally_fake_item') is None

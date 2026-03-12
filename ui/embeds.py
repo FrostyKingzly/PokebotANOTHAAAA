@@ -9,7 +9,7 @@ from ui.emoji import POKEBALL_EMOJIS, DEFAULT_POKEBALL_ID
 from models import Trainer
 from exp_display_helpers import create_exp_text
 from rank_manager import get_rank_tier_definition
-from sprite_helper import PokemonSpriteHelper
+from sprite_helper import ItemSpriteHelper, PokemonSpriteHelper
 from database import NaturesDatabase
 from social_stats import SOCIAL_STAT_DEFINITIONS, SOCIAL_STAT_ORDER
 
@@ -1343,6 +1343,10 @@ class EmbedBuilder:
             description=item_data.get('description', 'No description available.'),
             color=EmbedBuilder.INFO_COLOR
         )
+
+        item_sprite_url = ItemSpriteHelper.get_sprite(item_data.get('id', ''))
+        if item_sprite_url:
+            embed.set_thumbnail(url=item_sprite_url)
         
         # Item details
         details = f"**Category:** {item_data.get('category', 'Unknown').replace('_', ' ').title()}\n"

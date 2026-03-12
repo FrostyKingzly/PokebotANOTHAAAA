@@ -11,6 +11,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from sprite_helper import ItemSpriteHelper
+
 
 class QuantityModal(discord.ui.Modal):
     """Modal to let the user type an exact purchase quantity."""
@@ -609,6 +611,9 @@ class ShopCog(commands.Cog, name="ShopCog"):
             description=desc,
             color=discord.Color.green(),
         )
+        item_sprite_url = ItemSpriteHelper.get_sprite(item_id)
+        if item_sprite_url:
+            embed.set_thumbnail(url=item_sprite_url)
         embed.add_field(
             name="New Balance",
             value=self._format_money(new_balance),
