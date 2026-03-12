@@ -4141,6 +4141,9 @@ class BattleEngine:
 
         # Apply status effects to all active Pokemon
         for pokemon in all_active_pokemon:
+            # Skip already-fainted Pokémon to avoid duplicate faint handling.
+            if getattr(pokemon, 'current_hp', 0) <= 0:
+                continue
             if hasattr(pokemon, 'status_manager'):
                 status_msgs = pokemon.status_manager.apply_end_of_turn_effects(pokemon)
                 messages.extend(status_msgs)
@@ -4162,6 +4165,9 @@ class BattleEngine:
             # Apply weather effects to all active Pokemon and track faints
             fainted_pokemon = []
             for pokemon in all_active_pokemon:
+                # Skip already-fainted Pokémon so they don't faint twice in logs.
+                if getattr(pokemon, 'current_hp', 0) <= 0:
+                    continue
                 weather_msg = self.ability_handler.apply_weather_damage(pokemon, battle.weather)
                 if weather_msg:
                     messages.append(weather_msg)
@@ -4176,11 +4182,18 @@ class BattleEngine:
 
             # Handle faints from weather damage
             for fainted_mon in fainted_pokemon:
-                messages.append(f"{getattr(fainted_mon, 'species_name', 'The Pokémon')} fainted!")
-
                 # Find which battler owns this Pokemon and set up forced switch
                 for battler in battle.get_all_battlers():
                     if not battler.is_eliminated and fainted_mon in battler.party:
+                        # Wild opponents should become dazed (catch prompt flow), not faint outright.
+                        if battle.battle_type == BattleType.WILD and battler == battle.opponent:
+                            fainted_mon.current_hp = 1
+                            battle.wild_dazed = True
+                            battle.phase = 'DAZED'
+                            messages.append(f"The wild {getattr(fainted_mon, 'species_name', 'Pokémon')} is dazed!")
+                            break
+
+                        messages.append(f"{getattr(fainted_mon, 'species_name', 'The Pokémon')} fainted!")
                         self._record_faint(battler, fainted_mon)
                         # Record opponent faint for EXP calculation (no specific attacker for weather damage)
                         self._record_opponent_faint_for_exp(battle, fainted_mon, battler, None)
