@@ -53,6 +53,17 @@ class PokemonSpriteHelper:
             return re.sub(r"[^a-z0-9-]", "", text)
         return re.sub(r"[^a-z0-9]", "", text)
     
+
+    # Hard-coded fallback guardrails for sprites that never had Gen 5 animated assets.
+    # This avoids broken embeds when callers request `style="animated"` with
+    # `use_fallback=False`.
+    ANIMATED_GEN5_MAX_DEX = 649
+    NON_ANIMATED_FORM_MARKERS = {
+        "alola", "galar", "hisui", "paldea", "gmax", "crowned", "eternamax",
+        "rapid-strike", "single-strike", "dawn-wings", "dusk-mane", "low-key",
+        "amped", "zero", "hero", "starter", "dada", "resolute", "unbound",
+    }
+
     FEMALE_SPRITE_SPECIES = {
         # Species with distinct female Showdown sprite slugs
         "basculegion", "frillish", "hippopotas", "hippowdon", "indeedee",
@@ -108,6 +119,19 @@ class PokemonSpriteHelper:
             # If connectivity is restricted, assume the sprite exists so we still
             # prefer Gen 5 assets over generic Showdown sprites.
             return True
+
+    @staticmethod
+    def _prefer_static_gen5_asset(dex_number: Optional[int], form: Optional[str]) -> bool:
+        """Return True when we should skip animated lookup and use Gen 5 static."""
+        if dex_number is not None and dex_number > PokemonSpriteHelper.ANIMATED_GEN5_MAX_DEX:
+            return True
+
+        if form:
+            form_key = form.lower()
+            if form_key in PokemonSpriteHelper.NON_ANIMATED_FORM_MARKERS:
+                return True
+
+        return False
 
     @staticmethod
     def get_sprite(pokemon_name: str, dex_number: Optional[int] = None,

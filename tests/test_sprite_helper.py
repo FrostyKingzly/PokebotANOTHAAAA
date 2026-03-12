@@ -21,8 +21,8 @@ def test_modern_species_prefer_animation_when_available(monkeypatch):
 
     urls = PokemonSpriteHelper.get_sprite("Armarouge", 936)
     assert isinstance(urls, list)
-    assert urls[0].endswith("gen5ani/armarouge.gif")
-    assert urls[1].endswith("gen5/armarouge.png")
+    assert urls[0].endswith("gen5/armarouge.png")
+    assert urls[1].endswith("gen5ani/armarouge.gif")
     assert PokemonSpriteHelper.OFFICIAL_ART.format(id="936") not in urls
 
 
@@ -70,3 +70,19 @@ def test_female_sprites_only_use_variant_when_available():
 def test_known_female_variant_keeps_gendered_slug():
     url = PokemonSpriteHelper.get_sprite("Meowstic", 678, style="showdown", gender="female", use_fallback=False)
     assert url.endswith("/meowstic-f.png")
+
+
+def test_post_gen_five_species_force_gen5_static_when_animated_style():
+    url = PokemonSpriteHelper.get_sprite("Charcadet", 935, style="animated", use_fallback=False)
+    assert url.endswith("/gen5/charcadet.png")
+
+
+def test_post_gen_five_species_prioritize_static_in_fallback_list(monkeypatch):
+    def fake_exists(url: str) -> bool:
+        return True
+
+    monkeypatch.setattr(PokemonSpriteHelper, "_url_exists", staticmethod(fake_exists))
+
+    urls = PokemonSpriteHelper.get_sprite("Ceruledge", 937, style="animated", use_fallback=True)
+    assert urls[0].endswith("/gen5/ceruledge.png")
+    assert urls[1].endswith("/gen5ani/ceruledge.gif")
