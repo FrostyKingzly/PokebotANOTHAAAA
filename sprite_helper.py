@@ -246,12 +246,24 @@ class PokemonSpriteHelper:
                 else PokemonSpriteHelper.GEN5_STATIC.format(name=gendered_name)
             )
 
+            prefer_static = PokemonSpriteHelper._prefer_static_gen5_asset(
+                dex_number,
+                inferred_form,
+            )
+
+            if prefer_static:
+                if use_fallback:
+                    return [static_fallback, animated_url]
+                return static_fallback
+
             # Strictly prefer Gen 5 assets only: animated first, static fallback.
             sprite_urls = [animated_url, static_fallback]
 
             if not use_fallback:
                 if PokemonSpriteHelper._url_exists(animated_url):
                     return animated_url
+                if PokemonSpriteHelper._url_exists(static_fallback):
+                    return static_fallback
                 return static_fallback
 
             available_urls = [url for url in sprite_urls if PokemonSpriteHelper._url_exists(url)]
