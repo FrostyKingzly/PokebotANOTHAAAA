@@ -11,7 +11,7 @@ def test_alolan_vulpix_loaded_and_uses_correct_sprite_slug():
     assert alolan_vulpix['types'] == ['ice']
 
     sprite = PokemonSpriteHelper.get_sprite(alolan_vulpix['name'], alolan_vulpix['dex_number'], use_fallback=False)
-    assert sprite.endswith('/vulpix-alola.gif')
+    assert sprite.endswith('/vulpix-alola.png')
 
 
 def test_regional_aliases_resolve_to_same_species():
