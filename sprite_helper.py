@@ -318,7 +318,7 @@ class PokemonSpriteHelper:
         sprite1 = PokemonSpriteHelper.get_sprite(pokemon1_name, pokemon1_dex, style)
         sprite2 = PokemonSpriteHelper.get_sprite(pokemon2_name, pokemon2_dex, style)
         return sprite1, sprite2
-    
+
     @staticmethod
     def add_to_embed(embed, pokemon_name: str, dex_number: Optional[int] = None,
                      position: str = 'thumbnail', style: str = 'animated'):
@@ -352,6 +352,38 @@ class PokemonSpriteHelper:
             raise ValueError(f"Unknown position: {position}")
         
         return embed
+
+
+class ItemSpriteHelper:
+    """Helper class to resolve item icon URLs."""
+
+    POKEAPI_ITEM_SPRITE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/{slug}.png"
+
+    @staticmethod
+    def _normalize_item_slug(item_id: str) -> str:
+        """Convert local item IDs to PokeAPI sprite slugs."""
+        return (
+            PokemonSpriteHelper._strip_accents((item_id or "").lower())
+            .replace(" ", "-")
+            .replace("_", "-")
+            .replace("'", "")
+            .replace(".", "")
+            .replace(":", "")
+        )
+
+    @staticmethod
+    def get_sprite(item_id: str) -> Optional[str]:
+        """Return a sprite URL for an item, or None when unavailable."""
+        slug = ItemSpriteHelper._normalize_item_slug(item_id)
+        if not slug:
+            return None
+
+        url = ItemSpriteHelper.POKEAPI_ITEM_SPRITE.format(slug=slug)
+        if PokemonSpriteHelper._url_exists(url):
+            return url
+        return None
+    
+
 
 
 # Quick usage examples
