@@ -24,7 +24,67 @@ class RoleplaySession:
     channel_id: int
     location_id: str
     parent_channel_id: Optional[int] = None
+    tupper_name: Optional[str] = None
     word_count: int = 0
+
+
+def normalize_name(name: Optional[str]) -> str:
+    if not name:
+        return ""
+    return " ".join(name.casefold().split())
+
+
+class TupperNameModal(discord.ui.Modal, title="Tupper Setup"):
+    tupper_name = discord.ui.TextInput(
+        label="Tupper name",
+        placeholder="Example: Mira",
+        max_length=80,
+    )
+
+    def __init__(self, view: "RPStartConfirmView"):
+        super().__init__(timeout=120)
+        self.view = view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        if not await self.view._validate_user(interaction):
+            return
+
+        cleaned_name = str(self.tupper_name).strip()
+        if not cleaned_name:
+            await interaction.response.send_message("❌ Please provide a valid tupper name.", ephemeral=True)
+            return
+
+        parent_channel_id = interaction.channel.parent_id if isinstance(interaction.channel, discord.Thread) else None
+        created = self.view.cog.start_session(
+            self.view.user_id,
+            self.view.channel_id,
+            self.view.location_id,
+            parent_channel_id=parent_channel_id,
+            tupper_name=cleaned_name,
+        )
+        if not created:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="⚠️ Already Roleplaying",
+                    description="You're already in an RP session. End it first with `/rotom_roleplay`.",
+                    color=discord.Color.orange(),
+                ),
+                ephemeral=True,
+            )
+            return
+
+        self.view.stop()
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                title="🎭 RP Started",
+                description=(
+                    "Your roleplay session is now active in this channel.\n"
+                    f"I'll count your words and posts made as **{cleaned_name}**."
+                ),
+                color=discord.Color.green(),
+            ),
+            ephemeral=True,
+        )
 
 
 class RPStartConfirmView(discord.ui.View):
@@ -72,6 +132,20 @@ class RPStartConfirmView(discord.ui.View):
             ),
             view=None,
         )
+
+    @discord.ui.button(label="Use Tupper", style=discord.ButtonStyle.primary, emoji="🧸")
+    async def use_tupper(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not await self._validate_user(interaction):
+            return
+
+        if self.user_id in self.cog.active_sessions:
+            await interaction.response.send_message(
+                "⚠️ You're already in an RP session. End it first with `/rotom_roleplay`.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_modal(TupperNameModal(self))
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="❌")
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -282,11 +356,12 @@ class RoleplayCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not message or message.author.bot or not message.guild:
+        if not message or not message.guild:
             return
 
-        user_id = message.author.id
-        session = self.active_sessions.get(user_id)
+        session = self.active_sessions.get(message.author.id)
+        if not session and message.webhook_id:
+            session = self._get_tupper_session(message)
         if not session:
             return
 
@@ -360,7 +435,36 @@ class RoleplayCog(commands.Cog):
             ephemeral=True,
         )
 
-    def start_session(self, user_id: int, channel_id: int, location_id: str, parent_channel_id: Optional[int] = None) -> bool:
+    def _get_tupper_session(self, message: discord.Message) -> Optional[RoleplaySession]:
+        if not message.author.bot:
+            return None
+
+        message_names = {
+            normalize_name(getattr(message.author, "display_name", "")),
+            normalize_name(getattr(message.author, "name", "")),
+            normalize_name(getattr(message.author, "global_name", "")),
+        }
+        message_names.discard("")
+        if not message_names:
+            return None
+
+        for session in self.active_sessions.values():
+            if message.channel.id != session.channel_id or not session.tupper_name:
+                continue
+
+            if normalize_name(session.tupper_name) in message_names:
+                return session
+
+        return None
+
+    def start_session(
+        self,
+        user_id: int,
+        channel_id: int,
+        location_id: str,
+        parent_channel_id: Optional[int] = None,
+        tupper_name: Optional[str] = None,
+    ) -> bool:
         if user_id in self.active_sessions:
             return False
 
@@ -369,6 +473,7 @@ class RoleplayCog(commands.Cog):
             channel_id=channel_id,
             location_id=location_id,
             parent_channel_id=parent_channel_id,
+            tupper_name=tupper_name,
             word_count=0,
         )
         return True
