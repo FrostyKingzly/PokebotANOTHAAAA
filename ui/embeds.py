@@ -408,8 +408,8 @@ class EmbedBuilder:
 
         # Money
         embed.add_field(
-            name="💰 Money",
-            value=f"₱{trainer.money:,}",
+            name=f"₱{trainer.money:,}",
+            value="\u200b",
             inline=True
         )
 
@@ -487,10 +487,9 @@ class EmbedBuilder:
                 rank_lines.append(trainer.get_rank_display())
             else:
                 rank_lines.append("Unranked")
-                rank_lines.append("Sign up via Alerts to unlock ranked play.")
                 show_progress = False
 
-            if hasattr(rank_manager, "twilight_started") and not rank_manager.twilight_started():
+            if is_participant and hasattr(rank_manager, "twilight_started") and not rank_manager.twilight_started():
                 rank_lines.append("Ranked battles are locked until the Summit begins.")
         else:
             rank_lines.append(trainer.get_rank_display())
