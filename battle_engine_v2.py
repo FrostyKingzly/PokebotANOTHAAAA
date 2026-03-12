@@ -3462,7 +3462,7 @@ class BattleEngine:
                 if pokemon_key not in battle.ai_ineffective_moves:
                     battle.ai_ineffective_moves[pokemon_key] = set()
                 battle.ai_ineffective_moves[pokemon_key].add(action.move_id)
-        else:
+        elif move_data.get('category') in ['physical', 'special']:
             messages.append(f"{defender.species_name} took 0 damage!{crit_text}{effectiveness_text}")
 
         messages.extend(effect_msgs)

@@ -851,7 +851,7 @@ class BattleCog(commands.Cog):
             self.battle_threads[battle.battle_id] = thread.id
 
             await interaction.followup.send(
-                f"🧵 Battle thread created: {thread.mention} ({thread.jump_url})"
+                f"🧵 Battle thread created: {thread.mention}"
             )
             mentions = " ".join(f"<@{user_id}>" for user_id in sorted(set(participant_ids)))
             await thread.send(
