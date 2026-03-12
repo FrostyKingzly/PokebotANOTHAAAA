@@ -348,19 +348,9 @@ class StarRollView(discord.ui.View):
             ),
             color=discord.Color.green() if success else discord.Color.red(),
         )
-        result_embed.add_field(name="Roll", value=f"d20 ({d20})", inline=True)
-        result_embed.add_field(name="Modifier", value=f"{modifier_total:+d}", inline=True)
+        result_embed.add_field(name="Roll", value=f"d20 ({d20}) {modifier_total:+d}", inline=True)
         result_embed.add_field(name="Total", value=str(total), inline=True)
         result_embed.add_field(name="Goal", value=str(self.goal), inline=True)
-        result_embed.add_field(
-            name="Breakdown",
-            value=(
-                f"Rank {stat_rank}: +{rank_bonus}\n"
-                f"Boon bonus: {boon_bonus:+d}\n"
-                f"Bane penalty: {bane_penalty:+d}"
-            ),
-            inline=False,
-        )
 
         self.resolved = True
         button.disabled = True
@@ -1433,6 +1423,11 @@ Modest Nature
 
         chosen_goal = max(1, min(STAT_ROLL_DICE_SIDES, int(goal or 1)))
         stat_name = SOCIAL_STAT_DEFINITIONS[stat.value].display_name
+        stat_rank = max(0, int(player.get_stat_rank(stat.value) or 0))
+        rank_bonus = stat_rank * STAT_ROLL_MODIFIER_PER_RANK
+        boon_bonus = 2 if player.boon_stat == stat.value else 0
+        bane_penalty = -2 if player.bane_stat == stat.value else 0
+        modifier_total = rank_bonus + boon_bonus + bane_penalty
 
         prompt_embed = discord.Embed(
             title="⭐ Star Roll",
@@ -1440,8 +1435,13 @@ Modest Nature
             color=discord.Color.blurple(),
         )
         prompt_embed.add_field(
-            name="Access",
-            value=f"Only {user.mention} or an admin can press **Roll**.",
+            name="Modifiers",
+            value=(
+                f"Rank {stat_rank}: +{rank_bonus}\n"
+                f"Boon bonus: {boon_bonus:+d}\n"
+                f"Bane penalty: {bane_penalty:+d}\n"
+                f"Total modifier: {modifier_total:+d}"
+            ),
             inline=False,
         )
 
