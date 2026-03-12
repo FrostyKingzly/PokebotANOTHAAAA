@@ -13,7 +13,7 @@ from discord.ext import commands
 
 WORD_RE = re.compile(r"[A-Za-z0-9']+")
 PAREN_RE = re.compile(r"\([^)]*\)")
-RP_EXP_WORD_RATIO = 5
+RP_EXP_WORD_RATIO = 10
 
 # Temporary placeholder rewards until per-location tuning is provided.
 # Keys should be location_id values from LocationManager.
@@ -214,7 +214,6 @@ class RPEndConfirmView(discord.ui.View):
         exp_amount = max(0, session.word_count // RP_EXP_WORD_RATIO)
         exp_results = self.cog.award_party_exp(self.session.user_id, exp_amount)
         summary_lines = [
-            f"• Words counted: **{session.word_count}**",
             f"• EXP per party Pokémon: **{exp_amount}** (1 EXP per {RP_EXP_WORD_RATIO} words)",
         ]
 
@@ -325,7 +324,6 @@ class RoleplayCog(commands.Cog):
             embed = discord.Embed(
                 title="🛑 End Roleplay?",
                 description=(
-                    f"Current tracked words: **{current_session.word_count}**\n"
                     "Do you want to end this RP session now?"
                 ),
                 color=discord.Color.orange(),
