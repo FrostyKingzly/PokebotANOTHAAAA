@@ -298,6 +298,74 @@ class CrystalResearchRollView(discord.ui.View):
         button.disabled = True
         await interaction.response.edit_message(embed=result_embed, view=self)
 
+
+class StarRollView(discord.ui.View):
+    def __init__(self, bot, roller_id: int, stat_key: str, goal: int):
+        super().__init__(timeout=600)
+        self.bot = bot
+        self.roller_id = roller_id
+        self.stat_key = stat_key
+        self.goal = max(1, min(STAT_ROLL_DICE_SIDES, int(goal or 1)))
+        self.resolved = False
+
+    @discord.ui.button(label="Roll", style=discord.ButtonStyle.primary)
+    async def roll_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        is_assigned_roller = interaction.user.id == self.roller_id
+        is_admin_user = bool(getattr(interaction.user.guild_permissions, "administrator", False))
+
+        if not (is_assigned_roller or is_admin_user):
+            await interaction.response.send_message(
+                "❌ Only the chosen roller or an admin can use this button.",
+                ephemeral=True,
+            )
+            return
+
+        if self.resolved:
+            await interaction.response.send_message("This roll has already been resolved.", ephemeral=True)
+            return
+
+        player = self.bot.player_manager.get_player(self.roller_id)
+        if not player:
+            await interaction.response.send_message("❌ The selected roller is not registered.", ephemeral=True)
+            return
+
+        stat_rank = max(0, int(player.get_stat_rank(self.stat_key) or 0))
+        rank_bonus = stat_rank * STAT_ROLL_MODIFIER_PER_RANK
+        boon_bonus = 2 if player.boon_stat == self.stat_key else 0
+        bane_penalty = -2 if player.bane_stat == self.stat_key else 0
+        modifier_total = rank_bonus + boon_bonus + bane_penalty
+
+        d20 = random.randint(1, STAT_ROLL_DICE_SIDES)
+        total = d20 + modifier_total
+        success = total >= self.goal
+
+        result_embed = discord.Embed(
+            title="⭐ Star Roll Result",
+            description=(
+                "The stars aligned! Check succeeded!"
+                if success else
+                "Check Failed..."
+            ),
+            color=discord.Color.green() if success else discord.Color.red(),
+        )
+        result_embed.add_field(name="Roll", value=f"d20 ({d20})", inline=True)
+        result_embed.add_field(name="Modifier", value=f"{modifier_total:+d}", inline=True)
+        result_embed.add_field(name="Total", value=str(total), inline=True)
+        result_embed.add_field(name="Goal", value=str(self.goal), inline=True)
+        result_embed.add_field(
+            name="Breakdown",
+            value=(
+                f"Rank {stat_rank}: +{rank_bonus}\n"
+                f"Boon bonus: {boon_bonus:+d}\n"
+                f"Bane penalty: {bane_penalty:+d}"
+            ),
+            inline=False,
+        )
+
+        self.resolved = True
+        button.disabled = True
+        await interaction.response.edit_message(embed=result_embed, view=self)
+
 class AdminCog(commands.Cog):
     """Admin commands for bot management and testing"""
 
@@ -1336,101 +1404,49 @@ Modest Nature
     # STAT ROLL UTILITY
     # ============================================================
 
-    @app_commands.command(name="stat_roll", description="[ADMIN] Roll a social stat check for a player")
+    @app_commands.command(name="star_roll", description="[ADMIN] Post a star roll challenge for a player")
     @app_commands.describe(
-        user="Which trainer is attempting the check (defaults to yourself)",
-        difficulty="Target number to meet or exceed",
-        stat_one="Primary stat to include",
-        stat_two="Optional secondary stat",
-        stat_three="Optional tertiary stat",
-        reason="Optional note about what this roll represents"
+        stat="Which stat applies to this check",
+        goal="Target number to meet or exceed (1-20)",
+        user="Who should roll"
     )
     @app_commands.choices(
-        stat_one=SOCIAL_STAT_CHOICES,
-        stat_two=SOCIAL_STAT_CHOICES,
-        stat_three=SOCIAL_STAT_CHOICES,
+        stat=SOCIAL_STAT_CHOICES,
     )
     @app_commands.check(is_admin)
-    async def stat_roll(
+    async def star_roll(
         self,
         interaction: discord.Interaction,
-        user: Optional[discord.User],
-        difficulty: int,
-        stat_one: app_commands.Choice[str],
-        stat_two: Optional[app_commands.Choice[str]] = None,
-        stat_three: Optional[app_commands.Choice[str]] = None,
-        reason: Optional[str] = None,
+        stat: app_commands.Choice[str],
+        goal: int,
+        user: discord.User,
     ):
-        """Roll a d20 and add modifiers from one or more social stats."""
+        """Create a public star roll prompt that the selected player can resolve."""
 
-        target = user or interaction.user
-
-        player = self.bot.player_manager.get_player(target.id)
+        player = self.bot.player_manager.get_player(user.id)
         if not player:
             await interaction.response.send_message(
-                f"❌ {target.mention} hasn't registered yet!",
+                f"❌ {user.mention} hasn't registered yet!",
                 ephemeral=True
             )
             return
 
-        stat_keys = []
-        for choice in (stat_one, stat_two, stat_three):
-            if choice and choice.value not in stat_keys:
-                stat_keys.append(choice.value)
+        chosen_goal = max(1, min(STAT_ROLL_DICE_SIDES, int(goal or 1)))
+        stat_name = SOCIAL_STAT_DEFINITIONS[stat.value].display_name
 
-        if not stat_keys:
-            await interaction.response.send_message(
-                "❌ You must pick at least one stat to roll!",
-                ephemeral=True
-            )
-            return
-
-        roll = random.randint(1, STAT_ROLL_DICE_SIDES)
-        modifiers = []
-        modifier_total = 0
-        for key in stat_keys:
-            stat_info = player.get_stat_info(key)
-            display_name = SOCIAL_STAT_DEFINITIONS[key].display_name
-            bonus = stat_info['rank'] * STAT_ROLL_MODIFIER_PER_RANK
-            modifier_total += bonus
-            modifiers.append(f"{display_name}: Rank {stat_info['rank']} → +{bonus}")
-
-        total = roll + modifier_total
-        success = total >= difficulty
-
-        color = discord.Color.green() if success else discord.Color.red()
-        embed = discord.Embed(
-            title="🎲 Stat Roll",
-            description=(
-                f"{target.mention} **{'succeeds' if success else 'fails'}** the check!"
-                if difficulty > 0 else f"{target.mention} rolls the dice!"
-            ),
-            color=color,
+        prompt_embed = discord.Embed(
+            title="⭐ Star Roll",
+            description=f"{user.mention} must roll a **{chosen_goal}** on **{stat_name}** to succeed!",
+            color=discord.Color.blurple(),
+        )
+        prompt_embed.add_field(
+            name="Access",
+            value=f"Only {user.mention} or an admin can press **Roll**.",
+            inline=False,
         )
 
-        if reason:
-            embed.add_field(name="Context", value=reason, inline=False)
-
-        embed.add_field(name="Difficulty", value=str(difficulty), inline=True)
-        embed.add_field(name="d20", value=str(roll), inline=True)
-        embed.add_field(name="Stat Bonus", value=f"+{modifier_total}", inline=True)
-        embed.add_field(name="Total", value=str(total), inline=True)
-
-        if modifiers:
-            embed.add_field(name="Modifiers", value="\n".join(modifiers), inline=False)
-
-        stats_lines = [
-            build_stat_line(
-                SOCIAL_STAT_DEFINITIONS[key].display_name,
-                player.get_stat_rank(key),
-                player.get_stat_info(key)['points'],
-                player.get_stat_info(key)['cap'],
-            )
-            for key in stat_keys
-        ]
-        embed.add_field(name="Stat Snapshots", value="\n".join(stats_lines), inline=False)
-
-        await interaction.response.send_message(embed=embed)
+        view = StarRollView(self.bot, user.id, stat.value, chosen_goal)
+        await interaction.response.send_message(embed=prompt_embed, view=view)
 
 
     @app_commands.command(name="task_research_roll", description="[ADMIN] Prompt a player to roll for crystal research")
