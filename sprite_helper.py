@@ -247,12 +247,12 @@ class PokemonSpriteHelper:
             )
 
             # Strictly prefer Gen 5 assets only: animated first, static fallback.
-            # For post-Gen5 species/forms, hard-force static to avoid broken gifs.
-            prefer_static = PokemonSpriteHelper._prefer_static_gen5_asset(dex_number, inferred_form)
-            sprite_urls = [static_fallback, animated_url] if prefer_static else [animated_url, static_fallback]
+            sprite_urls = [animated_url, static_fallback]
 
             if not use_fallback:
-                return sprite_urls[0]
+                if PokemonSpriteHelper._url_exists(animated_url):
+                    return animated_url
+                return static_fallback
 
             available_urls = [url for url in sprite_urls if PokemonSpriteHelper._url_exists(url)]
 
