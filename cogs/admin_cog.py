@@ -67,19 +67,25 @@ EXP_CANDY_IMAGES = {
 
 
 class ChannelLocationSelectView(discord.ui.View):
-    """Dropdown view for mapping channels to locations"""
+    """Dropdown view for mapping channels to locations + RP star stat."""
+
+    STAR_STAT_KEYS = ["heart", "insight", "charisma", "fortitude", "will", "none"]
 
     def __init__(
         self,
         bot,
         channel_id: int,
         locations: Dict[str, Dict],
-        current_mapping: Optional[str]
+        current_mapping: Optional[str],
+        current_star_stat: str,
     ):
         super().__init__(timeout=120)
         self.bot = bot
         self.channel_id = channel_id
         self.current_mapping = current_mapping
+        self.current_star_stat = (current_star_stat or "none").lower()
+        self.selected_location = current_mapping
+        self.selected_star_stat = self.current_star_stat
         self.page_size = 25
 
         # Discord selects support up to 25 options
@@ -104,7 +110,7 @@ class ChannelLocationSelectView(discord.ui.View):
         end = start + self.page_size
         return self.sorted_locations[start:end]
 
-    def _build_select(self) -> discord.ui.Select:
+    def _build_location_select(self) -> discord.ui.Select:
         options = []
         for location_id, location_data in self._get_page_slice():
             label = location_data.get('name', location_id.replace('_', ' ').title())
@@ -114,21 +120,48 @@ class ChannelLocationSelectView(discord.ui.View):
                     label=label[:100],
                     value=location_id,
                     description=description,
-                    default=(location_id == self.current_mapping)
+                    default=(location_id == self.selected_location)
                 )
             )
 
         page_label = f" (Page {self.current_page + 1}/{self.total_pages})" if self.total_pages > 1 else ""
         select = discord.ui.Select(
             placeholder=f"Choose a location for this channel...{page_label}",
-            options=options
+            options=options,
         )
         select.callback = self.location_selected
         return select
 
+    def _build_star_stat_select(self) -> discord.ui.Select:
+        options = []
+        for key in self.STAR_STAT_KEYS:
+            if key == "none":
+                label = "None"
+                description = "No social stat reward from RP stamina spend"
+            else:
+                definition = SOCIAL_STAT_DEFINITIONS[key]
+                label = definition.display_name
+                description = f"Award {definition.display_name} on RP stamina spend"
+            options.append(
+                discord.SelectOption(
+                    label=label,
+                    value=key,
+                    description=description[:100],
+                    default=(key == self.selected_star_stat),
+                )
+            )
+
+        select = discord.ui.Select(
+            placeholder="Choose RP star stat reward for this channel...",
+            options=options,
+        )
+        select.callback = self.star_stat_selected
+        return select
+
     def _refresh_items(self):
         self.clear_items()
-        self.add_item(self._build_select())
+        self.add_item(self._build_location_select())
+        self.add_item(self._build_star_stat_select())
 
         if self.total_pages > 1:
             prev_button = discord.ui.Button(
@@ -157,51 +190,61 @@ class ChannelLocationSelectView(discord.ui.View):
         await interaction.response.edit_message(view=self)
 
     async def location_selected(self, interaction: discord.Interaction):
-        """Handle selection of a location for this channel"""
-        location_id = interaction.data['values'][0]
+        self.selected_location = interaction.data['values'][0]
+        self._refresh_items()
+        await self._try_apply_selection(interaction)
 
-        # Prevent duplicate assignments
-        if location_id == self.current_mapping:
-            location_name = self.bot.location_manager.get_location_name(location_id)
-            await interaction.response.send_message(
-                f"ℹ️ {interaction.channel.mention} is already linked to **{location_name}**.",
-                ephemeral=True
-            )
+    async def star_stat_selected(self, interaction: discord.Interaction):
+        self.selected_star_stat = interaction.data['values'][0]
+        self._refresh_items()
+        await self._try_apply_selection(interaction)
+
+    async def _try_apply_selection(self, interaction: discord.Interaction):
+        if not self.selected_location or not self.selected_star_stat:
+            await interaction.response.edit_message(view=self)
             return
 
-        # Remove existing mapping if necessary
         existing_mapping = self.bot.location_manager.get_location_by_channel(self.channel_id)
-        if existing_mapping and existing_mapping != location_id:
+        if existing_mapping and existing_mapping != self.selected_location:
             self.bot.location_manager.remove_channel_from_location(self.channel_id)
 
         success = self.bot.location_manager.add_channel_to_location(
             self.channel_id,
-            location_id
+            self.selected_location
         )
-
         if not success:
             await interaction.response.send_message(
                 "❌ Failed to map this channel to the selected location. Please try again.",
-                ephemeral=True
+                ephemeral=True,
             )
             return
 
-        location_name = self.bot.location_manager.get_location_name(location_id)
+        star_success = self.bot.location_manager.set_channel_star_stat(
+            self.channel_id,
+            self.selected_star_stat,
+        )
+        if not star_success:
+            await interaction.response.send_message(
+                "❌ Failed to set RP star stat for this channel. Please try again.",
+                ephemeral=True,
+            )
+            return
 
-        # Disable the view to prevent further edits
+        location_name = self.bot.location_manager.get_location_name(self.selected_location)
+        star_label = "None" if self.selected_star_stat == "none" else SOCIAL_STAT_DEFINITIONS[self.selected_star_stat].display_name
+
         for child in self.children:
             child.disabled = True
 
         await interaction.response.edit_message(
             content=(
                 f"✅ {interaction.channel.mention} is now mapped to **{location_name}**.\n"
-                "Players must use this channel for that location's encounters."
+                f"⭐ RP star stat reward: **{star_label}**."
             ),
             embed=None,
-            view=self
+            view=self,
         )
         self.stop()
-
 
 
 
@@ -1661,11 +1704,11 @@ Modest Nature
     )
     @app_commands.describe(
         users="Players to reward (mention them)",
-        heart="Heart points to give (before boon/bane)",
-        insight="Insight points to give (before boon/bane)",
-        charisma="Charisma points to give (before boon/bane)",
-        fortitude="Fortitude points to give (before boon/bane)",
-        will="Will points to give (before boon/bane)"
+        heart="Heart points to give",
+        insight="Insight points to give",
+        charisma="Charisma points to give",
+        fortitude="Fortitude points to give",
+        will="Will points to give"
     )
     @app_commands.check(is_admin)
     async def give_rp_rewards(
@@ -1678,7 +1721,7 @@ Modest Nature
         fortitude: int = 0,
         will: int = 0,
     ):
-        """Give RP rewards to one or more players with automatic boon/bane and exp candy calculation."""
+        """Give RP rewards to one or more players with even stat growth and exp candy calculation."""
 
         # Parse user mentions from the string
         user_ids = []
@@ -1743,11 +1786,7 @@ Modest Nature
                 results.append(f"❌ Could not load data for {user.mention}")
                 continue
 
-            # Get player's boon and bane
-            boon_stat = getattr(player, 'boon_stat', None)
-            bane_stat = getattr(player, 'bane_stat', None)
-
-            # Apply stat rewards with boon/bane modifiers
+            # Apply stat rewards (boon/bane only affect starting ranks)
             stat_updates = {}
             stat_summary = []
 
@@ -1755,19 +1794,7 @@ Modest Nature
                 if base_amount == 0:
                     continue
 
-                # Apply boon/bane modifier
                 actual_amount = base_amount
-                modifier_text = ""
-                if stat_key == boon_stat:
-                    actual_amount += 1
-                    modifier_text = " (+1 boon)"
-                elif stat_key == bane_stat:
-                    actual_amount -= 1
-                    modifier_text = " (-1 bane)"
-
-                # Skip if final amount is 0 or negative
-                if actual_amount <= 0:
-                    continue
 
                 # Get current stat state
                 current_points = getattr(player, f'{stat_key}_points', 0)
@@ -1788,7 +1815,7 @@ Modest Nature
                 if new_rank > current_rank:
                     rank_change = f" (Rank {current_rank}→{new_rank})"
 
-                stat_summary.append(f"**{display_name}**: +{actual_amount}{modifier_text}{rank_change}")
+                stat_summary.append(f"**{display_name}**: +{actual_amount}{rank_change}")
 
                 # Handle stamina updates for fortitude
                 if stat_key == 'fortitude' and new_rank != current_rank:
@@ -1992,7 +2019,7 @@ Modest Nature
     # LOCATION MANAGEMENT
     # ============================================================
     
-    @app_commands.command(name="set_location", description="[ADMIN] Map this channel to a location")
+    @app_commands.command(name="set_location", description="[ADMIN] Map this channel to a location and RP star stat")
     @app_commands.check(is_admin)
     async def set_location(
         self,
@@ -2016,11 +2043,12 @@ Modest Nature
         )
 
         embed = discord.Embed(
-            title="Map this channel to a location",
+            title="Map this channel to a location + RP star stat",
             description=(
-                "Select a location from the dropdown below. Players will only be able to use "
+                "Select a location and RP star stat from the dropdowns below. Players will only be able to use "
                 "location-specific commands (like wild encounters) from the channel linked to "
-                "that location."
+                "that location. The selected RP star stat determines which stat `/rotom_roleplay` "
+                "awards when players spend stamina (or **None** for no stat)."
             ),
             color=discord.Color.blurple()
         )
@@ -2033,6 +2061,17 @@ Modest Nature
                 inline=False
             )
 
+        current_star_stat = self.bot.location_manager.get_channel_star_stat(
+            interaction.channel_id,
+            parent_id=parent_id,
+        )
+        current_star_name = "None" if current_star_stat == "none" else SOCIAL_STAT_DEFINITIONS[current_star_stat].display_name
+        embed.add_field(
+            name="Current RP star stat",
+            value=f"**{current_star_name}**",
+            inline=False,
+        )
+
         if len(all_locations) > 25:
             embed.set_footer(text="Use the Previous/Next buttons to page through locations.")
 
@@ -2040,7 +2079,8 @@ Modest Nature
             bot=self.bot,
             channel_id=channel_id,
             locations=all_locations,
-            current_mapping=current_mapping
+            current_mapping=current_mapping,
+            current_star_stat=current_star_stat,
         )
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)

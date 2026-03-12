@@ -9,16 +9,22 @@ from typing import Optional, Dict, List
 from models import Pokemon
 
 
+VALID_STAR_STATS = {"heart", "insight", "charisma", "fortitude", "will", "none"}
+
+
 class LocationManager:
     """Manages location data and encounter tables"""
 
     def __init__(self, json_path: str = "data/locations.json", channel_map_path: str = "config/channel_locations.json"):
         self.json_path = json_path
         self.channel_map_path = Path(channel_map_path)
+        self.channel_star_stat_path = self.channel_map_path.parent / "channel_star_stats.json"
         self.locations = {}
         self.channel_to_location = {}  # Map channel IDs to location IDs
+        self.channel_to_star_stat = {}  # Map channel IDs to RP bonus star stat
         self.load_locations()
         self._load_channel_mappings()
+        self._load_channel_star_stats()
 
     def load_locations(self):
         """Load locations from JSON"""
@@ -105,6 +111,36 @@ class LocationManager:
         for location_id, location_data in self.locations.items():
             ids = [cid for cid, loc in self.channel_to_location.items() if loc == location_id]
             location_data['channel_ids'] = sorted(ids)
+
+    def _load_channel_star_stats(self):
+        """Load per-channel RP star stat settings."""
+        self.channel_star_stat_path.parent.mkdir(parents=True, exist_ok=True)
+        if not self.channel_star_stat_path.exists():
+            self._save_channel_star_stats()
+            return
+
+        try:
+            with open(self.channel_star_stat_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            for channel_id, star_stat in data.items():
+                try:
+                    chan_int = int(channel_id)
+                except (TypeError, ValueError):
+                    continue
+
+                normalized = str(star_stat or "none").strip().lower()
+                if normalized not in VALID_STAR_STATS:
+                    normalized = "none"
+                self.channel_to_star_stat[chan_int] = normalized
+        except (json.JSONDecodeError, OSError):
+            print("⚠️ Failed to load channel star stat mapping file, defaulting to none")
+            self.channel_to_star_stat = {}
+
+    def _save_channel_star_stats(self):
+        data = {str(channel_id): star_stat for channel_id, star_stat in self.channel_to_star_stat.items()}
+        self.channel_star_stat_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.channel_star_stat_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
     
     def get_location(self, location_id: str) -> Optional[Dict]:
         """Get location data by ID"""
@@ -139,6 +175,27 @@ class LocationManager:
         if parent_id is not None:
             return self.channel_to_location.get(parent_id)
         return None
+
+    def get_channel_star_stat(self, channel_id: int, parent_id: Optional[int] = None) -> str:
+        """Return the configured RP star stat for the channel (or parent thread channel)."""
+        star_stat = self.channel_to_star_stat.get(channel_id)
+        if star_stat is not None:
+            return star_stat
+        if parent_id is not None:
+            parent_star = self.channel_to_star_stat.get(parent_id)
+            if parent_star is not None:
+                return parent_star
+        return "none"
+
+    def set_channel_star_stat(self, channel_id: int, star_stat: str) -> bool:
+        """Set the RP star stat for a channel. Accepts one of five stats or none."""
+        normalized = str(star_stat or "none").strip().lower()
+        if normalized not in VALID_STAR_STATS:
+            return False
+
+        self.channel_to_star_stat[int(channel_id)] = normalized
+        self._save_channel_star_stats()
+        return True
     
     def get_all_locations(self) -> Dict[str, Dict]:
         """Get all locations"""
@@ -258,8 +315,10 @@ class LocationManager:
             return False
 
         del self.channel_to_location[channel_id]
+        self.channel_to_star_stat.pop(channel_id, None)
         self._sync_channel_lists()
         self._save_channel_mappings()
+        self._save_channel_star_stats()
         self.save_locations()
         return True
     

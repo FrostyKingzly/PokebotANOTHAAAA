@@ -15,13 +15,7 @@ WORD_RE = re.compile(r"[A-Za-z0-9']+")
 PAREN_RE = re.compile(r"\([^)]*\)")
 RP_EXP_WORD_RATIO = 10
 
-# Temporary placeholder rewards until per-location tuning is provided.
-# Keys should be location_id values from LocationManager.
-ROLEPLAY_CHANNEL_STAT_REWARDS: Dict[str, Dict[str, int]] = {
-    # "lights_district_plaza": {"charisma": 1},
-    # "residential_district_library": {"insight": 1},
-}
-DEFAULT_STAT_REWARD: Dict[str, int] = {"heart": 1}
+DEFAULT_STAT_REWARD: Dict[str, int] = {}
 
 
 @dataclass
@@ -29,6 +23,7 @@ class RoleplaySession:
     user_id: int
     channel_id: int
     location_id: str
+    parent_channel_id: Optional[int] = None
     word_count: int = 0
 
 
@@ -53,7 +48,8 @@ class RPStartConfirmView(discord.ui.View):
         if not await self._validate_user(interaction):
             return
 
-        created = self.cog.start_session(self.user_id, self.channel_id, self.location_id)
+        parent_channel_id = interaction.channel.parent_id if isinstance(interaction.channel, discord.Thread) else None
+        created = self.cog.start_session(self.user_id, self.channel_id, self.location_id, parent_channel_id=parent_channel_id)
         if not created:
             await interaction.response.edit_message(
                 embed=discord.Embed(
@@ -100,12 +96,16 @@ class RPSpendStaminaView(discord.ui.View):
         cog: "RoleplayCog",
         user_id: int,
         location_id: str,
+        channel_id: int,
+        parent_channel_id: Optional[int],
         word_count: int,
     ):
         super().__init__(timeout=120)
         self.cog = cog
         self.user_id = user_id
         self.location_id = location_id
+        self.channel_id = channel_id
+        self.parent_channel_id = parent_channel_id
         self.word_count = word_count
 
     async def _validate_user(self, interaction: discord.Interaction) -> bool:
@@ -143,13 +143,16 @@ class RPSpendStaminaView(discord.ui.View):
             )
             return
 
-        stat_rewards = self.cog.get_stat_reward_for_location(self.location_id)
+        stat_rewards = self.cog.get_stat_reward_for_channel(self.channel_id, parent_id=self.parent_channel_id)
         applied_lines = []
         for stat_key, amount in stat_rewards.items():
             outcome = self.cog.apply_social_points(trainer, stat_key, amount)
             applied_lines.append(
                 f"• **{stat_key.title()}** +{amount} → Rank {outcome['new_rank']}"
             )
+
+        if not applied_lines:
+            applied_lines.append("• No stat reward for this channel.")
 
         await interaction.response.edit_message(
             embed=discord.Embed(
@@ -244,7 +247,14 @@ class RPEndConfirmView(discord.ui.View):
         )
         await interaction.followup.send(
             embed=bonus_embed,
-            view=RPSpendStaminaView(self.cog, self.session.user_id, session.location_id, exp_amount),
+            view=RPSpendStaminaView(
+                self.cog,
+                self.session.user_id,
+                session.location_id,
+                session.channel_id,
+                session.parent_channel_id,
+                exp_amount,
+            ),
             ephemeral=True,
         )
 
@@ -350,7 +360,7 @@ class RoleplayCog(commands.Cog):
             ephemeral=True,
         )
 
-    def start_session(self, user_id: int, channel_id: int, location_id: str) -> bool:
+    def start_session(self, user_id: int, channel_id: int, location_id: str, parent_channel_id: Optional[int] = None) -> bool:
         if user_id in self.active_sessions:
             return False
 
@@ -358,6 +368,7 @@ class RoleplayCog(commands.Cog):
             user_id=user_id,
             channel_id=channel_id,
             location_id=location_id,
+            parent_channel_id=parent_channel_id,
             word_count=0,
         )
         return True
@@ -399,13 +410,15 @@ class RoleplayCog(commands.Cog):
 
         return results
 
-    def get_stat_reward_for_location(self, location_id: str) -> Dict[str, int]:
-        if not location_id:
+    def get_stat_reward_for_channel(self, channel_id: int, parent_id: Optional[int] = None) -> Dict[str, int]:
+        location_manager = getattr(self.bot, "location_manager", None)
+        if not location_manager:
             return dict(DEFAULT_STAT_REWARD)
-        rewards = ROLEPLAY_CHANNEL_STAT_REWARDS.get(location_id)
-        if rewards:
-            return dict(rewards)
-        return dict(DEFAULT_STAT_REWARD)
+
+        star_stat = location_manager.get_channel_star_stat(channel_id, parent_id=parent_id)
+        if star_stat == "none":
+            return {}
+        return {star_stat: 1}
 
     def apply_social_points(self, trainer, stat_key: str, amount: int) -> Dict[str, int]:
         from social_stats import calculate_max_stamina, clamp_points, get_stat_cap, points_to_rank
