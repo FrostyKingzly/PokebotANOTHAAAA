@@ -4202,7 +4202,14 @@ class ItemActionView(View):
 
             embed = EmbedBuilder.party_view(party, self.bot.species_db)
             embed.title = f"Give {self.item_data['name']} to which Pokémon?"
-            view = ItemGivePokemonSelectView(self.bot, self.player_id, self.item_id, self.item_data, self.category)
+            view = ItemGivePokemonSelectView(
+                self.bot,
+                self.player_id,
+                self.item_id,
+                self.item_data,
+                self.category,
+                back_callback=self.back_callback,
+            )
             await interaction.response.edit_message(embed=embed, view=view)
 
         async def discard_callback(interaction: discord.Interaction):
@@ -4506,13 +4513,22 @@ class ItemUsePokemonSelectView(View):
 class ItemGivePokemonSelectView(View):
     """Select which Pokémon to give a held item to."""
 
-    def __init__(self, bot, player_id: int, item_id: str, item_data: Dict[str, Any], category: str):
+    def __init__(
+        self,
+        bot,
+        player_id: int,
+        item_id: str,
+        item_data: Dict[str, Any],
+        category: str,
+        back_callback: Optional[Callable[[discord.Interaction], Awaitable[None]]] = None,
+    ):
         super().__init__(timeout=300)
         self.bot = bot
         self.player_id = player_id
         self.item_id = item_id
         self.item_data = item_data
         self.category = category
+        self.back_callback = back_callback
 
         party = self.bot.player_manager.get_party(player_id)
         options: List[discord.SelectOption] = []
@@ -4556,7 +4572,14 @@ class ItemGivePokemonSelectView(View):
             # Otherwise, show the item detail again with a result message
             embed = EmbedBuilder.item_use_view(self.item_data, qty)
             embed.add_field(name="Result", value=msg, inline=False)
-            action_view = ItemActionView(self.bot, self.player_id, self.item_id, self.item_data, self.category)
+            action_view = ItemActionView(
+                self.bot,
+                self.player_id,
+                self.item_id,
+                self.item_data,
+                self.category,
+                back_callback=self.back_callback,
+            )
             await interaction.response.edit_message(embed=embed, view=action_view)
 
         select.callback = select_callback
@@ -4573,7 +4596,14 @@ class ItemGivePokemonSelectView(View):
 
             qty = self.bot.player_manager.get_item_quantity(self.player_id, self.item_id)
             embed = EmbedBuilder.item_use_view(self.item_data, qty)
-            view = ItemActionView(self.bot, self.player_id, self.item_id, self.item_data, self.category)
+            view = ItemActionView(
+                self.bot,
+                self.player_id,
+                self.item_id,
+                self.item_data,
+                self.category,
+                back_callback=self.back_callback,
+            )
             await interaction.response.edit_message(embed=embed, view=view)
 
         back_button.callback = back_callback
