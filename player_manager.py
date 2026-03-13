@@ -1135,12 +1135,14 @@ class PlayerManager:
                 current_move_ids.append(mid)
 
         # Learnset format: { "level_up_moves": [ {"level": int, "move_id": str, "gen": int}, ... ] }
+        # Restrict to Gen 9 learnset entries.
         for move_entry in learnset.get('level_up_moves', []):
             try:
                 move_level = int(move_entry.get('level', 1))
+                move_gen = int(move_entry.get('gen', 9))
             except (TypeError, ValueError):
                 continue
-            if move_level <= level:
+            if move_gen == 9 and move_level <= level:
                 move_id = str(move_entry.get('move_id', '')).lower()
                 if move_id:
                     level_up_ids.append(move_id)
