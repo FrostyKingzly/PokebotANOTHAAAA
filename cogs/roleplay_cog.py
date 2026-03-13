@@ -421,10 +421,7 @@ class RoleplayCog(commands.Cog):
         location_name = location_manager.get_location_name(location_id) or location_id
         start_embed = discord.Embed(
             title="🎭 Start Roleplay?",
-            description=(
-                f"Location: **{location_name}**\n\n"
-                "If you confirm, I'll begin counting your RP words in this channel."
-            ),
+            description=f"Location: **{location_name}**",
             color=discord.Color.blurple(),
         )
         await interaction.response.send_message(
