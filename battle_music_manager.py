@@ -83,10 +83,6 @@ class BattleMusicManager:
             'skip_download': True,
             'prefer_ffmpeg': True,
             'keepvideo': False,
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'best',
-            }],
             # Try multiple client profiles; this can reduce YouTube bot checks
             # for some public videos without requiring user auth.
             'extractor_args': {
