@@ -166,6 +166,41 @@ await asyncio.sleep(60)  # Play for 60 seconds (1 minute)
 3. **Check FFmpeg**: Run `ffmpeg -version` to verify installation
 4. **Check Dependencies**: Run `pip install -r requirements.txt`
 
+### YouTube Bot Check / Cookie Auth Errors
+
+If you see an error like: `Sign in to confirm you're not a bot`, YouTube now requires authenticated requests for that video.
+
+If you want authenticated playback, paste **exactly one** of these lines into your `.env` (no parentheses):
+
+```bash
+# Option A: Netscape-format cookies file exported for YouTube
+YTDLP_COOKIES_FILE=/absolute/path/to/youtube_cookies.txt
+
+# Option B: Let yt-dlp read directly from local browser profile
+YTDLP_COOKIES_FROM_BROWSER=chrome
+# examples: firefox:default-release, chromium:Default
+```
+
+Then restart the bot. If both are set, the bot now prefers a valid `YTDLP_COOKIES_FILE`; if that file path is invalid, it falls back to `YTDLP_COOKIES_FROM_BROWSER`.
+
+**Important:** `YTDLP_COOKIES_FILE` must be a real yt-dlp/browser cookie export in Netscape cookie format. A `robots.txt` file is **not** a cookie file and will be rejected.
+
+### No-Env Fallback (Now Built In)
+
+If a selected battle track fails YouTube bot-check/auth, the bot now automatically retries up to 8 alternate battle-theme URLs before giving up.
+
+### Local Download Cache
+
+The bot now attempts to download track audio and cache it locally, then reuses the local file on future plays.
+
+Optional `.env` setting:
+
+```env
+MUSIC_CACHE_DIR=data/music_cache
+```
+
+If unset, it defaults to `data/music_cache`.
+
 ### Queue Issues
 
 - **Can't Join Queue**: You may already be in queue or using music
@@ -203,6 +238,19 @@ This system requires **zero commands**. Everything happens automatically:
 - Victory themes play automatically
 
 Just battle and enjoy the music! 🎵
+
+### Lavalink Preparation
+
+Lavalink deployment assets are included:
+- `LAVALINK_SETUP.md`
+- `docker-compose.lavalink.yml`
+- `docker/lavalink/application.yml`
+
+Run:
+
+```bash
+docker compose -f docker-compose.lavalink.yml up -d
+```
 
 ## Future Enhancements
 
