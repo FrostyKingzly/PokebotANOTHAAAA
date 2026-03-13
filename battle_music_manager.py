@@ -71,7 +71,7 @@ class BattleMusicManager:
 
         # yt-dlp options optimized for high-quality Discord streaming
         self.YDL_OPTIONS = {
-            'format': 'bestaudio[asr=48000]/bestaudio/best',  # Prefer 48k streams when available
+            'format': 'bestaudio/best',  # Avoid over-constraining formats; let FFmpeg normalize to 48k
             'noplaylist': True,
             'nocheckcertificate': True,
             'ignoreerrors': False,
@@ -83,10 +83,6 @@ class BattleMusicManager:
             'skip_download': True,
             'prefer_ffmpeg': True,
             'keepvideo': False,
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'best',
-            }],
             # Try multiple client profiles; this can reduce YouTube bot checks
             # for some public videos without requiring user auth.
             'extractor_args': {
@@ -497,14 +493,6 @@ class BattleMusicManager:
             if not audio_input:
                 print(f"❌ Could not resolve playable audio input")
                 return False
-
-            if 'url' not in info:
-                print(f"❌ No audio URL found in video info")
-                return False
-
-            audio_url = info['url']
-            duration = info.get('duration', 0)  # Get track duration in seconds
-            print(f"✅ Audio URL extracted: {audio_url[:100]}...")
             print(f"🎵 Track duration: {duration} seconds")
 
             print(f"🎵 Creating FFmpeg audio source...")
@@ -560,6 +548,60 @@ class BattleMusicManager:
             import traceback
             traceback.print_exc()
             return False
+
+    async def _resolve_audio_input(self, url: str) -> Tuple[Optional[str], int, Optional[str]]:
+        """
+        Resolve a playable FFmpeg input using yt-dlp.
+
+        Returns:
+            (audio_input, duration_seconds, title)
+        """
+        def _extract(ydl_options: Dict) -> Optional[Dict]:
+            with yt_dlp.YoutubeDL(ydl_options) as ydl:
+                return ydl.extract_info(url, download=False)
+
+        def _normalize_info(raw_info: Optional[Dict]) -> Optional[Dict]:
+            if not raw_info:
+                return None
+            if 'entries' in raw_info and raw_info['entries']:
+                return next((entry for entry in raw_info['entries'] if entry), None)
+            return raw_info
+
+        extract_attempts = [
+            ("bestaudio/best + client hints", self.YDL_OPTIONS),
+            ("best", {**self.YDL_OPTIONS, 'format': 'best'}),
+            (
+                "best without player_client override",
+                {
+                    k: v for k, v in {**self.YDL_OPTIONS, 'format': 'best'}.items()
+                    if k != 'extractor_args'
+                },
+            ),
+        ]
+
+        last_error: Optional[Exception] = None
+
+        for attempt_name, ydl_options in extract_attempts:
+            try:
+                info = await asyncio.to_thread(_extract, ydl_options)
+                info = _normalize_info(info)
+                if not info:
+                    continue
+
+                audio_input = info.get('url')
+                if audio_input:
+                    return audio_input, info.get('duration', 0) or 0, info.get('title')
+
+                print(f"⚠️ yt-dlp returned metadata without stream URL ({attempt_name})")
+            except yt_dlp.utils.DownloadError as e:
+                last_error = e
+                print(f"⚠️ yt-dlp extraction attempt failed ({attempt_name}): {e}")
+                continue
+
+        if last_error:
+            raise last_error
+
+        return None, 0, None
 
     async def _fade_victory_theme(self):
         """Fade out victory theme after 2 minutes of playback"""
