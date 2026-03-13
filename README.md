@@ -59,6 +59,10 @@ Create a `.env` file in the root directory:
 
 ```
 DISCORD_BOT_TOKEN=your_bot_token_here
+# Optional: helps yt-dlp bypass YouTube bot checks for music playback
+# If needed for YouTube auth errors, copy ONE line below exactly (no parentheses):
+# YTDLP_COOKIES_FILE=/absolute/path/to/youtube_cookies.txt
+# YTDLP_COOKIES_FROM_BROWSER=chrome
 ```
 
 ### 4. Invite Bot to Your Server
