@@ -166,6 +166,27 @@ await asyncio.sleep(60)  # Play for 60 seconds (1 minute)
 3. **Check FFmpeg**: Run `ffmpeg -version` to verify installation
 4. **Check Dependencies**: Run `pip install -r requirements.txt`
 
+### YouTube Bot Check / Cookie Auth Errors
+
+If you see an error like: `Sign in to confirm you're not a bot`, YouTube now requires authenticated requests for that video.
+
+If you want authenticated playback, paste **exactly one** of these lines into your `.env` (no parentheses):
+
+```bash
+# Option A: Netscape-format cookies file exported for YouTube
+YTDLP_COOKIES_FILE=/absolute/path/to/youtube_cookies.txt
+
+# Option B: Let yt-dlp read directly from local browser profile
+YTDLP_COOKIES_FROM_BROWSER=chrome
+# examples: firefox:default-release, chromium:Default
+```
+
+Then restart the bot. If both are set, the bot now prefers a valid `YTDLP_COOKIES_FILE`; if that file path is invalid, it falls back to `YTDLP_COOKIES_FROM_BROWSER`.
+
+### No-Env Fallback (Now Built In)
+
+If a selected battle track fails YouTube bot-check/auth, the bot now automatically retries up to 8 alternate battle-theme URLs before giving up.
+
 ### Queue Issues
 
 - **Can't Join Queue**: You may already be in queue or using music
