@@ -63,8 +63,6 @@ DISCORD_BOT_TOKEN=your_bot_token_here
 # If needed for YouTube auth errors, copy ONE line below exactly (no parentheses):
 # YTDLP_COOKIES_FILE=/absolute/path/to/youtube_cookies.txt
 # YTDLP_COOKIES_FROM_BROWSER=chrome
-# Optional local download cache path for music files
-# MUSIC_CACHE_DIR=data/music_cache
 ```
 
 ### 4. Invite Bot to Your Server

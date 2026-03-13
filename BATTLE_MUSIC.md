@@ -183,23 +183,9 @@ YTDLP_COOKIES_FROM_BROWSER=chrome
 
 Then restart the bot. If both are set, the bot now prefers a valid `YTDLP_COOKIES_FILE`; if that file path is invalid, it falls back to `YTDLP_COOKIES_FROM_BROWSER`.
 
-**Important:** `YTDLP_COOKIES_FILE` must be a real yt-dlp/browser cookie export in Netscape cookie format. A `robots.txt` file is **not** a cookie file and will be rejected.
-
 ### No-Env Fallback (Now Built In)
 
 If a selected battle track fails YouTube bot-check/auth, the bot now automatically retries up to 8 alternate battle-theme URLs before giving up.
-
-### Local Download Cache
-
-The bot now attempts to download track audio and cache it locally, then reuses the local file on future plays.
-
-Optional `.env` setting:
-
-```env
-MUSIC_CACHE_DIR=data/music_cache
-```
-
-If unset, it defaults to `data/music_cache`.
 
 ### Queue Issues
 

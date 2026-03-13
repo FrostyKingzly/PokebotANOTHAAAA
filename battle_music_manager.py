@@ -98,25 +98,6 @@ class BattleMusicManager:
 
         self._configure_ytdlp_auth()
 
-    def _is_valid_cookie_file(self, cookie_path: Path) -> bool:
-        """Basic validation for yt-dlp cookie files (Netscape format)."""
-        try:
-            sample = cookie_path.read_text(encoding="utf-8", errors="ignore").splitlines()[:30]
-        except Exception:
-            return False
-
-        sample_text = "\n".join(sample).lower()
-        if "user-agent:" in sample_text and "sitemap:" in sample_text and "disallow:" in sample_text:
-            print("⚠️ YTDLP_COOKIES_FILE appears to be robots.txt, not a cookies export.")
-            return False
-
-        if any("netscape" in line.lower() and "cookie" in line.lower() for line in sample):
-            return True
-
-        # Netscape cookie rows are tab-delimited (domain, include_subdomains, path, secure, expiry, name, value)
-        tabbed_rows = [line for line in sample if line and not line.startswith('#') and line.count("	") >= 6]
-        return bool(tabbed_rows)
-
     def _configure_ytdlp_auth(self):
         """Apply optional yt-dlp authentication settings from environment variables."""
         cookies_file = (os.getenv("YTDLP_COOKIES_FILE") or "").strip()
@@ -126,13 +107,10 @@ class BattleMusicManager:
         if cookies_file:
             cookie_path = Path(cookies_file).expanduser()
             if cookie_path.is_file():
-                if self._is_valid_cookie_file(cookie_path):
-                    self.YDL_OPTIONS['cookiefile'] = str(cookie_path)
-                    print(f"🍪 yt-dlp using cookie file: {cookie_path}")
-                    return
-                print(f"⚠️ Cookie file is not a valid Netscape export: {cookie_path}")
-            else:
-                print(f"⚠️ YTDLP_COOKIES_FILE is set but file was not found: {cookie_path}")
+                self.YDL_OPTIONS['cookiefile'] = str(cookie_path)
+                print(f"🍪 yt-dlp using cookie file: {cookie_path}")
+                return
+            print(f"⚠️ YTDLP_COOKIES_FILE is set but file was not found: {cookie_path}")
 
         # 2) Fallback to browser cookies when specified.
         if browser_spec:
@@ -148,59 +126,6 @@ class BattleMusicManager:
 
         print("ℹ️ yt-dlp running without cookies (public videos only).")
 
-
-    async def _resolve_audio_input(self, url: str) -> Tuple[Optional[str], int, Optional[str]]:
-        """Resolve a playable audio input, preferring cached local downloads."""
-        event_loop = asyncio.get_event_loop()
-
-        with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
-            info = await event_loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
-
-        if not info:
-            return None, 0, None
-
-        title = info.get("title")
-        duration = info.get("duration", 0)
-        track_id = info.get("id")
-        ext = info.get("ext")
-
-        if track_id and ext:
-            cached_file = self.music_cache_dir / f"{track_id}.{ext}"
-            if cached_file.is_file():
-                print(f"💾 Using cached track: {cached_file}")
-                return str(cached_file), duration, title
-
-        download_opts = dict(self.YDL_OPTIONS)
-        download_opts["skip_download"] = False
-        download_opts["outtmpl"] = str(self.music_cache_dir / "%(id)s.%(ext)s")
-
-        with yt_dlp.YoutubeDL(download_opts) as ydl_download:
-            download_info = await event_loop.run_in_executor(None, lambda: ydl_download.extract_info(url, download=True))
-
-            requested = download_info.get("requested_downloads") if download_info else None
-            if requested and isinstance(requested, list):
-                for item in requested:
-                    filepath = item.get("filepath")
-                    if filepath and Path(filepath).is_file():
-                        print(f"⬇️ Downloaded track to cache: {filepath}")
-                        return str(Path(filepath)), duration, title
-
-            prepared = Path(ydl_download.prepare_filename(download_info)) if download_info else None
-            if prepared and prepared.is_file():
-                print(f"⬇️ Downloaded track to cache: {prepared}")
-                return str(prepared), duration, title
-
-        if track_id:
-            candidates = sorted(self.music_cache_dir.glob(f"{track_id}.*"))
-            if candidates:
-                print(f"⬇️ Downloaded track to cache: {candidates[0]}")
-                return str(candidates[0]), duration, title
-
-        if "url" in info:
-            print("⚠️ Falling back to direct stream URL (not cached).")
-            return info["url"], duration, title
-
-        return None, duration, title
 
     def _candidate_battle_theme_urls(self, exclude_url: str) -> List[str]:
         """Build a shuffled list of alternate battle theme URLs excluding the current URL."""
@@ -573,6 +498,13 @@ class BattleMusicManager:
                 print(f"❌ Could not resolve playable audio input")
                 return False
 
+            if 'url' not in info:
+                print(f"❌ No audio URL found in video info")
+                return False
+
+            audio_url = info['url']
+            duration = info.get('duration', 0)  # Get track duration in seconds
+            print(f"✅ Audio URL extracted: {audio_url[:100]}...")
             print(f"🎵 Track duration: {duration} seconds")
 
             print(f"🎵 Creating FFmpeg audio source...")
