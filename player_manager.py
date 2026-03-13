@@ -1101,6 +1101,7 @@ class PlayerManager:
         Includes:
           - All level-up moves up to the Pokemon's current level
           - All TM moves from its learnset
+          - All egg moves when the Pokemon is marked as the trainer's partner
 
         Returns a mapping of move_id -> move_data.
         """
@@ -1159,11 +1160,18 @@ class PlayerManager:
 
         tm_ids = learned_tm_ids
 
+        egg_ids: List[str] = []
+        if bool(pokemon.get('is_partner')):
+            for move_id in learnset.get('egg_moves', []):
+                normalized = str(move_id).lower().strip()
+                if normalized:
+                    egg_ids.append(normalized)
+
         # De-duplicate while preserving order (current moves first to avoid dropping them)
         move_ids: List[str] = []
         seen = set()
 
-        for mid in current_move_ids + level_up_ids + tm_ids:
+        for mid in current_move_ids + level_up_ids + tm_ids + egg_ids:
             normalized_mid = (mid or "").lower()
             if normalized_mid and normalized_mid not in seen:
                 seen.add(normalized_mid)
