@@ -1100,8 +1100,8 @@ class PlayerManager:
 
         Includes:
           - All level-up moves up to the Pokemon's current level
-          - All TM moves from its learnset
-          - All egg moves when the Pokemon is marked as the trainer's partner
+          - TM moves this individual Pokémon has actually learned
+          - Egg moves this individual Pokémon has actually learned
 
         Returns a mapping of move_id -> move_data.
         """
@@ -1160,12 +1160,19 @@ class PlayerManager:
 
         tm_ids = learned_tm_ids
 
-        egg_ids: List[str] = []
-        if bool(pokemon.get('is_partner')):
-            for move_id in learnset.get('egg_moves', []):
-                normalized = str(move_id).lower().strip()
-                if normalized:
-                    egg_ids.append(normalized)
+        # Like TM moves, only expose egg moves that this specific Pokémon
+        # already knows/has learned. This avoids showing the species-wide
+        # egg-move catalog as freely equipable options.
+        all_egg_ids = {collapse(m) for m in learnset.get('egg_moves', [])}
+        learned_egg_ids: List[str] = []
+        for m in pokemon.get('moves', []):
+            raw_mid = str(m.get('move_id', '')).lower()
+            if raw_mid:
+                collapsed_mid = collapse(raw_mid)
+                if collapsed_mid in all_egg_ids:
+                    learned_egg_ids.append(raw_mid)
+
+        egg_ids = learned_egg_ids
 
         # De-duplicate while preserving order (current moves first to avoid dropping them)
         move_ids: List[str] = []
