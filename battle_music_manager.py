@@ -71,7 +71,7 @@ class BattleMusicManager:
 
         # yt-dlp options optimized for high-quality Discord streaming
         self.YDL_OPTIONS = {
-            'format': 'bestaudio[asr=48000]/bestaudio/best',  # Prefer 48k streams when available
+            'format': 'bestaudio/best',  # Avoid over-constraining formats; let FFmpeg normalize to 48k
             'noplaylist': True,
             'nocheckcertificate': True,
             'ignoreerrors': False,
