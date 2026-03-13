@@ -486,6 +486,7 @@ class RoleplayCog(commands.Cog):
             return []
 
         party = self.bot.player_manager.get_party(user_id)
+        species_db = getattr(self.bot, "species_db", None)
         results = []
         for pokemon in party:
             pokemon_id = pokemon.get("pokemon_id")
@@ -496,7 +497,10 @@ class RoleplayCog(commands.Cog):
             if not result:
                 continue
 
-            name = pokemon.get("nickname") or pokemon.get("species_name", "Pokemon")
+            name = pokemon.get("nickname")
+            if not name:
+                species_data = species_db.get_species(pokemon.get("species_dex_number")) if species_db else None
+                name = pokemon.get("species_name") or (species_data or {}).get("name") or "Pokemon"
             old_level = result.get("old_level")
             new_level = result.get("new_level")
             if old_level is not None and new_level is not None and new_level > old_level:
