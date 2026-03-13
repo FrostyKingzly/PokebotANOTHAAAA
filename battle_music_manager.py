@@ -556,52 +556,25 @@ class BattleMusicManager:
         Returns:
             (audio_input, duration_seconds, title)
         """
-        def _extract(ydl_options: Dict) -> Optional[Dict]:
-            with yt_dlp.YoutubeDL(ydl_options) as ydl:
+        def _extract() -> Optional[Dict]:
+            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
                 return ydl.extract_info(url, download=False)
 
-        def _normalize_info(raw_info: Optional[Dict]) -> Optional[Dict]:
-            if not raw_info:
-                return None
-            if 'entries' in raw_info and raw_info['entries']:
-                return next((entry for entry in raw_info['entries'] if entry), None)
-            return raw_info
+        info = await asyncio.to_thread(_extract)
+        if not info:
+            return None, 0, None
 
-        extract_attempts = [
-            ("bestaudio/best + client hints", self.YDL_OPTIONS),
-            ("best", {**self.YDL_OPTIONS, 'format': 'best'}),
-            (
-                "best without player_client override",
-                {
-                    k: v for k, v in {**self.YDL_OPTIONS, 'format': 'best'}.items()
-                    if k != 'extractor_args'
-                },
-            ),
-        ]
+        # Handle playlist/search responses by selecting the first real entry.
+        if 'entries' in info and info['entries']:
+            info = next((entry for entry in info['entries'] if entry), None)
+            if not info:
+                return None, 0, None
 
-        last_error: Optional[Exception] = None
+        audio_input = info.get('url')
+        if not audio_input:
+            return None, 0, info.get('title')
 
-        for attempt_name, ydl_options in extract_attempts:
-            try:
-                info = await asyncio.to_thread(_extract, ydl_options)
-                info = _normalize_info(info)
-                if not info:
-                    continue
-
-                audio_input = info.get('url')
-                if audio_input:
-                    return audio_input, info.get('duration', 0) or 0, info.get('title')
-
-                print(f"⚠️ yt-dlp returned metadata without stream URL ({attempt_name})")
-            except yt_dlp.utils.DownloadError as e:
-                last_error = e
-                print(f"⚠️ yt-dlp extraction attempt failed ({attempt_name}): {e}")
-                continue
-
-        if last_error:
-            raise last_error
-
-        return None, 0, None
+        return audio_input, info.get('duration', 0) or 0, info.get('title')
 
     async def _fade_victory_theme(self):
         """Fade out victory theme after 2 minutes of playback"""
