@@ -1859,6 +1859,53 @@ class SessionCog(commands.Cog):
                 ephemeral=True
             )
 
+    @app_commands.command(name="restart", description="Reset your active bot state if something gets stuck")
+    async def restart(self, interaction: discord.Interaction):
+        """Emergency self-service reset for stuck player state."""
+        user_id = interaction.user.id
+        reset_actions = []
+
+        battle_cog = self.bot.get_cog("BattleCog")
+        if battle_cog:
+            battle_id = battle_cog.user_battles.get(user_id)
+            if battle_id:
+                battle = battle_cog.battle_engine.get_battle(battle_id)
+                battle_cog.battle_engine.end_battle(battle_id)
+                if battle:
+                    battle_cog._unregister_battle(battle)
+                else:
+                    battle_cog.user_battles.pop(user_id, None)
+                reset_actions.append(f"• Ended active battle `{battle_id}`")
+
+        if self.bot.session_manager.is_in_session(user_id):
+            session = self.bot.session_manager.get_player_session(user_id)
+            success = self.bot.session_manager.remove_participant(user_id)
+            if success:
+                session_name = (session or {}).get("session_name", "Unknown Session")
+                reset_actions.append(f"• Left session **{session_name}**")
+
+        dream_cog = self.bot.get_cog("DreamRogueCog")
+        if dream_cog and interaction.guild_id:
+            active_run = dream_cog.dream_manager.get_active_run_by_guild(interaction.guild_id)
+            if active_run:
+                participants = dream_cog.dream_manager.get_participants(active_run["run_id"])
+                participant_ids = {row["discord_user_id"] for row in participants}
+                if user_id in participant_ids:
+                    dream_cog.dream_manager.end_run(active_run["run_id"], extracted=False)
+                    reset_actions.append("• Ended your active Dream Dive run")
+
+        if not reset_actions:
+            await interaction.response.send_message(
+                "✅ No stuck state found. You're clear to keep playing.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_message(
+            "✅ Restart complete. I reset the following state:\n" + "\n".join(reset_actions),
+            ephemeral=True,
+        )
+
     async def item_autocomplete(
         self,
         interaction: discord.Interaction,
