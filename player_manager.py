@@ -1099,9 +1099,9 @@ class PlayerManager:
         """Return all moves this Pokemon could reasonably learn at its current level.
 
         Includes:
-          - All level-up moves up to the Pokemon's current level
-          - All TM moves from its learnset
-          - All egg moves when the Pokemon is marked as the trainer's partner
+          - Gen 9 level-up moves up to the Pokemon's current level
+          - TM moves this individual Pokémon has actually learned
+          - Full Gen 9 egg-move pool when the Pokémon is a partner
 
         Returns a mapping of move_id -> move_data.
         """
@@ -1135,12 +1135,14 @@ class PlayerManager:
                 current_move_ids.append(mid)
 
         # Learnset format: { "level_up_moves": [ {"level": int, "move_id": str, "gen": int}, ... ] }
+        # Restrict to Gen 9 learnset entries.
         for move_entry in learnset.get('level_up_moves', []):
             try:
                 move_level = int(move_entry.get('level', 1))
+                move_gen = int(move_entry.get('gen', 9))
             except (TypeError, ValueError):
                 continue
-            if move_level <= level:
+            if move_gen == 9 and move_level <= level:
                 move_id = str(move_entry.get('move_id', '')).lower()
                 if move_id:
                     level_up_ids.append(move_id)
@@ -1162,9 +1164,25 @@ class PlayerManager:
 
         egg_ids: List[str] = []
         if bool(pokemon.get('is_partner')):
+            # Our learnset source can include legacy/merged egg entries.
+            # Keep partner egg access, but drop moves that are already in
+            # this species' Gen 9 level-up learnset (these are not egg-only
+            # in Gen 9 and should unlock by level progression instead).
+            gen9_level_up_all: set[str] = set()
+            for entry in learnset.get('level_up_moves', []):
+                move_id = str(entry.get('move_id', '')).lower().strip()
+                if not move_id:
+                    continue
+                try:
+                    move_gen = int(entry.get('gen', 9))
+                except (TypeError, ValueError):
+                    continue
+                if move_gen == 9:
+                    gen9_level_up_all.add(move_id)
+
             for move_id in learnset.get('egg_moves', []):
                 normalized = str(move_id).lower().strip()
-                if normalized:
+                if normalized and normalized not in gen9_level_up_all:
                     egg_ids.append(normalized)
 
         # De-duplicate while preserving order (current moves first to avoid dropping them)
