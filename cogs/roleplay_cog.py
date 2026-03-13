@@ -233,7 +233,7 @@ class RPSpendStaminaView(discord.ui.View):
                 title="✨ Bonus Rewards Claimed",
                 description=(
                     f"You spent **1 stamina** (remaining: **{remaining}**).\n"
-                    "\nStar stat rewards:\n"
+                    "\nSocial stat rewards:\n"
                     + "\n".join(applied_lines)
                 ),
                 color=discord.Color.gold(),
@@ -312,7 +312,8 @@ class RPEndConfirmView(discord.ui.View):
         bonus_embed = discord.Embed(
             title="⚡ Bonus Prompt",
             description=(
-                "Spend **1 stamina** to claim this channel's star stat reward."
+                "Spend **1 stamina** to claim this channel's social stat reward.\n"
+                "(RP EXP was already applied.)"
             ),
             color=discord.Color.blurple(),
         )
@@ -420,10 +421,7 @@ class RoleplayCog(commands.Cog):
         location_name = location_manager.get_location_name(location_id) or location_id
         start_embed = discord.Embed(
             title="🎭 Start Roleplay?",
-            description=(
-                f"Location: **{location_name}**\n\n"
-                "If you confirm, I'll begin counting your RP words in this channel."
-            ),
+            description=f"Location: **{location_name}**",
             color=discord.Color.blurple(),
         )
         await interaction.response.send_message(

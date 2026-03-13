@@ -6,11 +6,14 @@ Handles voice channel music playback for battles with queue management.
 import asyncio
 import discord
 import yt_dlp
+import os
+from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass
 from enum import Enum
 import random
 import shutil
+from battle_themes import CASUAL_NPC_THEMES, RANKED_NPC_THEMES
 
 
 class BattlePhase(Enum):
@@ -49,6 +52,8 @@ class BattleMusicManager:
         self.session_loop: bool = False
         self.session_voice_channel_id: Optional[int] = None
         self.session_override_active: bool = False
+        self.music_cache_dir = Path(os.getenv("MUSIC_CACHE_DIR", "data/music_cache"))
+        self.music_cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Check if FFmpeg is available
         if not shutil.which('ffmpeg'):
@@ -82,7 +87,53 @@ class BattleMusicManager:
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'best',
             }],
+            # Try multiple client profiles; this can reduce YouTube bot checks
+            # for some public videos without requiring user auth.
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web', 'ios']
+                }
+            },
         }
+
+        self._configure_ytdlp_auth()
+
+    def _configure_ytdlp_auth(self):
+        """Apply optional yt-dlp authentication settings from environment variables."""
+        cookies_file = (os.getenv("YTDLP_COOKIES_FILE") or "").strip()
+        browser_spec = (os.getenv("YTDLP_COOKIES_FROM_BROWSER") or "").strip()
+
+        # 1) Prefer cookie file only when it is a real, readable file.
+        if cookies_file:
+            cookie_path = Path(cookies_file).expanduser()
+            if cookie_path.is_file():
+                self.YDL_OPTIONS['cookiefile'] = str(cookie_path)
+                print(f"🍪 yt-dlp using cookie file: {cookie_path}")
+                return
+            print(f"⚠️ YTDLP_COOKIES_FILE is set but file was not found: {cookie_path}")
+
+        # 2) Fallback to browser cookies when specified.
+        if browser_spec:
+            # Accept values like:
+            #   chrome
+            #   firefox:default-release
+            #   chromium:Default
+            parts = [part.strip() for part in browser_spec.split(':') if part.strip()]
+            if parts:
+                self.YDL_OPTIONS['cookiesfrombrowser'] = tuple(parts)
+                print(f"🍪 yt-dlp loading cookies from browser: {browser_spec}")
+                return
+
+        print("ℹ️ yt-dlp running without cookies (public videos only).")
+
+
+    def _candidate_battle_theme_urls(self, exclude_url: str) -> List[str]:
+        """Build a shuffled list of alternate battle theme URLs excluding the current URL."""
+        all_urls = [battle for battle, _ in (CASUAL_NPC_THEMES + RANKED_NPC_THEMES)]
+        deduped = list(dict.fromkeys(all_urls))
+        candidates = [url for url in deduped if url != exclude_url]
+        random.shuffle(candidates)
+        return candidates
 
     def _get_optimal_bitrate(self, guild: discord.Guild) -> int:
         """
@@ -217,7 +268,21 @@ class BattleMusicManager:
 
             # Start playing battle theme
             print(f"▶️ Starting battle theme playback...")
-            await self._play_theme(battle_theme_url, loop=True)
+            started = await self._play_theme(battle_theme_url, loop=True)
+
+            if not started:
+                print("⚠️ Primary battle theme failed; trying fallback theme URLs...")
+                for fallback_url in self._candidate_battle_theme_urls(battle_theme_url)[:8]:
+                    started = await self._play_theme(fallback_url, loop=True)
+                    if started:
+                        self.battle_theme_url = fallback_url
+                        print(f"✅ Fallback battle theme started: {fallback_url}")
+                        break
+
+            if not started:
+                print("❌ Could not start any battle theme URL.")
+                return False
+
             self.current_phase = BattlePhase.BATTLE
             print(f"✅ Battle music started successfully!")
             return True
@@ -335,18 +400,14 @@ class BattleMusicManager:
             if self.voice_client.is_playing():
                 self.voice_client.stop()
 
-            event_loop = asyncio.get_event_loop()
-            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
-                info = await event_loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
-
-            if 'url' not in info:
-                print(f"❌ No audio URL found in video info")
+            audio_input, _, title = await self._resolve_audio_input(url)
+            if not audio_input:
+                print(f"❌ Could not resolve audio for session track")
                 return
 
-            track["title"] = info.get("title") or track.get("url")
-            audio_url = info['url']
+            track["title"] = title or track.get("url")
 
-            source = discord.FFmpegPCMAudio(audio_url, **self.FFMPEG_OPTIONS)
+            source = discord.FFmpegPCMAudio(audio_input, **self.FFMPEG_OPTIONS)
             source = discord.PCMVolumeTransformer(source, volume=self.volume)
 
             def after_playing(error):
@@ -365,6 +426,10 @@ class BattleMusicManager:
 
             self.voice_client.play(source, after=after_playing)
 
+        except yt_dlp.utils.DownloadError as e:
+            print(f"❌ Error playing session track: {e}")
+            if "not a bot" in str(e).lower():
+                print("💡 YouTube requested auth. Set YTDLP_COOKIES_FILE or YTDLP_COOKIES_FROM_BROWSER in your .env.")
         except Exception as e:
             print(f"❌ Error playing session track: {e}")
             import traceback
@@ -405,15 +470,15 @@ class BattleMusicManager:
         """No-op: sound effects are disabled; music only."""
         return
 
-    async def _play_theme(self, url: str, loop: bool = False, disconnect_after: bool = False):
-        """Play a theme from YouTube URL"""
+    async def _play_theme(self, url: str, loop: bool = False, disconnect_after: bool = False) -> bool:
+        """Play a theme from YouTube URL. Returns True if playback started."""
         if not self.voice_client:
             print("❌ No voice client available")
-            return
+            return False
 
         if not self.voice_client.is_connected():
             print("❌ Voice client not connected")
-            return
+            return False
 
         # Stop any currently playing audio
         if self.voice_client.is_playing():
@@ -426,16 +491,16 @@ class BattleMusicManager:
             self._fade_task = None
 
         try:
-            print(f"🎵 Extracting audio from: {url}")
+            print(f"🎵 Resolving audio from: {url}")
 
-            # Extract audio info using yt-dlp (run in executor to avoid blocking)
-            event_loop = asyncio.get_event_loop()
-            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
-                info = await event_loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+            audio_input, duration, _ = await self._resolve_audio_input(url)
+            if not audio_input:
+                print(f"❌ Could not resolve playable audio input")
+                return False
 
             if 'url' not in info:
                 print(f"❌ No audio URL found in video info")
-                return
+                return False
 
             audio_url = info['url']
             duration = info.get('duration', 0)  # Get track duration in seconds
@@ -444,7 +509,7 @@ class BattleMusicManager:
 
             print(f"🎵 Creating FFmpeg audio source...")
             # Create audio source with PCMVolumeTransformer for volume control
-            source = discord.FFmpegPCMAudio(audio_url, **self.FFMPEG_OPTIONS)
+            source = discord.FFmpegPCMAudio(audio_input, **self.FFMPEG_OPTIONS)
             source = discord.PCMVolumeTransformer(source, volume=self.volume)
             print(f"✅ FFmpeg source created with volume control (volume={self.volume})")
 
@@ -481,13 +546,20 @@ class BattleMusicManager:
             # Verify playback started
             if self.voice_client.is_playing():
                 print(f"✅ Playback confirmed!")
-            else:
-                print(f"⚠️ Voice client shows not playing after play() call")
+                return True
+            print(f"⚠️ Voice client shows not playing after play() call")
+            return False
 
+        except yt_dlp.utils.DownloadError as e:
+            print(f"❌ Error playing theme: {e}")
+            if "not a bot" in str(e).lower():
+                print("💡 YouTube requested auth. Set YTDLP_COOKIES_FILE or YTDLP_COOKIES_FROM_BROWSER in your .env.")
+            return False
         except Exception as e:
             print(f"❌ Error playing theme: {e}")
             import traceback
             traceback.print_exc()
+            return False
 
     async def _fade_victory_theme(self):
         """Fade out victory theme after 2 minutes of playback"""

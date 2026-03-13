@@ -1859,6 +1859,82 @@ class SessionCog(commands.Cog):
                 ephemeral=True
             )
 
+    @app_commands.command(name="restart", description="[ADMIN] Reset stuck state for one or more players")
+    @app_commands.describe(
+        user="Primary player to reset",
+        user2="Additional player to reset (optional)",
+        user3="Additional player to reset (optional)",
+        user4="Additional player to reset (optional)",
+        user5="Additional player to reset (optional)",
+    )
+    @app_commands.check(is_admin)
+    async def restart(
+        self,
+        interaction: discord.Interaction,
+        user: discord.User,
+        user2: Optional[discord.User] = None,
+        user3: Optional[discord.User] = None,
+        user4: Optional[discord.User] = None,
+        user5: Optional[discord.User] = None,
+    ):
+        """Admin recovery command to reset stuck state for one or multiple players."""
+        targets = [member for member in (user, user2, user3, user4, user5) if member is not None]
+        unique_targets = []
+        seen_ids = set()
+        for member in targets:
+            if member.id in seen_ids:
+                continue
+            unique_targets.append(member)
+            seen_ids.add(member.id)
+
+        per_user_actions = []
+        dream_run_closed = False
+
+        battle_cog = self.bot.get_cog("BattleCog")
+        dream_cog = self.bot.get_cog("DreamRogueCog")
+
+        for member in unique_targets:
+            user_actions = []
+            user_id = member.id
+
+            if battle_cog:
+                battle_id = battle_cog.user_battles.get(user_id)
+                if battle_id:
+                    battle = battle_cog.battle_engine.get_battle(battle_id)
+                    battle_cog.battle_engine.end_battle(battle_id)
+                    if battle:
+                        battle_cog._unregister_battle(battle)
+                    else:
+                        battle_cog.user_battles.pop(user_id, None)
+                    user_actions.append(f"ended battle `{battle_id}`")
+
+            if self.bot.session_manager.is_in_session(user_id):
+                session = self.bot.session_manager.get_player_session(user_id)
+                if self.bot.session_manager.remove_participant(user_id):
+                    session_name = (session or {}).get("session_name", "Unknown Session")
+                    user_actions.append(f"left session **{session_name}**")
+
+            if dream_cog and interaction.guild_id:
+                active_run = dream_cog.dream_manager.get_active_run_by_guild(interaction.guild_id)
+                if active_run and not dream_run_closed:
+                    participants = dream_cog.dream_manager.get_participants(active_run["run_id"])
+                    participant_ids = {row["discord_user_id"] for row in participants}
+                    if user_id in participant_ids:
+                        dream_cog.dream_manager.end_run(active_run["run_id"], extracted=False)
+                        dream_run_closed = True
+                        user_actions.append("ended active Dream Dive run")
+
+            if user_actions:
+                per_user_actions.append(f"• {member.mention}: " + ", ".join(user_actions))
+            else:
+                per_user_actions.append(f"• {member.mention}: no stuck state found")
+
+        await interaction.response.send_message(
+            "✅ Restart complete:\n" + "\n".join(per_user_actions),
+            ephemeral=True,
+            allowed_mentions=discord.AllowedMentions(users=True),
+        )
+
     async def item_autocomplete(
         self,
         interaction: discord.Interaction,
