@@ -2101,14 +2101,9 @@ Modest Nature
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    @app_commands.command(name="unset_location", description="[ADMIN] Remove location mapping from this channel")
-    @app_commands.check(is_admin)
-    async def unset_location(
-        self,
-        interaction: discord.Interaction
-    ):
-        """Remove location mapping from a channel"""
-        
+    async def _remove_location_mapping_for_channel(self, interaction: discord.Interaction):
+        """Remove the location mapping for the current channel (or parent forum channel for threads)."""
+
         # Check if channel is mapped
         parent_id = getattr(interaction.channel, "parent_id", None)
         channel_id = parent_id or interaction.channel_id
@@ -2136,6 +2131,24 @@ Modest Nature
                 f"❌ Failed to remove mapping. Try again!",
                 ephemeral=True
             )
+
+    @app_commands.command(name="remove_location", description="[ADMIN] Remove this channel's location mapping")
+    @app_commands.check(is_admin)
+    async def remove_location(
+        self,
+        interaction: discord.Interaction
+    ):
+        """Admin command to remove the current channel's location mapping."""
+        await self._remove_location_mapping_for_channel(interaction)
+
+    @app_commands.command(name="unset_location", description="[ADMIN] Remove location mapping from this channel")
+    @app_commands.check(is_admin)
+    async def unset_location(
+        self,
+        interaction: discord.Interaction
+    ):
+        """Backward-compatible alias for remove_location."""
+        await self._remove_location_mapping_for_channel(interaction)
     
     async def list_locations(
         self,
