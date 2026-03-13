@@ -340,11 +340,7 @@
               "Sand Attack"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "none",
-          "text": "Chronic Somnolence? Yeah\u2026 people falling asleep and not waking up. I don\u2019t really know anything useful, sorry."
-        }
+        ]
       },
       {
         "id": "t007",
@@ -397,14 +393,7 @@
               "Karate Chop"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "info",
-          "text": "People just\u2026 don\u2019t wake up. No warning signs, no struggle.",
-          "sleep_case_clue": {
-            "adds_progress": 1
-          }
-        }
+        ]
       },
       {
         "id": "t011",
@@ -477,14 +466,7 @@
               "Slam"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "info",
-          "text": "Their brains stay active the entire time. That\u2019s what scares us.",
-          "sleep_case_clue": {
-            "adds_progress": 1
-          }
-        }
+        ]
       },
       {
         "id": "t013",
@@ -557,14 +539,7 @@
               "Sweet Scent"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "info",
-          "text": "Everyone looks tired lately. Like the whole city\u2019s waiting for bad news.",
-          "sleep_case_clue": {
-            "adds_progress": 1
-          }
-        }
+        ]
       },
       {
         "id": "t018",
@@ -637,11 +612,7 @@
               "Magical Leaf"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "none",
-          "text": "Whatever\u2019s happening, it\u2019s real. Don\u2019t let anyone shrug it off."
-        }
+        ]
       },
       {
         "id": "t021",
@@ -714,14 +685,7 @@
               "Baton Pass"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "major_clue",
-          "text": "Most victims show elevated brain activity\u2026 like their minds are stuck in overdrive. Doctors are terrified they don\u2019t know how to slow it down.",
-          "sleep_case_clue": {
-            "adds_progress": 2
-          }
-        }
+        ]
       },
       {
         "id": "t036",
@@ -2087,11 +2051,7 @@
               "Recycle"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "none",
-          "text": "Hospital staff look exhausted lately. Too many cases, not enough answers."
-        }
+        ]
       },
       {
         "id": "t008",
@@ -2144,17 +2104,7 @@
               "Nuzzle"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "gated",
-          "text": "You\u2019re asking a lot of personal questions.",
-          "gate": {
-            "required_stat": "heart",
-            "dc": 10
-          },
-          "success_text": "A friend of mine collapsed into sleep after a double shift. That was the last time anyone heard from them.",
-          "failure_text": "I\u2019m done talking."
-        }
+        ]
       },
       {
         "id": "t020",
@@ -2227,14 +2177,7 @@
               "Thunder Wave"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "info",
-          "text": "Cases are clustering, but not cleanly. Whatever this is, it doesn\u2019t follow simple rules.",
-          "sleep_case_clue": {
-            "adds_progress": 1
-          }
-        }
+        ]
       },
       {
         "id": "t027",
@@ -2421,14 +2364,7 @@
               "Stuff Cheeks"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "info",
-          "text": "The doctors say it\u2019s not a normal coma. Brain scans are weirdly active, like the person never actually rests.",
-          "sleep_case_clue": {
-            "adds_progress": 1
-          }
-        }
+        ]
       },
       {
         "id": "t004",
@@ -2481,17 +2417,7 @@
               "Baby-Doll Eyes"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "gated",
-          "text": "That\u2019s not something I talk about.",
-          "gate": {
-            "required_stat": "heart",
-            "dc": 9
-          },
-          "success_text": "\u2026It\u2019s my cousin. He was stressed about money. Took a nap after work and never woke up.",
-          "failure_text": "Drop it."
-        }
+        ]
       },
       {
         "id": "t010",
@@ -2564,11 +2490,7 @@
               "Rapid Spin"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "none",
-          "text": "I\u2019ve started knocking extra hard on doors. You never know."
-        }
+        ]
       },
       {
         "id": "t015",
@@ -2641,14 +2563,7 @@
               "Night Shade"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "info",
-          "text": "A lot of cases started popping up around the same time the city began sealing off those weird crystal growths. Probably unrelated, but people talk.",
-          "sleep_case_clue": {
-            "adds_progress": 1
-          }
-        }
+        ]
       },
       {
         "id": "t017",
@@ -2741,14 +2656,7 @@
               "Double Kick"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "info",
-          "text": "City cleans up those crystal things fast. They\u2019re not dangerous, far as anyone knows.",
-          "sleep_case_clue": {
-            "adds_progress": 1
-          }
-        }
+        ]
       },
       {
         "id": "t025",
@@ -2991,11 +2899,7 @@
               "Poison Gas"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "none",
-          "text": "People keep blaming random stuff. Truth is, nobody knows."
-        }
+        ]
       },
       {
         "id": "t037",
@@ -3827,14 +3731,7 @@
               "Mud-Slap"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "info",
-          "text": "A regular here always complained about never sleeping. When he finally did\u2026 that was it.",
-          "sleep_case_clue": {
-            "adds_progress": 1
-          }
-        }
+        ]
       },
       {
         "id": "t014",
@@ -3927,11 +3824,7 @@
               "Flame Wheel"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "none",
-          "text": "Stress kills appetite. Then it kills sleep."
-        }
+        ]
       }
     ]
   },
@@ -4065,11 +3958,7 @@
               "Fake Out"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "none",
-          "text": "HR keeps calling it medical leave, but everyone knows what happened."
-        }
+        ]
       },
       {
         "id": "t009",
@@ -4142,14 +4031,7 @@
               "Confusion"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "info",
-          "text": "My brother has it. He was terrified of losing his job. I wish I\u2019d told him to rest.",
-          "sleep_case_clue": {
-            "adds_progress": 1
-          }
-        }
+        ]
       },
       {
         "id": "t016",
@@ -4222,17 +4104,7 @@
               "Double Kick"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "gated",
-          "text": "I don\u2019t discuss patrons.",
-          "gate": {
-            "required_stat": "heart",
-            "dc": 12
-          },
-          "success_text": "Someone was obsessively researching sleep disorders. Then they became a patient themselves.",
-          "failure_text": "No."
-        }
+        ]
       },
       {
         "id": "t019",
@@ -4325,17 +4197,7 @@
               "Fake Out"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "gated",
-          "text": "People online joke about it. Makes me sick.",
-          "gate": {
-            "required_stat": "heart",
-            "dc": 12
-          },
-          "success_text": "It\u2019s my fianc\u00e9. Wedding stress, I guess. Fell asleep and never woke up.",
-          "failure_text": "I can\u2019t."
-        }
+        ]
       }
     ]
   },
@@ -4829,14 +4691,7 @@
               "Roar"
             ]
           }
-        ],
-        "post_battle_sleep_dialogue": {
-          "type": "major_clue",
-          "text": "Three former students have fallen ill this month alone. All honor students. Driven kids\u2026 the kind who never allowed themselves proper rest.",
-          "sleep_case_clue": {
-            "adds_progress": 2
-          }
-        }
+        ]
       },
       {
         "id": "t028",
