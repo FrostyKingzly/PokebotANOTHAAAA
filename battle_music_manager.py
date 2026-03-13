@@ -7,6 +7,8 @@ import asyncio
 import discord
 import yt_dlp
 import os
+import json
+import hashlib
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass
@@ -54,6 +56,8 @@ class BattleMusicManager:
         self.session_override_active: bool = False
         self.music_cache_dir = Path(os.getenv("MUSIC_CACHE_DIR", "data/music_cache"))
         self.music_cache_dir.mkdir(parents=True, exist_ok=True)
+        self.music_cache_index_file = self.music_cache_dir / "cache_index.json"
+        self.music_cache_index: Dict[str, Dict[str, Optional[str]]] = self._load_cache_index()
 
         # Check if FFmpeg is available
         if not shutil.which('ffmpeg'):
@@ -93,6 +97,66 @@ class BattleMusicManager:
         }
 
         self._configure_ytdlp_auth()
+
+    def _load_cache_index(self) -> Dict[str, Dict[str, Optional[str]]]:
+        """Load persisted cache index from disk."""
+        if not self.music_cache_index_file.exists():
+            return {}
+        try:
+            with self.music_cache_index_file.open("r", encoding="utf-8") as fp:
+                loaded = json.load(fp)
+                if isinstance(loaded, dict):
+                    return loaded
+        except Exception as e:
+            print(f"⚠️ Could not read music cache index: {e}")
+        return {}
+
+    def _save_cache_index(self) -> None:
+        """Persist cache index to disk."""
+        try:
+            with self.music_cache_index_file.open("w", encoding="utf-8") as fp:
+                json.dump(self.music_cache_index, fp, indent=2)
+        except Exception as e:
+            print(f"⚠️ Could not save music cache index: {e}")
+
+    def _cache_key_for_url(self, url: str) -> str:
+        return hashlib.sha256(url.encode("utf-8")).hexdigest()
+
+    def _cached_path_for_url(self, url: str) -> Optional[Path]:
+        entry = self.music_cache_index.get(url)
+        if not entry:
+            return None
+        rel_path = entry.get("path")
+        if not rel_path:
+            return None
+        path = Path(rel_path)
+        if not path.is_absolute():
+            path = self.music_cache_dir / path
+        return path if path.exists() else None
+
+    async def preload_theme_cache(self) -> None:
+        """Download battle/victory themes on startup for reliable local playback."""
+        urls: List[str] = []
+        for battle_url, victory_url in (CASUAL_NPC_THEMES + RANKED_NPC_THEMES):
+            urls.append(battle_url)
+            urls.append(victory_url)
+
+        unique_urls = list(dict.fromkeys(urls))
+        print(f"🎵 Preloading {len(unique_urls)} music tracks into cache...")
+
+        downloaded = 0
+        failed = 0
+        for url in unique_urls:
+            cached = self._cached_path_for_url(url)
+            if cached:
+                continue
+            ok, _, _ = await self._download_and_cache_url(url)
+            if ok:
+                downloaded += 1
+            else:
+                failed += 1
+
+        print(f"🎵 Music cache warmup complete (downloaded={downloaded}, failed={failed})")
 
     def _configure_ytdlp_auth(self):
         """Apply optional yt-dlp authentication settings from environment variables."""
@@ -556,6 +620,17 @@ class BattleMusicManager:
         Returns:
             (audio_input, duration_seconds, title)
         """
+        cached_path = self._cached_path_for_url(url)
+        if cached_path:
+            entry = self.music_cache_index.get(url, {})
+            duration = int(entry.get("duration") or 0)
+            title = entry.get("title")
+            return str(cached_path), duration, title
+
+        ok, audio_input, info = await self._download_and_cache_url(url)
+        if ok and audio_input:
+            return audio_input, int(info.get("duration") or 0), info.get("title")
+
         def _extract() -> Optional[Dict]:
             with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
                 return ydl.extract_info(url, download=False)
@@ -564,7 +639,6 @@ class BattleMusicManager:
         if not info:
             return None, 0, None
 
-        # Handle playlist/search responses by selecting the first real entry.
         if 'entries' in info and info['entries']:
             info = next((entry for entry in info['entries'] if entry), None)
             if not info:
@@ -575,6 +649,60 @@ class BattleMusicManager:
             return None, 0, info.get('title')
 
         return audio_input, info.get('duration', 0) or 0, info.get('title')
+
+    async def _download_and_cache_url(self, url: str) -> Tuple[bool, Optional[str], Dict]:
+        """Download a URL to the local cache and return (ok, path, info)."""
+        cache_key = self._cache_key_for_url(url)
+        outtmpl = str(self.music_cache_dir / f"{cache_key}.%(ext)s")
+
+        download_options = dict(self.YDL_OPTIONS)
+        download_options.update({
+            'format': 'bestaudio[ext=m4a]/bestaudio/best',
+            'skip_download': False,
+            'outtmpl': outtmpl,
+            'quiet': True,
+            'no_warnings': True,
+            'noplaylist': True,
+        })
+
+        def _download() -> Optional[Dict]:
+            with yt_dlp.YoutubeDL(download_options) as ydl:
+                return ydl.extract_info(url, download=True)
+
+        try:
+            info = await asyncio.to_thread(_download)
+            if not info:
+                return False, None, {}
+
+            if 'entries' in info and info['entries']:
+                info = next((entry for entry in info['entries'] if entry), None)
+                if not info:
+                    return False, None, {}
+
+            file_path = info.get('requested_downloads', [{}])[0].get('filepath')
+            if not file_path:
+                file_path = info.get('_filename')
+            if not file_path:
+                return False, None, info
+
+            path_obj = Path(file_path)
+            if not path_obj.exists():
+                return False, None, info
+
+            try:
+                rel_path = path_obj.relative_to(self.music_cache_dir)
+            except ValueError:
+                rel_path = path_obj
+            self.music_cache_index[url] = {
+                "path": str(rel_path),
+                "title": info.get("title"),
+                "duration": int(info.get("duration") or 0),
+            }
+            self._save_cache_index()
+            return True, str(path_obj), info
+        except Exception as e:
+            print(f"⚠️ Could not cache theme {url}: {e}")
+            return False, None, {}
 
     async def _fade_victory_theme(self):
         """Fade out victory theme after 2 minutes of playback"""
