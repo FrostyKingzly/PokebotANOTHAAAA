@@ -79,7 +79,7 @@ class TupperNameModal(discord.ui.Modal, title="Tupper Setup"):
                 title="🎭 RP Started",
                 description=(
                     "Your roleplay session is now active in this channel.\n"
-                    f"I'll count your words and posts made as **{cleaned_name}**."
+                    f"Messages from **{cleaned_name}** will be included for RP rewards."
                 ),
                 color=discord.Color.green(),
             ),
@@ -124,10 +124,7 @@ class RPStartConfirmView(discord.ui.View):
         await interaction.response.edit_message(
             embed=discord.Embed(
                 title="🎭 RP Started",
-                description=(
-                    "Your roleplay session is now active in this channel.\n"
-                    "I'll count your words until you run `/rotom_roleplay` again."
-                ),
+                description="Your roleplay session is now active in this channel.",
                 color=discord.Color.green(),
             ),
             view=None,
@@ -290,14 +287,13 @@ class RPEndConfirmView(discord.ui.View):
         exp_amount = max(0, session.word_count // RP_EXP_WORD_RATIO)
         exp_results = self.cog.award_party_exp(self.session.user_id, exp_amount)
         self.cog.increment_explore_reverie_task(self.session.user_id)
-        summary_lines = []
+        summary_lines = ["**Party EXP results:**"]
 
         if exp_results:
-            summary_lines.append("\n**Party EXP results:**")
             for line in exp_results:
                 summary_lines.append(f"• {line}")
         else:
-            summary_lines.append("\nNo eligible party Pokémon found for EXP.")
+            summary_lines.append("• No eligible party Pokémon found for EXP.")
 
         location_name = self.cog.bot.location_manager.get_location_name(session.location_id) or session.location_id
         embed = discord.Embed(
