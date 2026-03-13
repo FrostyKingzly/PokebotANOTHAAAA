@@ -233,8 +233,7 @@ class RPSpendStaminaView(discord.ui.View):
                 title="✨ Bonus Rewards Claimed",
                 description=(
                     f"You spent **1 stamina** (remaining: **{remaining}**).\n"
-                    f"RP EXP awarded: **{self.word_count}** to each party Pokémon.\n\n"
-                    "Social stat rewards:\n"
+                    "\nSocial stat rewards:\n"
                     + "\n".join(applied_lines)
                 ),
                 color=discord.Color.gold(),
@@ -290,19 +289,8 @@ class RPEndConfirmView(discord.ui.View):
 
         exp_amount = max(0, session.word_count // RP_EXP_WORD_RATIO)
         exp_results = self.cog.award_party_exp(self.session.user_id, exp_amount)
-        task_progress = self.cog.increment_explore_reverie_task(self.session.user_id)
-        summary_lines = [
-            f"• EXP per party Pokémon: **{exp_amount}** (1 EXP per {RP_EXP_WORD_RATIO} words)",
-        ]
-
-        if task_progress:
-            progress = int(task_progress.get("progress", 0) or 0)
-            goal = int(task_progress.get("goal", 0) or 0)
-            summary_lines.append(
-                f"• **Explore Reverie City!** progress: **{progress}/{goal}**"
-            )
-            if progress >= goal:
-                summary_lines.append("• ✅ Task complete! Open **Rotom Phone → Tasks** to claim your reward.")
+        self.cog.increment_explore_reverie_task(self.session.user_id)
+        summary_lines = []
 
         if exp_results:
             summary_lines.append("\n**Party EXP results:**")
@@ -325,7 +313,7 @@ class RPEndConfirmView(discord.ui.View):
             title="⚡ Bonus Prompt",
             description=(
                 "Spend **1 stamina** to claim this channel's social stat reward.\n"
-                "(This is in addition to the RP EXP you already received.)"
+                "(RP EXP was already applied.)"
             ),
             color=discord.Color.blurple(),
         )
