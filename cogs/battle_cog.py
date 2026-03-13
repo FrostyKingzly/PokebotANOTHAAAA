@@ -60,6 +60,14 @@ class BattleCog(commands.Cog):
         # Track dedicated battle threads (battle_id -> thread_id)
         self.battle_threads = {}
 
+
+    async def cog_load(self):
+        """Preload battle music cache when this cog is loaded."""
+        try:
+            await self.music_manager.preload_theme_cache()
+        except Exception as e:
+            print(f"⚠️ Failed to preload battle music cache: {e}")
+
     def _init_exp_handler(self) -> Optional[BattleExpHandler]:
         species_db = getattr(self.bot, "species_db", None)
         player_manager = getattr(self.bot, "player_manager", None)
