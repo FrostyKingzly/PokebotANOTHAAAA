@@ -497,14 +497,6 @@ class BattleMusicManager:
             if not audio_input:
                 print(f"❌ Could not resolve playable audio input")
                 return False
-
-            if 'url' not in info:
-                print(f"❌ No audio URL found in video info")
-                return False
-
-            audio_url = info['url']
-            duration = info.get('duration', 0)  # Get track duration in seconds
-            print(f"✅ Audio URL extracted: {audio_url[:100]}...")
             print(f"🎵 Track duration: {duration} seconds")
 
             print(f"🎵 Creating FFmpeg audio source...")
@@ -560,6 +552,33 @@ class BattleMusicManager:
             import traceback
             traceback.print_exc()
             return False
+
+    async def _resolve_audio_input(self, url: str) -> Tuple[Optional[str], int, Optional[str]]:
+        """
+        Resolve a playable FFmpeg input using yt-dlp.
+
+        Returns:
+            (audio_input, duration_seconds, title)
+        """
+        def _extract() -> Optional[Dict]:
+            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
+                return ydl.extract_info(url, download=False)
+
+        info = await asyncio.to_thread(_extract)
+        if not info:
+            return None, 0, None
+
+        # Handle playlist/search responses by selecting the first real entry.
+        if 'entries' in info and info['entries']:
+            info = next((entry for entry in info['entries'] if entry), None)
+            if not info:
+                return None, 0, None
+
+        audio_input = info.get('url')
+        if not audio_input:
+            return None, 0, info.get('title')
+
+        return audio_input, info.get('duration', 0) or 0, info.get('title')
 
     async def _fade_victory_theme(self):
         """Fade out victory theme after 2 minutes of playback"""
