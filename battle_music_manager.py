@@ -560,23 +560,11 @@ class BattleMusicManager:
         Returns:
             (audio_input, duration_seconds, title)
         """
-        def _extract(ydl_options: Dict) -> Optional[Dict]:
-            with yt_dlp.YoutubeDL(ydl_options) as ydl:
+        def _extract() -> Optional[Dict]:
+            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
                 return ydl.extract_info(url, download=False)
 
-        try:
-            info = await asyncio.to_thread(_extract, self.YDL_OPTIONS)
-        except yt_dlp.utils.DownloadError as e:
-            # Some videos do not expose a 48k-tagged audio stream even though they are playable.
-            # Retry with a very permissive format selector before giving up.
-            if "Requested format is not available" not in str(e):
-                raise
-
-            print("⚠️ Preferred yt-dlp format unavailable, retrying with fallback selector...")
-            fallback_options = dict(self.YDL_OPTIONS)
-            fallback_options['format'] = 'bestaudio/best'
-            info = await asyncio.to_thread(_extract, fallback_options)
-
+        info = await asyncio.to_thread(_extract)
         if not info:
             return None, 0, None
 
