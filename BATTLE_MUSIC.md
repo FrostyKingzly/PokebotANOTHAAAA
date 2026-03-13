@@ -225,6 +225,19 @@ This system requires **zero commands**. Everything happens automatically:
 
 Just battle and enjoy the music! 🎵
 
+### Lavalink Preparation
+
+Lavalink deployment assets are included:
+- `LAVALINK_SETUP.md`
+- `docker-compose.lavalink.yml`
+- `docker/lavalink/application.yml`
+
+Run:
+
+```bash
+docker compose -f docker-compose.lavalink.yml up -d
+```
+
 ## Future Enhancements
 
 Possible features for later:

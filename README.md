@@ -83,6 +83,20 @@ DISCORD_BOT_TOKEN=your_bot_token_here
 python pokebot.py
 ```
 
+### Optional: Prepare Lavalink Node
+
+If you want to run Lavalink alongside this bot, use the included setup guide and compose file:
+
+- `LAVALINK_SETUP.md`
+- `docker-compose.lavalink.yml`
+- `docker/lavalink/application.yml`
+
+Quick start:
+
+```bash
+docker compose -f docker-compose.lavalink.yml up -d
+```
+
 ## 📤 Saving & Sharing Your Changes
 
 When you finish a round of work in this workspace, push it to your shared GitHub repo so everyone sees the updates:

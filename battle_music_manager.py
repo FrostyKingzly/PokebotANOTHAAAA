@@ -52,6 +52,8 @@ class BattleMusicManager:
         self.session_loop: bool = False
         self.session_voice_channel_id: Optional[int] = None
         self.session_override_active: bool = False
+        self.music_cache_dir = Path(os.getenv("MUSIC_CACHE_DIR", "data/music_cache"))
+        self.music_cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Check if FFmpeg is available
         if not shutil.which('ffmpeg'):
@@ -398,18 +400,14 @@ class BattleMusicManager:
             if self.voice_client.is_playing():
                 self.voice_client.stop()
 
-            event_loop = asyncio.get_event_loop()
-            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
-                info = await event_loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
-
-            if 'url' not in info:
-                print(f"❌ No audio URL found in video info")
+            audio_input, _, title = await self._resolve_audio_input(url)
+            if not audio_input:
+                print(f"❌ Could not resolve audio for session track")
                 return
 
-            track["title"] = info.get("title") or track.get("url")
-            audio_url = info['url']
+            track["title"] = title or track.get("url")
 
-            source = discord.FFmpegPCMAudio(audio_url, **self.FFMPEG_OPTIONS)
+            source = discord.FFmpegPCMAudio(audio_input, **self.FFMPEG_OPTIONS)
             source = discord.PCMVolumeTransformer(source, volume=self.volume)
 
             def after_playing(error):
@@ -493,12 +491,12 @@ class BattleMusicManager:
             self._fade_task = None
 
         try:
-            print(f"🎵 Extracting audio from: {url}")
+            print(f"🎵 Resolving audio from: {url}")
 
-            # Extract audio info using yt-dlp (run in executor to avoid blocking)
-            event_loop = asyncio.get_event_loop()
-            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
-                info = await event_loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+            audio_input, duration, _ = await self._resolve_audio_input(url)
+            if not audio_input:
+                print(f"❌ Could not resolve playable audio input")
+                return False
 
             if 'url' not in info:
                 print(f"❌ No audio URL found in video info")
@@ -511,7 +509,7 @@ class BattleMusicManager:
 
             print(f"🎵 Creating FFmpeg audio source...")
             # Create audio source with PCMVolumeTransformer for volume control
-            source = discord.FFmpegPCMAudio(audio_url, **self.FFMPEG_OPTIONS)
+            source = discord.FFmpegPCMAudio(audio_input, **self.FFMPEG_OPTIONS)
             source = discord.PCMVolumeTransformer(source, volume=self.volume)
             print(f"✅ FFmpeg source created with volume control (volume={self.volume})")
 
