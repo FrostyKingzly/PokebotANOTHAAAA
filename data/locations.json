@@ -2,7 +2,9 @@
   "lights_district_moonwake_port": {
     "name": "Lights District - Moonwake Port",
     "description": "Both air and sea come and leave from here, all expertly designed into one section to minimize space taken up. This is where your journey in Reverie City probably began!",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060389064804
+    ],
     "amenities": [],
     "encounters": [],
     "npc_trainers": [
@@ -100,7 +102,12 @@
   "lights_district_central_plaza": {
     "name": "Lights District - Central Plaza",
     "description": "The heart of the Lights District. Electronic billboards stretch across the skyscrapers lining the streets, with announcements and footage of official Pokemon battles occurring in the arena playing on the center big screen.",
-    "channel_ids": [],
+    "channel_ids": [
+      1430369965642485843,
+      1434789827546447912,
+      1440068812924784784,
+      1477425060246716504
+    ],
     "amenities": [
       "pokemon_center"
     ],
@@ -340,7 +347,11 @@
               "Sand Attack"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "Chronic Somnolence? Yeah… people falling asleep and not waking up. I don’t really know anything useful, sorry."
+        }
       },
       {
         "id": "t007",
@@ -393,7 +404,14 @@
               "Karate Chop"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "People just… don’t wake up. No warning signs, no struggle.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
       },
       {
         "id": "t011",
@@ -466,7 +484,14 @@
               "Slam"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "Their brains stay active the entire time. That’s what scares us.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
       },
       {
         "id": "t013",
@@ -539,7 +564,14 @@
               "Sweet Scent"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "Everyone looks tired lately. Like the whole city’s waiting for bad news.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
       },
       {
         "id": "t018",
@@ -612,7 +644,11 @@
               "Magical Leaf"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "Whatever’s happening, it’s real. Don’t let anyone shrug it off."
+        }
       },
       {
         "id": "t021",
@@ -685,7 +721,14 @@
               "Baton Pass"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "major_clue",
+          "text": "Most victims show elevated brain activity… like their minds are stuck in overdrive. Doctors are terrified they don’t know how to slow it down.",
+          "sleep_case_clue": {
+            "adds_progress": 2
+          }
+        }
       },
       {
         "id": "t036",
@@ -981,8 +1024,8 @@
     ]
   },
   "wild_area_forest_meadow_path": {
-    "name": "Wild Area \u03b1 - Forest: Meadow Path",
-    "description": "A peaceful meadow at the edge of the forest, filled with wildflowers and gentle Pok\u00e9mon. The perfect starting point for new trainers to begin their wild area adventures.",
+    "name": "Wild Area α - Forest: Meadow Path",
+    "description": "A peaceful meadow at the edge of the forest, filled with wildflowers and gentle Pokémon. The perfect starting point for new trainers to begin their wild area adventures.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -1065,14 +1108,14 @@
       },
       {
         "species_dex_number": 32,
-        "species_name": "Nidoran\u2642",
+        "species_name": "Nidoran♂",
         "min_level": 4,
         "max_level": 8,
         "weight": 2
       },
       {
         "species_dex_number": 29,
-        "species_name": "Nidoran\u2640",
+        "species_name": "Nidoran♀",
         "min_level": 4,
         "max_level": 8,
         "weight": 2
@@ -1198,8 +1241,8 @@
     ]
   },
   "wild_area_canyon_redstone_canyon": {
-    "name": "Wild Area \u03b2 - Canyon: Redstone Canyon",
-    "description": "A rugged canyon carved by ancient rivers, with red stone cliffs and rocky outcrops. Rock and Ground-type Pok\u00e9mon make their homes in the caves and ledges throughout the area.",
+    "name": "Wild Area β - Canyon: Redstone Canyon",
+    "description": "A rugged canyon carved by ancient rivers, with red stone cliffs and rocky outcrops. Rock and Ground-type Pokémon make their homes in the caves and ledges throughout the area.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -1421,8 +1464,8 @@
     ]
   },
   "wild_area_desert_sunbaked_path": {
-    "name": "Wild Area \u03b3 - Desert: Sandy Crossing",
-    "description": "The outskirts of a vast desert, where the ground begins to turn sandy under the scorching sun. Hardy Pok\u00e9mon adapted to heat and arid conditions can be found here.",
+    "name": "Wild Area γ - Desert: Sandy Crossing",
+    "description": "The outskirts of a vast desert, where the ground begins to turn sandy under the scorching sun. Hardy Pokémon adapted to heat and arid conditions can be found here.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -1633,8 +1676,8 @@
     ]
   },
   "wild_area_tundra_snowdust_crossing": {
-    "name": "Wild Area \u03b4 - Tundra: Snowdust Crossing",
-    "description": "A frozen path through the tundra where snow falls year-round. Ice and hardy Pok\u00e9mon brave the cold winds and bitter temperatures of this unforgiving landscape.",
+    "name": "Wild Area δ - Tundra: Snowdust Crossing",
+    "description": "A frozen path through the tundra where snow falls year-round. Ice and hardy Pokémon brave the cold winds and bitter temperatures of this unforgiving landscape.",
     "channel_ids": [],
     "amenities": [],
     "encounters": [
@@ -1832,7 +1875,10 @@
   "lights_district_crossings": {
     "name": "Lights District - Crossings",
     "description": "One of the various crossings in the Lights district. With all the heavy foot traffic, there's lots of little bits of food that can be found on the floor. For a little bit, anyway, before it's found by one of the various Pokemon that can be found here.",
-    "channel_ids": [],
+    "channel_ids": [
+      1431490920192282725,
+      1477425060246716505
+    ],
     "amenities": [
       "pokemon_center"
     ],
@@ -2051,7 +2097,11 @@
               "Recycle"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "Hospital staff look exhausted lately. Too many cases, not enough answers."
+        }
       },
       {
         "id": "t008",
@@ -2104,7 +2154,17 @@
               "Nuzzle"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "gated",
+          "text": "You’re asking a lot of personal questions.",
+          "gate": {
+            "required_stat": "heart",
+            "dc": 10
+          },
+          "success_text": "A friend of mine collapsed into sleep after a double shift. That was the last time anyone heard from them.",
+          "failure_text": "I’m done talking."
+        }
       },
       {
         "id": "t020",
@@ -2177,7 +2237,14 @@
               "Thunder Wave"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "Cases are clustering, but not cleanly. Whatever this is, it doesn’t follow simple rules.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
       },
       {
         "id": "t027",
@@ -2229,7 +2296,9 @@
   "lights_district_streets": {
     "name": "Lights District - Streets",
     "description": "One of the various streets in the Lights District. Electricity flows through the city. Every building, every sign, every street. Electric Pokemon are drawn to it, but only the smallest tend to be able to thrive in the busy streets alongside a few birds and rodents.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060389064795
+    ],
     "amenities": [
       "pokemart",
       "pokemon_center"
@@ -2325,7 +2394,7 @@
     "shops": [
       {
         "id": "pokemart",
-        "name": "Pok\u00e9Mart"
+        "name": "PokéMart"
       },
       {
         "id": "berry_stall",
@@ -2364,7 +2433,14 @@
               "Stuff Cheeks"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "The doctors say it’s not a normal coma. Brain scans are weirdly active, like the person never actually rests.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
       },
       {
         "id": "t004",
@@ -2417,7 +2493,17 @@
               "Baby-Doll Eyes"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "gated",
+          "text": "That’s not something I talk about.",
+          "gate": {
+            "required_stat": "heart",
+            "dc": 9
+          },
+          "success_text": "…It’s my cousin. He was stressed about money. Took a nap after work and never woke up.",
+          "failure_text": "Drop it."
+        }
       },
       {
         "id": "t010",
@@ -2490,7 +2576,11 @@
               "Rapid Spin"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "I’ve started knocking extra hard on doors. You never know."
+        }
       },
       {
         "id": "t015",
@@ -2563,7 +2653,14 @@
               "Night Shade"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "A lot of cases started popping up around the same time the city began sealing off those weird crystal growths. Probably unrelated, but people talk.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
       },
       {
         "id": "t017",
@@ -2656,7 +2753,14 @@
               "Double Kick"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "City cleans up those crystal things fast. They’re not dangerous, far as anyone knows.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
       },
       {
         "id": "t025",
@@ -2708,7 +2812,9 @@
   "lights_district_alleyways": {
     "name": "Lights District - Alleyways",
     "description": "While the absolute majority of the city lights up there are a few nooks and crevices that are dark. Damp and dark alleyways creating shortcuts between buildings, where trash bins can be found. A few Pokemon tend to thrive here, though.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060389064796
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [
@@ -2899,7 +3005,11 @@
               "Poison Gas"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "People keep blaming random stuff. Truth is, nobody knows."
+        }
       },
       {
         "id": "t037",
@@ -2951,7 +3061,9 @@
   "lights_district_wild_zone_1": {
     "name": "Lights District - Wild Zone 1",
     "description": "The Lights District Gardens. A little life existing amongst the glass, concrete and metal towers, vibrant green grass with an assortment of flowers from across the world accompanied by a few trees. With the abundance of Pokemon coming into the city, a few wild were bound to find and make this place there home. To ensure their safety, the City took inspiration from another project in Kalos. Thus, the first Wild Area was formed.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060544516257
+    ],
     "amenities": [],
     "type": "wild_zone",
     "encounters": [
@@ -3085,7 +3197,9 @@
   "lights_district_wild_zone_2": {
     "name": "Lights District - Wild Zone 2",
     "description": "A large fountain that became a frequent spot for Wild Pokemon. It was quickly turned into a Wild Area after the first to prevent heavy foot-traffic and reduce littering into the water.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060544516258
+    ],
     "amenities": [],
     "type": "wild_zone",
     "encounters": [
@@ -3251,7 +3365,9 @@
   "residential_district_beach": {
     "name": "Residential District - Beach",
     "description": "A long, stretching beach across the edge of the Residential district. During the day it serves a purpose to sun-tanners and surfers for families all day, while the night provides a cool, romantic atmosphere guided by the relaxing sound of waves crashing- and thankfully only the very distant hum of the Lights district.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060544516264
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [
@@ -3365,7 +3481,9 @@
   "residential_district_dreamyard": {
     "name": "Residential District - Dreamyard",
     "description": "A run down area that used to be a place lots of scientists and researchers visited. It's hardly ever visited now, though. Pokemon drawn to a certain kind of energy seem to have taken up residence here, along with a strange individual locals have noticed.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060733255780
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [
@@ -3446,7 +3564,9 @@
   "residential_district_wild_zone_3": {
     "name": "Residential District - Wild Zone 3",
     "description": "A large section next to the beach formed entirely out of tidepools. Lots of Pokemon make the gaps and crevasses their home, which also makes it the perfect hunting ground for some birds hunting for an easy catch on some aquatic Pokemon.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060733255783
+    ],
     "amenities": [],
     "type": "wild_zone",
     "encounters": [
@@ -3557,7 +3677,9 @@
   "residential_district_wild_zone_4": {
     "name": "Residential District - Wild Zone 4",
     "description": "A large abandoned building. It's actually a very nice place, that should've been really easy for a wealthy family to live in. Unfortunately, it became infested with ghost types that wanted to make it their home instead. Rather than trying to convince them to leave, the past owners just opted to let them have it. Since then, it's been turned into an official wild area for its protection.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060733255784
+    ],
     "amenities": [],
     "type": "wild_zone",
     "encounters": [
@@ -3674,7 +3796,9 @@
   "lights_district_strip_mall": {
     "name": "Lights District - Strip Mall",
     "description": "A large, stretching mall filled with every kind of shop you could probably want to find. If you need it, this'll have it. It's got quite a few cafes and restaurants, too!",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060389064797
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -3731,7 +3855,14 @@
               "Mud-Slap"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "A regular here always complained about never sleeping. When he finally did… that was it.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
       },
       {
         "id": "t014",
@@ -3824,14 +3955,20 @@
               "Flame Wheel"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "Stress kills appetite. Then it kills sleep."
+        }
       }
     ]
   },
   "lights_district_night_club": {
     "name": "Lights District - Night Club",
     "description": "The biggest Night club in Reverie City! Is the City itself not enough of a party for you, no place to sit and chill? Then this is where you'll wanna be. A place to celebrate with your friends after a long day (or night) of battling!",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060389064798
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -3841,7 +3978,9 @@
   "lights_district_research_lab": {
     "name": "Lights District - Research Lab",
     "description": "Pokemon research is what makes this world spin, and it's just the same here if not more! After all, the spectacle in the night wouldn't even be sustainable without all the work done on the energy, which is only growing day by day.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060389064799
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -3851,7 +3990,9 @@
   "lights_district_starlight_restaurant": {
     "name": "Lights District - Starlight Restaurant",
     "description": "A quiet spot to eat, for the most part. Most people coming to dine here are respectful and speak amongst themselves without being too loud, and the food is top notch- as expected of most dedicated restaurants in the city.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060389064800
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -3901,7 +4042,9 @@
   "residential_district_central_street": {
     "name": "Residential District - Central Street",
     "description": "The busiest street in the residential district, though nothing as busy as the Lights district gets. Lots of people come here to stock up on groceries or hang out with their friends at various small cafes. At night, the various lit up signs and lamps provide a much cosier experience than the light-show over in the other district.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060544516260
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -3958,7 +4101,11 @@
               "Fake Out"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "none",
+          "text": "HR keeps calling it medical leave, but everyone knows what happened."
+        }
       },
       {
         "id": "t009",
@@ -4031,7 +4178,14 @@
               "Confusion"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "info",
+          "text": "My brother has it. He was terrified of losing his job. I wish I’d told him to rest.",
+          "sleep_case_clue": {
+            "adds_progress": 1
+          }
+        }
       },
       {
         "id": "t016",
@@ -4104,7 +4258,17 @@
               "Double Kick"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "gated",
+          "text": "I don’t discuss patrons.",
+          "gate": {
+            "required_stat": "heart",
+            "dc": 12
+          },
+          "success_text": "Someone was obsessively researching sleep disorders. Then they became a patient themselves.",
+          "failure_text": "No."
+        }
       },
       {
         "id": "t019",
@@ -4197,14 +4361,26 @@
               "Fake Out"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "gated",
+          "text": "People online joke about it. Makes me sick.",
+          "gate": {
+            "required_stat": "heart",
+            "dc": 12
+          },
+          "success_text": "It’s my fiancé. Wedding stress, I guess. Fell asleep and never woke up.",
+          "failure_text": "I can’t."
+        }
       }
     ]
   },
   "residential_district_cafe": {
     "name": "Residential District - Cafe",
     "description": "A small, quiet cafe with very little amounts of customers, tended to only be visited by regulars. The owners are friendly and generous, with a warm atmosphere assisted by the aroma of coffee and various freshly-made foods.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060544516261
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -4214,7 +4390,9 @@
   "residential_district_daycare": {
     "name": "Residential District - Daycare",
     "description": "A large day-care for looking after Pokemon. The day-care assistants all provide training and outdoor environments to the Pokemon left here, allowing for a still and steady amount of training while the Trainer focuses on their other Pokemon.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060544516263
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -4224,7 +4402,9 @@
   "residential_district_library": {
     "name": "Residential District - Reverie Library",
     "description": "A quiet, modern library filled with research terminals and study spaces.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060544516262
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -4234,7 +4414,9 @@
   "residential_district_gym": {
     "name": "Residential District - Ironcore Gym",
     "description": "A state-of-the-art training facility packed with equipment for you and your partners.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060544516266
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -4359,7 +4541,9 @@
   "residential_district_boardwalk": {
     "name": "Residential District - Boardwalk",
     "description": "A long pier stretching out a bit into the water with sea-side cafes and small attractions to spend money and earn prizes for yourself or a friend.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060544516265
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -4507,7 +4691,9 @@
   "residential_district_school": {
     "name": "Residential District - School",
     "description": "A Trainers school, though lots of other topics are also taught here. Adult trainers are also welcome to take up specific tutoring here on more intense battling topics they need assistance on.",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060733255781
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
@@ -4691,7 +4877,14 @@
               "Roar"
             ]
           }
-        ]
+        ],
+        "post_battle_sleep_dialogue": {
+          "type": "major_clue",
+          "text": "Three former students have fallen ill this month alone. All honor students. Driven kids… the kind who never allowed themselves proper rest.",
+          "sleep_case_clue": {
+            "adds_progress": 2
+          }
+        }
       },
       {
         "id": "t028",
@@ -4866,7 +5059,19 @@
   },
   "residential_district_temple_of_twilight": {
     "name": "Residential District - Temple of Twilight",
-    "description": "A small temple on the outskirts of the city. In the center is a large statue of the Wish Pok\u00e9mon, Jirachi. People from all over come to pray for their wishes to come true.",
+    "description": "A small temple on the outskirts of the city. In the center is a large statue of the Wish Pokémon, Jirachi. People from all over come to pray for their wishes to come true.",
+    "channel_ids": [
+      1477425060733255782
+    ],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
+  },
+  "residential_district_dojo": {
+    "name": "Residential District - Dawnrise Dojo",
+    "description": "A disciplined dojo where trainers refine their focus and push their teams beyond their limits.",
     "channel_ids": [],
     "amenities": [],
     "type": "civilian_zone",
