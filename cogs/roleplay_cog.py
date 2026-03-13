@@ -226,7 +226,7 @@ class RPSpendStaminaView(discord.ui.View):
             )
 
         if not applied_lines:
-            applied_lines.append("• No stat reward for this channel.")
+            applied_lines.append("• No star stat reward for this channel.")
 
         await interaction.response.edit_message(
             embed=discord.Embed(
@@ -249,7 +249,7 @@ class RPSpendStaminaView(discord.ui.View):
         await interaction.response.edit_message(
             embed=discord.Embed(
                 title="RP Rewards Complete",
-                description="Skipped stamina bonus. Your RP EXP was still applied.",
+                description="Skipped stamina bonus.",
                 color=discord.Color.blurple(),
             ),
             view=None,
