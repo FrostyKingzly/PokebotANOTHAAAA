@@ -24,6 +24,9 @@ class BattlePhase(Enum):
     VICTORY = "victory"
 
 
+VICTORY_THEME_PLAY_SECONDS = 90
+
+
 @dataclass
 class MusicRequest:
     """Represents a music request for a battle"""
@@ -505,7 +508,11 @@ class BattleMusicManager:
 
     async def play_victory_music(self):
         """Switch to victory music after battle ends"""
-        if not self.current_session or not self.victory_theme_url:
+        if not self.current_session:
+            print("⚠️ No active music session; cannot switch to victory music.")
+            return
+        if not self.victory_theme_url:
+            print("⚠️ No victory theme configured; cannot switch to victory music.")
             return
 
         self.current_phase = BattlePhase.VICTORY
@@ -582,9 +589,12 @@ class BattleMusicManager:
             print(f"▶️ Starting playback (loop={loop}, disconnect_after={disconnect_after})...")
             self.voice_client.play(source, after=after_playing)
 
-            # If this is a victory theme and it's longer than 2 minutes, fade out after 2 minutes
-            if disconnect_after and duration > 120:
-                print(f"🎵 Victory theme is {duration}s long, will fade out after 2 minutes")
+            # If this is a victory theme and it's longer than the configured window,
+            # fade it out once the window elapses.
+            if disconnect_after and duration > VICTORY_THEME_PLAY_SECONDS:
+                print(
+                    f"🎵 Victory theme is {duration}s long, will fade out after {VICTORY_THEME_PLAY_SECONDS} seconds"
+                )
                 self._fade_task = asyncio.create_task(self._fade_victory_theme())
 
             # Verify playback started
@@ -734,13 +744,15 @@ class BattleMusicManager:
             return False, None, {}
 
     async def _fade_victory_theme(self):
-        """Fade out victory theme after 2 minutes of playback"""
+        """Fade out victory theme after configured playback window."""
         try:
-            await asyncio.sleep(120)  # Play for 2 minutes
+            await asyncio.sleep(VICTORY_THEME_PLAY_SECONDS)
 
             # Fade out over 5 seconds
             if self.voice_client and self.voice_client.source:
-                print("🎵 Fading out victory theme after 2 minutes...")
+                print(
+                    f"🎵 Fading out victory theme after {VICTORY_THEME_PLAY_SECONDS} seconds..."
+                )
                 initial_volume = self.voice_client.source.volume
                 steps = 50
                 for i in range(steps):
