@@ -1595,9 +1595,15 @@ class MainMenuView(View):
 
         # Ensure the interaction is happening in the correct location channel
         parent_id = getattr(interaction.channel, "parent_id", None)
+        category_id = getattr(interaction.channel, "category_id", None)
+        if category_id is None:
+            parent_channel = getattr(interaction.channel, "parent", None)
+            category_id = getattr(parent_channel, "category_id", None)
+
         channel_location_id = self.bot.location_manager.get_location_by_channel(
             interaction.channel_id,
             parent_id=parent_id,
+            category_id=category_id,
         )
         if not channel_location_id:
             await interaction.response.send_message(

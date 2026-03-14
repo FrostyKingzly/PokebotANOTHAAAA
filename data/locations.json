@@ -3825,8 +3825,8 @@
     "ranked_npc_trainers": []
   },
   "lights_district_moonveil_hotel": {
-    "name": "Lights District - Moonveil Hotel",
-    "description": "One of the few hotels where most competitors are taking up residence. Not quite as tall as the apartment suites, but the day-to-day prices are very low with most booking out a long period of time for the entire competition.",
+    "name": "Lights District - Hawthorne Grand",
+    "description": "",
     "channel_ids": [],
     "amenities": [],
     "type": "civilian_zone",
