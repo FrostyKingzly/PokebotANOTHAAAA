@@ -70,6 +70,7 @@ class ChannelLocationSelectView(discord.ui.View):
     """Dropdown view for mapping channels to locations + RP star stat."""
 
     STAR_STAT_KEYS = ["heart", "insight", "charisma", "fortitude", "will", "none"]
+    CATEGORY_WIDE_FORUM_LOCATION_ID = "lights_district_moonveil_hotel"
 
     def __init__(
         self,
@@ -78,10 +79,12 @@ class ChannelLocationSelectView(discord.ui.View):
         locations: Dict[str, Dict],
         current_mapping: Optional[str],
         current_star_stat: str,
+        category_id: Optional[int] = None,
     ):
         super().__init__(timeout=120)
         self.bot = bot
         self.channel_id = channel_id
+        self.category_id = category_id
         self.current_mapping = current_mapping
         self.current_star_stat = (current_star_stat or "none").lower()
         self.selected_location = current_mapping
@@ -204,12 +207,19 @@ class ChannelLocationSelectView(discord.ui.View):
             await interaction.response.edit_message(view=self)
             return
 
-        existing_mapping = self.bot.location_manager.get_location_by_channel(self.channel_id)
+        target_channel_id = self.channel_id
+        if (
+            self.selected_location == self.CATEGORY_WIDE_FORUM_LOCATION_ID
+            and self.category_id is not None
+        ):
+            target_channel_id = self.category_id
+
+        existing_mapping = self.bot.location_manager.get_location_by_channel(target_channel_id)
         if existing_mapping and existing_mapping != self.selected_location:
-            self.bot.location_manager.remove_channel_from_location(self.channel_id)
+            self.bot.location_manager.remove_channel_from_location(target_channel_id)
 
         success = self.bot.location_manager.add_channel_to_location(
-            self.channel_id,
+            target_channel_id,
             self.selected_location
         )
         if not success:
@@ -220,7 +230,7 @@ class ChannelLocationSelectView(discord.ui.View):
             return
 
         star_success = self.bot.location_manager.set_channel_star_stat(
-            self.channel_id,
+            target_channel_id,
             self.selected_star_stat,
         )
         if not star_success:
@@ -2052,10 +2062,16 @@ Modest Nature
             return
 
         parent_id = getattr(interaction.channel, "parent_id", None)
+        category_id = getattr(interaction.channel, "category_id", None)
+        if category_id is None:
+            parent_channel = getattr(interaction.channel, "parent", None)
+            category_id = getattr(parent_channel, "category_id", None)
+
         channel_id = parent_id or interaction.channel_id
         current_mapping = self.bot.location_manager.get_location_by_channel(
             interaction.channel_id,
             parent_id=parent_id,
+            category_id=category_id,
         )
 
         embed = discord.Embed(
@@ -2097,6 +2113,7 @@ Modest Nature
             locations=all_locations,
             current_mapping=current_mapping,
             current_star_stat=current_star_stat,
+            category_id=category_id,
         )
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -2106,11 +2123,19 @@ Modest Nature
 
         # Check if channel is mapped
         parent_id = getattr(interaction.channel, "parent_id", None)
+        category_id = getattr(interaction.channel, "category_id", None)
+        if category_id is None:
+            parent_channel = getattr(interaction.channel, "parent", None)
+            category_id = getattr(parent_channel, "category_id", None)
+
         channel_id = parent_id or interaction.channel_id
         location_id = self.bot.location_manager.get_location_by_channel(
             interaction.channel_id,
             parent_id=parent_id,
+            category_id=category_id,
         )
+        if location_id == ChannelLocationSelectView.CATEGORY_WIDE_FORUM_LOCATION_ID and category_id is not None:
+            channel_id = category_id
         if not location_id:
             await interaction.response.send_message(
                 "❌ This channel isn't mapped to any location!",

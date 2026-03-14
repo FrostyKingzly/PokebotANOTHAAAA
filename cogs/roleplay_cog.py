@@ -383,7 +383,16 @@ class RoleplayCog(commands.Cog):
             return
 
         parent_id = interaction.channel.parent_id if isinstance(interaction.channel, discord.Thread) else None
-        location_id = location_manager.get_location_by_channel(interaction.channel_id, parent_id=parent_id)
+        category_id = getattr(interaction.channel, "category_id", None)
+        if category_id is None:
+            parent_channel = getattr(interaction.channel, "parent", None)
+            category_id = getattr(parent_channel, "category_id", None)
+
+        location_id = location_manager.get_location_by_channel(
+            interaction.channel_id,
+            parent_id=parent_id,
+            category_id=category_id,
+        )
         if not location_id:
             await interaction.response.send_message(
                 "❌ You can only use this command in mapped RP/travel channels.",
