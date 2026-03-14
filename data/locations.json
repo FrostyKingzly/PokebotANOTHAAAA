@@ -4194,6 +4194,16 @@
     "npc_trainers": [],
     "ranked_npc_trainers": []
   },
+  "residential_district_all_night_radio": {
+    "name": "Residential District - All Night Radio",
+    "description": "A small music shop and late-night broadcast studio that operates as a retro record store where visitors can browse vinyls, CDs, music players, and a curated selection of TMs and HMs for trainers looking to expand their Pokémon’s moves.",
+    "channel_ids": [],
+    "amenities": [],
+    "type": "civilian_zone",
+    "encounters": [],
+    "npc_trainers": [],
+    "ranked_npc_trainers": []
+  },
   "residential_district_daycare": {
     "name": "Residential District - Daycare",
     "description": "A large day-care for looking after Pokemon. The day-care assistants all provide training and outdoor environments to the Pokemon left here, allowing for a still and steady amount of training while the Trainer focuses on their other Pokemon.",
