@@ -2264,6 +2264,7 @@ class BattleEngine:
         
         return {
             "success": True,
+            "battle_id": battle.battle_id,
             "turn_number": battle.turn_number - 1,
             "messages": battle.turn_log,
             "action_events": action_events,
