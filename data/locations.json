@@ -3827,7 +3827,9 @@
   "lights_district_moonveil_hotel": {
     "name": "Lights District - Hawthorne Grand",
     "description": "",
-    "channel_ids": [],
+    "channel_ids": [
+      1477425060389064803
+    ],
     "amenities": [],
     "type": "civilian_zone",
     "encounters": [],
