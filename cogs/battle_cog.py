@@ -837,8 +837,8 @@ class BattleCog(commands.Cog):
         await _send_battle_message(embed=main_embed, view=view)
 
     async def _maybe_create_battle_thread(self, interaction: discord.Interaction, battle):
-        """Create a dedicated thread for non-wild battles when possible."""
-        if not interaction.guild or getattr(battle, 'battle_type', None) == BattleType.WILD:
+        """Create a dedicated thread for battles when possible."""
+        if not interaction.guild:
             return None
         if isinstance(interaction.channel, discord.Thread):
             return interaction.channel
