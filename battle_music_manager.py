@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from enum import Enum
 import random
 import shutil
-from battle_themes import CASUAL_NPC_THEMES, RANKED_NPC_THEMES
+from battle_themes import get_all_theme_tracks
 
 
 class BattlePhase(Enum):
@@ -136,27 +136,12 @@ class BattleMusicManager:
 
     async def preload_theme_cache(self) -> None:
         """Download battle/victory themes on startup for reliable local playback."""
-        urls: List[str] = []
-        for battle_url, victory_url in (CASUAL_NPC_THEMES + RANKED_NPC_THEMES):
-            urls.append(battle_url)
-            urls.append(victory_url)
+        tracks = get_all_theme_tracks()
+        if not tracks:
+            print("⚠️ No local battle music tracks found during preload.")
+            return
 
-        unique_urls = list(dict.fromkeys(urls))
-        print(f"🎵 Preloading {len(unique_urls)} music tracks into cache...")
-
-        downloaded = 0
-        failed = 0
-        for url in unique_urls:
-            cached = self._cached_path_for_url(url)
-            if cached:
-                continue
-            ok, _, _ = await self._download_and_cache_url(url)
-            if ok:
-                downloaded += 1
-            else:
-                failed += 1
-
-        print(f"🎵 Music cache warmup complete (downloaded={downloaded}, failed={failed})")
+        print(f"🎵 Found {len(tracks)} local music tracks. No download cache warmup needed.")
 
     def _configure_ytdlp_auth(self):
         """Apply optional yt-dlp authentication settings from environment variables."""
@@ -189,8 +174,7 @@ class BattleMusicManager:
 
     def _candidate_battle_theme_urls(self, exclude_url: str) -> List[str]:
         """Build a shuffled list of alternate battle theme URLs excluding the current URL."""
-        all_urls = [battle for battle, _ in (CASUAL_NPC_THEMES + RANKED_NPC_THEMES)]
-        deduped = list(dict.fromkeys(all_urls))
+        deduped = get_all_theme_tracks()
         candidates = [url for url in deduped if url != exclude_url]
         random.shuffle(candidates)
         return candidates
@@ -615,11 +599,15 @@ class BattleMusicManager:
 
     async def _resolve_audio_input(self, url: str) -> Tuple[Optional[str], int, Optional[str]]:
         """
-        Resolve a playable FFmpeg input using yt-dlp.
+        Resolve a playable FFmpeg input using local files or yt-dlp.
 
         Returns:
             (audio_input, duration_seconds, title)
         """
+        local_path = Path(url)
+        if local_path.exists() and local_path.is_file():
+            return str(local_path), 0, local_path.stem
+
         cached_path = self._cached_path_for_url(url)
         if cached_path:
             entry = self.music_cache_index.get(url, {})

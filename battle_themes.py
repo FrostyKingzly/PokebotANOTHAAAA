@@ -1,110 +1,70 @@
 """
 Battle Theme Configuration
-Contains all battle and victory themes for NPC battles.
+Loads local battle and victory themes from disk.
 """
 
 from typing import List, Tuple
 import random
+from pathlib import Path
 
 
-DEFAULT_VICTORY_THEME = "https://youtu.be/C7Dle4j_UBc"
+MUSIC_ROOT = Path("PokeMusic")
+CASUAL_DIR = MUSIC_ROOT / "Casual"
+BOSS_DIR = MUSIC_ROOT / "Boss"
+VICTORY_DIR = MUSIC_ROOT / "Victory"
+AUDIO_EXTENSIONS = {".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac", ".opus"}
 
 
-# Casual NPC Battle Themes
-# Format: (Battle Theme URL, Victory Theme URL)
-CASUAL_NPC_THEMES: List[Tuple[str, str]] = [
-    ("https://youtu.be/4PvtJJFIrkg", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/JK1hTHPdFCM", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/tMUd7gi0fnI", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/dYdInYCl0UQ", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/4AGPM4pVyOo", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/41dOCyUfXA4", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/dYdInYCl0UQ", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/o5b6uvn7InA", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/w111-Y4B4zU", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/tMUd7gi0fnI", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/lmB0HdM4BNQ", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/M6zHP70_Rpg", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/OBpFdpxcWxc", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/afDvaQFWQko", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/QSJnQKQtHcQ", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/hFo1ZBckmyk", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/MPbvY0mItto", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/mogQFRYo1rM", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/HgoabpaZfxQ", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/WURgaH62jpc", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/DnZNtdXqArk", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/C3coMLSuzH8", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/VkTARsXK4JE", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/Mqr5DXIR35A", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/vzXzbMhzeJc", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/ldA9Ww8O070", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/_Yg0e5FzJ7w", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/3w7o3fEy-7U", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/bTRzkMNBUsY", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/d4JLyVhgtZ0", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/pbLZltv4FF4", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/ED_eA2lw4LU", DEFAULT_VICTORY_THEME),
-]
+def _list_audio_files(directory: Path) -> List[str]:
+    """Return sorted playable audio file paths from a directory."""
+    if not directory.exists() or not directory.is_dir():
+        return []
+
+    files = [
+        str(path)
+        for path in sorted(directory.iterdir())
+        if path.is_file() and path.suffix.lower() in AUDIO_EXTENSIONS
+    ]
+    return files
 
 
-# Ranked NPC Battle Themes
-RANKED_NPC_THEMES: List[Tuple[str, str]] = [
-    ("https://youtu.be/XV6p9pGmgfk", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/S8OzzEBvTg0", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/7Z6ssqxmh_k", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/dYdInYCl0UQ", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/PGlR13ygNfA", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/cKpNr180siE", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/M6zHP70_Rpg", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/5n7b3_snV2Q", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/L5HMPIpAO6o", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/o9Cqm_vm-xk", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/wsT6KqVujVg", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/3-UiSxd4jB0", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/fFsnDqBqhhQ", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/epjy2RRGS5Y", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/ziQKtCRd4hI", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/M4-AtLF9DnI", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/7dwEtY0aGbs", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/txsoc3npa_w", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/b4CnahB1RAg", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/hHrFMI8ZFZA", DEFAULT_VICTORY_THEME),
-    ("https://youtu.be/t1qA4b68Ghk", DEFAULT_VICTORY_THEME),
-]
+def _pick_random(files: List[str], fallback_files: List[str]) -> str:
+    """Pick a random file from files, falling back to fallback_files."""
+    pool = files or fallback_files
+    if not pool:
+        raise RuntimeError("No music files found. Add tracks under PokeMusic/Casual, PokeMusic/Boss, and PokeMusic/Victory.")
+    return random.choice(pool)
 
 
-# Raid Battle Themes (To be added later)
-RAID_THEMES: List[Tuple[str, str]] = [
-    # Placeholder - will be filled with raid-specific themes
-]
+def get_all_theme_tracks() -> List[str]:
+    """Return all known local tracks used by the battle music system."""
+    all_tracks = _list_audio_files(CASUAL_DIR) + _list_audio_files(BOSS_DIR) + _list_audio_files(VICTORY_DIR)
+    # Deduplicate while preserving order
+    return list(dict.fromkeys(all_tracks))
 
 
 def get_random_npc_theme() -> Tuple[str, str]:
-    """
-    Get a random casual NPC battle theme.
-    Returns: (battle_theme_url, victory_theme_url)
-    """
-    return random.choice(CASUAL_NPC_THEMES)
+    """Get random casual battle + victory tracks from local folders."""
+    casual_tracks = _list_audio_files(CASUAL_DIR)
+    boss_tracks = _list_audio_files(BOSS_DIR)
+    victory_tracks = _list_audio_files(VICTORY_DIR)
+
+    battle_theme = _pick_random(casual_tracks, boss_tracks)
+    victory_theme = _pick_random(victory_tracks, casual_tracks + boss_tracks)
+    return battle_theme, victory_theme
 
 
 def get_ranked_npc_theme() -> Tuple[str, str]:
-    """
-    Get a ranked NPC battle theme.
-    Falls back to casual themes if ranked themes not set.
-    Returns: (battle_theme_url, victory_theme_url)
-    """
-    if RANKED_NPC_THEMES:
-        return random.choice(RANKED_NPC_THEMES)
-    return get_random_npc_theme()
+    """Get random boss/ranked battle + victory tracks from local folders."""
+    boss_tracks = _list_audio_files(BOSS_DIR)
+    casual_tracks = _list_audio_files(CASUAL_DIR)
+    victory_tracks = _list_audio_files(VICTORY_DIR)
+
+    battle_theme = _pick_random(boss_tracks, casual_tracks)
+    victory_theme = _pick_random(victory_tracks, boss_tracks + casual_tracks)
+    return battle_theme, victory_theme
 
 
 def get_raid_theme() -> Tuple[str, str]:
-    """
-    Get a raid battle theme.
-    Falls back to first casual theme if raid themes not set.
-    Returns: (battle_theme_url, victory_theme_url)
-    """
-    if RAID_THEMES:
-        return random.choice(RAID_THEMES)
-    return CASUAL_NPC_THEMES[0]
+    """Use the boss track pool for raid battles."""
+    return get_ranked_npc_theme()

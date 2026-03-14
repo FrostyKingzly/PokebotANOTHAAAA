@@ -345,8 +345,15 @@ class BattleCog(commands.Cog):
             else:
                 battle_theme_url, victory_theme_url = get_random_npc_theme()
         else:
-            # Use random NPC theme
-            battle_theme_url, victory_theme_url = get_random_npc_theme()
+            # Use battle-specific local theme pools
+            battle = self.battle_engine.get_battle(battle_id)
+            is_dream_boss = getattr(getattr(battle, 'opponent', None), 'npc_class', None) == 'dream_rogue'
+            is_ranked_battle = bool(getattr(battle, 'is_ranked', False))
+
+            if is_ranked_battle or is_dream_boss:
+                battle_theme_url, victory_theme_url = get_ranked_npc_theme()
+            else:
+                battle_theme_url, victory_theme_url = get_random_npc_theme()
 
         # Start music
         success = await self.music_manager.start_battle_music(battle_theme_url, victory_theme_url)
