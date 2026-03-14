@@ -116,28 +116,15 @@ Bot: *Switches to Gen 5 Victory Theme*
 
 ## Configuration
 
-### Adding Ranked Themes
+### Adding Music
 
-When you're ready to add ranked battle themes, edit `battle_themes.py`:
+Drop audio files into these folders:
 
-```python
-RANKED_NPC_THEMES = [
-    ("https://youtu.be/BATTLE_URL", "https://youtu.be/VICTORY_URL"),
-    ("https://youtu.be/BATTLE_URL_2", "https://youtu.be/VICTORY_URL_2"),
-    # Add more ranked themes...
-]
-```
+- `PokeMusic/Casual` for casual trainer battles
+- `PokeMusic/Boss` for ranked and dream boss battles
+- `PokeMusic/Victory` for victory themes
 
-### Adding Raid Themes
-
-For raid-specific themes, edit `battle_themes.py`:
-
-```python
-RAID_THEMES = [
-    ("https://youtu.be/RAID_BATTLE", "https://youtu.be/RAID_VICTORY"),
-    # Add more raid themes...
-]
-```
+Supported formats include `.mp3`, `.wav`, `.ogg`, `.flac`, `.m4a`, `.aac`, and `.opus`.
 
 ### Adjusting Music Volume
 
@@ -166,26 +153,13 @@ await asyncio.sleep(60)  # Play for 60 seconds (1 minute)
 3. **Check FFmpeg**: Run `ffmpeg -version` to verify installation
 4. **Check Dependencies**: Run `pip install -r requirements.txt`
 
-### YouTube Bot Check / Cookie Auth Errors
+### Missing Local Files
 
-If you see an error like: `Sign in to confirm you're not a bot`, YouTube now requires authenticated requests for that video.
+If music does not start, confirm that audio files exist inside `PokeMusic/Casual`, `PokeMusic/Boss`, and `PokeMusic/Victory`.
 
-If you want authenticated playback, paste **exactly one** of these lines into your `.env` (no parentheses):
+### Fallback Behavior
 
-```bash
-# Option A: Netscape-format cookies file exported for YouTube
-YTDLP_COOKIES_FILE=/absolute/path/to/youtube_cookies.txt
-
-# Option B: Let yt-dlp read directly from local browser profile
-YTDLP_COOKIES_FROM_BROWSER=chrome
-# examples: firefox:default-release, chromium:Default
-```
-
-Then restart the bot. If both are set, the bot now prefers a valid `YTDLP_COOKIES_FILE`; if that file path is invalid, it falls back to `YTDLP_COOKIES_FROM_BROWSER`.
-
-### No-Env Fallback (Now Built In)
-
-If a selected battle track fails YouTube bot-check/auth, the bot now automatically retries up to 8 alternate battle-theme URLs before giving up.
+If one folder is empty, the system will automatically fall back to available tracks from the other folders.
 
 ### Queue Issues
 
@@ -194,7 +168,7 @@ If a selected battle track fails YouTube bot-check/auth, the bot now automatical
 
 ### Audio Quality
 
-- Streams at YouTube's best available quality
+- Streams local audio files at the configured FFmpeg quality
 - Default volume is 50% (adjustable)
 - No lag if good internet connection
 
