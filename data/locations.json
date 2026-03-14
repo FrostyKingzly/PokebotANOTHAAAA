@@ -22,30 +22,25 @@
             "species": "Buizel",
             "level": 7,
             "moves": [
-              "Water Gun",
-              "Quick Attack",
-              "Aqua Jet",
-              "Bite"
+              "Tackle",
+              "Growl",
+              "Soak"
             ]
           },
           {
             "species": "Wingull",
             "level": 7,
             "moves": [
+              "Growl",
               "Water Gun",
-              "Gust",
-              "Quick Attack",
-              "Supersonic"
+              "Quick Attack"
             ]
           },
           {
             "species": "Krabby",
             "level": 7,
             "moves": [
-              "Bubble",
-              "Vice Grip",
-              "Harden",
-              "Leer"
+              "Harden"
             ]
           }
         ]
@@ -65,16 +60,16 @@
             "species": "Wingull",
             "level": 6,
             "moves": [
-              "Gust",
-              "Water Gun"
+              "Water Gun",
+              "Quick Attack"
             ]
           },
           {
             "species": "Buizel",
             "level": 6,
             "moves": [
-              "Quick Attack",
-              "Water Gun"
+              "Tackle",
+              "Growl"
             ]
           }
         ],
@@ -83,16 +78,16 @@
             "species": "Wingull",
             "level": 6,
             "moves": [
-              "Gust",
-              "Water Gun"
+              "Water Gun",
+              "Quick Attack"
             ]
           },
           {
             "species": "Buizel",
             "level": 6,
             "moves": [
-              "Quick Attack",
-              "Water Gun"
+              "Tackle",
+              "Growl"
             ]
           }
         ]
@@ -214,8 +209,7 @@
             "species": "Pidgey",
             "level": 1,
             "moves": [
-              "Tackle",
-              "Sand Attack"
+              "Tackle"
             ]
           }
         ]
@@ -234,20 +228,19 @@
             "species": "Snubbull",
             "level": 6,
             "moves": [
-              "Bite",
               "Charm",
-              "Lick",
-              "Scary Face"
+              "Scary Face",
+              "Tail Whip",
+              "Thunder Fang"
             ]
           },
           {
             "species": "Fletchling",
             "level": 6,
             "moves": [
+              "Growl",
               "Peck",
-              "Quick Attack",
-              "Ember",
-              "Agility"
+              "Quick Attack"
             ]
           }
         ]
@@ -266,30 +259,25 @@
             "species": "Jigglypuff",
             "level": 8,
             "moves": [
-              "Sing",
-              "Pound",
+              "Defense Curl",
               "Disarming Voice",
-              "Defense Curl"
+              "Pound",
+              "Sing"
             ]
           },
           {
             "species": "Chatot",
             "level": 8,
             "moves": [
-              "Peck",
-              "Chatter",
-              "Growl",
-              "Roost"
+              "Swift"
             ]
           },
           {
             "species": "Kricketune",
             "level": 8,
             "moves": [
-              "Fury Cutter",
-              "Sing",
-              "Bide",
-              "Focus Energy"
+              "Growl",
+              "Tackle"
             ]
           }
         ]
@@ -309,9 +297,6 @@
             "species": "Budew",
             "level": 3,
             "moves": [
-              "Absorb",
-              "Growth",
-              "Stun Spore",
               "Worry Seed"
             ]
           },
@@ -319,10 +304,7 @@
             "species": "Poochyena",
             "level": 3,
             "moves": [
-              "Tackle",
-              "Howl",
-              "Bite",
-              "Sand Attack"
+              "Tackle"
             ]
           }
         ],
@@ -331,9 +313,6 @@
             "species": "Budew",
             "level": 3,
             "moves": [
-              "Absorb",
-              "Growth",
-              "Stun Spore",
               "Worry Seed"
             ]
           },
@@ -341,10 +320,7 @@
             "species": "Poochyena",
             "level": 3,
             "moves": [
-              "Tackle",
-              "Howl",
-              "Bite",
-              "Sand Attack"
+              "Tackle"
             ]
           }
         ],
@@ -367,19 +343,15 @@
             "level": 6,
             "moves": [
               "Ember",
-              "Howl",
-              "Bite",
-              "Smog"
+              "Leer",
+              "Howl"
             ]
           },
           {
             "species": "Machop",
             "level": 6,
             "moves": [
-              "Low Kick",
-              "Leer",
-              "Focus Energy",
-              "Karate Chop"
+              "Rock Smash"
             ]
           }
         ],
@@ -389,19 +361,15 @@
             "level": 6,
             "moves": [
               "Ember",
-              "Howl",
-              "Bite",
-              "Smog"
+              "Leer",
+              "Howl"
             ]
           },
           {
             "species": "Machop",
             "level": 6,
             "moves": [
-              "Low Kick",
-              "Leer",
-              "Focus Energy",
-              "Karate Chop"
+              "Rock Smash"
             ]
           }
         ],
@@ -426,30 +394,27 @@
             "species": "Chansey",
             "level": 8,
             "moves": [
+              "Disarming Voice",
               "Pound",
-              "Soft-Boiled",
-              "Refresh",
-              "Disarming Voice"
+              "Tail Whip",
+              "Echoed Voice"
             ]
           },
           {
             "species": "Spritzee",
             "level": 8,
             "moves": [
-              "Fairy Wind",
-              "Sweet Scent",
-              "Draining Kiss",
-              "Aromatherapy"
+              "Echoed Voice"
             ]
           },
           {
             "species": "Wooper",
             "level": 8,
             "moves": [
-              "Water Gun",
-              "Mud Shot",
               "Tail Whip",
-              "Slam"
+              "Water Gun",
+              "Rain Dance",
+              "Mud Shot"
             ]
           }
         ],
@@ -458,30 +423,27 @@
             "species": "Chansey",
             "level": 8,
             "moves": [
+              "Disarming Voice",
               "Pound",
-              "Soft-Boiled",
-              "Refresh",
-              "Disarming Voice"
+              "Tail Whip",
+              "Echoed Voice"
             ]
           },
           {
             "species": "Spritzee",
             "level": 8,
             "moves": [
-              "Fairy Wind",
-              "Sweet Scent",
-              "Draining Kiss",
-              "Aromatherapy"
+              "Echoed Voice"
             ]
           },
           {
             "species": "Wooper",
             "level": 8,
             "moves": [
-              "Water Gun",
-              "Mud Shot",
               "Tail Whip",
-              "Slam"
+              "Water Gun",
+              "Rain Dance",
+              "Mud Shot"
             ]
           }
         ],
@@ -506,20 +468,16 @@
             "species": "Fletchling",
             "level": 8,
             "moves": [
+              "Growl",
               "Peck",
-              "Quick Attack",
-              "Ember",
-              "Agility"
+              "Quick Attack"
             ]
           },
           {
             "species": "Smeargle",
             "level": 8,
             "moves": [
-              "Tackle",
-              "Leer",
-              "Quick Attack",
-              "Helping Hand"
+              "Sketch"
             ]
           },
           {
@@ -528,8 +486,7 @@
             "moves": [
               "Absorb",
               "Fairy Wind",
-              "Stun Spore",
-              "Sweet Scent"
+              "Stun Spore"
             ]
           }
         ],
@@ -538,20 +495,16 @@
             "species": "Fletchling",
             "level": 8,
             "moves": [
+              "Growl",
               "Peck",
-              "Quick Attack",
-              "Ember",
-              "Agility"
+              "Quick Attack"
             ]
           },
           {
             "species": "Smeargle",
             "level": 8,
             "moves": [
-              "Tackle",
-              "Leer",
-              "Quick Attack",
-              "Helping Hand"
+              "Sketch"
             ]
           },
           {
@@ -560,8 +513,7 @@
             "moves": [
               "Absorb",
               "Fairy Wind",
-              "Stun Spore",
-              "Sweet Scent"
+              "Stun Spore"
             ]
           }
         ],
@@ -586,30 +538,27 @@
             "species": "Eevee",
             "level": 10,
             "moves": [
-              "Quick Attack",
-              "Baby-Doll Eyes",
-              "Bite",
-              "Swift"
+              "Tackle",
+              "Tail Whip",
+              "Sand Attack",
+              "Quick Attack"
             ]
           },
           {
             "species": "Riolu",
             "level": 10,
             "moves": [
+              "Endure",
               "Quick Attack",
-              "Force Palm",
-              "Counter",
-              "Work Up"
+              "Feint",
+              "Metal Claw"
             ]
           },
           {
             "species": "Roselia",
             "level": 10,
             "moves": [
-              "Mega Drain",
-              "Stun Spore",
-              "Leech Seed",
-              "Magical Leaf"
+              "Leech Seed"
             ]
           }
         ],
@@ -618,30 +567,27 @@
             "species": "Eevee",
             "level": 10,
             "moves": [
-              "Quick Attack",
-              "Baby-Doll Eyes",
-              "Bite",
-              "Swift"
+              "Tackle",
+              "Tail Whip",
+              "Sand Attack",
+              "Quick Attack"
             ]
           },
           {
             "species": "Riolu",
             "level": 10,
             "moves": [
+              "Endure",
               "Quick Attack",
-              "Force Palm",
-              "Counter",
-              "Work Up"
+              "Feint",
+              "Metal Claw"
             ]
           },
           {
             "species": "Roselia",
             "level": 10,
             "moves": [
-              "Mega Drain",
-              "Stun Spore",
-              "Leech Seed",
-              "Magical Leaf"
+              "Leech Seed"
             ]
           }
         ],
@@ -665,8 +611,8 @@
             "moves": [
               "Confusion",
               "Disarming Voice",
-              "Teleport",
-              "Life Dew"
+              "Growl",
+              "Hypnosis"
             ]
           },
           {
@@ -674,19 +620,18 @@
             "level": 9,
             "moves": [
               "Ember",
-              "Bite",
-              "Helping Hand",
-              "Flame Wheel"
+              "Leer",
+              "Howl",
+              "Bite"
             ]
           },
           {
             "species": "Indeedee",
             "level": 9,
             "moves": [
+              "Play Nice",
               "Stored Power",
-              "Helping Hand",
-              "Heal Pulse",
-              "Baton Pass"
+              "Encore"
             ]
           }
         ],
@@ -697,8 +642,8 @@
             "moves": [
               "Confusion",
               "Disarming Voice",
-              "Teleport",
-              "Life Dew"
+              "Growl",
+              "Hypnosis"
             ]
           },
           {
@@ -706,19 +651,18 @@
             "level": 9,
             "moves": [
               "Ember",
-              "Bite",
-              "Helping Hand",
-              "Flame Wheel"
+              "Leer",
+              "Howl",
+              "Bite"
             ]
           },
           {
             "species": "Indeedee",
             "level": 9,
             "moves": [
+              "Play Nice",
               "Stored Power",
-              "Helping Hand",
-              "Heal Pulse",
-              "Baton Pass"
+              "Encore"
             ]
           }
         ],
@@ -743,8 +687,7 @@
             "species": "Lillipup",
             "level": 2,
             "moves": [
-              "Tackle",
-              "Leer"
+              "Tackle"
             ]
           }
         ],
@@ -753,8 +696,7 @@
             "species": "Lillipup",
             "level": 2,
             "moves": [
-              "Tackle",
-              "Leer"
+              "Tackle"
             ]
           }
         ]
@@ -772,16 +714,16 @@
             "species": "Kricketune",
             "level": 7,
             "moves": [
-              "Fury Cutter",
-              "Sing"
+              "Growl",
+              "Tackle"
             ]
           },
           {
             "species": "Jigglypuff",
             "level": 7,
             "moves": [
-              "Sing",
-              "Pound"
+              "Pound",
+              "Sing"
             ]
           }
         ],
@@ -790,16 +732,16 @@
             "species": "Kricketune",
             "level": 7,
             "moves": [
-              "Fury Cutter",
-              "Sing"
+              "Growl",
+              "Tackle"
             ]
           },
           {
             "species": "Jigglypuff",
             "level": 7,
             "moves": [
-              "Sing",
-              "Pound"
+              "Pound",
+              "Sing"
             ]
           }
         ]
@@ -817,8 +759,8 @@
             "species": "Snubbull",
             "level": 6,
             "moves": [
-              "Bite",
-              "Charm"
+              "Charm",
+              "Thunder Fang"
             ]
           },
           {
@@ -826,7 +768,7 @@
             "level": 6,
             "moves": [
               "Water Gun",
-              "Wing Attack"
+              "Defog"
             ]
           }
         ],
@@ -835,8 +777,8 @@
             "species": "Snubbull",
             "level": 6,
             "moves": [
-              "Bite",
-              "Charm"
+              "Charm",
+              "Thunder Fang"
             ]
           },
           {
@@ -844,7 +786,7 @@
             "level": 6,
             "moves": [
               "Water Gun",
-              "Wing Attack"
+              "Defog"
             ]
           }
         ]
@@ -910,24 +852,23 @@
             "species": "Phanpy",
             "level": 7,
             "moves": [
-              "Tackle",
-              "Defense Curl"
+              "Defense Curl",
+              "Tackle"
             ]
           },
           {
             "species": "Nacli",
             "level": 7,
             "moves": [
-              "Rock Throw",
-              "Harden"
+              "Harden",
+              "Rock Throw"
             ]
           },
           {
             "species": "Woobat",
             "level": 7,
             "moves": [
-              "Confusion",
-              "Gust"
+              "Confusion"
             ]
           }
         ],
@@ -936,24 +877,23 @@
             "species": "Phanpy",
             "level": 7,
             "moves": [
-              "Tackle",
-              "Defense Curl"
+              "Defense Curl",
+              "Tackle"
             ]
           },
           {
             "species": "Nacli",
             "level": 7,
             "moves": [
-              "Rock Throw",
-              "Harden"
+              "Harden",
+              "Rock Throw"
             ]
           },
           {
             "species": "Woobat",
             "level": 7,
             "moves": [
-              "Confusion",
-              "Gust"
+              "Confusion"
             ]
           }
         ]
@@ -972,24 +912,24 @@
             "level": 8,
             "moves": [
               "Bite",
-              "Glare",
-              "Acid"
+              "Thunder Fang",
+              "Wrap"
             ]
           },
           {
             "species": "Tropius",
             "level": 8,
             "moves": [
-              "Razor Leaf",
-              "Gust"
+              "Gust",
+              "Razor Leaf"
             ]
           },
           {
             "species": "Breloom",
             "level": 8,
             "moves": [
-              "Mach Punch",
-              "Absorb"
+              "Absorb",
+              "Toxic"
             ]
           }
         ],
@@ -999,24 +939,24 @@
             "level": 8,
             "moves": [
               "Bite",
-              "Glare",
-              "Acid"
+              "Thunder Fang",
+              "Wrap"
             ]
           },
           {
             "species": "Tropius",
             "level": 8,
             "moves": [
-              "Razor Leaf",
-              "Gust"
+              "Gust",
+              "Razor Leaf"
             ]
           },
           {
             "species": "Breloom",
             "level": 8,
             "moves": [
-              "Mach Punch",
-              "Absorb"
+              "Absorb",
+              "Toxic"
             ]
           }
         ]
@@ -1215,7 +1155,7 @@
             "level": 5,
             "moves": [
               "Scratch",
-              "Mud-Slap"
+              "Growl"
             ]
           }
         ],
@@ -1233,7 +1173,7 @@
             "level": 5,
             "moves": [
               "Scratch",
-              "Mud-Slap"
+              "Growl"
             ]
           }
         ]
@@ -1438,8 +1378,7 @@
             "species": "Finneon",
             "level": 4,
             "moves": [
-              "Pound",
-              "Water Gun"
+              "Pound"
             ]
           }
         ],
@@ -1455,8 +1394,7 @@
             "species": "Finneon",
             "level": 4,
             "moves": [
-              "Pound",
-              "Water Gun"
+              "Pound"
             ]
           }
         ]
@@ -1641,15 +1579,13 @@
             "species": "Caterpie",
             "level": 3,
             "moves": [
-              "Tackle",
-              "String Shot"
+              "Tackle"
             ]
           },
           {
             "species": "Weedle",
             "level": 3,
             "moves": [
-              "Poison Sting",
               "String Shot"
             ]
           }
@@ -1659,15 +1595,13 @@
             "species": "Caterpie",
             "level": 3,
             "moves": [
-              "Tackle",
-              "String Shot"
+              "Tackle"
             ]
           },
           {
             "species": "Weedle",
             "level": 3,
             "moves": [
-              "Poison Sting",
               "String Shot"
             ]
           }
@@ -1838,8 +1772,8 @@
             "species": "Teddiursa",
             "level": 6,
             "moves": [
-              "Scratch",
-              "Lick"
+              "Lick",
+              "Scratch"
             ]
           },
           {
@@ -1856,8 +1790,8 @@
             "species": "Teddiursa",
             "level": 6,
             "moves": [
-              "Scratch",
-              "Lick"
+              "Lick",
+              "Scratch"
             ]
           },
           {
@@ -1984,20 +1918,16 @@
             "species": "Shinx",
             "level": 4,
             "moves": [
-              "Tackle",
               "Leer",
-              "Thunder Shock",
-              "Charge"
+              "Tackle",
+              "Thunder Shock"
             ]
           },
           {
             "species": "Bidoof",
             "level": 4,
             "moves": [
-              "Tackle",
-              "Growl",
-              "Defense Curl",
-              "Rollout"
+              "Tackle"
             ]
           }
         ]
@@ -2016,30 +1946,21 @@
             "species": "Yamper",
             "level": 6,
             "moves": [
-              "Nuzzle",
-              "Bite",
-              "Spark",
-              "Tail Whip"
+              "Nuzzle"
             ]
           },
           {
             "species": "Bunnelby",
             "level": 6,
             "moves": [
-              "Tackle",
-              "Quick Attack",
-              "Mud-Slap",
-              "Double Kick"
+              "Laser Focus"
             ]
           },
           {
             "species": "Zigzagoon",
             "level": 6,
             "moves": [
-              "Tackle",
-              "Headbutt",
-              "Sand Attack",
-              "Baby-Doll Eyes"
+              "Tail Whip"
             ]
           }
         ]
@@ -2059,19 +1980,13 @@
             "species": "Rattata",
             "level": 4,
             "moves": [
-              "Tackle",
-              "Quick Attack",
-              "Tail Whip",
-              "Bite"
+              "Quick Attack"
             ]
           },
           {
             "species": "Trubbish",
             "level": 4,
             "moves": [
-              "Pound",
-              "Poison Gas",
-              "Acid Spray",
               "Recycle"
             ]
           }
@@ -2081,19 +1996,13 @@
             "species": "Rattata",
             "level": 4,
             "moves": [
-              "Tackle",
-              "Quick Attack",
-              "Tail Whip",
-              "Bite"
+              "Quick Attack"
             ]
           },
           {
             "species": "Trubbish",
             "level": 4,
             "moves": [
-              "Pound",
-              "Poison Gas",
-              "Acid Spray",
               "Recycle"
             ]
           }
@@ -2116,20 +2025,16 @@
             "species": "Mime Jr.",
             "level": 6,
             "moves": [
-              "Confusion",
-              "Copycat",
-              "Encore",
-              "Disarming Voice"
+              "Hypnosis"
             ]
           },
           {
             "species": "Pichu",
             "level": 6,
             "moves": [
-              "Thunder Shock",
-              "Charm",
               "Tail Whip",
-              "Nuzzle"
+              "Thunder Shock",
+              "Play Nice"
             ]
           }
         ],
@@ -2138,20 +2043,16 @@
             "species": "Mime Jr.",
             "level": 6,
             "moves": [
-              "Confusion",
-              "Copycat",
-              "Encore",
-              "Disarming Voice"
+              "Hypnosis"
             ]
           },
           {
             "species": "Pichu",
             "level": 6,
             "moves": [
-              "Thunder Shock",
-              "Charm",
               "Tail Whip",
-              "Nuzzle"
+              "Thunder Shock",
+              "Play Nice"
             ]
           }
         ],
@@ -2180,28 +2081,25 @@
             "level": 10,
             "moves": [
               "Ember",
-              "Bite",
-              "Helping Hand",
-              "Flame Wheel"
+              "Leer",
+              "Howl",
+              "Bite"
             ]
           },
           {
             "species": "Nickit",
             "level": 10,
             "moves": [
-              "Quick Attack",
-              "Beat Up",
-              "Snarl",
-              "Tail Whip"
+              "Hone Claws"
             ]
           },
           {
             "species": "Magnemite",
             "level": 10,
             "moves": [
+              "Tackle",
               "Thunder Shock",
               "Supersonic",
-              "Charge Beam",
               "Thunder Wave"
             ]
           }
@@ -2212,28 +2110,25 @@
             "level": 10,
             "moves": [
               "Ember",
-              "Bite",
-              "Helping Hand",
-              "Flame Wheel"
+              "Leer",
+              "Howl",
+              "Bite"
             ]
           },
           {
             "species": "Nickit",
             "level": 10,
             "moves": [
-              "Quick Attack",
-              "Beat Up",
-              "Snarl",
-              "Tail Whip"
+              "Hone Claws"
             ]
           },
           {
             "species": "Magnemite",
             "level": 10,
             "moves": [
+              "Tackle",
               "Thunder Shock",
               "Supersonic",
-              "Charge Beam",
               "Thunder Wave"
             ]
           }
@@ -2260,7 +2155,7 @@
             "level": 5,
             "moves": [
               "Astonish",
-              "Leer"
+              "Screech"
             ]
           },
           {
@@ -2268,7 +2163,7 @@
             "level": 5,
             "moves": [
               "Tackle",
-              "Bite"
+              "Leer"
             ]
           }
         ],
@@ -2278,7 +2173,7 @@
             "level": 5,
             "moves": [
               "Astonish",
-              "Leer"
+              "Screech"
             ]
           },
           {
@@ -2286,7 +2181,7 @@
             "level": 5,
             "moves": [
               "Tackle",
-              "Bite"
+              "Leer"
             ]
           }
         ]
@@ -2384,8 +2279,7 @@
             "species": "Lillipup",
             "level": 2,
             "moves": [
-              "Tackle",
-              "Leer"
+              "Tackle"
             ]
           }
         ]
@@ -2416,9 +2310,7 @@
             "level": 3,
             "moves": [
               "Tackle",
-              "Tail Whip",
-              "Bite",
-              "Stuff Cheeks"
+              "Tail Whip"
             ]
           }
         ],
@@ -2428,9 +2320,7 @@
             "level": 3,
             "moves": [
               "Tackle",
-              "Tail Whip",
-              "Bite",
-              "Stuff Cheeks"
+              "Tail Whip"
             ]
           }
         ],
@@ -2455,20 +2345,16 @@
             "species": "Shinx",
             "level": 4,
             "moves": [
-              "Tackle",
               "Leer",
-              "Thunder Shock",
-              "Charge"
+              "Tackle",
+              "Thunder Shock"
             ]
           },
           {
             "species": "Zigzagoon",
             "level": 4,
             "moves": [
-              "Tackle",
-              "Sand Attack",
-              "Headbutt",
-              "Baby-Doll Eyes"
+              "Sand Attack"
             ]
           }
         ],
@@ -2477,20 +2363,16 @@
             "species": "Shinx",
             "level": 4,
             "moves": [
-              "Tackle",
               "Leer",
-              "Thunder Shock",
-              "Charge"
+              "Tackle",
+              "Thunder Shock"
             ]
           },
           {
             "species": "Zigzagoon",
             "level": 4,
             "moves": [
-              "Tackle",
-              "Sand Attack",
-              "Headbutt",
-              "Baby-Doll Eyes"
+              "Sand Attack"
             ]
           }
         ],
@@ -2518,29 +2400,24 @@
             "species": "Yamper",
             "level": 7,
             "moves": [
-              "Nuzzle",
-              "Bite",
-              "Spark",
-              "Tail Whip"
+              "Nuzzle"
             ]
           },
           {
             "species": "Wingull",
             "level": 7,
             "moves": [
+              "Growl",
               "Water Gun",
-              "Gust",
-              "Quick Attack",
-              "Supersonic"
+              "Quick Attack"
             ]
           },
           {
             "species": "Rolycoly",
             "level": 7,
             "moves": [
-              "Tackle",
               "Smokescreen",
-              "Rock Throw",
+              "Tackle",
               "Rapid Spin"
             ]
           }
@@ -2550,29 +2427,24 @@
             "species": "Yamper",
             "level": 7,
             "moves": [
-              "Nuzzle",
-              "Bite",
-              "Spark",
-              "Tail Whip"
+              "Nuzzle"
             ]
           },
           {
             "species": "Wingull",
             "level": 7,
             "moves": [
+              "Growl",
               "Water Gun",
-              "Gust",
-              "Quick Attack",
-              "Supersonic"
+              "Quick Attack"
             ]
           },
           {
             "species": "Rolycoly",
             "level": 7,
             "moves": [
-              "Tackle",
               "Smokescreen",
-              "Rock Throw",
+              "Tackle",
               "Rapid Spin"
             ]
           }
@@ -2595,30 +2467,27 @@
             "species": "Magnemite",
             "level": 9,
             "moves": [
-              "Thunder Shock",
               "Tackle",
+              "Thunder Shock",
               "Supersonic",
-              "Charge Beam"
+              "Thunder Wave"
             ]
           },
           {
             "species": "Solosis",
             "level": 9,
             "moves": [
-              "Psywave",
-              "Reflect",
               "Confusion",
-              "Helping Hand"
+              "Protect",
+              "Recover",
+              "Endeavor"
             ]
           },
           {
             "species": "Natu",
             "level": 9,
             "moves": [
-              "Peck",
-              "Leer",
-              "Confusion",
-              "Night Shade"
+              "Stored Power"
             ]
           }
         ],
@@ -2627,30 +2496,27 @@
             "species": "Magnemite",
             "level": 9,
             "moves": [
-              "Thunder Shock",
               "Tackle",
+              "Thunder Shock",
               "Supersonic",
-              "Charge Beam"
+              "Thunder Wave"
             ]
           },
           {
             "species": "Solosis",
             "level": 9,
             "moves": [
-              "Psywave",
-              "Reflect",
               "Confusion",
-              "Helping Hand"
+              "Protect",
+              "Recover",
+              "Endeavor"
             ]
           },
           {
             "species": "Natu",
             "level": 9,
             "moves": [
-              "Peck",
-              "Leer",
-              "Confusion",
-              "Night Shade"
+              "Stored Power"
             ]
           }
         ],
@@ -2675,30 +2541,30 @@
             "species": "Timburr",
             "level": 10,
             "moves": [
+              "Leer",
+              "Pound",
               "Low Kick",
-              "Focus Energy",
-              "Rock Throw",
-              "Chip Away"
+              "Rock Throw"
             ]
           },
           {
             "species": "Drilbur",
             "level": 10,
             "moves": [
-              "Scratch",
-              "Rapid Spin",
               "Mud-Slap",
-              "Fury Swipes"
+              "Rapid Spin",
+              "Scratch",
+              "Hone Claws"
             ]
           },
           {
             "species": "Geodude",
             "level": 10,
             "moves": [
-              "Tackle",
               "Defense Curl",
-              "Rock Throw",
-              "Magnitude"
+              "Tackle",
+              "Rock Polish",
+              "Rollout"
             ]
           },
           {
@@ -2706,8 +2572,8 @@
             "level": 10,
             "moves": [
               "Mud-Slap",
-              "Stomp",
-              "Bide",
+              "Rock Smash",
+              "Iron Defense",
               "Double Kick"
             ]
           }
@@ -2717,30 +2583,30 @@
             "species": "Timburr",
             "level": 10,
             "moves": [
+              "Leer",
+              "Pound",
               "Low Kick",
-              "Focus Energy",
-              "Rock Throw",
-              "Chip Away"
+              "Rock Throw"
             ]
           },
           {
             "species": "Drilbur",
             "level": 10,
             "moves": [
-              "Scratch",
-              "Rapid Spin",
               "Mud-Slap",
-              "Fury Swipes"
+              "Rapid Spin",
+              "Scratch",
+              "Hone Claws"
             ]
           },
           {
             "species": "Geodude",
             "level": 10,
             "moves": [
-              "Tackle",
               "Defense Curl",
-              "Rock Throw",
-              "Magnitude"
+              "Tackle",
+              "Rock Polish",
+              "Rollout"
             ]
           },
           {
@@ -2748,8 +2614,8 @@
             "level": 10,
             "moves": [
               "Mud-Slap",
-              "Stomp",
-              "Bide",
+              "Rock Smash",
+              "Iron Defense",
               "Double Kick"
             ]
           }
@@ -2775,16 +2641,16 @@
             "species": "Rockruff",
             "level": 3,
             "moves": [
-              "Tackle",
-              "Leer"
+              "Leer",
+              "Tackle"
             ]
           },
           {
             "species": "Elekid",
             "level": 3,
             "moves": [
-              "Quick Attack",
-              "Leer"
+              "Leer",
+              "Quick Attack"
             ]
           }
         ],
@@ -2793,16 +2659,16 @@
             "species": "Rockruff",
             "level": 3,
             "moves": [
-              "Tackle",
-              "Leer"
+              "Leer",
+              "Tackle"
             ]
           },
           {
             "species": "Elekid",
             "level": 3,
             "moves": [
-              "Quick Attack",
-              "Leer"
+              "Leer",
+              "Quick Attack"
             ]
           }
         ]
@@ -2914,9 +2780,6 @@
             "species": "Purrloin",
             "level": 4,
             "moves": [
-              "Scratch",
-              "Growl",
-              "Assist",
               "Sand Attack"
             ]
           },
@@ -2924,10 +2787,7 @@
             "species": "Nickit",
             "level": 4,
             "moves": [
-              "Quick Attack",
-              "Tail Whip",
-              "Beat Up",
-              "Snarl"
+              "Beat Up"
             ]
           }
         ]
@@ -2947,30 +2807,30 @@
             "species": "Sandile",
             "level": 8,
             "moves": [
-              "Bite",
+              "Leer",
+              "Power Trip",
               "Sand Attack",
-              "Assurance",
-              "Mud-Slap"
+              "Hone Claws"
             ]
           },
           {
             "species": "Koffing",
             "level": 8,
             "moves": [
+              "Poison Gas",
               "Tackle",
               "Smog",
-              "Poison Gas",
-              "Assurance"
+              "Smokescreen"
             ]
           },
           {
             "species": "Stunky",
             "level": 8,
             "moves": [
+              "Poison Gas",
               "Scratch",
-              "Smokescreen",
-              "Bite",
-              "Poison Gas"
+              "Feint",
+              "Smokescreen"
             ]
           }
         ],
@@ -2979,30 +2839,30 @@
             "species": "Sandile",
             "level": 8,
             "moves": [
-              "Bite",
+              "Leer",
+              "Power Trip",
               "Sand Attack",
-              "Assurance",
-              "Mud-Slap"
+              "Hone Claws"
             ]
           },
           {
             "species": "Koffing",
             "level": 8,
             "moves": [
+              "Poison Gas",
               "Tackle",
               "Smog",
-              "Poison Gas",
-              "Assurance"
+              "Smokescreen"
             ]
           },
           {
             "species": "Stunky",
             "level": 8,
             "moves": [
+              "Poison Gas",
               "Scratch",
-              "Smokescreen",
-              "Bite",
-              "Poison Gas"
+              "Feint",
+              "Smokescreen"
             ]
           }
         ],
@@ -3024,16 +2884,14 @@
             "species": "Nickit",
             "level": 4,
             "moves": [
-              "Quick Attack",
-              "Tail Whip"
+              "Beat Up"
             ]
           },
           {
             "species": "Purrloin",
             "level": 4,
             "moves": [
-              "Scratch",
-              "Growl"
+              "Sand Attack"
             ]
           }
         ],
@@ -3042,16 +2900,14 @@
             "species": "Nickit",
             "level": 4,
             "moves": [
-              "Quick Attack",
-              "Tail Whip"
+              "Beat Up"
             ]
           },
           {
             "species": "Purrloin",
             "level": 4,
             "moves": [
-              "Scratch",
-              "Growl"
+              "Sand Attack"
             ]
           }
         ]
@@ -3153,10 +3009,10 @@
             "species": "Breloom",
             "level": 10,
             "moves": [
-              "Mach Punch",
-              "Mega Drain",
               "Leech Seed",
-              "Headbutt"
+              "Stun Spore",
+              "Tackle",
+              "Toxic"
             ]
           },
           {
@@ -3164,29 +3020,26 @@
             "level": 10,
             "moves": [
               "Bite",
-              "Glare",
-              "Acid",
-              "Poison Fang"
+              "Poison Sting",
+              "Thunder Fang",
+              "Wrap"
             ]
           },
           {
             "species": "Tropius",
             "level": 10,
             "moves": [
-              "Razor Leaf",
               "Gust",
-              "Stomp",
-              "Synthesis"
+              "Razor Leaf",
+              "Sweet Scent",
+              "Stomp"
             ]
           },
           {
             "species": "Pidgeotto",
             "level": 10,
             "moves": [
-              "Gust",
-              "Quick Attack",
-              "Twister",
-              "Feather Dance"
+              "Tackle"
             ]
           }
         ]
@@ -3289,30 +3142,28 @@
             "species": "Geodude",
             "level": 6,
             "moves": [
-              "Tackle",
               "Defense Curl",
-              "Rock Throw",
-              "Magnitude"
+              "Tackle",
+              "Rock Polish"
             ]
           },
           {
             "species": "Nacli",
             "level": 6,
             "moves": [
-              "Rock Throw",
               "Harden",
-              "Mud-Slap",
-              "Smack Down"
+              "Tackle",
+              "Rock Throw"
             ]
           },
           {
             "species": "Sandshrew",
             "level": 6,
             "moves": [
-              "Scratch",
               "Defense Curl",
-              "Sand Attack",
-              "Rollout"
+              "Scratch",
+              "Poison Sting",
+              "Sand Attack"
             ]
           }
         ]
@@ -3331,9 +3182,8 @@
             "species": "Rolycoly",
             "level": 8,
             "moves": [
-              "Tackle",
               "Smokescreen",
-              "Rock Throw",
+              "Tackle",
               "Rapid Spin"
             ]
           },
@@ -3341,20 +3191,19 @@
             "species": "Phanpy",
             "level": 8,
             "moves": [
-              "Tackle",
               "Defense Curl",
-              "Rollout",
-              "Slam"
+              "Growl",
+              "Tackle",
+              "Flail"
             ]
           },
           {
             "species": "Geodude",
             "level": 8,
             "moves": [
-              "Tackle",
               "Defense Curl",
-              "Rock Throw",
-              "Magnitude"
+              "Tackle",
+              "Rock Polish"
             ]
           }
         ]
@@ -3457,10 +3306,7 @@
             "species": "Finneon",
             "level": 5,
             "moves": [
-              "Pound",
-              "Water Gun",
-              "Attract",
-              "Icy Wind"
+              "Pound"
             ]
           },
           {
@@ -3469,8 +3315,7 @@
             "moves": [
               "Tackle",
               "Water Gun",
-              "Withdraw",
-              "Ice Shard"
+              "Withdraw"
             ]
           }
         ]
@@ -3657,8 +3502,7 @@
             "species": "Wurmple",
             "level": 3,
             "moves": [
-              "Tackle",
-              "String Shot"
+              "Tackle"
             ]
           },
           {
@@ -3764,17 +3608,14 @@
             "moves": [
               "Absorb",
               "Growth",
-              "Stun Spore",
-              "Mega Drain"
+              "Helping Hand"
             ]
           },
           {
             "species": "Bounsweet",
             "level": 5,
             "moves": [
-              "Razor Leaf",
-              "Sweet Scent",
-              "Rapid Spin",
+              "Splash",
               "Play Nice"
             ]
           }
@@ -3817,20 +3658,16 @@
             "species": "Milcery",
             "level": 5,
             "moves": [
-              "Tackle",
               "Aromatic Mist",
-              "Sweet Scent",
-              "Draining Kiss"
+              "Tackle",
+              "Sweet Kiss"
             ]
           },
           {
             "species": "Bunnelby",
             "level": 5,
             "moves": [
-              "Tackle",
-              "Leer",
-              "Quick Attack",
-              "Mud-Slap"
+              "Tackle"
             ]
           }
         ],
@@ -3839,20 +3676,16 @@
             "species": "Milcery",
             "level": 5,
             "moves": [
-              "Tackle",
               "Aromatic Mist",
-              "Sweet Scent",
-              "Draining Kiss"
+              "Tackle",
+              "Sweet Kiss"
             ]
           },
           {
             "species": "Bunnelby",
             "level": 5,
             "moves": [
-              "Tackle",
-              "Leer",
-              "Quick Attack",
-              "Mud-Slap"
+              "Tackle"
             ]
           }
         ],
@@ -3879,8 +3712,7 @@
             "moves": [
               "Pound",
               "Yawn",
-              "Poison Gas",
-              "Acid Spray"
+              "Poison Gas"
             ]
           },
           {
@@ -3888,19 +3720,16 @@
             "level": 9,
             "moves": [
               "Absorb",
+              "Tackle",
               "Stun Spore",
-              "Leech Seed",
-              "Headbutt"
+              "Leech Seed"
             ]
           },
           {
             "species": "Togedemaru",
             "level": 9,
             "moves": [
-              "Thunder Shock",
-              "Nuzzle",
-              "Spiky Shield",
-              "Fury Swipes"
+              "Defense Curl"
             ]
           },
           {
@@ -3908,9 +3737,9 @@
             "level": 9,
             "moves": [
               "Ember",
-              "Bite",
               "Leer",
-              "Flame Wheel"
+              "Howl",
+              "Bite"
             ]
           }
         ],
@@ -3921,8 +3750,7 @@
             "moves": [
               "Pound",
               "Yawn",
-              "Poison Gas",
-              "Acid Spray"
+              "Poison Gas"
             ]
           },
           {
@@ -3930,19 +3758,16 @@
             "level": 9,
             "moves": [
               "Absorb",
+              "Tackle",
               "Stun Spore",
-              "Leech Seed",
-              "Headbutt"
+              "Leech Seed"
             ]
           },
           {
             "species": "Togedemaru",
             "level": 9,
             "moves": [
-              "Thunder Shock",
-              "Nuzzle",
-              "Spiky Shield",
-              "Fury Swipes"
+              "Defense Curl"
             ]
           },
           {
@@ -3950,9 +3775,9 @@
             "level": 9,
             "moves": [
               "Ember",
-              "Bite",
               "Leer",
-              "Flame Wheel"
+              "Howl",
+              "Bite"
             ]
           }
         ],
@@ -4063,20 +3888,18 @@
             "species": "Psyduck",
             "level": 5,
             "moves": [
-              "Water Gun",
               "Scratch",
               "Tail Whip",
-              "Confusion"
+              "Water Gun"
             ]
           },
           {
             "species": "Meowth",
             "level": 5,
             "moves": [
-              "Scratch",
+              "Fake Out",
               "Growl",
-              "Bite",
-              "Fake Out"
+              "Feint"
             ]
           }
         ],
@@ -4085,20 +3908,18 @@
             "species": "Psyduck",
             "level": 5,
             "moves": [
-              "Water Gun",
               "Scratch",
               "Tail Whip",
-              "Confusion"
+              "Water Gun"
             ]
           },
           {
             "species": "Meowth",
             "level": 5,
             "moves": [
-              "Scratch",
+              "Fake Out",
               "Growl",
-              "Bite",
-              "Fake Out"
+              "Feint"
             ]
           }
         ],
@@ -4120,19 +3941,15 @@
             "species": "Munna",
             "level": 7,
             "moves": [
-              "Psywave",
-              "Defense Curl",
-              "Yawn",
-              "Disarming Voice"
+              "Hypnosis"
             ]
           },
           {
             "species": "Drowzee",
             "level": 7,
             "moves": [
-              "Pound",
               "Hypnosis",
-              "Confusion",
+              "Pound",
               "Disable"
             ]
           },
@@ -4140,10 +3957,10 @@
             "species": "Hoothoot",
             "level": 7,
             "moves": [
-              "Peck",
               "Growl",
-              "Hypnosis",
-              "Confusion"
+              "Peck",
+              "Tackle",
+              "Echoed Voice"
             ]
           }
         ],
@@ -4152,19 +3969,15 @@
             "species": "Munna",
             "level": 7,
             "moves": [
-              "Psywave",
-              "Defense Curl",
-              "Yawn",
-              "Disarming Voice"
+              "Hypnosis"
             ]
           },
           {
             "species": "Drowzee",
             "level": 7,
             "moves": [
-              "Pound",
               "Hypnosis",
-              "Confusion",
+              "Pound",
               "Disable"
             ]
           },
@@ -4172,10 +3985,10 @@
             "species": "Hoothoot",
             "level": 7,
             "moves": [
-              "Peck",
               "Growl",
-              "Hypnosis",
-              "Confusion"
+              "Peck",
+              "Tackle",
+              "Echoed Voice"
             ]
           }
         ],
@@ -4201,19 +4014,18 @@
             "level": 9,
             "moves": [
               "Confusion",
-              "Life Dew",
-              "Disarming Voice",
-              "Aromatherapy"
+              "Play Nice",
+              "Life Dew"
             ]
           },
           {
             "species": "Litwick",
             "level": 9,
             "moves": [
-              "Ember",
               "Astonish",
-              "Confuse Ray",
-              "Hex"
+              "Smog",
+              "Ember",
+              "Minimize"
             ]
           },
           {
@@ -4221,9 +4033,8 @@
             "level": 9,
             "moves": [
               "Tackle",
-              "Sand Attack",
-              "Leech Seed",
-              "Double Kick"
+              "Growl",
+              "Sand Attack"
             ]
           }
         ],
@@ -4233,19 +4044,18 @@
             "level": 9,
             "moves": [
               "Confusion",
-              "Life Dew",
-              "Disarming Voice",
-              "Aromatherapy"
+              "Play Nice",
+              "Life Dew"
             ]
           },
           {
             "species": "Litwick",
             "level": 9,
             "moves": [
-              "Ember",
               "Astonish",
-              "Confuse Ray",
-              "Hex"
+              "Smog",
+              "Ember",
+              "Minimize"
             ]
           },
           {
@@ -4253,9 +4063,8 @@
             "level": 9,
             "moves": [
               "Tackle",
-              "Sand Attack",
-              "Leech Seed",
-              "Double Kick"
+              "Growl",
+              "Sand Attack"
             ]
           }
         ],
@@ -4283,40 +4092,39 @@
             "species": "Rotom",
             "level": 10,
             "moves": [
-              "Thunder Shock",
               "Astonish",
-              "Confuse Ray",
-              "Hex"
+              "Double Team",
+              "Thunder Shock",
+              "Confuse Ray"
             ]
           },
           {
             "species": "Gastly",
             "level": 10,
             "moves": [
+              "Confuse Ray",
               "Lick",
               "Hypnosis",
-              "Confuse Ray",
-              "Night Shade"
+              "Mean Look"
             ]
           },
           {
             "species": "Misdreavus",
             "level": 10,
             "moves": [
+              "Confusion",
               "Growl",
-              "Confuse Ray",
-              "Hex",
-              "Psybeam"
+              "Astonish"
             ]
           },
           {
             "species": "Sableye",
             "level": 10,
             "moves": [
-              "Scratch",
               "Leer",
+              "Scratch",
               "Astonish",
-              "Fake Out"
+              "Shadow Sneak"
             ]
           }
         ],
@@ -4325,40 +4133,39 @@
             "species": "Rotom",
             "level": 10,
             "moves": [
-              "Thunder Shock",
               "Astonish",
-              "Confuse Ray",
-              "Hex"
+              "Double Team",
+              "Thunder Shock",
+              "Confuse Ray"
             ]
           },
           {
             "species": "Gastly",
             "level": 10,
             "moves": [
+              "Confuse Ray",
               "Lick",
               "Hypnosis",
-              "Confuse Ray",
-              "Night Shade"
+              "Mean Look"
             ]
           },
           {
             "species": "Misdreavus",
             "level": 10,
             "moves": [
+              "Confusion",
               "Growl",
-              "Confuse Ray",
-              "Hex",
-              "Psybeam"
+              "Astonish"
             ]
           },
           {
             "species": "Sableye",
             "level": 10,
             "moves": [
-              "Scratch",
               "Leer",
+              "Scratch",
               "Astonish",
-              "Fake Out"
+              "Shadow Sneak"
             ]
           }
         ],
@@ -4435,9 +4242,6 @@
             "species": "Machop",
             "level": 9,
             "moves": [
-              "Low Kick",
-              "Karate Chop",
-              "Focus Energy",
               "Revenge"
             ]
           },
@@ -4446,29 +4250,28 @@
             "level": 9,
             "moves": [
               "Confusion",
-              "Detect",
-              "Force Palm",
-              "Calm Mind"
+              "Work Up",
+              "Detect"
             ]
           },
           {
             "species": "Tyrogue",
             "level": 9,
             "moves": [
-              "Quick Attack",
-              "Low Kick",
-              "Counter",
-              "Work Up"
+              "Fake Out",
+              "Focus Energy",
+              "Helping Hand",
+              "Tackle"
             ]
           },
           {
             "species": "Riolu",
             "level": 9,
             "moves": [
+              "Endure",
               "Quick Attack",
-              "Force Palm",
-              "Counter",
-              "Work Up"
+              "Feint",
+              "Metal Claw"
             ]
           }
         ]
@@ -4488,8 +4291,8 @@
             "species": "Mankey",
             "level": 7,
             "moves": [
-              "Karate Chop",
-              "Focus Energy"
+              "Focus Energy",
+              "Fury Swipes"
             ]
           },
           {
@@ -4497,15 +4300,15 @@
             "level": 7,
             "moves": [
               "Confusion",
-              "Detect"
+              "Work Up"
             ]
           },
           {
             "species": "Tyrogue",
             "level": 7,
             "moves": [
-              "Quick Attack",
-              "Low Kick"
+              "Helping Hand",
+              "Tackle"
             ]
           }
         ],
@@ -4514,8 +4317,8 @@
             "species": "Mankey",
             "level": 7,
             "moves": [
-              "Karate Chop",
-              "Focus Energy"
+              "Focus Energy",
+              "Fury Swipes"
             ]
           },
           {
@@ -4523,15 +4326,15 @@
             "level": 7,
             "moves": [
               "Confusion",
-              "Detect"
+              "Work Up"
             ]
           },
           {
             "species": "Tyrogue",
             "level": 7,
             "moves": [
-              "Quick Attack",
-              "Low Kick"
+              "Helping Hand",
+              "Tackle"
             ]
           }
         ]
@@ -4562,8 +4365,7 @@
             "species": "Skitty",
             "level": 2,
             "moves": [
-              "Tackle",
-              "Growl"
+              "Tail Whip"
             ]
           }
         ]
@@ -4582,10 +4384,9 @@
             "species": "Shellos",
             "level": 6,
             "moves": [
-              "Water Gun",
               "Mud-Slap",
-              "Harden",
-              "Recover"
+              "Water Gun",
+              "Harden"
             ]
           },
           {
@@ -4593,16 +4394,13 @@
             "level": 6,
             "moves": [
               "Water Gun",
-              "Wing Attack",
-              "Growl",
-              "Aqua Jet"
+              "Defog"
             ]
           },
           {
             "species": "Wiglett",
             "level": 6,
             "moves": [
-              "Peck",
               "Sand Attack",
               "Water Gun",
               "Mud-Slap"
@@ -4625,8 +4423,7 @@
             "species": "Sentret",
             "level": 1,
             "moves": [
-              "Scratch",
-              "Defense Curl"
+              "Scratch"
             ]
           }
         ],
@@ -4635,8 +4432,7 @@
             "species": "Sentret",
             "level": 1,
             "moves": [
-              "Scratch",
-              "Defense Curl"
+              "Scratch"
             ]
           }
         ]
@@ -4654,16 +4450,16 @@
             "species": "Shellos",
             "level": 5,
             "moves": [
-              "Water Gun",
-              "Mud-Slap"
+              "Mud-Slap",
+              "Water Gun"
             ]
           },
           {
             "species": "Wiglett",
             "level": 5,
             "moves": [
-              "Peck",
-              "Sand Attack"
+              "Sand Attack",
+              "Mud-Slap"
             ]
           }
         ],
@@ -4672,16 +4468,16 @@
             "species": "Shellos",
             "level": 5,
             "moves": [
-              "Water Gun",
-              "Mud-Slap"
+              "Mud-Slap",
+              "Water Gun"
             ]
           },
           {
             "species": "Wiglett",
             "level": 5,
             "moves": [
-              "Peck",
-              "Sand Attack"
+              "Sand Attack",
+              "Mud-Slap"
             ]
           }
         ]
@@ -4712,20 +4508,17 @@
             "species": "Hoothoot",
             "level": 3,
             "moves": [
-              "Peck",
               "Growl",
-              "Hypnosis",
-              "Confusion"
+              "Peck",
+              "Tackle"
             ]
           },
           {
             "species": "Wooper",
             "level": 3,
             "moves": [
-              "Water Gun",
               "Tail Whip",
-              "Mud Shot",
-              "Slam"
+              "Water Gun"
             ]
           }
         ]
@@ -4744,9 +4537,8 @@
             "species": "Fidough",
             "level": 4,
             "moves": [
+              "Growl",
               "Tackle",
-              "Charm",
-              "Bite",
               "Lick"
             ]
           },
@@ -4754,10 +4546,9 @@
             "species": "Ralts",
             "level": 4,
             "moves": [
-              "Confusion",
-              "Growl",
               "Disarming Voice",
-              "Life Dew"
+              "Growl",
+              "Double Team"
             ]
           }
         ]
@@ -4776,30 +4567,26 @@
             "species": "Noctowl",
             "level": 7,
             "moves": [
+              "Growl",
               "Peck",
-              "Hypnosis",
-              "Confusion",
-              "Reflect"
+              "Sky Attack",
+              "Tackle"
             ]
           },
           {
             "species": "Pachirisu",
             "level": 7,
             "moves": [
-              "Spark",
-              "Quick Attack",
-              "Charm",
-              "Nuzzle"
+              "Growl",
+              "Thunder Shock",
+              "Quick Attack"
             ]
           },
           {
             "species": "Kadabra",
             "level": 7,
             "moves": [
-              "Confusion",
-              "Disable",
-              "Reflect",
-              "Psybeam"
+              "Hypnosis"
             ]
           }
         ]
@@ -4819,30 +4606,27 @@
             "species": "Kadabra",
             "level": 8,
             "moves": [
-              "Confusion",
-              "Disable",
-              "Reflect",
-              "Psybeam"
+              "Hypnosis"
             ]
           },
           {
             "species": "Noctowl",
             "level": 8,
             "moves": [
+              "Growl",
               "Peck",
-              "Hypnosis",
-              "Confusion",
-              "Reflect"
+              "Sky Attack",
+              "Tackle"
             ]
           },
           {
             "species": "Greavard",
             "level": 8,
             "moves": [
+              "Tackle",
               "Lick",
               "Bite",
-              "Headbutt",
-              "Roar"
+              "Tail Whip"
             ]
           }
         ],
@@ -4851,30 +4635,27 @@
             "species": "Kadabra",
             "level": 8,
             "moves": [
-              "Confusion",
-              "Disable",
-              "Reflect",
-              "Psybeam"
+              "Hypnosis"
             ]
           },
           {
             "species": "Noctowl",
             "level": 8,
             "moves": [
+              "Growl",
               "Peck",
-              "Hypnosis",
-              "Confusion",
-              "Reflect"
+              "Sky Attack",
+              "Tackle"
             ]
           },
           {
             "species": "Greavard",
             "level": 8,
             "moves": [
+              "Tackle",
               "Lick",
               "Bite",
-              "Headbutt",
-              "Roar"
+              "Tail Whip"
             ]
           }
         ],
@@ -4899,8 +4680,8 @@
             "species": "Ralts",
             "level": 4,
             "moves": [
-              "Confusion",
-              "Growl"
+              "Growl",
+              "Double Team"
             ]
           },
           {
@@ -4908,7 +4689,7 @@
             "level": 4,
             "moves": [
               "Tackle",
-              "Charm"
+              "Lick"
             ]
           }
         ],
@@ -4917,8 +4698,8 @@
             "species": "Ralts",
             "level": 4,
             "moves": [
-              "Confusion",
-              "Growl"
+              "Growl",
+              "Double Team"
             ]
           },
           {
@@ -4926,7 +4707,7 @@
             "level": 4,
             "moves": [
               "Tackle",
-              "Charm"
+              "Lick"
             ]
           }
         ]
@@ -4944,7 +4725,7 @@
             "species": "Pachirisu",
             "level": 6,
             "moves": [
-              "Spark",
+              "Thunder Shock",
               "Quick Attack"
             ]
           },
@@ -4952,16 +4733,15 @@
             "species": "Chatot",
             "level": 6,
             "moves": [
-              "Peck",
-              "Chatter"
+              "Swift"
             ]
           },
           {
             "species": "Smoliv",
             "level": 6,
             "moves": [
-              "Absorb",
-              "Tackle"
+              "Tackle",
+              "Absorb"
             ]
           }
         ],
@@ -4970,7 +4750,7 @@
             "species": "Pachirisu",
             "level": 6,
             "moves": [
-              "Spark",
+              "Thunder Shock",
               "Quick Attack"
             ]
           },
@@ -4978,16 +4758,15 @@
             "species": "Chatot",
             "level": 6,
             "moves": [
-              "Peck",
-              "Chatter"
+              "Swift"
             ]
           },
           {
             "species": "Smoliv",
             "level": 6,
             "moves": [
-              "Absorb",
-              "Tackle"
+              "Tackle",
+              "Absorb"
             ]
           }
         ]
@@ -5007,7 +4786,7 @@
             "moves": [
               "Ember",
               "Quick Attack",
-              "Double Kick"
+              "Tackle"
             ]
           },
           {
@@ -5015,15 +4794,15 @@
             "level": 8,
             "moves": [
               "Confusion",
-              "Draining Kiss"
+              "Growl"
             ]
           },
           {
             "species": "Luxio",
             "level": 8,
             "moves": [
-              "Spark",
-              "Bite"
+              "Tackle",
+              "Thunder Shock"
             ]
           }
         ],
@@ -5034,7 +4813,7 @@
             "moves": [
               "Ember",
               "Quick Attack",
-              "Double Kick"
+              "Tackle"
             ]
           },
           {
@@ -5042,15 +4821,15 @@
             "level": 8,
             "moves": [
               "Confusion",
-              "Draining Kiss"
+              "Growl"
             ]
           },
           {
             "species": "Luxio",
             "level": 8,
             "moves": [
-              "Spark",
-              "Bite"
+              "Tackle",
+              "Thunder Shock"
             ]
           }
         ]
