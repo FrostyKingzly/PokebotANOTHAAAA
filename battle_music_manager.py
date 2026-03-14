@@ -73,6 +73,12 @@ class BattleMusicManager:
             'options': '-vn -ac 2 -ar 48000 -b:a 320k'
         }
 
+        # Local files and downloaded cache paths are not network streams,
+        # so reconnect flags can cause FFmpeg to exit immediately.
+        self.FFMPEG_LOCAL_OPTIONS = {
+            'options': '-vn -ac 2 -ar 48000 -b:a 320k'
+        }
+
         # yt-dlp options optimized for high-quality Discord streaming
         self.YDL_OPTIONS = {
             'format': 'bestaudio/best',  # Avoid over-constraining formats; let FFmpeg normalize to 48k
@@ -451,7 +457,8 @@ class BattleMusicManager:
 
             track["title"] = title or track.get("url")
 
-            source = discord.FFmpegPCMAudio(audio_input, **self.FFMPEG_OPTIONS)
+            ffmpeg_options = self._ffmpeg_options_for_input(audio_input)
+            source = discord.FFmpegPCMAudio(audio_input, **ffmpeg_options)
             source = discord.PCMVolumeTransformer(source, volume=self.volume)
 
             def after_playing(error):
@@ -545,7 +552,8 @@ class BattleMusicManager:
 
             print(f"🎵 Creating FFmpeg audio source...")
             # Create audio source with PCMVolumeTransformer for volume control
-            source = discord.FFmpegPCMAudio(audio_input, **self.FFMPEG_OPTIONS)
+            ffmpeg_options = self._ffmpeg_options_for_input(audio_input)
+            source = discord.FFmpegPCMAudio(audio_input, **ffmpeg_options)
             source = discord.PCMVolumeTransformer(source, volume=self.volume)
             print(f"✅ FFmpeg source created with volume control (volume={self.volume})")
 
@@ -606,12 +614,14 @@ class BattleMusicManager:
         """
         local_path = Path(url)
         if local_path.exists() and local_path.is_file():
-            return str(local_path), 0, local_path.stem
+            return str(local_path), self._probe_duration_seconds(local_path), local_path.stem
 
         cached_path = self._cached_path_for_url(url)
         if cached_path:
             entry = self.music_cache_index.get(url, {})
             duration = int(entry.get("duration") or 0)
+            if duration <= 0:
+                duration = self._probe_duration_seconds(cached_path)
             title = entry.get("title")
             return str(cached_path), duration, title
 
@@ -637,6 +647,37 @@ class BattleMusicManager:
             return None, 0, info.get('title')
 
         return audio_input, info.get('duration', 0) or 0, info.get('title')
+
+    def _ffmpeg_options_for_input(self, audio_input: str) -> Dict[str, str]:
+        """Use reconnect flags only for remote streams, not local files."""
+        if audio_input.startswith(("http://", "https://", "rtmp://", "rtmps://")):
+            return self.FFMPEG_OPTIONS
+        return self.FFMPEG_LOCAL_OPTIONS
+
+    def _probe_duration_seconds(self, path: Path) -> int:
+        """Get local media duration in seconds via ffprobe (best effort)."""
+        try:
+            import subprocess
+            result = subprocess.run(
+                [
+                    "ffprobe",
+                    "-v", "error",
+                    "-show_entries", "format=duration",
+                    "-of", "default=noprint_wrappers=1:nokey=1",
+                    str(path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                return 0
+            duration_text = (result.stdout or "").strip()
+            if not duration_text:
+                return 0
+            return max(0, int(float(duration_text)))
+        except Exception:
+            return 0
 
     async def _download_and_cache_url(self, url: str) -> Tuple[bool, Optional[str], Dict]:
         """Download a URL to the local cache and return (ok, path, info)."""
