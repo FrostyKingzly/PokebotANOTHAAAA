@@ -673,29 +673,44 @@ class DreamRogueManager:
         def _node_id(depth: int, index: int) -> str:
             return f"node_{depth}_{index}"
 
+        def _roll_path_count() -> int:
+            # 25% -> 1 path, 50% -> 2 paths, 25% -> 3 paths
+            return random.choices([1, 2, 3], weights=[0.25, 0.5, 0.25], k=1)[0]
+
         nodes: Dict[str, Dict[str, Any]] = {}
         edges: List[Dict[str, str]] = []
 
+        nodes_by_depth: Dict[int, List[str]] = {}
         for depth in range(1, total_depth + 1):
-            node_id = _node_id(depth, 1)
-            nodes[node_id] = {
-                "node_id": node_id,
-                "depth": depth,
-                "node_type": "unassigned",
-                "has_shop": False,
-            }
+            if depth in {1, total_depth}:
+                node_count = 1
+            else:
+                node_count = _roll_path_count()
+
+            depth_node_ids: List[str] = []
+            for index in range(1, node_count + 1):
+                node_id = _node_id(depth, index)
+                nodes[node_id] = {
+                    "node_id": node_id,
+                    "depth": depth,
+                    "node_type": "unassigned",
+                    "has_shop": False,
+                }
+                depth_node_ids.append(node_id)
+            nodes_by_depth[depth] = depth_node_ids
 
         interactable_count = total_depth - 1
         halfway_depth = 1 + ((interactable_count + 1) // 2)
         pre_boss_depth = max(2, total_depth - 1)
 
-        nodes[_node_id(1, 1)]["node_type"] = "start"
-        nodes[_node_id(total_depth, 1)]["node_type"] = "boss"
+        nodes[nodes_by_depth[1][0]]["node_type"] = "start"
+        nodes[nodes_by_depth[total_depth][0]]["node_type"] = "boss"
 
         for depth in (halfway_depth, pre_boss_depth):
             if depth == total_depth:
                 continue
-            node = nodes[_node_id(depth, 1)]
+            anchor_node_id = nodes_by_depth.get(depth, [_node_id(depth, 1)])[0]
+            node = nodes[anchor_node_id]
             node["node_type"] = "rest"
             node["has_shop"] = True
 
@@ -705,7 +720,7 @@ class DreamRogueManager:
         ]
 
         if random_nodes:
-            start_choice = nodes[_node_id(2, 1)]
+            start_choice = nodes[nodes_by_depth[2][0]]
             start_choice["node_type"] = random.choices(
                 ["battle", "memoria"],
                 weights=[0.65, 0.35],
@@ -756,13 +771,31 @@ class DreamRogueManager:
                 node["has_shop"] = False
 
         for depth in range(1, total_depth):
-            current_nodes = [n for n in nodes.values() if n["depth"] == depth]
-            next_nodes = [n for n in nodes.values() if n["depth"] == depth + 1]
+            current_node_ids = nodes_by_depth.get(depth, [])
+            next_node_ids = nodes_by_depth.get(depth + 1, [])
+            current_nodes = [nodes[node_id] for node_id in current_node_ids]
+            next_nodes = [nodes[node_id] for node_id in next_node_ids]
             if not next_nodes:
                 continue
 
+            assigned_next: set[str] = set()
             for node in current_nodes:
-                edges.append({"from": node["node_id"], "to": next_nodes[0]["node_id"]})
+                max_options = min(3, len(next_nodes))
+                option_count = min(_roll_path_count(), max_options)
+                chosen = random.sample(next_nodes, k=option_count)
+                for target in chosen:
+                    edges.append({"from": node["node_id"], "to": target["node_id"]})
+                    assigned_next.add(target["node_id"])
+
+            # Guarantee every node on the next depth is reachable by at least one edge.
+            if current_nodes:
+                for next_node in next_nodes:
+                    if next_node["node_id"] in assigned_next:
+                        continue
+                    source = random.choice(current_nodes)
+                    edge = {"from": source["node_id"], "to": next_node["node_id"]}
+                    if edge not in edges:
+                        edges.append(edge)
 
         start_node_id = _node_id(1, 1)
         final_node_id = _node_id(total_depth, 1)
@@ -1174,8 +1207,13 @@ class DreamRogueManager:
             value = template.get("shop_value")
             if effect is None:
                 effect = template.get("effect_data", {}).get("type", "dream_effect")
+            template_effect_data = template.get("effect_data", {})
             if value is None:
-                value = template.get("effect_data", {})
+                value = template_effect_data
+            elif isinstance(value, dict):
+                merged_value = dict(template_effect_data)
+                merged_value.update(value)
+                value = merged_value
             return {
                 "name": template.get("name", "Wishing Tree Offer"),
                 "description": template.get("description", ""),

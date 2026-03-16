@@ -1450,16 +1450,20 @@ class DreamShopView(View):
                 return
         else:
             manager.add_dreamlites(self.run_id, interaction.user.id, -cost)
+        effect_payload: Dict[str, Any] = {"type": item.get("effect")}
+        item_value = item.get("value")
+        if isinstance(item_value, dict):
+            effect_payload.update(item_value)
+        elif item_value is not None:
+            effect_payload["value"] = item_value
+
         manager.apply_buff(
             run_id=self.run_id,
             buff_type="buff",
             buff_name=item.get("name", "Dream Blessing"),
             buff_description=item.get("description", "A boon from the merchant."),
             scope="individual",
-            effect_data={
-                "type": item.get("effect"),
-                "value": item.get("value")
-            },
+            effect_data=effect_payload,
             duration="floor",
             target_user_id=interaction.user.id,
         )

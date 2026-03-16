@@ -388,10 +388,51 @@ class HeldItemManager:
 
     def _get_dream_effects(self, pokemon, effect_type: str) -> List[Dict[str, Any]]:
         effect_type = str(effect_type or "").lower()
+        normalized_effects: List[Dict[str, Any]] = []
+        for effect in getattr(pokemon, "dream_effects", []):
+            if not isinstance(effect, dict):
+                continue
+            normalized = dict(effect)
+            nested_value = normalized.get("value")
+            # Backward compatibility: some Dream Dive shop effects were stored as
+            # {"type": "effect_name", "value": {...}}.
+            if isinstance(nested_value, dict):
+                for key, val in nested_value.items():
+                    normalized.setdefault(key, val)
+            normalized_effects.append(normalized)
+
         return [
-            effect for effect in getattr(pokemon, "dream_effects", [])
+            effect for effect in normalized_effects
             if str(effect.get("type", "")).lower() == effect_type
         ]
+
+    def _apply_dream_move(self, pokemon, effect: Dict[str, Any]) -> None:
+        move_name = effect.get("move_name") or effect.get("value")
+        if not move_name or not hasattr(pokemon, "moves") or not isinstance(pokemon.moves, list):
+            return
+
+        move_id = str(move_name).lower().replace(" ", "_")
+        move_data = self.moves_db.get_move(move_id)
+        if not move_data:
+            return
+
+        existing_ids = {
+            (move.get("move_id") or "").lower()
+            for move in pokemon.moves if isinstance(move, dict)
+        }
+        if move_id in existing_ids:
+            return
+
+        new_move = {
+            "move_id": move_id,
+            "pp": move_data.get("pp", 10),
+            "max_pp": move_data.get("pp", 10),
+        }
+        if len(pokemon.moves) < 4:
+            pokemon.moves.append(new_move)
+        else:
+            # Keep move UI limits intact by replacing the last slot.
+            pokemon.moves[3] = new_move
 
     def _apply_stat_multiplier(self, pokemon, stat: str, multiplier: float) -> None:
         if multiplier == 1.0:
@@ -427,6 +468,8 @@ class HeldItemManager:
             for pokemon in battler.party:
                 pokemon.dream_effects = list(effects)
                 pokemon.dream_survive_used = False
+                for effect in self._get_dream_effects(pokemon, "dream_move"):
+                    self._apply_dream_move(pokemon, effect)
 
             active_pokemon = battler.get_active_pokemon()
             for pokemon in active_pokemon:
@@ -3038,7 +3081,15 @@ class BattleEngine:
 
         # Determine all targets based on move target type
         target_type = move_data.get('target', 'single')
-        targets = self._determine_move_targets(battle, action, move_data)
+        move_data_for_targeting = move_data
+        if target_type == 'single' and move_data.get('category') in ['physical', 'special']:
+            aoe_effects = self._get_dream_effects(attacker, 'aoe_split')
+            if aoe_effects and any(bool(effect.get('split_damage', True)) for effect in aoe_effects):
+                move_data_for_targeting = dict(move_data)
+                move_data_for_targeting['target'] = 'all_opponents'
+                target_type = 'all_opponents'
+
+        targets = self._determine_move_targets(battle, action, move_data_for_targeting)
 
         if targets and target_type == 'single':
             _, target = targets[0]
