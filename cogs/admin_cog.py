@@ -2672,6 +2672,80 @@ Modest Nature
                 ephemeral=True
             )
 
+    @app_commands.command(
+        name="mass_kick",
+        description="[ADMIN] Kick all non-admin members and invalidate active invite links",
+    )
+    @app_commands.check(is_admin)
+    @app_commands.describe(
+        confirm="Type CONFIRM to execute this command"
+    )
+    async def mass_kick(self, interaction: discord.Interaction, confirm: str):
+        """Kick every non-admin member from the guild and delete all active invites."""
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "❌ This command can only be used inside a server.",
+                ephemeral=True,
+            )
+            return
+
+        if confirm.strip().upper() != "CONFIRM":
+            await interaction.response.send_message(
+                "❌ Aborted. Re-run with `confirm: CONFIRM` to execute mass kick.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True, thinking=True)
+
+        guild = interaction.guild
+        kick_attempted = 0
+        kick_succeeded = 0
+        kick_failed = 0
+
+        for member in guild.members:
+            if member.id == self.bot.user.id:
+                continue
+            if member.guild_permissions.administrator:
+                continue
+
+            kick_attempted += 1
+            try:
+                await member.kick(reason=f"Mass kick requested by {interaction.user} ({interaction.user.id})")
+                kick_succeeded += 1
+            except (discord.Forbidden, discord.HTTPException):
+                kick_failed += 1
+
+        invites_deleted = 0
+        invites_failed = 0
+        invite_warning = None
+
+        try:
+            invites = await guild.invites()
+            for invite in invites:
+                try:
+                    await invite.delete(reason=f"Mass kick cleanup requested by {interaction.user} ({interaction.user.id})")
+                    invites_deleted += 1
+                except (discord.Forbidden, discord.HTTPException):
+                    invites_failed += 1
+        except discord.Forbidden:
+            invite_warning = "I don't have permission to view/delete invites."
+        except discord.HTTPException:
+            invite_warning = "Failed to fetch invite list due to a Discord API error."
+
+        summary_lines = [
+            "✅ Mass kick operation complete.",
+            f"Members targeted: **{kick_attempted}**",
+            f"Members kicked: **{kick_succeeded}**",
+            f"Kick failures: **{kick_failed}**",
+            f"Invites deleted: **{invites_deleted}**",
+            f"Invite delete failures: **{invites_failed}**",
+        ]
+        if invite_warning:
+            summary_lines.append(f"⚠️ Invite cleanup warning: {invite_warning}")
+
+        await interaction.followup.send("\n".join(summary_lines), ephemeral=True)
+
 
 async def setup(bot):
     """Setup function for loading the cog"""
